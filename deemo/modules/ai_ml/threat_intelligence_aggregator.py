@@ -1,11 +1,3 @@
-"""
-Threat Intelligence Aggregator - Aggregates and analyzes threat intelligence feeds.
-
-Provides time-windowed aggregation of threat intelligence data from multiple
-sources with severity classification, trend analysis, source reputation
-weighting, and deduplication.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -21,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class ThreatLevel:
-    """Threat severity level using singleton pattern via __new__."""
 
     _instances: Dict[str, ThreatLevel] = {}
 
@@ -58,7 +49,6 @@ class ThreatLevel:
         return _weights.get(self._val, 1)
 
 
-# Singleton instances
 ThreatLevel.LOW = ThreatLevel("low")
 ThreatLevel.MEDIUM = ThreatLevel("medium")
 ThreatLevel.HIGH = ThreatLevel("high")
@@ -66,7 +56,6 @@ ThreatLevel.CRITICAL = ThreatLevel("critical")
 
 
 class ThreatType(Enum):
-    """Types of threat intelligence."""
     MALWARE = "malware"
     VULNERABILITY = "vulnerability"
     ATTACK = "attack"
@@ -155,7 +144,6 @@ class SourceReputation:
 
 
 class ThreatIntelligence:
-    """A single threat intelligence entry."""
 
     _id_counter: int = 0
     _id_lock = threading.Lock()
@@ -207,11 +195,7 @@ class ThreatIntelligence:
 
 
 class TimeWindowAggregator:
-    """Aggregates threat intelligence within a time window.
-
-    线程安全：所有对 _intelligences 的读写均由 _lock 保护，
-    避免在分析期间被外部写入破坏窗口快照。
-    """
+    """所有对 _intelligences 的读写均由 _lock 保护，避免分析期间被外部写入破坏窗口快照。"""
 
     def __init__(self, window_size: float = 3600.0) -> None:
         self._window_size = window_size
@@ -233,7 +217,6 @@ class TimeWindowAggregator:
                 self._seen_hashes.clear()
 
     def add_intelligence(self, intelligence: ThreatIntelligence) -> bool:
-        """Add an intelligence entry and prune old ones."""
         # 先计算哈希，避免持锁期间做 JSON 序列化
         content_hash = intelligence.compute_hash() if self._deduplicate else None
 
@@ -248,10 +231,7 @@ class TimeWindowAggregator:
             return True
 
     def _clean_old_intelligences(self) -> None:
-        """Remove entries outside the time window.
-
-        调用方必须持有 _lock。
-        """
+        """调用方必须持有 _lock。"""
         current = time.time()
         cutoff = current - self._window_size
         # 保留窗口内的条目，同时清理对应的哈希
@@ -266,27 +246,23 @@ class TimeWindowAggregator:
         self._seen_hashes -= expired_hashes
 
     def get_intelligences_in_window(self) -> List[ThreatIntelligence]:
-        """Get all entries within the current window."""
         with self._lock:
             self._clean_old_intelligences()
             return list(self._intelligences)
 
     def aggregate_by_type(self) -> Dict[str, List[ThreatIntelligence]]:
-        """Group intelligence by threat type."""
         result: Dict[str, List[ThreatIntelligence]] = defaultdict(list)
         for ti in self.get_intelligences_in_window():
             result[ti.threat_type.value].append(ti)
         return dict(result)
 
     def aggregate_by_level(self) -> Dict[str, List[ThreatIntelligence]]:
-        """Group intelligence by threat level."""
         result: Dict[str, List[ThreatIntelligence]] = defaultdict(list)
         for ti in self.get_intelligences_in_window():
             result[str(ti.level)].append(ti)
         return dict(result)
 
     def get_threat_count(self) -> int:
-        """Get total threat count in window."""
         return len(self.get_intelligences_in_window())
 
     @property
@@ -299,10 +275,7 @@ class TimeWindowAggregator:
 
 
 class ThreatAnalyzer:
-    """Analyzes aggregated threat intelligence.
-
-    结合来源信誉对整体威胁态势加权评分，输出比纯计数更准确的态势判断。
-    """
+    """结合来源信誉对整体威胁态势加权评分，输出比纯计数更准确的态势判断。"""
 
     def __init__(self) -> None:
         self._aggregator = TimeWindowAggregator()
@@ -320,7 +293,6 @@ class ThreatAnalyzer:
         return self._aggregator
 
     def analyze(self, window_size: float = 3600.0) -> Dict[str, Any]:
-        """Analyze threats within a time window."""
         self._aggregator.window_size = max(60.0, min(window_size, 86400.0))
 
         with self._lock:
@@ -364,7 +336,6 @@ class ThreatAnalyzer:
                     base = _THREAT_TYPE_BASE_SCORE.get(ti.threat_type, 3.0)
                     weighted_risk += ti.level.severity_weight * base * src_weight
 
-            # Top 5 sources
             top_sources = sorted(
                 result['top_sources'].items(),
                 key=lambda x: x[1],
@@ -384,7 +355,6 @@ class ThreatAnalyzer:
                 (weighted_risk / max(max_possible, 1)) * 100.0, 2
             )
 
-            # Overall threat level -- 用加权分数做更细粒度的判断
             highest_level = max(
                 result['by_level'].items(),
                 key=lambda x: x[1],
@@ -400,7 +370,6 @@ class ThreatAnalyzer:
         source: str,
         data: Optional[Dict[str, Any]] = None,
     ) -> Optional[ThreatIntelligence]:
-        """Add a threat intelligence entry."""
         # 使用更细粒度的时间戳避免 ID 冲突
         ts = time.time()
         with ThreatIntelligence._id_lock:
@@ -427,7 +396,6 @@ class ThreatAnalyzer:
         return intelligence
 
     def get_summary(self) -> Dict[str, Any]:
-        """Get a quick summary of current threat landscape."""
         analysis = self.analyze()
         return {
             'total': analysis['total_threats'],
@@ -446,7 +414,6 @@ def aggregate_threats(
     intelligences: List[Dict[str, Any]],
     window_size: float = 3600.0,
 ) -> Dict[str, Any]:
-    """Convenience function for one-shot threat aggregation."""
     analyzer = ThreatAnalyzer()
 
     for intel in intelligences:

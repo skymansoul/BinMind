@@ -32,7 +32,6 @@ class DatasetSplit:
         return len(self.m_train) + len(self.m_val) + len(self.m_test)
 
     def class_distribution_ds(self):
-        """Return label distribution dict for training set."""
         dist = {}
         ti = 0
         while ti < len(self.m_train):
@@ -44,8 +43,6 @@ class DatasetSplit:
 
 
 class DataAugmenter:
-    """Applies lightweight augmentations: dead-code insertion, register renaming,
-    instruction reordering (within basic blocks)."""
 
     __slots__ = ('m_aug_prob', 'm_max_aug_per_sample')
 
@@ -54,7 +51,6 @@ class DataAugmenter:
         self.m_max_aug_per_sample = max_aug_per_sample
 
     def augment_da(self, sample):
-        """Apply random augmentations to a training sample."""
         if sample is None:
             return []
         results = [sample]  # always include original
@@ -92,7 +88,6 @@ class DataAugmenter:
 
 
 class FineTuneDataset:
-    """Curated dataset for a specific binary-analysis task."""
 
     __slots__ = ('m_task', 'm_samples', 'm_splits', 'm_label_map', 'm_augmenter')
 
@@ -104,7 +99,6 @@ class FineTuneDataset:
         self.m_augmenter = DataAugmenter() if augment else None
 
     def add_samples_fd(self, samples):
-        """Add raw samples to the dataset."""
         if samples is None:
             return
         si = 0
@@ -116,7 +110,6 @@ class FineTuneDataset:
         __dbg.debug(f"Added {len(samples)} samples, total={len(self.m_samples)}")
 
     def build_label_map_fd(self):
-        """Auto-build label-to-index mapping."""
         self.m_label_map.clear()
         idx = 0
         si = 0
@@ -128,7 +121,6 @@ class FineTuneDataset:
             si += 1
 
     def split_fd(self, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, shuffle=True):
-        """Split into train/val/test with class-balanced stratification."""
         if not self.m_samples:
             __dbg.warning("split: empty dataset")
             return
@@ -176,7 +168,6 @@ class FineTuneDataset:
         __dbg.info(f"Split: train={len(train_data)}, val={len(val_data)}, test={len(test_data)}")
 
     def get_augmented_train_fd(self):
-        """Return training set with augmentations applied."""
         if self.m_splits is None:
             return []
         if self.m_augmenter is None:
@@ -191,7 +182,6 @@ class FineTuneDataset:
         return augmented
 
     def export_json_fd(self, filepath):
-        """Serialize the dataset to JSON."""
         data = {
             'task': self.m_task,
             'samples': self.m_samples,
@@ -209,7 +199,6 @@ class FineTuneDataset:
 
     @classmethod
     def import_json_fd(cls, filepath):
-        """Load dataset from JSON file."""
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
         ds = cls(task_type=data.get('task', TaskType.BINARY_SIMILARITY))
@@ -224,12 +213,6 @@ class FineTuneDataset:
 # CLAP 跨模态对比范式; BLens 二进制函数对比表示
 
 class ContrastivePairSampler:
-    """生成对比学习所需的正/负样本对，支持多模态特征键。
-
-    正样本对：同标签异样本（鼓励表示不变性）
-    负样本对：异标签样本（强化决策边界）
-    设计原则：不生成O(N²)对的全局笛卡尔积，改用局部重采样+hard-negative mining。
-    """
 
     __slots__ = ('m_label_buckets', 'm_modality_keys', 'm_hard_negatives',
                  'm_margin', 'm_pair_cache', 'm_cache_epoch')
@@ -243,14 +226,12 @@ class ContrastivePairSampler:
         self.m_cache_epoch = -1
 
     def _feature_vector_len(self, sample_vec):
-        """返回特征的L2模长近似 - 纯Python、无numpy依赖。"""
         sq = 0.0
         for val in sample_vec:
             sq += val * val
         return math.sqrt(sq) if sq > 0 else 0.0
 
     def _cosine_estimate(self, vec_a, vec_b):
-        """快速余弦相似度估计，处理维度不等的向量。"""
         min_len = min(len(vec_a), len(vec_b))
         if min_len == 0:
             return 0.0
@@ -267,11 +248,6 @@ class ContrastivePairSampler:
         return dot / denom if denom > 1e-12 else 0.0
 
     def index_samples_cps(self, samples):
-        """按标签建立样本桶，同时预计算hard negatives。
-
-        策略逻辑：遍历每对不同的标签，对每对标签各取一个锚点样本计算相似度 —
-        存入hard negative池供后续batch采样使用。复杂度O(K²) (K=标签数)，远小于O(N²)。
-        """
         self.m_label_buckets.clear()
         self.m_hard_negatives.clear()
 
@@ -311,7 +287,6 @@ class ContrastivePairSampler:
                    f"{len(self.m_hard_negatives)} hard-negative pairs identified")
 
     def generate_pairs_cps(self, samples, n_positive=32, n_negative=48):
-        """生成一批对比对。"""
         if not self.m_label_buckets:
             self.index_samples_cps(samples)
 
@@ -362,11 +337,6 @@ class ContrastivePairSampler:
 
     def generate_multimodal_pairs_cps(self, samples, modality_a='features',
                                        modality_b='cfg_features', n_pairs=32):
-        """跨模态对比对生成：同一函数的两种表示视为正对。
-
-        典型场景：汇编特征 vs 控制流图嵌入 - 对齐两者的表示空间。
-        只生成正对（负对由generate_pairs_cps统一供给）。
-        """
         multimodal_pairs = []
         si = 0
         eligible_indices = []
@@ -396,15 +366,6 @@ class ContrastivePairSampler:
 # 课程学习(curriculum learning)的分阶段训练策略
 
 class EntropyDifficultyEstimator:
-    """基于统计特征的难度估计器。
-
-    算法逻辑：
-    1. 特征稀疏度 = 非零特征占比 - 越稀疏越易学（信息密度低）
-    2. 特征方差 = 归一化std - 方差大则分布广，分类边界需要更多样本刻画
-    3. 香农熵 ≈ Σ -p_i·log(p_i) 对分箱后的特征值 - 熵越低信息越集中
-
-    三者加权平均 - [0, 1] 难度分数。
-    """
 
     __slots__ = ('m_n_bins', 'm_sparsity_weight', 'm_variance_weight', 'm_entropy_weight')
 
@@ -415,7 +376,6 @@ class EntropyDifficultyEstimator:
         self.m_entropy_weight = entropy_weight
 
     def estimate_difficulty_ede(self, feature_vector):
-        """计算单个样本的特征级难度。"""
         if feature_vector is None or len(feature_vector) == 0:
             return 0.5  # 无信息 → 中性难度
 
@@ -481,13 +441,6 @@ class EntropyDifficultyEstimator:
 
 
 class CurriculumScheduler:
-    """Curriculum learning schedule: start with easy samples, progressively add harder ones.
-
-    Difficulty is estimated from feature dimensionality, label noise, and sequence length.
-    Enhancements:
-    - 内置 EntropyDifficultyEstimator 作为默认难度函数
-    - 支持阶段性难度统计摘要
-    """
 
     __slots__ = ('m_stages', 'm_current_stage', 'm_difficulty_fn', 'm_entropy_estimator',
                  'm_stage_statistics')
@@ -500,11 +453,9 @@ class CurriculumScheduler:
         self.m_stage_statistics = []  # 每阶段的难度分布记录
 
     def set_difficulty_fn_cs(self, fn):
-        """Set a callable that assigns difficulty score (0=easy, 1=hard) to a sample."""
         self.m_difficulty_fn = fn
 
     def _default_difficulty_cs(self, sample):
-        """内置难度预估：优先使用 EntropyDifficultyEstimator，回退到特征长度代理。"""
         features = sample.get('features', [])
         if features and len(features) > 0:
             return self.m_entropy_estimator.estimate_difficulty_ede(features)
@@ -513,10 +464,6 @@ class CurriculumScheduler:
         return min(code_len / 2000.0, 1.0)  # 归一化到 [0, 1]
 
     def get_curriculum_cs(self, samples):
-        """Filter samples for the current curriculum stage.
-
-        Returns samples whose difficulty <= current_stage / total_stages.
-        """
         effective_fn = self.m_difficulty_fn if self.m_difficulty_fn else self._default_difficulty_cs
 
         threshold = (self.m_current_stage + 1) / self.m_stages
@@ -552,11 +499,9 @@ class CurriculumScheduler:
         return result
 
     def get_stage_distribution_report_cs(self):
-        """返回所有阶段的难度分布报告 - 便于超参调试。"""
         return list(self.m_stage_statistics)
 
     def advance_stage_cs(self):
-        """Move to next stage. Returns False if already at last stage."""
         if self.m_current_stage < self.m_stages - 1:
             self.m_current_stage += 1
             return True
@@ -573,13 +518,6 @@ class CurriculumScheduler:
 # 类平衡采样与长尾重加权
 
 class ClassBalancedBatchIterator:
-    """类均衡批次迭代器 - 轮询采样确保每批各类占比均衡。
-
-    与简单的分层随机不同，此迭代器维护跨epoch的蓄水池指针：
-    - 每个标签桶跟踪"下一个未用样本"位置
-    - 桶耗尽时自动洗牌重置（reservoir refill）
-    - 支持加权轮询（类别权重可由外部指定）
-    """
 
     __slots__ = ('m_label_buckets', 'm_bucket_pointers', 'm_class_weights',
                  'm_samples_used_total', 'm_epochs_completed', 'm_shuffle_per_epoch')
@@ -593,7 +531,6 @@ class ClassBalancedBatchIterator:
         self.m_shuffle_per_epoch = shuffle_per_epoch
 
     def build_buckets_cbbi(self, samples):
-        """基于样本标签构建均衡桶。样本可以是引用（int index）或实体（dict）。"""
         self.m_label_buckets.clear()
         self.m_bucket_pointers.clear()
 
@@ -620,24 +557,17 @@ class ClassBalancedBatchIterator:
         self.m_epochs_completed = 0
 
     def set_class_weights_cbbi(self, weight_dict):
-        """设置各类别采样权重（用于处理极端不平衡）。"""
         for lbl, w in weight_dict.items():
             if lbl in self.m_class_weights:
                 self.m_class_weights[lbl] = max(0.1, min(10.0, w))  # 限制极端权重
 
     def _refill_bucket_cbbi(self, label):
-        """桶耗尽时重置指针并洗牌。"""
         bucket = self.m_label_buckets[label]
         if self.m_shuffle_per_epoch:
             random.shuffle(bucket)
         self.m_bucket_pointers[label] = 0
 
     def next_batch_cbbi(self, batch_size):
-        """生成一个类均衡的mini-batch。
-
-        算法：轮询每个标签桶取 ceil(batch_size / n_labels) 个样本，截断到batch_size。
-        当所有桶至少被轮询过一次后，epoch计数器递增。
-        """
         labels = list(self.m_label_buckets.keys())
         if not labels:
             return []
@@ -688,7 +618,6 @@ class ClassBalancedBatchIterator:
         return batch_indices
 
     def get_epoch_progress_cbbi(self):
-        """返回当前epoch在各桶的进度（0~1）。"""
         progress = {}
         for lbl in self.m_label_buckets:
             bucket_len = len(self.m_label_buckets[lbl])
@@ -704,17 +633,6 @@ class ClassBalancedBatchIterator:
 
 
 class FineTunePipeline:
-    """End-to-end fine-tuning pipeline orchestrator.
-
-    Handles:
-    - Dataset loading and preprocessing
-    - Train/val/test splitting with stratification
-    - Data augmentation
-    - Curriculum learning scheduling
-    - Checkpoint management
-    - Contrastive pair generation (CLAP-inspired) — Enhancement 1
-    - Class-balanced batch iteration — Enhancement 3
-    """
 
     __slots__ = ('m_task', 'm_dataset', 'm_curriculum', 'm_checkpoints', 'm_config',
                  'm_contrastive_sampler', 'm_batch_iterator')
@@ -729,7 +647,6 @@ class FineTunePipeline:
         self.m_batch_iterator = ClassBalancedBatchIterator()     # 增强3: 集成
 
     def load_from_dir_fp(self, directory, label_fn=None):
-        """Load samples from a directory of JSON / binary files."""
         if directory is None or not os.path.isdir(directory):
             __dbg.warning(f"load_from_dir: invalid directory {directory}")
             return
@@ -761,11 +678,9 @@ class FineTunePipeline:
         __dbg.info(f"Loaded {len(samples)} samples from {directory}")
 
     def prepare_data_fp(self, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
-        """Split and prepare data for training."""
         self.m_dataset.split_fd(train_ratio, val_ratio, test_ratio)
 
     def get_training_config_fp(self):
-        """Build training config dict for downstream model."""
         if self.m_dataset.m_splits is None:
             return {}
         config = {
@@ -781,13 +696,11 @@ class FineTunePipeline:
         return config
 
     def save_checkpoint_fp(self, model_path, metrics=None):
-        """Register a model checkpoint."""
         ckpt = FineTuneCheckpoint(model_path, metrics)
         self.m_checkpoints.append(ckpt)
         return ckpt.m_hash
 
     def get_best_checkpoint_fp(self, metric_key='val_accuracy'):
-        """Return the checkpoint with the best value for a given metric."""
         if not self.m_checkpoints:
             return None
         best = None
@@ -803,7 +716,6 @@ class FineTunePipeline:
         return best
 
     def get_curriculum_batch_fp(self, batch_size=32):
-        """Get a batch of training samples for the current curriculum stage."""
         curriculum_samples = self.m_curriculum.get_curriculum_cs(
             self.m_dataset.m_splits.m_train if self.m_dataset.m_splits else [])
         if len(curriculum_samples) == 0:
@@ -816,11 +728,6 @@ class FineTunePipeline:
     # 增强1: methods: 对比对构造
 
     def build_contrastive_pairs_fp(self, modality_keys=None):
-        """基于当前训练集构建对比学习正/负对。
-
-        先在ContrastivePairSampler中按标签索引，再生成正对/负对/跨模态对。
-        如果训练集包含多模态特征（cfg_features, asm_features等），同时生成跨模态正对。
-        """
         if self.m_dataset.m_splits is None:
             __dbg.warning("build_contrastive_pairs: no splits available")
             return {'positive': [], 'negative': [], 'multimodal': []}
@@ -846,10 +753,6 @@ class FineTunePipeline:
         }
 
     def get_contrastive_batch_fp(self, samples, batch_size=32):
-        """获取一批对比学习样本 - 适用于InfoNCE/NT-Xent损失。
-
-        返回结构便于下游模型构建对比损失计算图。
-        """
         pairs = self.m_contrastive_sampler.generate_pairs_cps(
             samples, n_positive=batch_size // 2, n_negative=batch_size // 2)
 
@@ -875,7 +778,6 @@ class FineTunePipeline:
     # 增强3: methods: 类别均衡批次迭代
 
     def init_balanced_batches_fp(self, sample_source=None):
-        """初始化类均衡批次迭代器。"""
         source = sample_source
         if source is None:
             if self.m_dataset.m_splits is None:
@@ -889,18 +791,12 @@ class FineTunePipeline:
                    f"{len(source)} samples")
 
     def set_class_weights_balancing_fp(self, weight_dict):
-        """设置类别采样权重，用于补偿极端不平衡。"""
         self.m_batch_iterator.set_class_weights_cbbi(weight_dict)
 
     def next_balanced_batch_fp(self, batch_size=32):
-        """获取下一个类均衡的mini-batch（返回样本索引列表）。
-
-        使用前需先调用 init_balanced_batches_fp() 初始化。
-        """
         return self.m_batch_iterator.next_batch_cbbi(batch_size)
 
     def get_batch_progress_fp(self):
-        """返回当前epoch的均衡批次训练进度。"""
         return self.m_batch_iterator.get_epoch_progress_cbbi()
 
 

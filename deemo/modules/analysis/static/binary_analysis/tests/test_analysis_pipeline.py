@@ -34,7 +34,7 @@ class TestTaskQueue:
 
 
 class TestBatchRunner:
-    """Batch runner for 并行 analysis"""
+    """并行分析批量运行器"""
 
     def test_runner_creation(self):
         """BatchRunner created default settings"""

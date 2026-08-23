@@ -1,15 +1,5 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
-"""
-Database index optimization module.
-
-Features:
-    1. Analyze query patterns, identify slow queries
-    2. Intelligent optimal index recommendations
-    3. Generate index creation SQL
-    4. Benchmark index improvement effects
-    5. Clean up unused/redundant indexes
-"""
 
 import logging
 import json
@@ -23,14 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 class IndexStatus(str, Enum):
-    """Index status."""
     ACTIVE = "active"
     UNUSED = "unused"
     REDUNDANT = "redundant"
     PROPOSED = "proposed"
 
 class QueryType(str, Enum):
-    """Query type."""
     SELECT = "SELECT"
     INSERT = "INSERT"
     UPDATE = "UPDATE"
@@ -42,7 +30,6 @@ class QueryType(str, Enum):
 
 @dataclass
 class QueryLogEntry:
-    """Query log entry."""
     query_id: str
     query_type: QueryType
     table: str
@@ -63,7 +50,6 @@ class QueryLogEntry:
 
 @dataclass
 class IndexSuggestion:
-    """Index suggestion."""
     suggestion_id: str
     table: str
     columns: List[str]
@@ -76,7 +62,6 @@ class IndexSuggestion:
 
 @dataclass
 class IndexBenchmark:
-    """Index benchmark result."""
     table: str
     columns: List[str]
     before_ms: float
@@ -93,7 +78,6 @@ class IndexBenchmark:
 
 @dataclass
 class OptimizationReport:
-    """Optimization report."""
     tables_analyzed: int
     queries_analyzed: int
     slow_queries: int
@@ -105,16 +89,6 @@ class OptimizationReport:
 
 
 class DatabaseIndexOptimizer(BaseAnalyzer):
-    """
-    Database index optimizer.
-
-    Core capabilities:
-    1. analyze_query_patterns -- Analyze query patterns, identify slow queries
-    2. recommend_indexes -- Intelligent optimal index recommendations
-    3. create_index -- Generate index creation SQL
-    4. benchmark_index -- Benchmark index effects
-    5. drop_unused_indexes -- Clean up redundant/unused indexes
-    """
 
     SLOW_QUERY_THRESHOLD_MS = 200
     FULL_SCAN_THRESHOLD_ROWS = 1000
@@ -128,7 +102,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
 
     def log_query(self, query_type: Union[str, QueryType], table: str,
                   elapsed_ms: float, **kwargs) -> QueryLogEntry:
-        """Log a query."""
         if isinstance(query_type, str):
             try:
                 query_type = QueryType(query_type.upper())
@@ -159,7 +132,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
         return entry
 
     def analyze_query_patterns(self) -> Dict[str, Any]:
-        """Analyze query patterns."""
         if not self._query_log:
             return {"total_queries": 0, "message": "No query log data"}
 
@@ -221,7 +193,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
         }
 
     def recommend_indexes(self) -> List[IndexSuggestion]:
-        """Recommend indexes based on query pattern analysis."""
         if not self._query_log:
             return []
 
@@ -308,7 +279,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
         return f"CREATE INDEX {index_name} ON {table}({col_str});"
 
     def _detect_redundant_indexes(self) -> List[str]:
-        """Detect redundant indexes."""
         redundant = []
         for table, indexes in self._existing_indexes.items():
             for i, idx1 in enumerate(indexes):
@@ -326,7 +296,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
                         query_type: QueryType = QueryType.SELECT,
                         sample_size: int = 100,
                         simulate_fn=None) -> Optional[IndexBenchmark]:
-        """Benchmark index improvement effects."""
         matching_queries = [
             q for q in self._query_log
             if q.table == table and q.query_type == query_type
@@ -368,7 +337,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
         return benchmark
 
     def drop_unused_indexes(self) -> List[str]:
-        """Detect and mark unused indexes."""
         used_indexes = set()
         for q in self._query_log:
             if q.index_used:
@@ -385,12 +353,10 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
         return unused
 
     def get_drop_sql(self, index_names: List[str]) -> List[str]:
-        """Generate DROP INDEX SQL statements."""
         return [f"DROP INDEX IF EXISTS {name};" for name in index_names]
 
     @staticmethod
     def _parse_explain_output(explain_data: Any) -> Dict[str, Any]:
-        """Parse EXPLAIN QUERY PLAN output (simulated)."""
         if isinstance(explain_data, dict):
             return {
                 "selectid": explain_data.get("selectid", 0),
@@ -405,7 +371,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
 
     def explain_query(self, sql: str,
                       table: Optional[str] = None) -> Dict[str, Any]:
-        """Simulated EXPLAIN analysis."""
         sql_upper = sql.upper().strip()
 
         has_where = "WHERE" in sql_upper
@@ -431,7 +396,6 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
 
     def register_existing_index(self, table: str, index_name: str,
                                 columns: List[str], is_unique: bool = False) -> None:
-        """Register an existing index."""
         if table not in self._existing_indexes:
             self._existing_indexes[table] = []
         self._existing_indexes[table].append({
@@ -441,13 +405,11 @@ class DatabaseIndexOptimizer(BaseAnalyzer):
         })
 
     def get_tables_without_indexes(self) -> List[str]:
-        """Get tables without indexes."""
         indexed_tables = set(self._existing_indexes.keys())
         queried_tables = set(q.table for q in self._query_log)
         return list(queried_tables - indexed_tables)
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """Execute index optimization operations."""
         action = kwargs.get("action", "analyze")
 
         try:

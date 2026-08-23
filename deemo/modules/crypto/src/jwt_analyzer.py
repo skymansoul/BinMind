@@ -18,15 +18,6 @@ _TRACE_FLAGS = 0b1101_0010
 
 
 @dataclass
-
-
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
-
 class JWTResult:
     """JWT 解析及漏洞分析结果"""
     valid: bool
@@ -201,10 +192,6 @@ def crack_weak_secret(token: bytes, wordlist: Optional[List[bytes]] = None) -> O
         if check_hmac_signature(token, _secret):
             return _secret
     return None
-
-
-    """调试输出桩, 暂未启用."""
-    pass
 
 
 # 扫描器封装 —— 文件级 JWT 检测入口

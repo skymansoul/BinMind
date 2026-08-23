@@ -1,10 +1,3 @@
-"""
-Code Intelligence & Metrics Engine
-
-Instruction-level analysis, semantic clustering, code quality metrics,
-compiler detection, and automated documentation generation.
-"""
-
 from typing import Dict, Any, List, Optional, Set, Tuple
 import logging
 import re
@@ -22,8 +15,6 @@ from datetime import datetime
 
 __log = logging.getLogger(__name__)
 
-
-# Dataclasses
 
 @dataclass
 class MTEBarrier:
@@ -101,12 +92,11 @@ class MemoryAccessEvent:
     access_type: str
 
 
-# MTE Barrier Analyzer -- subprocess: objdump + instruction grep
+
 
 class MTEBarrierAnalyzer:
-    """Identify ARM MTE-tagged memory accesses and assess bypass feasibility."""
 
-    # ARMv8.5-A MTE instruction mnemonics
+    # ARMv8.5-A MTE 指令助记符
     _MTE_OPS = frozenset({
         'irg', 'addg', 'subg', 'gmi',
         'ldg', 'stg', 'stzg', 'st2g', 'stz2g',
@@ -117,7 +107,6 @@ class MTEBarrierAnalyzer:
         self.barriers: List[MTEBarrier] = []
 
     def identify_tagged_memory_accesses(self, binary_path: str) -> List[Tuple[int, str]]:
-        """objdump -d the binary, scan for MTE opcodes, return (addr, type)."""
         accesses: List[Tuple[int, str]] = []
         try:
             proc = subprocess.run(
@@ -141,11 +130,9 @@ class MTEBarrierAnalyzer:
                     addr = int(addr_str.strip(), 16)
                 except ValueError:
                     continue
-                # typical line: "  400618:\tdac000e0 \tldg\tx0, [x0]"
                 tokens = rest.replace('\t', ' ').split()
                 if len(tokens) < 2:
                     continue
-                # ARM objdump: hex bytes then mnemonic; pick mnemonic carefully
                 mnemonic = tokens[1].lower() if len(tokens) >= 2 and len(tokens[0]) >= 8 else tokens[0].lower()
 
                 if mnemonic in self._MTE_OPS:
@@ -163,12 +150,10 @@ class MTEBarrierAnalyzer:
         return accesses
 
     def check_tag_mismatch(self, write_addr: int, write_value: Any) -> bool:
-        """ARM TBI: top-byte-ignore; check if allocation tag nibble is zero."""
         tag = (write_addr >> 56) & 0x0F
         return tag == 0
 
     def assess_mte_bypass(self, exploit_primitive: str) -> Tuple[bool, List[MTEBarrier]]:
-        """Heuristic: type-confusion bypasses MTE easily; linear-UAF is harder."""
         mapping = {
             'linear_heap_overflow': 0.65,
             'use_after_free':        0.25,
@@ -190,7 +175,6 @@ class MTEBarrierAnalyzer:
         return bypass_ok, result
 
     def estimate_mte_effectiveness(self) -> float:
-        """Higher = harder to bypass. Weighted by tagged-access coverage."""
         if not self.barriers:
             return 0.0
         tagged = sum(1 for b in self.barriers
@@ -201,10 +185,9 @@ class MTEBarrierAnalyzer:
         return min(1.0, coverage * (1.0 - bypass_ratio * 0.5))
 
 
-# Struct Array Bounds Checker -- pure Python, regex on type names
+
 
 class StructArrayBoundsChecker:
-    """Detect struct-array OOB from type suffix conventions and index patterns."""
 
     def __init__(self):
         self.array_accesses: Dict[int, ArrayAccess] = {}
@@ -214,7 +197,6 @@ class StructArrayBoundsChecker:
                 if a.base_addr == function_addr]
 
     def infer_array_length(self, base_type: str) -> Optional[int]:
-        """Guess array len from name: `entry_32` -> 32, `irp` -> 256, etc."""
         m = re.search(r'_(\d+)$', base_type)
         if m:
             return int(m.group(1))
@@ -240,7 +222,6 @@ class StructArrayBoundsChecker:
                 oob.append((access.base_addr,
                             f"constant idx={idx} >= len={access.array_length}"))
                 return oob
-        # variable index -- flag as potentially unsafe
         if re.search(r'[a-z_]', access.index_expr, re.IGNORECASE):
             oob.append((access.base_addr,
                         f"variable idx '{access.index_expr}' on len={access.array_length}"))
@@ -252,17 +233,9 @@ class StructArrayBoundsChecker:
         return (field_offset + 8) > access.element_size
 
 
-# Syscall Pattern Matcher -- sliding window with fuzzy tolerance
-
-class DangerousSyscallSequence:
-    def __init__(self, name: str, syscalls: List[str], description: str):
-        self.name = name
-        self.syscalls = syscalls
-        self.description = description
 
 
 class SyscallPatternMatcher:
-    """Sliding-window syscall sequence matching for exploit chain detection."""
 
     def __init__(self):
         self.templates: List[DangerousSyscallSequence] = []
@@ -304,7 +277,6 @@ class SyscallPatternMatcher:
         return matches
 
     def scan_binary(self, binary_path: str) -> List[Tuple[int, DangerousSyscallSequence]]:
-        """Pull imported symbols, treat as a flat 'trace' for matching."""
         imports: List[str] = []
         try:
             res = subprocess.run(
@@ -327,10 +299,9 @@ class SyscallPatternMatcher:
         return self.find_matching_sequences(imports)
 
 
-# Path Convergence Tracker -- execution-count-based hot/cold
+
 
 class PathConvergenceTracker:
-    """Record BB exec counts; flag hot paths (p90 threshold) and cold spots."""
 
     def __init__(self):
         self.coverage: Dict[int, BasicBlockCoverage] = {}
@@ -348,7 +319,7 @@ class PathConvergenceTracker:
         counts = sorted(b.execution_count for b in self.coverage.values())
         if not counts:
             return []
-        # adaptive: p90 or threshold, whichever higher
+        # 自适应阈值：取 p90 与固定阈值的较大者
         p90_idx = int(len(counts) * 0.90)
         adaptive = max(threshold, counts[p90_idx] if p90_idx < len(counts) else threshold)
 
@@ -378,10 +349,9 @@ class PathConvergenceTracker:
         }
 
 
-# Context-Sensitive Summary Graph -- hash-based context => summary store
+
 
 class ContextSensitiveSummaryGraph:
-    """Store function summaries keyed by call-context hash for fast lookup."""
 
     def __init__(self):
         self.summary_graph: Dict[int, List[ContextSensitiveSummary]] = {}
@@ -428,10 +398,9 @@ class ContextSensitiveSummaryGraph:
         return self.generate_summary(function_addr, ctx)
 
 
-# False Positive Filter -- feature-frequency statistical model
+
 
 class FalsePositiveFilter:
-    """Train on benign reports; score new reports by feature frequency overlap."""
 
     def __init__(self):
         self._freq: Dict[str, float] = collections.defaultdict(float)
@@ -486,10 +455,9 @@ class FalsePositiveFilter:
         return [r for r in reports if not self.is_likely_false_positive(r)[0]]
 
 
-# Embedded Script Analyzer -- binary string scanning
+
 
 class EmbeddedScriptAnalyzer:
-    """Detect embedded Lua/Python/JS interpreters by scanning binary strings."""
 
     _SIGS = {
         'lua':  [rb'lua_State', rb'luaL_', rb'lua_pcall', rb'lua_push',
@@ -572,12 +540,11 @@ class EmbeddedScriptAnalyzer:
                 "script_type": self.script_type}
 
 
-# Seccomp Filter Generator -- import table + disasm syscall extraction
+
 
 class SeccompFilterGenerator:
-    """Collect syscalls from binary; emit seccomp-bpf whitelist rules."""
 
-    # x86_64 syscall table (comprehensive subset)
+    # x86_64 系统调用号表
     _NR = {
         'read': 0, 'write': 1, 'open': 2, 'close': 3, 'stat': 4,
         'fstat': 5, 'lstat': 6, 'poll': 7, 'lseek': 8, 'mmap': 9,
@@ -691,7 +658,7 @@ class SeccompFilterGenerator:
 
     def collect_syscalls(self, binary_path: str) -> Set[str]:
         found: Set[str] = set()
-        # dynamic symbols
+        # 动态符号
         try:
             r = subprocess.run(
                 ['objdump', '-T', binary_path],
@@ -706,7 +673,7 @@ class SeccompFilterGenerator:
         except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
             pass
 
-        # inline syscall instructions
+        # 内联 syscall 指令
         try:
             r2 = subprocess.run(
                 ['objdump', '-d', binary_path],
@@ -761,10 +728,9 @@ class SeccompFilterGenerator:
         return "\n".join(lines)
 
 
-# Function Entropy Analyzer -- Shannon entropy + crypto constant scan
+
 
 class FunctionEntropyAnalyzer:
-    """Shannon entropy calc; detect packed code and crypto constants."""
 
     _CRYPTO_MAGIC = {
         b'\x63\x7c\x77\x7b': 'AES_SBOX',
@@ -782,7 +748,6 @@ class FunctionEntropyAnalyzer:
 
     @staticmethod
     def calculate_entropy(data: bytes) -> float:
-        """Shannon entropy: -sum(p_i * log2(p_i))."""
         if not data:
             return 0.0
         counts = collections.Counter(data)
@@ -794,11 +759,9 @@ class FunctionEntropyAnalyzer:
         return avg, []  # high-entropy region extraction requires function bytes
 
     def is_likely_packed(self, function_addr: int) -> bool:
-        """Entropy > 7.2 typically means compressed or encrypted code."""
         return self.entropy_cache.get(function_addr, 0.0) > 7.2
 
     def detect_crypto_pattern(self, high_entropy_region: bytes) -> Optional[str]:
-        """Scan for known S-box / IV byte signatures."""
         if len(high_entropy_region) < 4:
             return None
         for magic, label in self._CRYPTO_MAGIC.items():
@@ -812,10 +775,9 @@ class FunctionEntropyAnalyzer:
         return None
 
 
-# ASLR Entropy Evaluator -- ELF/PE header parsing
+
 
 class ASLREntropyEvaluator:
-    """Parse ELF/PE headers for PIE/NX/RELRO flags; estimate ASLR entropy."""
 
     def __init__(self):
         self.entropy_info: List[ASLREntropyInfo] = []
@@ -829,7 +791,7 @@ class ASLREntropyEvaluator:
             __log.debug("open failed %s: %s", binary_path, exc)
             return info
 
-        # ELF
+        # ELF 格式
         if head[:4] == b'\x7fELF':
             e_type = struct.unpack('<H', head[16:18])[0]
             is_pie = e_type == 3  # ET_DYN
@@ -852,11 +814,11 @@ class ASLREntropyEvaluator:
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 pass
 
-            # vdso / heap
+            # vdso / 堆
             info.append(ASLREntropyInfo('vdso', 28, is_pie))
             info.append(ASLREntropyInfo('heap', 13, is_pie))
 
-        # PE
+        # PE 格式
         elif head[:2] == b'MZ':
             pe_off = struct.unpack('<I', head[0x3C:0x40])[0]
             try:
@@ -895,10 +857,9 @@ class ASLREntropyEvaluator:
         return 0.6 * cov + 0.4 * min(1.0, total / max_bits)
 
 
-# Instruction Semantic Clusterer -- opcode-class frequency vectors
+
 
 class InstructionSemanticClusterer:
-    """Cluster basic blocks by opcode-class frequency vectors."""
 
     _OP_CLASS = {
         'mov': 'data', 'lea': 'data', 'push': 'stack', 'pop': 'stack',
@@ -937,7 +898,7 @@ class InstructionSemanticClusterer:
         self.clusters = []
         for i, bb in enumerate(basic_blocks):
             vec = self.extract_semantic_vector(bb)
-            # crude hash of the vector as cluster id
+            # 向量哈希作为聚类 ID
             cid = hashlib.md5(str(vec).encode()).hexdigest()[:8]
             self.clusters.append(SemanticCluster(
                 cluster_id=cid,
@@ -947,14 +908,13 @@ class InstructionSemanticClusterer:
         return self.clusters
 
     def find_similar_functions(self, function_addr: int) -> List[Tuple[int, float]]:
-        # requires pre-built function vector index; placeholder
+        # 需要预构建函数向量索引；占位
         return []
 
 
-# Kernel Object Reconstructor -- pool-tag scan + known offsets
+
 
 class KernelObjectReconstructor:
-    """Find pool tags in kernel binaries; reconstruct known struct layouts."""
 
     _KNOWN_TAGS = {
         b'Proc': 'EPROCESS', b'Thrd': 'ETHREAD',
@@ -965,7 +925,7 @@ class KernelObjectReconstructor:
         b'Vad\x00': 'VAD', b'Pool': 'POOL_HEADER',
         b'MmSt': 'MM_SECTION', b'SeTm': 'SEGMENT',
     }
-    # well-known x64 Windows kernel struct offsets
+    # x64 Windows 内核结构体已知偏移
     _KNOWN_OFFSETS: Dict[str, Dict[str, Tuple[int, str]]] = {
         'EPROCESS': {
             'Pcb': (0, 'KPROCESS'), 'ProcessLock': (0x80, 'EX_PUSH_LOCK'),
@@ -983,7 +943,6 @@ class KernelObjectReconstructor:
         self.reconstructed_objects: Dict[str, KernelObjectSpec] = {}
 
     def find_pool_tag(self, binary_path: str, tag: str) -> List[int]:
-        """Byte-scan the binary for literal pool tag occurrences."""
         tag_bytes = tag.encode('ascii', errors='replace')[:4].ljust(4, b'\x00')
         addrs: List[int] = []
         try:
@@ -1017,7 +976,6 @@ class KernelObjectReconstructor:
         return spec
 
     def verify_object_integrity(self, object_spec: KernelObjectSpec, object_addr: int) -> bool:
-        """Sanity check: field offsets must be monotonic and within 8KB."""
         offsets = list(object_spec.field_offsets.values())
         if len(offsets) < 2:
             return False
@@ -1027,16 +985,14 @@ class KernelObjectReconstructor:
         return max(offsets) < 0x2000
 
 
-# Cost-Based Path Selector -- path length heuristic
+
 
 class CostBasedPathSelector:
-    """Estimate per-path cost (instruction count); select cheapest-first."""
 
     def __init__(self):
         self.path_costs: Dict[int, PathCost] = {}
 
     def estimate_path_cost(self, path: List[int]) -> PathCost:
-        """Rough: 3 instrs/BB + 2-cycle branch penalty per BB."""
         n = len(path)
         cost = PathCost(
             path=path,
@@ -1052,16 +1008,14 @@ class CostBasedPathSelector:
         return [p for p, _ in costs[:max_paths]]
 
     def prioritize_vulnerability_finding(self, paths: List[List[int]]) -> List[List[int]]:
-        """Prefer shorter paths -- less noise per explored path."""
         def score(p: List[int]) -> float:
             return -float(self.estimate_path_cost(p).estimated_instructions)
         return sorted(paths, key=score, reverse=True)
 
 
-# Memory Access Visualization Exporter
+
 
 class MemoryAccessVisualizationExporter:
-    """Record mem access events; export JSON heatmap or CSV log."""
 
     def __init__(self):
         self.access_log: List[MemoryAccessEvent] = []
@@ -1075,7 +1029,6 @@ class MemoryAccessVisualizationExporter:
         ))
 
     def generate_heatmap_data(self) -> Dict[str, Any]:
-        """Bucket accesses into 4KB pages, count r/w/x per page."""
         pages: Dict[int, Dict[str, Any]] = {}
         for ev in self.access_log:
             page = ev.address & ~0xFFF
@@ -1114,10 +1067,9 @@ class MemoryAccessVisualizationExporter:
                 w.writerow([ev.timestamp, hex(ev.address), ev.size, ev.access_type])
 
 
-# Analysis Exchange Format -- schemas + serialization
+
 
 class AnalysisExchangeFormat:
-    """Unified JSON/YAML schema definitions for vulns, summaries, type info."""
 
     @staticmethod
     def schema_vulnerability() -> Dict[str, Any]:
@@ -1178,10 +1130,9 @@ class AnalysisExchangeFormat:
             yaml.dump(data, f, default_flow_style=False)
 
 
-# Automated API Doc Generator
+
 
 class AutomatedAPIDocumentGenerator:
-    """Doxygen-style doc generation from exported function analysis."""
 
     def __init__(self):
         self.exported_functions: Dict[str, Dict[str, Any]] = {}
@@ -1242,10 +1193,9 @@ class AutomatedAPIDocumentGenerator:
         return full
 
 
-# Binary Annotation Collaboration
+
 
 class BinaryCodeAnnotationCollaborativeEditor:
-    """Multi-user annotation with versioned history and 3-way sync merge."""
 
     def __init__(self):
         self.annotations: Dict[int, List[Dict[str, Any]]] = {}
@@ -1309,10 +1259,9 @@ class BinaryCodeAnnotationCollaborativeEditor:
         return result
 
 
-# Analysis Diff Comparator
+
 
 class AnalysisResultDiffComparator:
-    """Compare two analysis passes; compute Jaccard stability score."""
 
     def __init__(self):
         self.analysis_results: Dict[str, Dict[str, Any]] = {}
@@ -1363,10 +1312,9 @@ class AnalysisResultDiffComparator:
         return rep
 
 
-# Runtime Environment Detector
+
 
 class BinaryRuntimeEnvironmentDetector:
-    """Detect libc version, config files, env vars needed by a binary."""
 
     def __init__(self):
         self.environment_requirements: Dict[str, Any] = {}
@@ -1435,10 +1383,9 @@ class BinaryRuntimeEnvironmentDetector:
         return result
 
 
-# Plugin Hot Loader
+
 
 class PluginHotLoaderSandboxIsolator:
-    """Dynamic plugin loader with subprocess isolation."""
 
     def __init__(self, plugin_dir: str = 'plugins'):
         self.plugin_dir = plugin_dir
@@ -1507,10 +1454,9 @@ class PluginHotLoaderSandboxIsolator:
         return self.load_plugin(plugin_name, path)
 
 
-# Task Priority Resource Manager
+
 
 class TaskPriorityPreemptionResourceManager:
-    """CPU/memory-aware task scheduler with priority preemption."""
 
     def __init__(self):
         self.resource_quotas: Dict[str, Dict[str, float]] = {}
@@ -1594,10 +1540,9 @@ class TaskPriorityPreemptionResourceManager:
         }
 
 
-# Analysis Report Incremental Streamer
+
 
 class AnalysisReportIncrementalStreamer:
-    """Incremental progress events + partial-result streaming for long analyses."""
 
     def __init__(self):
         self.analysis_sessions: Dict[str, Dict[str, Any]] = {}
@@ -1674,10 +1619,9 @@ class AnalysisReportIncrementalStreamer:
         return rep
 
 
-# Function Call Hotspot Analyzer
+
 
 class FunctionCallHotspotAnalyzer:
-    """Static + dynamic call-frequency hotspot identification."""
 
     def __init__(self):
         self.call_counts: Dict[int, int] = {}
@@ -1737,10 +1681,9 @@ class FunctionCallHotspotAnalyzer:
         return rep
 
 
-# Code Clone Genealogy
+
 
 class CodeCloneGenealogyBuilder:
-    """Cross-binary clone detection and family-tree construction."""
 
     def __init__(self):
         self.code_clones: Dict[str, List[str]] = {}
@@ -1799,10 +1742,9 @@ class CodeCloneGenealogyBuilder:
         return json.dumps({'nodes': nodes, 'edges': edges}, indent=2)
 
 
-# Binary Patch Generator / Validator
+
 
 class BinaryPatchGeneratorValidator:
-    """Auto-generate patches for known vuln types; validate fix effectiveness."""
 
     def __init__(self):
         self.generated_patches: Dict[str, Dict[str, Any]] = {}
@@ -1887,10 +1829,9 @@ class BinaryPatchGeneratorValidator:
         return rep
 
 
-# Multi-Thread Result Merger
+
 
 class MultiThreadAnalysisResultMerger:
-    """Merge parallel worker results; detect duplicates and resolve conflicts."""
 
     def __init__(self):
         self.worker_results: Dict[str, Dict[str, Any]] = {}
@@ -1931,7 +1872,6 @@ class MultiThreadAnalysisResultMerger:
         return merged
 
     def resolve_conflict(self, conflict: Dict[str, Any], resolution: Dict[str, Any]) -> bool:
-        """Apply resolution: 'drop', 'keep_first', or 'merge' metadata."""
         cid = conflict.get('id')
         action = resolution.get('action', 'keep_first')
         if action == 'drop':

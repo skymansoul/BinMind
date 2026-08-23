@@ -120,7 +120,7 @@ _MITRE_TACTIC_MAP: Dict[str, str] = {
 }
 
 
-# Analysis pass 基础设施
+# 分析 pass 基础设施
 
 @dataclass
 class AnalysisContext:

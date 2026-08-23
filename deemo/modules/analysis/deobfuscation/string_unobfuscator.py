@@ -31,11 +31,9 @@ class DecodeResult:
 
 
 class XORDecoder:
-    """XOR 解码器"""
 
     @staticmethod
     def detect_key(data: bytes) -> Optional[int]:
-        """启发式检测单字节 XOR 密钥"""
         if not data:
             return None
         for key in range(1, 256):
@@ -96,7 +94,6 @@ class XORDecoder:
 
 
 class Base64Decoder:
-    """Base64 解码器"""
 
     @staticmethod
     def is_base64(data: bytes) -> bool:
@@ -115,7 +112,6 @@ class Base64Decoder:
 
 
 class RC4Decoder:
-    """RC4 解码器"""
 
     @staticmethod
     def decode(data: bytes, key: bytes) -> bytes:
@@ -140,9 +136,6 @@ class RC4Decoder:
 # AES-ECB 密文各块间汉明距接近 64（均匀随机），标准差 < 10
 
 def _detect_aes_ecb(data: bytes) -> Optional[bytes]:
-    """检测 AES-ECB 加密模式并尝试使用常用密钥解密
-    返回解密后的数据或 None
-    """
     if not data or len(data) < 32:
         return None
     # 要求 16 字节对齐
@@ -168,7 +161,6 @@ def _detect_aes_ecb(data: bytes) -> Optional[bytes]:
 
 
 class MicroInterpreter:
-    """用于静态仿真解码逻辑的微型解释器"""
 
     def __init__(self):
         self.registers: Dict[str, int] = {}
@@ -229,7 +221,6 @@ _MOV_IMM_PATTERNS = [
 
 
 class StringUnobfuscator:
-    """字符串反混淆器"""
 
     _STACK_STRING_PATTERNS = [
         rb'\xc7\x45[\x80-\xff].{3}',
@@ -279,7 +270,6 @@ class StringUnobfuscator:
         return results
 
     def find_string_constructors(self) -> List[Tuple[int, bytes]]:
-        """查找栈上字符串构造指令"""
         results = []
         try:
             with open(self.binary_path, "rb") as f:
@@ -300,9 +290,6 @@ class StringUnobfuscator:
         return results
 
     def decode_string(self, raw: bytes) -> Optional[DecodedString]:
-        """解码单个字符串的多层流水线
-        尝试顺序: XOR single → XOR multi → RC4 → Base64 → AES-ECB 检测
-        """
         if not raw:
             return None
         layers = []
@@ -383,7 +370,6 @@ class StringUnobfuscator:
         return None
 
     def _looks_plausible(self, s: str) -> bool:
-        """检查解码后的字符串是否像合理的文本"""
         if not s:
             return False
         printable = sum(1 for c in s if 0x20 <= ord(c) < 0x7F)
@@ -394,14 +380,6 @@ class StringUnobfuscator:
         return alpha >= 2
 
     def unobfuscate(self, data_section: bytes = None, **kwargs) -> List[DecodedString]:
-        """对给定数据段进行字符串提取与反混淆。
-
-        支持两种输入形态：
-        - bytes：直接扫描可打印字符串并尝试逐段解码
-        - callable：以空数据调用读取二进制并走 run() 流程
-
-        返回 DecodedString 列表，未发现有效字符串时返回空列表。
-        """
         if data_section is None:
             if callable(kwargs.get("loader")):
                 self.binary_path = kwargs["loader"]()

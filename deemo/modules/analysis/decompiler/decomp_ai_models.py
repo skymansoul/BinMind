@@ -23,7 +23,6 @@ from typing import Dict, Set, Any
 logger = logging.getLogger(__name__)
 
 
-# system prompts
 
 AI_SYSTEM_PROMPT_ANALYSIS = (
     "你是一个资深的二进制安全研究员，专业分析二进制漏洞。"
@@ -36,27 +35,23 @@ AI_SYSTEM_PROMPT_FOLLOW_UP = (
 
 # 模型配置
 
-# 温度参数 settings for different analysis modes
+# 温度参数
 AI_TEMPERATURE_ANALYSIS = 0.2
 AI_TEMPERATURE_FOLLOW_UP = 0.3
 
-# Token limits for different analysis modes
 AI_MAX_TOKENS_ANALYSIS = 4000
 AI_MAX_TOKENS_FOLLOW_UP = 3000
 
-# ANSI escape sequence handling
 
 ANSI_ESCAPE_PATTERN = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
 
 
 def strip_ansi_escape(text: str) -> str:
-    # remove ANSI escape sequences (color, cursor control, etc.)
     if not text:
         return text
     return ANSI_ESCAPE_PATTERN.sub('', text)
 
 
-# 钩子 system
 
 try:
     from modules.core.hooks import run_hook, get_hook_manager, HOOK_POINTS
@@ -127,7 +122,6 @@ def load_plugin_script(plugin_path: str) -> bool:
         logger.error(traceback.format_exc())
         return False
 
-# 反编译引擎 engine constants
 
 DECOMPILER_RADARE2 = 'radare2'
 DECOMPILER_GHIDRA = 'ghidra'
@@ -136,7 +130,6 @@ DECOMPILER_BINARYNINJA = 'binaryninja'
 DECOMPILER_HOPPER = 'hopper'
 DECOMPILER_AUTO = 'auto'
 
-# String sanitization 工具集
 
 FUNCTION_NAME_PATTERN = re.compile(r'^[a-zA-Z0-9_.-]+$')
 

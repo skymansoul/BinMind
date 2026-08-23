@@ -1,19 +1,14 @@
-# VM-based 混淆检测与去虚拟化
-"""Detection analysis VM-based software protection (VMProtect, Themida, etc.)"""
+# VM 混淆检测与去虚拟化
 
 import logging
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# VMIdentifier
-
 
 class VMIdentifier:
-    """Identify VM-based protectors 二进制分析"""
 
-    # VM protector patterns
-    # 所有VM保护器都需要dispatch机制，这是检测的关键瓶颈点
+    # 所有 VM 保护器都需要 dispatch 机制，这是检测的关键瓶颈点
     VM_PATTERNS: Dict[str, Dict[str, Any]] = {
         "VMProtect": {
             "dispatch_ops": ["pushf", "popf", "pushfd", "popfd"],
@@ -50,17 +45,12 @@ class VMIdentifier:
     def detect_dispatch_patterns(
         self, instructions: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """在指令序列中检测 VM dispatch 循环模式。
-
-        查找间接跳转表、pushf/popf 对 (VMProtect 签名) 与大量
-        位旋转模式; 返回检测到的 dispatch 模式证据列表。
-        """
         findings: List[Dict[str, Any]] = []
         mnemonics = [
             insn.get("mnemonic", "").lower() for insn in instructions
         ]
 
-        # Count dispatch-related ops
+        # 统计 dispatch 相关操作
         pushf_count = sum(
             1 for m in mnemonics if m in ("pushf", "pushfd", "popf", "popfd")
         )
@@ -100,14 +90,13 @@ class VMIdentifier:
     def detect_handler_table(
         self, instructions: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """识别 switch-case 分发的 VM handler 函数表, 返回 handler 地址信息。"""
         result: Dict[str, Any] = {
             "found": False,
             "handler_count": 0,
             "handlers": [],
         }
 
-        # Look for indirect jump patterns: jmp [reg + offset] or jmp [table + reg*4]
+        # 查找间接跳转模式: jmp [reg + offset] 或 jmp [table + reg*4]
         jmp_count = 0
         for insn in instructions:
             mnemonic = insn.get("mnemonic", "").lower()
@@ -126,11 +115,6 @@ class VMIdentifier:
     def detect_bytecode_interpreter(
         self, instructions: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        """检测字节码 fetch-decode-dispatch 解释器模式。
-
-        关键模式: 加载 byte -> 查 handler -> 跳转 handler -> 推进
-        PC; fetch-decode-dispatch 循环是通用 VM 签名。
-        """
         result: Dict[str, Any] = {
             "found": False,
             "confidence": 0.0,
@@ -142,7 +126,7 @@ class VMIdentifier:
         ]
         full_text = " ".join(mnemonics)
 
-        # Pattern: mov reg, [base + index] -> cmp/jmp -> 处理器 -> inc index -> jmp back
+        # 模式: mov reg, [base + index] -> cmp/jmp -> 处理器 -> inc index -> jmp back
         indicators = 0
 
         if "mov" in mnemonics and "jmp" in mnemonics:
@@ -162,16 +146,15 @@ class VMIdentifier:
         return result
 
     def identify(self, filepath: str) -> Dict[str, Any]:
-        """完整 VM 识别流水线, 返回含 vm_type/confidence/evidence 的字典。"""
-        self._logger.info("Identifying VM protector in %s", filepath)
+        self._logger.info("识别 VM 保护器: %s", filepath)
 
-        # file-based API; actual instruction data comes
-        # from a disassembler (r2, capstone, etc.). For detecting raw bytes
+        # 基于文件的 API; 实际指令数据来自
+        # 反汇编器 (r2, capstone 等)。检测原始字节
         try:
             with open(filepath, "rb") as fh:
                 raw = fh.read()
         except OSError as exc:
-            self._logger.error("Cannot read %s: %s", filepath, exc)
+            self._logger.error("无法读取 %s: %s", filepath, exc)
             return {
                 "vm_type": "UNKNOWN",
                 "confidence": 0.0,
@@ -180,7 +163,7 @@ class VMIdentifier:
 
         evidence: List[Dict[str, Any]] = []
 
-        # 检查 for VMProtect strings
+        # 检查 VMProtect 字符串
         try:
             text = raw.decode("ascii", errors="ignore").lower()
         except Exception:
@@ -202,7 +185,7 @@ class VMIdentifier:
                     "confidence": 0.90,
                 })
 
-        # 检查 for section names
+        # 检查节名
         section_indicators = {
             ".vmp": "VMProtect",
             ".themida": "Themida",
@@ -233,16 +216,9 @@ class VMIdentifier:
         }
 
 
-# VMUnvirtualizer
 
 
 class VMUnvirtualizer:
-    """Recover native code from VM-bytecode protected functions
-
-    Uses pattern-based reconstruction rather than full emulation
-    because emulation requires syscall/hardware state that can't be reliably reproduced.
-    Pattern matching handler semantics is ~80% accurate but 1000x faster
-    """
 
     def __init__(self) -> None:
         self._logger = logging.getLogger(__name__)
@@ -250,7 +226,6 @@ class VMUnvirtualizer:
     def trace_bytecode_flow(
         self, handlers: Dict[int, str]
     ) -> List[Dict[str, Any]]:
-        """追踪 VM handler 间的执行流, 返回地址迁移的 trace 条目列表。"""
         trace: List[Dict[str, Any]] = []
         handler_addrs = sorted(handlers.keys())
 
@@ -271,11 +246,6 @@ class VMUnvirtualizer:
         bytecode_trace: List[Dict[str, Any]],
         handler_addrs: List[int],
     ) -> Dict[int, str]:
-        """把字节码 opcode 映射到 handler 函数地址。
-
-        bytecode_trace 为字节码执行轨迹, handler_addrs 为 handler
-        地址列表; 返回 opcode (int) -> handler 描述的映射。
-        """
         op_map: Dict[int, str] = {}
 
         for i, addr in enumerate(handler_addrs):
@@ -289,10 +259,9 @@ class VMUnvirtualizer:
         bytecode: List[int],
         op_map: Dict[int, str],
     ) -> List[str]:
-        """从字节码重建原生指令助记符, 返回重建指令字符串列表。"""
         instructions: List[str] = []
 
-        # opcode x86 mnemonic mapping (simplified)
+        # opcode 到 x86 助记符映射 (简化版)
         known_ops: Dict[int, str] = {
             0x00: "add",
             0x01: "sub",
@@ -327,9 +296,8 @@ class VMUnvirtualizer:
     def unvirtualize(
         self, filepath: str, vm_info: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """完整去虚拟化流水线, 返回含重建指令与元数据的字典。"""
         self._logger.info(
-            "Attempting unvirtualization of %s (VM: %s)",
+            "尝试去虚拟化 %s (VM: %s)",
             filepath,
             vm_info.get("vm_type", "UNKNOWN"),
         )
@@ -337,7 +305,7 @@ class VMUnvirtualizer:
         if vm_info.get("vm_type") == "UNKNOWN":
             return {
                 "success": False,
-                "error": "No VM type identified",
+                "error": "未识别 VM 类型",
                 "instructions": [],
                 "reconstructed_functions": {},
             }
@@ -359,7 +327,7 @@ class VMUnvirtualizer:
 
         return {
             "success": False,
-            "note": "Full unvirtualization requires disassembler integration",
+            "note": "完整去虚拟化需要反汇编器集成",
             "vm_type": vm_info.get("vm_type"),
             "confidence": vm_info.get("confidence", 0.0),
             "instructions": instructions,

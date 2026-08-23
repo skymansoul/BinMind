@@ -1,24 +1,4 @@
-"""
-符号尺寸关联分析 (Symbolic Size Correlation Analysis) - DDSSC核心模块.
-
-核心决策:
-  堆溢出误报的最大来源: malloc(N) 与 memcpy(ptr, src, M) 中
-  N 和 M 为同一变量或等价表达式时, 区间分析因宽化产生重叠区间,
-  导致"可能溢出"告警. 本模块通过符号化追踪分配参数与写入参数的
-  数据流来源, 判定两者是否等价, 从而消除此类误报.
-
-方法:
-  1. 为每个寄存器/栈槽构建 def-use 链上的符号表达式
-  2. malloc 的 size 参数 → 符号变量 S_alloc
-  3. memcpy 的 len 参数 → 符号表达式 E_write
-  4. 若 E_write 可化简为 S_alloc 的线性函数且系数为1常数项为0 → 安全
-  5. 若 E_write = S_alloc + k (k>0) → 确定溢出 k 字节
-
-理论依据:
-  符号执行消除抽象解释的模糊区间; 路径约束窄化消除系统性误报.
-
-创建: 2024-12-03
-"""
+# 符号尺寸关联分析 (DDSSC核心): 追踪分配参数与写入参数的数据流来源, 判定等价性
 
 from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field

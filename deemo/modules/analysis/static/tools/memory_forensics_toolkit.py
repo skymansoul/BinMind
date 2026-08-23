@@ -94,7 +94,7 @@ class MemoryForensicsToolkit:
             return "linux"
         return "unknown"
 
-# Windows process enumeration
+# Windows 进程枚举
 
     def parse_windows_processes(self, data: Optional[bytes] = None) -> List[Process]:
         """EPROCESS chain walk: PsActiveProcessHead -> ActiveProcessLinks"""
@@ -233,7 +233,7 @@ class MemoryForensicsToolkit:
             i += (0x400 if found else 1)
         return procs
 
-# Injection detection
+# 注入检测
 
     def detect_injection(self, data: Optional[bytes] = None,
                          processes: Optional[List[Process]] = None) -> List[Dict[str, Any]]:
@@ -295,7 +295,7 @@ class MemoryForensicsToolkit:
                 continue
         return sections
 
-# Rootkit detection
+# Rootkit 检测
 
     def hunt_rootkits(self, data: Optional[bytes] = None,
                       processes: Optional[List[Process]] = None) -> List[Dict[str, Any]]:
@@ -397,7 +397,7 @@ class MemoryForensicsToolkit:
                 })
         return findings
 
-# Hidden module scanning
+# 隐藏模块扫描
 
     def scan_hidden_modules(self, data: Optional[bytes] = None) -> List[Dict[str, Any]]:
         """比较 驱动 strings against PE export names 查找 unlinked modules"""
@@ -492,7 +492,7 @@ class MemoryForensicsToolkit:
         counts = Counter(data_section)
         return -sum((c / n) * math.log2(c / n) for c in counts.values())
 
-# Unified analysis
+# 统一分析
 
     def analyze(self) -> Dict[str, Any]:
         processes = (

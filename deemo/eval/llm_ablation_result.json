@@ -1,0 +1,134 @@
+{
+  "tool": "eval/llm_ablation.py",
+  "description": "LLM 对照消融评测: 规则检测 vs 规则+LLM辅助",
+  "timestamp": "2026-08-23T03:20:33",
+  "max_samples": 3,
+  "teaching_dir": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching",
+  "sample_count": 3,
+  "results": [
+    {
+      "mode": "rules_only",
+      "binary_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\01_stack_overflow\\01_stack_overflow.exe",
+      "vuln_count": 6,
+      "vuln_types": [
+        "buffer_overflow",
+        "buffer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow"
+      ],
+      "elapsed_sec": 36.512,
+      "simulation": null,
+      "error": null,
+      "sample_name": "01_stack_overflow"
+    },
+    {
+      "mode": "ai_enabled",
+      "binary_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\01_stack_overflow\\01_stack_overflow.exe",
+      "vuln_count": 6,
+      "vuln_types": [
+        "buffer_overflow",
+        "buffer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow"
+      ],
+      "elapsed_sec": 38.842,
+      "simulation": true,
+      "error": null,
+      "sample_name": "01_stack_overflow"
+    },
+    {
+      "mode": "rules_only",
+      "binary_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\02_format_string\\02_format_string.exe",
+      "vuln_count": 6,
+      "vuln_types": [
+        "buffer_overflow",
+        "buffer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow"
+      ],
+      "elapsed_sec": 41.081,
+      "simulation": null,
+      "error": null,
+      "sample_name": "02_format_string"
+    },
+    {
+      "mode": "ai_enabled",
+      "binary_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\02_format_string\\02_format_string.exe",
+      "vuln_count": 6,
+      "vuln_types": [
+        "buffer_overflow",
+        "buffer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow"
+      ],
+      "elapsed_sec": 43.954,
+      "simulation": true,
+      "error": null,
+      "sample_name": "02_format_string"
+    },
+    {
+      "mode": "rules_only",
+      "binary_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\03_heap_uaf\\03_heap_uaf.exe",
+      "vuln_count": 6,
+      "vuln_types": [
+        "buffer_overflow",
+        "buffer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow"
+      ],
+      "elapsed_sec": 35.531,
+      "simulation": null,
+      "error": null,
+      "sample_name": "03_heap_uaf"
+    },
+    {
+      "mode": "ai_enabled",
+      "binary_path": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\03_heap_uaf\\03_heap_uaf.exe",
+      "vuln_count": 6,
+      "vuln_types": [
+        "buffer_overflow",
+        "buffer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow",
+        "integer_overflow"
+      ],
+      "elapsed_sec": 40.676,
+      "simulation": true,
+      "error": null,
+      "sample_name": "03_heap_uaf"
+    }
+  ],
+  "summary": {
+    "rules_only": {
+      "samples_run": 3,
+      "samples_ok": 3,
+      "samples_error": 0,
+      "total_vulns": 18,
+      "avg_vulns_per_sample": 6.0,
+      "total_elapsed_sec": 113.124,
+      "avg_elapsed_sec": 37.708,
+      "all_simulation": false
+    },
+    "ai_enabled": {
+      "samples_run": 3,
+      "samples_ok": 3,
+      "samples_error": 0,
+      "total_vulns": 18,
+      "avg_vulns_per_sample": 6.0,
+      "total_elapsed_sec": 123.472,
+      "avg_elapsed_sec": 41.157,
+      "all_simulation": true
+    }
+  }
+}

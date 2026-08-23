@@ -285,7 +285,7 @@ class TestCLI:
 
 @pytest.mark.skip(reason="requires radare2 on PATH")
 def test_r2_json_real_elf():
-    """Test r2 JSON 输出 parsing real ELF binary — needs radare2"""
+    """测试真实 ELF 二进制的 r2 JSON 输出解析 — 需要 radare2"""
     import subprocess
     import tempfile
     # 创建 minimal ELF

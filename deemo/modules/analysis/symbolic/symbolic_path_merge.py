@@ -409,7 +409,7 @@ class PathMerger:
         return True
 
     def get_states(self) -> List[SymbolicState]:
-        """返回 current (post-合并) state 池"""
+        """返回当前（合并后）状态池"""
         return self._states
 
     def get_merged_count(self) -> int:
@@ -417,7 +417,7 @@ class PathMerger:
         return self._merged_count
 
     def clear(self) -> None:
-        """重置 池 counter"""
+        """重置状态池与计数器"""
         self._states = []
         self._merged_count = 0
         self.pre_merge_snapshot = None
@@ -732,7 +732,7 @@ class IncrementalMerge:
                 self.dist_mtx[key] = similarity
 
     def get_states(self) -> List[SymbolicState]:
-        """返回 current state 池"""
+        """返回当前状态池"""
         return self._states
 
     def get_merged_count(self) -> int:
@@ -752,7 +752,7 @@ class IncrementalMerge:
 #
 # EAGER: 每次执行步后立即合并 → 最大限度节省内存，但合并计算开销累积
 # LAZY: 仅当 state_count > threshold 时触发 → 避免对小状态池做无用比较
-# ADAPTIVE: 跟踪 state_growth_rate vs 覆盖率_growth_rate：
+# ADAPTIVE: 跟踪 state_growth_rate vs coverage_growth_rate：
 # 当状态膨胀速度 > 新覆盖产生速度时，说明路径爆炸正在发生，触发合并
 #
 # 使用滑动窗口（默认 10 步）计算增长率以避免瞬时尖峰误触发
@@ -781,7 +781,7 @@ class MergePolicyEngine:
         self.growth_window = growth_window
         self.growth_trigger_ratio = growth_trigger_ratio
 
-        # 增长率追踪 —— sliding window
+        # 增长率追踪 — 滑动窗口
         self._state_counts: deque = deque(maxlen=growth_window)
         self._coverage_counts: deque = deque(maxlen=growth_window)
         self._step_counter: int = 0
@@ -998,8 +998,7 @@ class MergeQualityScore:
 # 行为：
 # __init__ 仅保存路径，不加载
 # 属性访问时自动触发 _hydrate() → pickle.load
-# - _hydrate() 用 threading.Lock 保证线程安全（只加载一次）
-# - 加载后直接修改 __class__ 绕过代理（Object.__class__ assignment pattern）
+# 加载后直接修改 __class__ 绕过代理（__class__ 赋值模式）
 
 
 class StateHydration:
@@ -1113,7 +1112,7 @@ class StateHydration:
         return self._is_hydrated
 
     def checkpoint_path(self) -> str:
-        """返回关联的 checkpoint 文件路径"""
+        """返回关联的检查点文件路径"""
         return self._checkpoint_path
 
     def __repr__(self) -> str:

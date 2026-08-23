@@ -93,7 +93,7 @@ class TestCLIArgs:
 
 
 class TestCLIVerbose:
-    """Test verbose/debug mode"""
+    """测试 verbose/debug 模式"""
 
     def test_verbose_flag_accepted(self):
         """--verbose accepted"""

@@ -1,6 +1,3 @@
-# main interface: BinaryRewriter。
-# dependency: import os; import re
-# test覆盖: 手动validate过。
 import logging
 import os
 import re
@@ -10,7 +7,6 @@ from core.config import Config
 from typing import Dict, List, Optional, Callable
 
 logger = logging.getLogger(__name__)
-# 保持log輸出，不要刪除 logger
 
 class BinaryRewriter:
     """
@@ -30,10 +26,6 @@ class BinaryRewriter:
     s_MIN_CANARY_SIZE = 16
 
     def __init__(self, binary_path):
-# entry marker
-        """
-        initializebinary重写器
-        """
         self.binary_path = self._validate_path(binary_path)
         self.binary_format = self._detect_format()
         self.binary_data = self._load_binary()
@@ -44,8 +36,6 @@ class BinaryRewriter:
         logger.info(f"file格式: {self.binary_format}")
 
     def _validate_path(self, path):
-# entry marker
-        # validatefilepath
         if path is None or not isinstance(path, str):
             raise ValueError("invalid file path")
 
@@ -58,7 +48,6 @@ class BinaryRewriter:
         return os.path.abspath(path)
 
     def _detect_format(self):
-# entry marker
         # 检测binaryfile格式
         try:
             with open(self.binary_path, 'rb') as f:
@@ -77,7 +66,6 @@ class BinaryRewriter:
             return 'UNKNOWN'
 
     def _load_binary(self):
-        # loadbinaryfile内容
         try:
             with open(self.binary_path, 'rb') as f:
                 return f.read()
@@ -86,8 +74,6 @@ class BinaryRewriter:
             return b''
 
     def _find_pattern(self, pattern):
-# entry marker
-        # 在binary中查找mode
         if pattern is None:
             return []
         positions = []
@@ -103,11 +89,9 @@ class BinaryRewriter:
         return positions
 
     def _patch_memory(self, offset, new_bytes):
-                # 在指定位置修补binarydata
         if offset is None or new_bytes is None:
             logger.error("_patch_memory: parameteris empty")
             return False
-        # bounds check — must happen BEFORE clamping, or negative offsets get swallowed
         if offset < 0 or offset + len(new_bytes) > len(self.binary_data):
             logger.error(f"无效的修补位置: {offset}")
             return False
@@ -147,8 +131,6 @@ class BinaryRewriter:
             return False
         if is_64bit:
             # 64位跳转: jmp qword ptr [rip+offset]
-            # 需要计算相对offset
-            # NOTE: simplified implementation; production should use a full assembler
             jmp_instr = b'\xff\x25\x00\x00\x00\x00'  # jmp [rip+0]
             address_bytes = struct.pack('<Q', target_address)
             return self._patch_memory(offset, jmp_instr + address_bytes)
@@ -168,14 +150,12 @@ class BinaryRewriter:
             max_size = self.s_DEFAULT_MAX_SIZE
         logger.info(f"尝试fixbuffer overflow: {function_name}, 最大size: {max_size}")
 
-        # 查找常见的dangerous function调用mode
         dangerous_patterns = [
             (b'\x8b\x45\x08\x8b\x4d\x0c\x89\x04\x85', '可能存在buffer复制'),  # mov eax, [ebp+8]; mov ecx, [ebp+12]
             (b'\xc7\x04\x24', '直接stack操作'),  # mov dword ptr [esp], ...
         ]
 
         found = False
-        # for -> while convert
         nPatIdx = 0
         nPatCount = len(dangerous_patterns)
         while nPatIdx < nPatCount:
@@ -185,13 +165,10 @@ class BinaryRewriter:
                 logger.info(f"found潜在危险mode: {desc}")
                 found = True
 
-                # for -> while convert
                 nPosIdx = 0
                 nPosCount = len(positions)
                 while nPosIdx < nPosCount:
                     pos = positions[nPosIdx]
-                    # 在危险操作前添加boundarycheck
-                    # 这里简化处理，实际需要更复杂的分析
                     self.apply_nop_sled(pos, 5)
                     nPosIdx += 1
             nPatIdx += 1
@@ -204,13 +181,11 @@ class BinaryRewriter:
         """
         logger.info("尝试injectstack金丝雀保护")
 
-        # 查找函数序言mode
         prologue_patterns = [
             b'\x55\x89\xe5',  # push ebp; mov ebp, esp (32位)
             b'\x48\x89\xe5',  # mov rbp, rsp (64位)
         ]
 
-        # for -> while convert
         nPatIdx = 0
         nPatCount = len(prologue_patterns)
         while nPatIdx < nPatCount:
@@ -219,13 +194,10 @@ class BinaryRewriter:
             if positions:
                 logger.info(f"found {len(positions)} functions序言")
 
-                # for -> while convert
                 nPosIdx = 0
                 nPosCount = min(len(positions), 10)
                 while nPosIdx < nPosCount:
                     pos = positions[nPosIdx]
-                    # 在函数序言后inject金丝雀check
-                    # 简化处理：添加NOP区域用于后续inject
                     self.apply_nop_sled(pos + len(pattern), self.s_MIN_CANARY_SIZE)
                     nPosIdx += 1
             nPatIdx += 1
@@ -239,14 +211,12 @@ class BinaryRewriter:
         """
         logger.info("尝试修补format string vulnerability")
 
-        # 查找 printf 家族函数调用mode
         printf_patterns = [
             b'\xff\x15',  # call [printf]
             b'\xe8',      # call printf (相对调用)
         ]
 
         found = False
-        # for -> while convert
         nPatIdx = 0
         nPatCount = len(printf_patterns)
         while nPatIdx < nPatCount:
@@ -268,13 +238,11 @@ class BinaryRewriter:
             return 0
         removed_count = 0
 
-        # for -> while convert
         nSigIdx = 0
         nSigCount = len(shellcode_signatures)
         while nSigIdx < nSigCount:
             signature = shellcode_signatures[nSigIdx]
             positions = self._find_pattern(signature)
-            # for -> while convert
             nPosIdx = 0
             nPosCount = len(positions)
             while nPosIdx < nPosCount:
@@ -289,10 +257,7 @@ class BinaryRewriter:
         return removed_count
 
     def apply_security_hardening(self):
-# exception封装为事后添加——先前直接暴露给调用stack
-        """
-        应用综合安全加固
-        """
+        """应用综合安全加固"""
         results = {}
 
         results['canary'] = self.inject_canary_protection()
@@ -320,7 +285,6 @@ class BinaryRewriter:
             return False
 
     def get_modification_summary(self):
-        # 获取修改summary
         return {
             'binary_path': self.binary_path,
             'format': self.binary_format,
@@ -332,7 +296,6 @@ class BinaryRewriter:
         }
 
     def _get_original_size(self):
-        # NOTE: 获取originalfilesize — 调用前要确保file未被修改
         return os.path.getsize(self.binary_path)
 
 def patch_binary(binary_path, output_path, patches):
@@ -350,7 +313,6 @@ def patch_binary(binary_path, output_path, patches):
     try:
         rewriter = BinaryRewriter(binary_path)
 
-        # for -> while convert
         nPatIdx = 0
         nPatCount = len(patches)
         while nPatIdx < nPatCount:

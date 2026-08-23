@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-# Knowledge 图 for vulnerability analysis.
-# High-level analysis: centrality computation, differential comparison,
-# D3.js/Graphviz/GEXF visualization, 图 merging.
-# Low-level 图 DB operations extracted to src/图/graph_ops.py.
-# VulnKnowledgeGraph继承BaseGraphOps — 模块级向后兼容.
+# 漏洞知识图: 高层分析（中心性/差异对比/可视化/合并）
+# 底层图DB操作抽取到 src/graph/graph_ops.py
+# VulnKnowledgeGraph继承BaseGraphOps保持向后兼容
 
 import logging as _logging
 import json as _json
@@ -11,7 +9,7 @@ import os as _os
 from collections import defaultdict as _defaultdict
 from typing import Dict, List, Optional, Any, Tuple, Set, Union
 
-# Low-level 图 DB operations — re-exported for backward compatibility
+# 底层图DB操作——向后兼容重导出
 from .src.graph.graph_ops import (
     ENTITY_TYPES,
     RELATION_TYPES,
@@ -25,13 +23,10 @@ _dbg = _logging.getLogger(__name__)
 
 
 class VulnKnowledgeGraph(BaseGraphOps):
-    """Vulnerability knowledge graph with analysis, visualization, and export.
+    """漏洞知识图——分析/可视化/导出。
 
-    Inherits CRUD, traversal, query, subgraph, statistics, cleanup,
-    and serialization from BaseGraphOps.
-
-    Adds centrality analysis, differential comparison, D3.js/Graphviz/GEXF
-    export, and graph merging.
+    继承BaseGraphOps的CRUD/遍历/查询/子图/统计/序列化，
+    新增中心性分析、差异对比、D3/Graphviz/GEXF导出、图合并。
     """
 
     __slots__ = ()
@@ -39,26 +34,23 @@ class VulnKnowledgeGraph(BaseGraphOps):
     def __init__(self, name="vuln_kg"):
         super().__init__(name)
 
-    # Centrality analysis — identify the most critical hub nodes
-    # in a vulnerability knowledge graph.
-    # 度中心性: C_D(v) = deg(v) / (N-1), 度量局部影响力
-    # 介数中心性: 经过节点的最短路径比例,
-    # Brandes算法(unweighted), measures bridging capacity
-    # For CVE/vulnerability graphs, high-centrality nodes are typically
-    # critical vulnerabilities, core binaries, or widely-depended-on libraries.
+    # 中心性分析——识别知识图中关键枢纽节点
+    # 度中心性: C_D(v) = deg(v)/(N-1)，度量局部影响力
+    # 介数中心性: 经过节点的最短路径比例(Brandes算法无权)
+    # CVE图中介数高者通常是核心漏洞或广泛依赖的库
 
     def find_central_nodes(self, top_n: int = 10, centrality: str = "degree") -> List[Dict[str, Any]]:
-        """Compute centrality scores and return the top-N most central nodes.
+        """计算中心性分数，返回前N个核心节点。
 
-        centrality modes:
-          - "degree": degree centrality (normalized by N-1)
-          - "betweenness": betweenness centrality (Brandes algorithm, unweighted)
-          - "all": both degree and betweenness scores
+        centrality模式:
+          - "degree": 度中心性（归一化）
+          - "betweenness": 介数中心性（Brandes算法无权）
+          - "all": 同时返回度和介数
         """
         n = max(len(self.m_entities), 1)
         entities = list(self.m_entities.values())
 
-        # ---- Degree centrality: C_D(v) = deg(v) / (n-1) ----
+        # ---- 度中心性: C_D(v) = deg(v) / (n-1) ----
         if centrality in ("degree", "all"):
             degree_scores: Dict[str, float] = {}
             ei = 0
@@ -69,14 +61,14 @@ class VulnKnowledgeGraph(BaseGraphOps):
                 degree_scores[eid] = (out_d + in_d) / (n - 1) if n > 1 else 0.0
                 ei += 1
 
-# Betweenness centrality: Brandes算法每节点BFS
+# 介数中心性: Brandes算法每节点BFS
         if centrality in ("betweenness", "all"):
-            # O(V*(V+E)) — warn on large graphs
+            # O(V*(V+E))——大图警告
             betweenness: Dict[str, float] = {e.m_id: 0.0 for e in entities}
             if n > 5000:
                 _dbg.warning("Betweenness centrality may be slow for graphs with >5000 nodes (%d nodes)", n)
 
-            # Build forward adjacency (src -> [dst_ids])
+            # 构建前向邻接表
             fwd_adj: Dict[str, List[str]] = _defaultdict(list)
             rels = list(self.m_relations.values())
             ri = 0
@@ -89,7 +81,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
             si = 0
             while si < len(eids_list):
                 s = eids_list[si]
-                # BFS from s
+                # BFS从s出发
                 stack: List[str] = []
                 pred: Dict[str, List[str]] = {v: [] for v in eids_list}
                 sigma: Dict[str, float] = {v: 0.0 for v in eids_list}
@@ -116,7 +108,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
                         wj += 1
 
                 delta: Dict[str, float] = {v: 0.0 for v in eids_list}
-                # Process 栈 in reverse (leaf to root)
+                # 逆序处理栈（叶到根）
                 sk = len(stack) - 1
                 while sk >= 0:
                     w = stack[sk]
@@ -132,7 +124,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
                         betweenness[w] += delta[w]
                 si += 1
 
-            # Normalize for directed graphs: divide by (n-1)*(n-2)
+            # 有向图归一化: 除以(n-1)*(n-2)
             norm_factor = (n - 1) * (n - 2) if n > 2 else 1.0
             if norm_factor > 0:
                 bi = 0
@@ -141,7 +133,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
                     betweenness[bkeys[bi]] /= norm_factor
                     bi += 1
 
-# Assemble results
+# 汇总结果
         result: List[Dict[str, Any]] = []
         ei = 0
         while ei < len(entities):
@@ -158,7 +150,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
             result.append(entry)
             ei += 1
 
-        # Sort by the primary centrality metric
+        # 按主中心性指标排序
         if centrality == "betweenness":
             result.sort(key=lambda x: x.get("betweenness_centrality", 0), reverse=True)
         elif centrality == "all":
@@ -168,17 +160,14 @@ class VulnKnowledgeGraph(BaseGraphOps):
 
         return result[:top_n]
 
-    # Graph differential comparison — for vulnerability data version tracking.
-    # Returns added/removed/modified entities and relations, enabling
-    # audit trails and regression detection across graph snapshots.
+    # 图差异对比——用于漏洞数据版本追踪
+    # 返回新增/删除/修改的实体和关系，支持审计和回归检测
 
     def diff(self, other: 'VulnKnowledgeGraph') -> Dict[str, Any]:
-        """Compare this graph (baseline) with another graph (incoming).
+        """对比本图(基线)与另一图(新版本)。
 
-        Returns a dict with keys: added_entities, removed_entities, modified_entities,
-        added_relations, removed_relations, modified_relations.
-        An entity is 'modified' if its type, properties, or labels changed.
-        A relation is 'modified' if its type, weight, source, target, or properties changed.
+        返回含 added/removed/modified 实体和关系的字典。
+        实体类型/属性/标签变化即为modified；关系类型/权重/源/目标/属性变化同理。
         """
         changes: Dict[str, Any] = {
             "added_entities": [],
@@ -189,11 +178,11 @@ class VulnKnowledgeGraph(BaseGraphOps):
             "modified_relations": [],
         }
 
-# Entity comparison
+# 实体对比
         my_eids = set(self.m_entities.keys())
         other_eids = set(other.m_entities.keys())
 
-        # Added (in other, not in self)
+        # 新增(在other中，不在self中)
         add_eids = other_eids - my_eids
         aid = 0
         add_list = sorted(add_eids)
@@ -201,7 +190,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
             changes["added_entities"].append(other.m_entities[add_list[aid]].to_dict())
             aid += 1
 
-        # Removed (in self, not in other)
+        # 删除(在self中，不在other中)
         del_eids = my_eids - other_eids
         didx = 0
         del_list = sorted(del_eids)
@@ -209,7 +198,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
             changes["removed_entities"].append(self.m_entities[del_list[didx]].to_dict())
             didx += 1
 
-        # Modified (present in both, content differs)
+        # 修改(双方都有但内容不同)
         common_eids = my_eids & other_eids
         eids_sorted = sorted(common_eids)
         ei = 0
@@ -249,7 +238,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
                 changes["modified_entities"].append(mod_entry)
             ei += 1
 
-# Relation comparison
+# 关系对比
         my_rids = set(self.m_relations.keys())
         other_rids = set(other.m_relations.keys())
 
@@ -327,10 +316,10 @@ class VulnKnowledgeGraph(BaseGraphOps):
         )
         return changes
 
-# Visualization helpers
+# 可视化辅助
 
     def _type_color_map(self):
-        """Color mapping for entity types (D3-friendly palette)."""
+        """实体类型→颜色映射(D3友好调色板)。"""
         cmap = {
             "VULNERABILITY": "#e74c3c",
             "CVE": "#c0392b",
@@ -353,7 +342,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
         return cmap
 
     def _type_size_map(self):
-        """Size mapping for entity types in D3 visualization."""
+        """实体类型→大小映射(D3可视化用)。"""
         smap = {
             "VULNERABILITY": 12,
             "CVE": 14,
@@ -369,10 +358,10 @@ class VulnKnowledgeGraph(BaseGraphOps):
         }
         return smap
 
-# D3.js export
+# D3.js导出
 
     def to_d3_json(self, output_path=None) -> str:
-        """Export graph to D3.js force-directed layout JSON format."""
+        """导出D3.js力导向布局JSON。"""
         cmap = self._type_color_map()
         smap = self._type_size_map()
 
@@ -428,7 +417,7 @@ class VulnKnowledgeGraph(BaseGraphOps):
         return result
 
     def to_d3_html(self, output_path=None) -> str:
-        """Generate a self-contained D3.js visualization HTML page."""
+        """生成自包含的D3.js可视化HTML页面。"""
         d3_json = self.to_d3_json()
 
         html = r"""<!DOCTYPE html>
@@ -527,10 +516,10 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
 
         return html
 
-# Graphviz export
+# Graphviz导出
 
     def to_dot(self, output_path=None) -> str:
-        """Export graph to Graphviz DOT format."""
+        """导出Graphviz DOT格式。"""
         lines: List[str] = []
         lines.append(f"digraph {self.m_name} {{")
         lines.append('    rankdir=LR;')
@@ -540,7 +529,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
 
         cmap = self._type_color_map()
 
-        # Nodes
+        # 节点
         ent_list = list(self.m_entities.values())
         ei = 0
         while ei < len(ent_list):
@@ -553,7 +542,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
 
         lines.append('')
 
-        # Edges
+        # 边
         rel_list = list(self.m_relations.values())
         ri = 0
         while ri < len(rel_list):
@@ -574,15 +563,15 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
 
         return dot_content
 
-# GEXF export
+# GEXF导出
 
     def save_gexf(self, filepath: str):
-        """Export to GEXF (Graph Exchange XML Format), compatible with Gephi."""
+        """导出GEXF格式(Gephi兼容)。"""
         import xml.etree.ElementTree as _ET
         root = _ET.Element("gexf", xmlns="http://gexf.net/1.3", version="1.3")
         graph_elem = _ET.SubElement(root, "graph", mode="static", defaultedgetype="directed")
 
-        # Attributes
+        # 属性
         attrs_node = _ET.SubElement(graph_elem, "attributes", {"class": "node", "mode": "static"})
         _ET.SubElement(attrs_node, "attribute", {"id": "type", "title": "Type", "type": "string"})
         _ET.SubElement(attrs_node, "attribute", {"id": "labels", "title": "Labels", "type": "string"})
@@ -591,7 +580,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
         _ET.SubElement(attrs_edge, "attribute", {"id": "reltype", "title": "RelationType", "type": "string"})
         _ET.SubElement(attrs_edge, "attribute", {"id": "weight", "title": "Weight", "type": "float"})
 
-        # Nodes
+        # 节点
         nodes_elem = _ET.SubElement(graph_elem, "nodes")
         ent_list = list(self.m_entities.values())
         ei = 0
@@ -603,7 +592,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
             _ET.SubElement(attvals, "attvalue", {"for": "labels", "value": ",".join(ent.m_labels)})
             ei += 1
 
-        # Edges
+        # 边
         edges_elem = _ET.SubElement(graph_elem, "edges")
         rel_list = list(self.m_relations.values())
         ri = 0
@@ -626,14 +615,14 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
         tree.write(filepath, encoding="utf-8", xml_declaration=True)
         _dbg.info("GEXF exported to %s", filepath)
 
-# Merge
+# 合并
 
     def merge(self, other: 'VulnKnowledgeGraph', conflict_strategy="keep_first"):
-        """Merge another knowledge graph into this one.
+        """合并另一知识图到当前图。
 
         conflict_strategy:
-          - "keep_first": skip entities/relations already present (default)
-          - "update": overwrite existing with incoming data
+          - "keep_first": 已存在的实体/关系跳过(默认)
+          - "update": 用新数据覆盖已有数据
         """
         other_ents = other.get_all_entities()
         oi = 0
@@ -664,7 +653,7 @@ d3.select("#legend").html("<b>Legend</b><br>" + legendHtml);
         _dbg.info("Merged %d entities and %d relations", len(other_ents), len(other_rels))
 
 
-# Convenience factories
+# 便捷工厂函数
 
 def create_knowledge_graph(name="vuln_kg") -> VulnKnowledgeGraph:
     return VulnKnowledgeGraph(name)

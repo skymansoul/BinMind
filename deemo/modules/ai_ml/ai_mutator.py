@@ -13,7 +13,6 @@ _mlog = _logging.getLogger(__name__)
 
 
 def _insert_sort(items, key_fn, reverse=False):
-    """Stable insertion sort; O(n^2) worst-case but near-linear on partially sorted input."""
     if items is None or len(items) == 0:
         return []
     arr = list(items)
@@ -74,7 +73,6 @@ class MutationResult:
         self.m_seed = seed if seed else ''
 
     def unique_count_mt(self):
-        """Count of unique mutated outputs after deduplication."""
         seen = set()
         dwIdx = 0
         while dwIdx < len(self.m_muts):
@@ -100,9 +98,7 @@ class MutationResult:
 
 
 class InputGrammar:
-    """Learns word-level tokens, byte 2-gram frequencies, and 1st-order Markov byte transitions.
-    字节 n-gram 补偿 word-only 替换覆盖率不足；Markov 链保持语料级字节邻接性；
-    per-offset Shannon 熵引导高价值变异位置。"""
+    # 字节n-gram补偿word-only替换覆盖率不足; Markov链保持语料级字节邻接性; per-offset Shannon熵引导高价值变异位置
 
     def __init__(self, max_tokens=800):
         self._tokens = []
@@ -153,7 +149,7 @@ class InputGrammar:
             dwIdx += 1
         sorted_items = _insert_sort(freq.items(), key_fn=lambda x: x[1], reverse=True)
         self._tokens = [t for t, _ in sorted_items[:self._max_n]]
-# - 字节位置熵图：统计每个偏移位置的字节分布
+        # 字节位置熵图: 统计每个偏移的字节分布
         byte_positions = _defaultdict(lambda: _defaultdict(int))
         dwIdx = 0
         while dwIdx < n_corpus and dwIdx < 200:
@@ -171,7 +167,7 @@ class InputGrammar:
             # 对齐长度用于后续变异定位
             if len(data) > self._max_align:
                 self._max_align = len(data)
-            # bigram + Markov
+            # bigram + Markov转移
             j = 0
             while j < len(data) - 1:
                 pair = data[j:j+2]
@@ -179,7 +175,7 @@ class InputGrammar:
                 self._markov[data[j]][data[j+1]] += 1
                 j += 1
             dwIdx += 1
-        # 为每个偏移计算 Shannon 熵
+        # 为每个偏移计算Shannon熵
         self._byte_entropy.clear()
         for bpos, byte_counts in byte_positions.items():
             total = sum(byte_counts.values())
@@ -199,7 +195,7 @@ class InputGrammar:
         return self._ready
 
     def sample_markov_byte(self, prev_byte: int) -> int:
-        """给定前一个字节，从条件分布中采样后继字节；无转移数据时返回随机值。"""
+        # 给定前字节从条件分布采样后继字节; 无转移数据时返回随机值
         transitions = self._markov.get(prev_byte)
         if not transitions:
             return _rnd.randint(0, 255)
@@ -213,8 +209,7 @@ class InputGrammar:
         return _rnd.choice(list(transitions.keys()))
 
     def entropy_biased_position(self, data_len: int) -> int:
-        """返回偏向高熵偏移的变异位置；熵未知时退化为均匀随机。
-            高熵字节 = corpus 中该位置字节值变化大, 更可能是数据字段而非固定头/尾。"""
+        # 高熵偏移=corpus中该位置字节值变化大, 更可能是数据字段而非固定头/尾
         if not self._byte_entropy or data_len <= 0:
             return _rnd.randint(0, max(data_len - 1, 0))
         weighted = []
@@ -233,7 +228,7 @@ class InputGrammar:
         return weighted[-1][0]
 
     def max_entropy_offset(self) -> int:
-        """返回熵最高的字节偏移；用于需要高价值变异位置的场景。"""
+        # 返回熵最高的字节偏移, 用于高价值变异定位
         if not self._byte_entropy:
             return 0
         best_pos = 0
@@ -276,10 +271,7 @@ _ucb_explore_weight = 0.8
 
 
 def _pick_strat_mt():
-    """优先使用 UCB1 选择变异策略，回退到加权随机分布。
-    UCB = exploitation(avg_score) + exploration(sqrt(2 * log(total_pulls) / arm_pulls))。
-    平衡"已验证的好策略"与"试得不够的冷门策略"。
-    引入微量随机抖动打破平局，避免冷启动时总是选中第一个策略。"""
+    # UCB1选变异策略, 回退加权随机; 探索项含随机抖动打破平局
     global _ucb_mode
     if _ucb_mode:
         ucb_vals = []
@@ -290,7 +282,7 @@ def _pick_strat_mt():
             )
             jitter = _rnd.random() * 0.001
             ucb_vals.append((avg + explore + jitter, s))
-        # 取 UCB 最高的臂
+        # 取UCB最高的臂
         best_val = -1.0
         best_strat = 'bit_flip'
         for val, s in ucb_vals:
@@ -298,7 +290,7 @@ def _pick_strat_mt():
                 best_val = val
                 best_strat = s
         return best_strat
-    # 回退：经典加权随机
+    # 回退: 加权随机
     r = _rnd.random() * _cum
     ti = 0
     while ti < len(_CUM_TABLE):
@@ -310,8 +302,7 @@ def _pick_strat_mt():
 
 
 def _adapt_weights_mt(success_counts: dict):
-    """在线调整策略权重：成功产生有效输出的策略获得 bonus，失败策略衰减。
-    同时更新 UCB 状态表以反映成功/失败反馈。"""
+    # 成功策略获bonus, 失败策略衰减; 同步更新UCB状态表
     global _CUM_TABLE, _cum, _ucb_total
     alpha = 0.15
     for strat in list(_STRAT_W.keys()):
@@ -323,7 +314,7 @@ def _adapt_weights_mt(success_counts: dict):
         success_rate = sc / total
         _STRAT_W[strat] = _STRAT_W[strat] * (1 - alpha) + success_rate * alpha
         _STRAT_W[strat] = min(max(_STRAT_W[strat], 0.02), 0.40)
-        # UCB: 成功+1得分，失败-0.3得分，拉绳+1
+        # UCB: 成功+1得分, 失败-0.3得分, 拉绳+1
         try:
             _ucb_score[strat] += sc * 1.0 - fc * 0.3
             _ucb_pulls[strat] += total
@@ -347,9 +338,7 @@ _MINHASH_CACHE_LIMIT = 128
 
 
 def _minhash_sig(data: bytes, n_seeds: int = _MINHASH_SEEDS) -> tuple:
-    """计算输入数据的 MinHash 签名。
-    使用 n_seeds 个独立哈希函数，对每个 shingle（2-gram 字节对）取最小哈希值。
-    签名是 n_seeds 个整数的元组。"""
+    # n_seeds个独立哈希函数, 对每个2-gram字节shingle取最小哈希值
     if not data or len(data) < 2:
         return tuple([0] * n_seeds)
     # 预置哈希种子
@@ -358,7 +347,7 @@ def _minhash_sig(data: bytes, n_seeds: int = _MINHASH_SEEDS) -> tuple:
     seeds = [_rnd.randint(1, _MINHASH_MOD - 1) for _ in range(n_seeds)]
     _rnd.setstate(rnd_state)
     mins = [_MINHASH_MOD + 1] * n_seeds
-    # 字节 2-gram shingles
+    # 字节2-gram shingles
     dlen = len(data)
     pos = 0
     while pos < dlen - 1:
@@ -374,7 +363,6 @@ def _minhash_sig(data: bytes, n_seeds: int = _MINHASH_SEEDS) -> tuple:
 
 
 def _minhash_jaccard(sig_a: tuple, sig_b: tuple, n_seeds: int = _MINHASH_SEEDS) -> float:
-    """通过 MinHash 签名估算 Jaccard 相似度。"""
     if len(sig_a) != len(sig_b):
         return 0.0
     matches = 0
@@ -387,9 +375,7 @@ def _minhash_jaccard(sig_a: tuple, sig_b: tuple, n_seeds: int = _MINHASH_SEEDS) 
 
 
 def _seed_is_novel(data: bytes, threshold: float = 0.82) -> bool:
-    """如果种子与缓存中已有种子的 Jaccard 估计值都低于阈值，则是新种子。
-    阈值 0.82 意味着相似度 >= 82% 被认为是重复种子, 变异收益极低。
-    空/过短数据无法计算有意义的 shingle, 视为新种子，由上层 fingerprint 集合去重。"""
+    # 相似度>=82%视为重复种子; 空/过短数据由上层fingerprint集合去重
     if not data or len(data) < 2:
         return True
     s_hash = _hashlib.md5(data).hexdigest()
@@ -410,7 +396,6 @@ def _seed_is_novel(data: bytes, threshold: float = 0.82) -> bool:
 
 
 def _register_seed_hash(data: bytes):
-    """将种子加入签名缓存，跳过签名计算直接使用。"""
     if not data:
         return
     s_hash = _hashlib.md5(data).hexdigest()
@@ -443,7 +428,7 @@ class SemanticPreservingMutator:
             buf = bytearray(data_bytes)
             try:
                 if strat == 'bit_flip' and dlen > 0:
-                    # 熵引导：高熵位置更可能暴露解析差异
+                    # 熵引导: 高熵位置更可能暴露解析差异
                     bp = self._gram.entropy_biased_position(dlen)
                     bit = _rnd.randint(0, 7)
                     buf[bp] ^= (1 << bit)
@@ -479,7 +464,7 @@ class SemanticPreservingMutator:
                     segment = buf[p1:p2]
                     buf[p1:p2] = bytes(reversed(segment))
                 elif strat == 'delete' and dlen > 1:
-                    # 低熵偏移删除更安全, 不破坏关键结构
+                    # 低熵偏移删除更安全
                     lo_ent_positions = []
                     p = 0
                     while p < dlen:
@@ -524,8 +509,7 @@ class SemanticPreservingMutator:
 
 
 class AIMutator:
-    """Top-level orchestrator: learn corpus grammar, then generate weighted mutations.
-    MinHash 种子去重, 相似度 >=82% 的种子直接跳过变异，避免冗余算力消耗。"""
+    # MinHash种子去重: 相似度>=82%的种子直接跳过变异
 
     def __init__(self):
         self._gram = InputGrammar()
@@ -560,7 +544,7 @@ class AIMutator:
             sh = _hashlib.md5(raw).hexdigest()[:8]
         except Exception:
             pass
-# - MinHash 去重检查
+        # MinHash去重检查
         if sh in self._mutation_fingerprints:
             _mlog.debug(f"MinHash: duplicate seed {sh} skipped")
             return MutationResult(ok=False, muts=[], seed=sh)
@@ -570,7 +554,7 @@ class AIMutator:
         self._mutation_fingerprints.add(sh)
         try:
             m = self._mut.mutate_mt(seed, count)
-            # 将变异输出也注册，防止后续循环变异产生重复
+            # 变异输出注册防止后续循环变异产生重复
             for mut_entry in m:
                 _register_seed_hash(mut_entry.m_mut)
             return MutationResult(ok=True, muts=m, total=len(m), seed=sh)

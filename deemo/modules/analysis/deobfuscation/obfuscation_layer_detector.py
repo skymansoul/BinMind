@@ -1,33 +1,6 @@
 # 四尺度结构熵: 块级(1)/函数级(2)/模块级(3)/全局(4) CFG 变形检测
 # 层级指纹叠加: 多混淆技术的熵特征线性叠加, 逐个剥离识别
 
-"""多尺度结构熵混淆层检测 - 识别"哪些"混淆技术被应用
-
-现有混淆检测 回答"是否存在混淆"
-不回答"哪些技术被同时使用"-而多技术层叠是当前恶意软件的主流
-
-本模块通过在不同 CFG 粒度上测量结构熵的异常偏差来识别各层技术:
-  尺度 1 (基本块级): 块内指令熵异常 -> 指令替换/MBA
-  尺度 2 (函数级): CFG 边熵 + 出度异常 -> 控制流扁平化/不透明谓词
-  尺度 3 (模块级): 函数间调用图熵异常 -> 虚拟化/打包
-  尺度 4 (全局级): 段熵异常 -> 整体打包/加密
-
-每混淆技术在四个尺度上产生特定的熵偏差向量
-观测到的偏差向量与已知技术签名做余弦匹配 -> 识别+置信度
-
-技术签名来自 OLLVM/Tigress/Obfuscator-LLVM 的 6 类混淆:
-  FLA (控制流扁平化), SUB (指令替换), BCF (虚假控制流),
-  SPLIT (基本块分裂), VIRT (虚拟化), MBA (混合布尔算术)
-
-层级叠加的熵效应近似线性-可以从总偏差中逐个减去已识别技术的签名
-(残差分析) 以识别底层技术
-
-与现有方法的关系:
-- GNN: 单技术二分类 -> 本模块: 多技术识别+置信度
-- 层叠分析: 统计研究 -> 本模块: 可操作的检测工具
-- pattern-based: 精确匹配 -> 本模块: 统计偏差+残差剥离
-"""
-
 from __future__ import annotations
 
 import math
@@ -60,7 +33,6 @@ _OBFUSCATION_SIGNATURES: Dict[str, List[float]] = {
 
 @dataclass
 class LayerDetection:
-    """单个混淆技术层的检测结果"""
     technique: str           # SUB | MBA | FLA | BCF | SPLIT | VIRT | PACK
     confidence: float        # [0,1]
     evidence_scale: str      # 最强信号出现的尺度
@@ -69,7 +41,6 @@ class LayerDetection:
 
 @dataclass
 class ObfuscationLayerReport:
-    """混淆层检测的完整报告"""
     detected_layers: List[LayerDetection]
     # 四尺度原始熵偏差
     entropy_deviations: List[float]
@@ -85,7 +56,6 @@ def _block_entropy(
     instructions: List[str],
     semantic_class_map: Dict[str, int],
 ) -> float:
-    """基本块的指令语义类熵"""
     if not instructions:
         return 0.0
     counts: Dict[int, int] = defaultdict(int)
@@ -107,7 +77,6 @@ def _block_entropy(
 def _cfg_edge_entropy(
     edges: List[Tuple[int, int, str]],
 ) -> float:
-    """CFG 边类型分布的熵-检测扁平化的均匀出度模式"""
     if not edges:
         return 0.0
     etype_counts: Dict[str, int] = defaultdict(int)
@@ -124,19 +93,7 @@ def _cfg_edge_entropy(
 
 
 class ObfuscationLayerDetector:
-    """多尺度结构熵混淆层检测器
 
-    用法:
-    detector = ObfuscationLayerDetector()
-    report = detector.detect(
-        blocks={0: ['mov eax,1', ...], ...},
-        cfg_edges=[(0,1,'fallthrough'), ...],
-        call_graph_edges=[('main','foo'), ...],
-        global_entropy=6.5,
-    )
-    """
-
-    # 语义类映射-简化为 8 类 (与 semantic_graph_hash 一致)
     _CLASS_MAP = {
         'mov': 0, 'lea': 0, 'push': 0, 'pop': 0,
         'add': 1, 'sub': 1, 'mul': 1, 'div': 1, 'inc': 1, 'dec': 1,
@@ -165,8 +122,6 @@ class ObfuscationLayerDetector:
         call_graph_edges: Optional[List[Tuple[str, str]]] = None,
         global_byte_entropy: Optional[float] = None,
     ) -> ObfuscationLayerReport:
-        """执行多尺度熵分析和混淆层检测"""
-        # 1. 提取四尺度熵偏差
         deviations = self._extract_deviations(
             blocks, cfg_edges, call_graph_edges, global_byte_entropy,
         )
@@ -191,7 +146,6 @@ class ObfuscationLayerDetector:
         call_graph_edges: Optional[List[Tuple[str, str]]],
         global_byte_entropy: Optional[float],
     ) -> List[float]:
-        """提取四尺度熵偏差向量"""
         bl = self._BASELINE_ENTROPY
 
         # 尺度 1: 块级熵-所有块的指令熵均值偏差
@@ -224,7 +178,6 @@ class ObfuscationLayerDetector:
         return [dev_block, dev_func, dev_module, dev_global]
 
     def _match_signatures(self, deviations: List[float]) -> Dict[str, float]:
-        """计算观测偏差与每技术签名的余弦相似度"""
         scores: Dict[str, float] = {}
         dev_norm = math.sqrt(sum(d * d for d in deviations))
         if dev_norm < 1e-9:
@@ -246,7 +199,6 @@ class ObfuscationLayerDetector:
         deviations: List[float],
         scores: Dict[str, float],
     ) -> List[LayerDetection]:
-        """残差剥离-逐个移除已检测技术, 识别底层技术"""
         layers: List[LayerDetection] = []
         residual = list(deviations)
         self._residual: List[List[float]] = [list(deviations)]

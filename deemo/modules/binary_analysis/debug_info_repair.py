@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""
-DWARF/PDB Debug Info Auto-Repair and Completion Module
-
-Features:
-  1. DWARF .debug_info section parsing and structural validation (version 4/5)
-  2. PDB stream parsing (MSF v7 format) for Windows PE binaries
-  3. Missing function name recovery via assembly signature matching
-  4. Type information inference from binary code patterns and register usage
-  5. Inline function boundary recovery from DWARF .debug_line / PDB inlinee streams
-  6. Variable location repair using dataflow-based liveness analysis
-  7. Source line info reconstruction from disassembly control-flow structure
-  8. Stripped binary debug info augmentation (symbol name injection, type synthesis)
-
-Core techniques:
-  - DWARF .debug_info/.debug_abbrev CU-level structural parsing (LEB128 tags/attrs)
-  - PDB MSF SuperBlock -> Root Directory -> Named Stream traversal
-  - Assembly opcode n-gram hash for function signature matching
-  - Register-width / memory-access-size / calling-convention heuristics
-  - SSA live-range analysis + DW_AT_location expression synthesis
-  - Basic-block boundary alignment + prologue/epilogue detection for line mapping
-  - Import-table + string-ref based symbol seeding for stripped binaries
-"""
-
 import logging
 import struct
 import re
@@ -145,11 +122,6 @@ def _opcode_hash(data: bytes, start: int, length: int, n: int = 4) -> str:
 
 
 class DebugInfoRepairAnalyzer:
-    """Binary debug info auto-repair and completion analyzer.
-
-    Parses DWARF/PDB data, recovers missing symbols, synthesizes types,
-    repairs variable locations, and reconstructs source-line mappings.
-    """
 
     _PROLOGUES = [b'\x55\x48\x89\xe5', b'\x48\x83\xec', b'\x40\x55', b'\x48\x89\x5c\x24']
     _EPILOGUES = [b'\x5d\xc3', b'\x48\x89\xec\x5d\xc3', b'\xc9\xc3']
@@ -459,10 +431,6 @@ class DebugInfoRepairAnalyzer:
 
     def analyze(self, binary_path: str = None,
                 known_functions: Dict[int, str] = None) -> Dict[str, Any]:
-        """Run the full debug-info repair and completion pipeline.
-
-        Returns Dict with repair statistics and detailed result lists.
-        """
         if binary_path and binary_path != self.binary_path:
             self.binary_path = binary_path
             self._load()

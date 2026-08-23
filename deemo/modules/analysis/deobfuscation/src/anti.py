@@ -1,24 +1,13 @@
-# 反分析 反虚拟机 detection
-"""Detection bypass generation for 反调试 反虚拟机 techniques"""
+# 反分析 反虚拟机检测
 
 import logging
 from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
-# AntiAnalysis
-
 
 class AntiAnalysis:
-    """Detect and bypass anti-debug/anti-analysis techniques
 
-    Anti-analysis detection is O(n) single-pass over instruction
-    strings - pattern matching covers 90%+ common techniques found
-    in the wild. Full taint analysis is precise but requires
-    a working emulation environment rarely available for malware
-    """
-
-    # Anti-debug patterns
     ANTI_DEBUG_PATTERNS: Dict[str, List[str]] = {
         "ptrace": [
             "ptrace",
@@ -62,7 +51,6 @@ class AntiAnalysis:
     def detect_ptrace(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测基于 ptrace 的反调试, 返回检测结果列表。"""
         findings: List[Dict[str, Any]] = []
         combined = " ".join(strings_or_code)
 
@@ -80,7 +68,6 @@ class AntiAnalysis:
     def detect_proc_checks(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测 /proc/self/status TracerPid 检查, 返回检测结果列表。"""
         findings: List[Dict[str, Any]] = []
         combined = " ".join(strings_or_code)
 
@@ -107,7 +94,6 @@ class AntiAnalysis:
     def detect_timing_checks(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测基于时序的反调试检查 (rdtsc、时间差)。"""
         findings: List[Dict[str, Any]] = []
         combined = " ".join(strings_or_code).lower()
 
@@ -132,7 +118,6 @@ class AntiAnalysis:
     def detect_env_checks(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测基于 LD_PRELOAD 环境变量的反分析。"""
         findings: List[Dict[str, Any]] = []
         combined = " ".join(strings_or_code)
 
@@ -151,7 +136,6 @@ class AntiAnalysis:
     def detect_debugger_check(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测 Windows 调试器存在性检查。"""
         findings: List[Dict[str, Any]] = []
         combined = " ".join(strings_or_code).lower()
 
@@ -172,7 +156,6 @@ class AntiAnalysis:
     def analyze(
         self, strings_or_code: List[str]
     ) -> Dict[str, Any]:
-        """完整反分析检测, 返回含检测结果与建议的字典。"""
         all_findings: List[Dict[str, Any]] = []
         all_findings.extend(self.detect_ptrace(strings_or_code))
         all_findings.extend(self.detect_proc_checks(strings_or_code))
@@ -192,7 +175,6 @@ class AntiAnalysis:
     def generate_bypass_recommendations(
         self, detected: List[Dict[str, Any]]
     ) -> List[str]:
-        """为检测到的技术构造绕过建议, 返回建议字符串列表。"""
         seen: set = set()
         recommendations: List[str] = []
         for finding in detected:
@@ -203,33 +185,16 @@ class AntiAnalysis:
         return recommendations
 
     def _check_ptrace_fallback(self, code: List[str]) -> bool:
-        """用系统调用号匹配做 ptrace 检测回退。
-
-        供字符串匹配在重度混淆二进制上产生漏报时使用;
-        code 为原始反汇编行列表, 出现 ptrace 系统调用
-        (x86_64 的 101 号) 时返回 True。
-        """
         for line in code:
             if "101" in line and ("syscall" in line.lower() or "int 0x80" in line.lower()):
                 return True
         return False
 
 
-# AntiVMBypass
 
 
 class AntiVMBypass:
-    """Detect and bypass anti-VM techniques
 
-    VM detection is highly vendor-specific; checking signatures
-    is more reliable than behavioral detection which has high false positives.
-    MAC prefix matching uses pre-compiled sets for O(1) lookup - faster
-    than regex on binary data
-
-    // CPUID检测最可靠，MAC地址容易被改
-    """
-
-    # VM signatures per vendor
     VM_SIGNATURES: Dict[str, Dict[str, Any]] = {
         "VMware": {
             "dmi": ["VMware", "VMware Virtual Platform", "Mware"],
@@ -276,7 +241,6 @@ class AntiVMBypass:
         strings_or_code: List[str],
         vm_name: str,
     ) -> List[Dict[str, Any]]:
-        """检查特定 VM 厂商的迹象, 返回检测发现列表。"""
         findings: List[Dict[str, Any]] = []
         sigs = self.VM_SIGNATURES.get(vm_name)
         if not sigs:
@@ -331,37 +295,31 @@ class AntiVMBypass:
     def detect_vmware(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测 VMware-specific indicators"""
         return self._check_vm_vendor(strings_or_code, "VMware")
 
     def detect_virtualbox(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测 VirtualBox-specific indicators"""
         return self._check_vm_vendor(strings_or_code, "VirtualBox")
 
     def detect_qemu(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测 QEMU-specific indicators"""
         return self._check_vm_vendor(strings_or_code, "QEMU")
 
     def detect_hyperv(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测 Hyper-V-specific indicators"""
         return self._check_vm_vendor(strings_or_code, "Hyper-V")
 
     def detect_xen(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测 Xen-specific indicators"""
         return self._check_vm_vendor(strings_or_code, "Xen")
 
     def detect_generic_vm(
         self, strings_or_code: List[str]
     ) -> List[Dict[str, Any]]:
-        """检测通用 VM 迹象 (CPUID hypervisor bit、常见字符串)。"""
         findings: List[Dict[str, Any]] = []
         combined = " ".join(strings_or_code).lower()
 
@@ -390,7 +348,6 @@ class AntiVMBypass:
     def analyze(
         self, strings_or_code: List[str]
     ) -> Dict[str, Any]:
-        """完整反虚拟机检测流水线, 返回含检测结果与绕过建议的字典。"""
         all_findings: List[Dict[str, Any]] = []
         all_findings.extend(self.detect_vmware(strings_or_code))
         all_findings.extend(self.detect_virtualbox(strings_or_code))
@@ -401,7 +358,6 @@ class AntiVMBypass:
 
         recommendations = self.generate_bypass_recommendations(all_findings)
 
-        # Determine primary VM type
         vm_types: Dict[str, float] = {}
         for f in all_findings:
             vm = f.get("vm", "Unknown")
@@ -422,7 +378,6 @@ class AntiVMBypass:
     def generate_bypass_recommendations(
         self, detected: List[Dict[str, Any]]
     ) -> List[str]:
-        """构造 VM 专用的绕过建议, 返回建议字符串列表。"""
         recs: List[str] = []
         seen: set = set()
 

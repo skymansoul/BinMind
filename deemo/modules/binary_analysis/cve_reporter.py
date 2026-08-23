@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-CVE report generator: CVSS 3.1 scoring + multi-format report output.
-CVSS formulas follow the FIRST CVSS spec; coefficients are hardcoded.
-"""
-
 import logging
 import os
 import json
@@ -14,7 +9,6 @@ from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 
-# ---- Severity & status -- StrEnum for proper .value access ----
 from enum import StrEnum as _StrEnum
 
 class CVSSSeverity(_StrEnum):
@@ -33,7 +27,6 @@ class CVEStatus(_StrEnum):
     REJECTED  = 'Rejected'
 
 
-# ---- Vulnerability detail dataclass ----
 @dataclass
 class VulnerabilityDetail:
     cve_id: Optional[str] = None
@@ -56,9 +49,7 @@ class VulnerabilityDetail:
 
 
 class CVEReporter:
-    """CVE report generation + CVSS scoring."""
 
-    # CVSS 3.1 weight tables
     _AV_WEIGHTS = {'NETWORK': 0.85, 'ADJACENT': 0.62, 'LOCAL': 0.55, 'PHYSICAL': 0.2}
     _AC_WEIGHTS = {'LOW': 0.77, 'HIGH': 0.44}
     _PR_WEIGHTS = {'NONE': 0.85, 'LOW': 0.62, 'HIGH': 0.27}
@@ -71,7 +62,6 @@ class CVEReporter:
         self.__url = os.environ.get('CVE_API_URL', 'https://cveawg.mitre.org/api')
 
     def calc_cvss(self, detail):
-        """Calculate CVSS 3.1 Base Score."""
         if detail is None:
             return 0.0
         av = self._AV_WEIGHTS.get(detail.av.upper(), 0.85)
@@ -88,7 +78,6 @@ class CVEReporter:
         return round(base, 1)
 
     def severity(self, score):
-        """Map CVSS score to severity level."""
         if score is None:
             return CVSSSeverity.INFO
         if score >= 9.0:
@@ -102,7 +91,6 @@ class CVEReporter:
         return CVSSSeverity.INFO
 
     def validate(self, detail):
-        """Validate required fields."""
         if detail is None:
             return ['details is None']
         checks = [
@@ -235,7 +223,6 @@ def generate_cve_report(title, desc, cwe,
                         pr='NONE', ui='NONE',
                         scope='UNCHANGED', conf='NONE',
                         integ='NONE', avail='NONE'):
-    """Convenience entry point: one-stop CVE report generation."""
     r = CVEReporter()
     det = VulnerabilityDetail(
         title=title, desc=desc, cwe_id=cwe,
@@ -262,7 +249,6 @@ def generate_cve_report(title, desc, cwe,
 # 兼容桥 — 为测试与旧调用方保留的字段/方法别名
 # 旧接口字段名与重构后内部名不一致, 此处逐一映射。
 
-# --- VulnerabilityDetail field aliases (property access) ---
 VulnerabilityDetail.description = property(
     lambda s: s.desc, lambda s, v: setattr(s, 'desc', v))
 VulnerabilityDetail.affected_products = property(
@@ -286,7 +272,6 @@ VulnerabilityDetail.integrity_impact = property(
 VulnerabilityDetail.availability_impact = property(
     lambda s: s.avail, lambda s, v: setattr(s, 'avail', v))
 
-# --- VulnerabilityDetail __init__ remapping (so constructor accepts old names) ---
 # 构造参数兼容层: VulnerabilityDetail 内部使用缩写字段(ac/pr/ui/conf 等),
 # 旧调用方按全称传入; 通过 _KWARG_MAP 将全称参数归一化到缩写字段,
 # 使新旧两种参数名均可用, 避免破坏既有调用点。
@@ -307,7 +292,6 @@ def _compat_init(self, **kwargs):
 
 VulnerabilityDetail.__init__ = _compat_init
 
-# --- CVEReporter method aliases ---
 CVEReporter.calculate_cvss_score = CVEReporter.calc_cvss
 CVEReporter.determine_severity = CVEReporter.severity
 CVEReporter.validate_details = CVEReporter.validate
@@ -316,7 +300,6 @@ CVEReporter.generate_full_report = CVEReporter.full_rpt
 CVEReporter.generate_cve_request = CVEReporter.cve_req
 CVEReporter.generate_json_report = CVEReporter.json_rpt
 
-# --- save_report — wraps save() but accepts optional format arg ---
 _orig_save = CVEReporter.save
 
 def _compat_save(self, content, path, fmt=None):
@@ -324,7 +307,6 @@ def _compat_save(self, content, path, fmt=None):
 
 CVEReporter.save_report = _compat_save
 
-# --- generate_cve_report parameter compat ---
 _orig_generate = generate_cve_report
 
 def generate_cve_report(title, description=None, desc=None, cwe=None,
@@ -339,7 +321,6 @@ def generate_cve_report(title, description=None, desc=None, cwe=None,
                         integrity_impact='NONE', integ=None,
                         availability_impact='NONE', avail=None,
                         **kwargs):
-    """同时接收长短两套参数名，短名优先，转发至内部实现。"""
     _desc = description or desc or ''
     _cwe = cwe or cwe_id or ''
     _prods = products or affected_products or []

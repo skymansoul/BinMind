@@ -1,10 +1,3 @@
-"""
-Pseudocode Compressor - Compresses pseudocode for efficient LLM token usage.
-
-Provides multiple compression strategies to reduce pseudocode size while
-preserving semantic meaning for downstream analysis tasks.
-"""
-
 from __future__ import annotations
 
 import re
@@ -14,7 +7,6 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 
 class CompressionStrategy(Enum):
-    """Compression strategies for pseudocode."""
     REMOVE_COMMENTS = auto()
     SIMPLIFY_IDENTIFIERS = auto()
     INLINE_SIMPLE = auto()
@@ -28,7 +20,6 @@ class CompressionStrategy(Enum):
 
 
 class CompressionLevel(Enum):
-    """Compression aggressiveness levels."""
     MINIMAL = 0
     MODERATE = 1
     AGGRESSIVE = 2
@@ -98,7 +89,6 @@ def _build_presets() -> Dict[str, CompressionConfig]:
 
 @dataclass
 class CompressionConfig:
-    """Configuration for pseudocode compression."""
     strategy: CompressionStrategy = CompressionStrategy.HYBRID
     level: CompressionLevel = CompressionLevel.MODERATE
     preserve_signatures: bool = True
@@ -136,7 +126,6 @@ COMPRESSION_PRESETS.update(_build_presets())
 
 @dataclass
 class CompressionResult:
-    """Result of a compression operation."""
     original: str
     compressed: str
     strategy: CompressionStrategy
@@ -155,7 +144,6 @@ class CompressionResult:
 
 
 class ASTAnalyzer:
-    """Analyzes pseudocode structure to guide compression decisions."""
 
     KEYWORDS = {
         'if', 'else', 'while', 'for', 'return', 'break', 'continue',
@@ -179,7 +167,6 @@ class ASTAnalyzer:
         self._counter: int = 0
 
     def analyze(self, pseudocode: str) -> Dict[str, object]:
-        """Analyze pseudocode and return structural information."""
         lines = pseudocode.split('\n')
         return {
             'total_lines': len(lines),
@@ -196,7 +183,6 @@ class ASTAnalyzer:
         }
 
     def _extract_variables(self, code: str) -> Set[str]:
-        """Extract variable names from pseudocode."""
         patterns = [
             r'\b(\w+)\s+(\w+)\s*[=;]',
             r'\b(\w+)\s+(\w+)\s*\[',
@@ -209,11 +195,9 @@ class ASTAnalyzer:
         return variables
 
     def _extract_calls(self, code: str) -> Set[str]:
-        """Extract function call targets."""
         return set(re.findall(r'\b(\w+)\s*\(', code))
 
     def generate_abbreviations(self, names: Set[str]) -> Dict[str, str]:
-        """Generate short abbreviations for identifiers."""
         abbreviations: Dict[str, str] = {}
         for name in sorted(names, key=len, reverse=True):
             if len(name) <= 3:
@@ -235,7 +219,6 @@ class ASTAnalyzer:
 
 
 class PseudocodeCompressor:
-    """Main pseudocode compressor with multiple strategies."""
 
     KEYWORD_ABBREVIATIONS = {
         'function': 'fn', 'return': 'ret', 'variable': 'var',
@@ -252,7 +235,6 @@ class PseudocodeCompressor:
         self.analyzer = ASTAnalyzer()
 
     def compress(self, pseudocode: str) -> CompressionResult:
-        """Compress pseudocode using the configured strategy."""
         original_tokens = self._estimate_tokens(pseudocode)
 
         compressed = pseudocode
@@ -375,31 +357,26 @@ class PseudocodeCompressor:
 
     @staticmethod
     def _remove_comments(code: str) -> str:
-        """Remove single-line and multi-line comments."""
         code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
         code = re.sub(r'//.*$', '', code, flags=re.MULTILINE)
         return code
 
     @staticmethod
     def _remove_empty_lines(code: str) -> str:
-        """Remove blank lines."""
         return '\n'.join(line for line in code.split('\n') if line.strip())
 
     @staticmethod
     def _compress_whitespace(code: str) -> str:
-        """Aggressively remove whitespace."""
         code = re.sub(r'[ \t]+', ' ', code)
         code = re.sub(r'\n\s*\n', '\n', code)
         return code.strip()
 
     def _extract_signatures(self, code: str) -> str:
-        """Extract only function signatures."""
         pattern = r'(\w+[\s*]+)?(\w+)\s*\([^)]*\)'
         matches = re.findall(pattern, code)
         return '\n'.join(f"{m[0] or ''}{m[1]}(...);" for m in matches)
 
     def _extract_structure(self, code: str) -> str:
-        """Extract control flow structure with placeholders."""
         lines = code.split('\n')
         result: List[str] = []
         for line in lines:
@@ -412,14 +389,12 @@ class PseudocodeCompressor:
         return '\n'.join(result)
 
     def _abbreviate_keywords(self, code: str) -> str:
-        """Replace keywords with abbreviations."""
         result = code
         for full, abbr in self.KEYWORD_ABBREVIATIONS.items():
             result = re.sub(rf'\b{full}\b', abbr, result)
         return result
 
     def _inline_simple_blocks(self, code: str) -> str:
-        """Inline simple single-statement blocks."""
         lines = code.split('\n')
         result: List[str] = []
         i = 0
@@ -437,13 +412,11 @@ class PseudocodeCompressor:
         return '\n'.join(result)
 
     def _remove_redundant(self, code: str) -> str:
-        """Remove redundant casts, parentheses, and type annotations."""
         code = re.sub(r'\(\s*(\w+)\s*\)\s*(\w+)', r'\2', code)
         code = re.sub(r'\b(?:const|volatile|register)\s+', '', code)
         return code
 
     def _simplify_identifiers(self, code: str) -> str:
-        """Replace long identifiers with short names."""
         info = self.analyzer.analyze(code)
         variables = info.get('variables', set())
         if isinstance(variables, set):
@@ -456,7 +429,6 @@ class PseudocodeCompressor:
         return code
 
     def _hybrid_compress(self, code: str, warnings: List[str]) -> str:
-        """Apply multiple compression strategies intelligently."""
         code = self._remove_comments(code)
         code = self._remove_empty_lines(code)
 
@@ -479,7 +451,6 @@ def compress_pseudocode(
     level: CompressionLevel = CompressionLevel.MODERATE,
     **kwargs: object,
 ) -> CompressionResult:
-    """Convenience function for one-shot pseudocode compression."""
     config = CompressionConfig(strategy=strategy, level=level, **kwargs)  # type: ignore[arg-type]
     compressor = PseudocodeCompressor(config)
     return compressor.compress(pseudocode)

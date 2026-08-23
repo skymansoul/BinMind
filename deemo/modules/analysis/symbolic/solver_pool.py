@@ -1,28 +1,28 @@
-"""Multiprocess SMT solver 池 dispatch loop 缓存
+"""多进程 SMT 求解器池调度循环与缓存
 
-solver instance 运行 own process behind a request/response
-队列. 池 分派 incoming constraint strings idle workers
-and缓存s results constraint hash avoid redundant solves
+求解器实例在独立进程中运行, 通过请求/响应队列通信。
+池将到达的约束字符串分派给空闲 worker, 并按约束哈希缓存结果
+避免重复求解
 
-二轮增强 - 进程崩溃自动重启：monitor 线程定期检查 worker 进程存活状态
+二轮增强 - 进程崩溃自动重启: 监控线程定期检查 worker 进程存活状态
 发现已死进程自动重启并恢复 IDLE 状态
 
-三轮增强 - RSS 内存配额 + 优先级调度：SolverProcessManager 通过 psutil
-监控每个 worker 进程的 RSS，超限时发送 SIGTERM→SIGKILL 级联终止
-dispatch_堆 按 (-priority, timestamp) 堆排序替代 FIFO deque
+三轮增强 - RSS 内存配额 + 优先级调度: SolverProcessManager 通过 psutil
+监控每个 worker 进程的 RSS, 超限时发送 SIGTERM→SIGKILL 级联终止
+dispatch 堆按 (-priority, timestamp) 排序替代 FIFO deque
 确保关键约束优先求解
 
-二轮增强 - 外部求解器支持：除 Z3 Python 绑定外，支持通过 subprocess
-调用外部求解器二进制文件（如 cvc5 --lang smt2），以 stdin/stdout 交互
+二轮增强 - 外部求解器支持: 除 Z3 Python 绑定外, 支持通过 subprocess
+调用外部求解器二进制文件 (如 cvc5 --lang smt2), 以 stdin/stdout 交互
 
-四轮增强 - AdaptivePoolSizing：监控平均队列等待时间和求解器利用率
+四轮增强 - AdaptivePoolSizing: 监控平均队列等待时间和求解器利用率
 avg_wait > 2s 且 utilization > 80% 时扩容 +2 worker
-utilization < 30% 持续 5 分钟时缩容 -1（下限 1），带入滞后带防振荡
+utilization < 30% 持续 5 分钟时缩容 -1 (下限 1), 带入滞后带防振荡
 
-五轮增强 - SolverWarmupCache：worker 启动时预求解常见约束模式
-(x>0, x<10, strlen>0 等)，预热求解器内部数据结构
+五轮增强 - SolverWarmupCache: worker 启动时预求解常见约束模式
+(x>0, x<10, strlen>0 等), 预热求解器内部数据结构
 
-六轮增强 - CrossSessionReuse：SolverSession.检查() 对合并约束集哈希
+六轮增强 - CrossSessionReuse: SolverSession.check() 对合并约束集哈希
 跨会话复用历史求解结果
 """
 
@@ -93,7 +93,7 @@ def _hash_constraints(constraints: str) -> str:
 
 
 class SolverWorker:
-    """Single-process solver. 支持 -process Z3 external binaries"""
+    """单进程求解器, 支持 Z3 进程内和外部二进制"""
 
     def __init__(self, worker_id: int, config: SolverConfig):
         self._worker_id = worker_id
@@ -244,13 +244,13 @@ class SolverWorker:
 
 
 class SolverPool:
-    """管理 a fixed-size 池 SolverWorkers auto-重启 监控
+    """管理固定大小 SolverWorker 池, 自动重启与监控
 
-    二轮增强 - 进程监控线程：每 5s 检查所有 worker 进程存活状态
+    二轮增强 - 进程监控线程: 每 5s 检查所有 worker 进程存活状态
     崩溃的 worker 自动重启并恢复 IDLE
 
-    四轮增强 - 自适应扩缩容：AdaptivePoolSizing 监控队列等待和利用率
-    在高负载时扩容，低负载时缩容"""
+    四轮增强 - 自适应扩缩容: AdaptivePoolSizing 监控队列等待和利用率
+    在高负载时扩容, 低负载时缩容"""
 
     _MONITOR_INTERVAL = 5.0
     _WAIT_WINDOW_SIZE = 200
@@ -671,7 +671,7 @@ class SolverSession:
 
 
 class SolverCache:
-    """Solver response 缓存keyed constraint hash"""
+    """求解器响应缓存, 以约束哈希为键"""
 
     def __init__(self, max_entries: int = 1000):
         self._cache: Dict[str, SolverResponse] = {}

@@ -42,10 +42,6 @@ def _logsumexp(values):
 # Platt对角Hessian缩放、 BFGS 回退
 
 class BinomialCalibrator:
-    """Platt scaling: fit a logistic correction on top of raw model scores.
-
-    Reference: Platt, J. "Probabilistic Outputs for SVMs." Advances in NIPS, 2000.
-    """
 
     __slots__ = ('m_a', 'm_b', 'm_fitted', '_hessian_used')
 
@@ -56,11 +52,8 @@ class BinomialCalibrator:
         self._hessian_used = 'diag'  # 记录实际收敛策略
 
     def fit_cb(self, scores, labels):
-        """Fit Platt parameters A and B via Newton-Raphson on diagonal Hessian.
-        若对角 Hessian 未在迭代上限内收敛，自动切换到 2×2 完整 Hessian 逆（BFGS 方向）。
-        参考 Bishop PRML §4.5.2 对 Laplace 近似的讨论。
-
-        labels: iterable of binary labels (0 or 1)."""
+        # 对角Hessian未收敛时切换完整2×2 Hessian逆（BFGS方向）
+        # 参考 Bishop PRML §4.5.2 Laplace近似
         if scores is None or labels is None:
             __dbg.warning("Platt fit: null input")
             return
@@ -189,7 +182,6 @@ class BinomialCalibrator:
         __dbg.debug(f"Platt fitted: A={a:.4f}, B={b:.4f} (hessian={self._hessian_used})")
 
     def predict_proba_cb(self, scores):
-        """Apply calibrated mapping to new scores."""
         if not self.m_fitted:
             return [max(min(s, 1.0), 0.0) for s in scores]
         result = []
@@ -204,10 +196,6 @@ class BinomialCalibrator:
 # PAV保序回归
 
 class IsotonicCalibrator:
-    """Isotonic regression via PAV (Pool Adjacent Violators) for monotonic calibration.
-
-    Bins predictions into quantile buckets and enforces monotonicity among bin averages.
-    """
 
     __slots__ = ('m_bins', 'm_edges', 'm_fitted', '_bin_values')
 
@@ -218,7 +206,6 @@ class IsotonicCalibrator:
         self._bin_values = []
 
     def fit_isotonic_cb(self, scores, labels):
-        """Fit monotonic calibration map using PAV algorithm."""
         if scores is None or labels is None:
             __dbg.warning("Isotonic fit: null input")
             return
@@ -228,16 +215,16 @@ class IsotonicCalibrator:
             __dbg.warning("Isotonic fit: mismatched or empty arrays")
             return
 
-        # Sort by score
+        # 按分数排序
         pairs = [(s[i], t[i]) for i in range(len(s))]
         pairs.sort(key=lambda x: x[0])
 
-        # Initialize PAV: each element is (weight, mean_label)
+        # PAV初始化: 每元素 (weight, mean_label)
         pav = [[1.0, float(pairs[0][1])]]
         i = 1
         while i < len(pairs):
             pav.append([1.0, float(pairs[i][1])])
-            # Merge backward if violates monotonicity
+            # 违反单调性则向后合并
             while len(pav) >= 2 and pav[-2][1] > pav[-1][1]:
                 prev = pav.pop()
                 curr = pav.pop()
@@ -246,7 +233,7 @@ class IsotonicCalibrator:
                 pav.append([w_sum, m_combined])
             i += 1
 
-        # Discretize into n_bins
+        # 离散化为n_bins个区间
         total_weight = sum(p[0] for p in pav)
         bin_capacity = total_weight / self.m_bins
         edges = [pairs[0][0]]  # min score
@@ -285,7 +272,6 @@ class IsotonicCalibrator:
         __dbg.debug(f"Isotonic fitted: {len(self._bin_values)} bins (deduped)")
 
     def predict_proba_cb(self, scores):
-        """Map scores through isotonic bins."""
         if not self.m_fitted or not self.m_edges:
             return [max(min(s, 1.0), 0.0) for s in scores]
         result = []
@@ -302,13 +288,6 @@ class IsotonicCalibrator:
 # 温度缩放(数值稳定)
 
 class TemperatureScaler:
-    """Temperature scaling for multi-class / binary confidence calibration.
-
-    Learns a single temperature parameter T > 0 that softens or sharpens
-    the softmax / sigmoid output.
-
-    Reference: Guo et al. "On Calibration of Modern Neural Networks." ICML 2017.
-    """
 
     __slots__ = ('m_temp', 'm_fitted')
 
@@ -344,11 +323,11 @@ class TemperatureScaler:
             nll = 0.0
             i = 0
             while i < n:
-                # clamp logits for numerical safety
+                # logit截断防止exp溢出
                 scaled = [min(max(logits[i][c] / max(temperature, 1e-6), -_MAX_LOGIT), _MAX_LOGIT)
                           for c in range(n_classes)]
 
-                # logsumexp trick for stable log-denominator
+                # logsumexp归约避免除零
                 log_denom = _logsumexp(scaled)
                 log_prob_true = scaled[labels[i]] - log_denom
                 nll -= log_prob_true
@@ -358,10 +337,8 @@ class TemperatureScaler:
 # z_true/T² - Σ p_c * z_c / T²
 # (z_true - E[z]) / T²
                 # 在 scaled 空间中：∂NLL/∂T = (scaled_true - E[scaled]) / T
-                exp_scaled = [_math.exp(scaled[ci] - _logsumexp(scaled) + log_denom)  # shortcut
+                exp_scaled = [_math.exp(scaled[ci] - _logsumexp(scaled) + log_denom)
                               for ci in range(n_classes)]
-                # 实际上 p_c = exp(scaled[c]) / Σ exp(scaled[j])
-                # 我们直接从 scaled 计算
                 expected = 0.0
                 ci = 0
                 exp_total = 0.0
@@ -369,7 +346,7 @@ class TemperatureScaler:
                     exp_v = _math.exp(scaled[ci] - log_denom)  # 已经是 softmax
                     exp_total += exp_v
                     ci += 1
-                # 归一化
+                # softmax归一化
                 expected = 0.0
                 ci = 0
                 while ci < n_classes:
@@ -393,7 +370,6 @@ class TemperatureScaler:
         __dbg.debug(f"Temperature fitted: T={self.m_temp:.4f}")
 
     def calibrate_ts(self, logits):
-        """Apply temperature scaling to logits and return probabilities."""
         if not self.m_fitted:
             return logits
         is_binary = not isinstance(logits[0], (list, tuple))
@@ -415,19 +391,6 @@ class TemperatureScaler:
 # 校准指标(等频分箱)
 
 class CalibrationMetrics:
-    """Expected Calibration Error (ECE), Maximum Calibration Error (MCE),
-    and Brier Score.
-
-    改用等频（quantile）自适应分箱替代均匀分箱，
-    确保每箱样本数大致相等，避免尾部 bin 空置导致的估计偏差。
-    参考 Naeini et al. AAAI 2015 §III.A 关于等频分箱的讨论。
-
-    ECE measures the weighted average of the difference between accuracy and
-    confidence across bins. MCE is the worst-case gap.
-
-    Reference: Naeini et al. "Obtaining Well Calibrated Probabilities Using
-    Bayesian Binning." AAAI 2015.
-    """
 
     @staticmethod
     def _adaptive_bin_indices(probs, n_bins=10):
@@ -461,7 +424,6 @@ class CalibrationMetrics:
 
     @staticmethod
     def ece_mt(probs, labels, n_bins=10):
-        """Compute Expected Calibration Error with equal-frequency binning."""
         if probs is None or labels is None:
             return 0.0
         if len(probs) == 0 or len(labels) == 0:
@@ -486,7 +448,6 @@ class CalibrationMetrics:
 
     @staticmethod
     def mce_mt(probs, labels, n_bins=10):
-        """Compute Maximum Calibration Error with equal-frequency binning."""
         if probs is None or labels is None:
             return 0.0
         if len(probs) == 0 or len(labels) == 0:
@@ -534,9 +495,6 @@ class CalibrationMetrics:
 
     @staticmethod
     def reliability_diagram_ce(probs, labels, n_bins=10):
-        """Return (bin_confidences, bin_accuracies, bin_counts) for plotting.
-        Uses equal-frequency binning so every returned bin has meaningful sample count.
-        """
         if probs is None or labels is None:
             return [], [], [], []
         bin_indices = CalibrationMetrics._adaptive_bin_indices(probs, n_bins)
@@ -566,13 +524,6 @@ class CalibrationMetrics:
 # 统一接口
 
 class ConfidenceCalibrator:
-    """Unified interface: choose Platt, isotonic, or temperature scaling.
-
-    Automatically selects method based on available data characteristics:
-    - Platt: well-calibrated for small-medium datasets with sigmoid-like distortion.
-    - Isotonic: flexible non-parametric; needs more data.
-    - Temperature: for neural network logit outputs.
-    """
 
     __slots__ = ('m_method', 'm_platt', 'm_isotonic', 'm_temp', 'm_is_logits', 'm_fitted', '_effective_method')
 
@@ -586,7 +537,6 @@ class ConfidenceCalibrator:
         self._effective_method = None  # 记录实际采用的方法
 
     def fit_cc(self, scores, labels, is_logits=False):
-        """Fit the calibrator with raw scores and ground-truth labels."""
         if scores is None or labels is None:
             __dbg.warning("ConfidenceCalibrator.fit: null input")
             return
@@ -618,7 +568,6 @@ class ConfidenceCalibrator:
         __dbg.info(f"Calibrator fitted with method={method}")
 
     def predict_proba_cc(self, scores):
-        """Return calibrated probability estimates."""
         if not self.m_fitted:
             return scores
         method = self._effective_method or self.m_method
@@ -635,9 +584,8 @@ class ConfidenceCalibrator:
             return self.m_platt.predict_proba_cb(scores)
 
     def evaluate_cc(self, scores, labels):
-        """Return dict with ECE, MCE, Brier Score, and reliability diagram data."""
         probs = self.predict_proba_cc(scores)
-        # Flatten if multi-class (take max prob)
+        # 多分类时取最大概率
         flat_probs = [max(p) if isinstance(p, (list, tuple)) else p for p in probs]
 
         ece = CalibrationMetrics.ece_mt(flat_probs, labels)

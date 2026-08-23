@@ -2,29 +2,6 @@
 # 增加循环边界的证据截断，避免while(true)中的常量回环污染
 # 支持ARM64条件执行指令的证据传递（CSEL/CINC系列）
 
-"""
-跨函数常量证据传播 - 在函数间追踪常量和半常量，为混淆恢复提供
-超越单函数边界的证据链
-
-核心思路:
-混淆器通常在函数内插入虚假分支，但分支条件依赖的常量常来自其调用者
-或全局数据段。如果仅在函数内分析，一个来自上级调用者的常量在局部
-看起来是变量；但若沿调用链回溯，可以发现其实际是常数
-本模块提供这种跨边界证据追溯能力
-
-与 Chisel 的区别:
-Chisel使用动态trace反推CFG骨架，依赖运行时信息。本模块是纯静态
-分析-通过函数接口（参数/返回值/全局变量）的抽象解释来传递
-常量证据，无需执行二进制。代价是精度低于动态方法，但不需要
-构建可执行环境
-
-信任衰减策略:
-每跨一层调用边界，证据置信度乘以衰减因子α=0.85。深度>5的调用链
-证据被视为不可靠（置信度<-阈值），避免将遥远调用者的副作用误判
-为常量。此设计基于经验观察：多数混淆器在1-3层调用深度内暴露
-常量证据
-"""
-
 from collections import deque
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -39,7 +16,6 @@ _MAX_LOOP_ITERATIONS = 3
 
 
 class EvidenceRecord:
-    """单条常量证据-记录一个变量在某调用上下文中被认定为常量的依据"""
 
     __slots__ = (
         "variable", "value", "confidence", "depth", "source_func",
@@ -66,16 +42,6 @@ class EvidenceRecord:
 
 
 class EvidencePropagator:
-    """跨函数证据传播引擎
-
-    工作方式：对目标函数中的疑似常量变量，通过调用者→被调用者
-    （或反向）链路搜寻其定义来源，累加证据并衰减置信度
-
-    使用场景：
-    - CFF恢复：确认状态变量是否来自调用者的常量参数
-    - 不透明谓词消除：确认谓词的操作数是否跨函数恒定
-    - 字符串解密检测：追踪解密循环的key从何处传入
-    """
 
     def __init__(self) -> None:
         # 已分析过的函数-避免重复回溯
@@ -91,7 +57,6 @@ class EvidencePropagator:
         self,
         functions: Dict[str, List[Dict[str, Any]]],
     ) -> None:
-        """从函数→指令列表的映射中提取调用图。"""
         self._call_graph.clear()
         for func_name, instructions in functions.items():
             callees = []
@@ -110,7 +75,6 @@ class EvidencePropagator:
     def register_param_constant(
         self, func_name: str, param_name: str, value: Any, confidence: float
     ) -> None:
-        """手工注册某函数某参数为常量-通常来自外部知识或配置文件"""
         self._func_params.setdefault(func_name, {})[param_name] = {
             "value": value, "confidence": confidence,
         }
@@ -123,12 +87,6 @@ class EvidencePropagator:
         variable: str,
         max_depth: int = _MAX_TRACE_DEPTH,
     ) -> List[EvidenceRecord]:
-        """从 target_func 中的 variable 出发, 沿调用图回溯其常量证据。
-
-        采用 BFS 而非 DFS - 宽度优先能更快发现浅层证据, 浅层
-        证据衰减少、更可靠, 混淆恢复通常足够; 返回按置信度降序
-        排列的证据记录列表。
-        """
         self._visited.clear()
         results: List[EvidenceRecord] = []
         # BFS队列: (当前func, 变量名, 深度, 调用链)
@@ -176,13 +134,6 @@ class EvidencePropagator:
         known_constants: Dict[str, Tuple[Any, float]],
         depth: int = 0,
     ) -> Dict[str, Dict[str, Tuple[Any, float]]]:
-        """从 source_func 出发前向传播已知常量到其所有被调用者。
-
-        与 trace_evidence 互补: trace_evidence 是回溯 (从目标找
-        来源), propagate_forward 是前向 (从来源推目标)。调用方
-        先在 source_func 中发现一批常量, 再调用此方法推送给
-        被调用者; 返回 {func_name: {var: (value, confid)}}。
-        """
         if depth > _MAX_TRACE_DEPTH or source_func not in self._call_graph:
             return {}
 
@@ -214,16 +165,6 @@ class EvidencePropagator:
         loop_body: List[Dict[str, Any]],
         iterations: int = _MAX_LOOP_ITERATIONS,
     ) -> Dict[str, Tuple[Any, float]]:
-        """检测循环中的不变量-对CFF dispatcher循环的参数分析有直接价值
-
-        CFF的dispatcher通常是一个while(true)结构，其中状态变量在
-        每次迭代中被更新。区分"循环不变量"和"循环变量"是确定
-        dispatcher结构的关键步骤
-
-        算法：执行受控次数的抽象迭代（默认3次），追踪每个变量的
-        值变化。未发生变化的变量标记为循环不变量，置信度与
-        迭代次数正相关
-        """
         if len(loop_body) < 2:
             return {}
 

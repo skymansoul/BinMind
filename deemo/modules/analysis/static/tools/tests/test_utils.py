@@ -1,5 +1,4 @@
-"""Tests for shared 工具集: entropy, sliding window, 配置 loading, 日志
-error hierarchy"""
+"""共享工具集测试: 熵值、滑动窗口、配置加载、日志、错误层级。"""
 
 import logging
 import math
@@ -12,7 +11,7 @@ import pytest
 # Entropy Tests
 
 class TestEntropy:
-    """Tests for compute_entropy"""
+    """compute_entropy 的测试"""
 
     @pytest.fixture
     def entropy_fn(self):
@@ -42,7 +41,7 @@ class TestEntropy:
 # Sliding Window Tests
 
 class TestSlidingWindow:
-    """Tests for sliding_window generator"""
+    """sliding_window 生成器的测试"""
 
     @pytest.fixture
     def window_fn(self):
@@ -75,7 +74,7 @@ class TestSlidingWindow:
 # YAML 配置 Tests
 
 class TestYamlConfig:
-    """Tests for load_yaml_配置"""
+    """load_yaml_config 的测试"""
 
     @pytest.fixture
     def yaml_loader(self):
@@ -116,7 +115,7 @@ class TestYamlConfig:
 # 日志 Setup Tests
 
 class TestLoggingSetup:
-    """Tests for setup_日志"""
+    """setup_logging 的测试"""
 
     def test_setup_logging_creates_logger(self):
         """setup_日志 返回 a properly 配置ured 日志器"""
@@ -136,7 +135,7 @@ class TestLoggingSetup:
 # Error Hierarchy Tests
 
 class TestErrorHierarchy:
-    """Tests for 异常 class hierarchy"""
+    """异常类层次的测试"""
 
     def test_error_hierarchy(self):
         """StaticAnalysisError a subclass ToolsError"""

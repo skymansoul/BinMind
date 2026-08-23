@@ -115,26 +115,29 @@ class TestConfig(unittest.TestCase):
 class TestAIProviderConfig(unittest.TestCase):
 
     def test_openai_config(self):
-        self.assertEqual(Config.AI_PROVIDER, os.environ.get('AI_PROVIDER', 'openai'))
+        self.assertEqual(Config.AI_PROVIDER, os.environ.get('AI_PROVIDER', 'ollama'))
         self.assertIsNotNone(Config.OPENAI_MODEL)
 
     def test_get_current_ai_model_default(self):
         """默认openai，走OPENAI_MODEL"""
-        with patch.dict(os.environ, {'AI_PROVIDER': 'openai', 'OPENAI_MODEL': 'gpt-4'}):
+        with patch('config.Config.AI_PROVIDER', AI_PROVIDER_OPENAI), \
+             patch('config.Config.AI_MODEL', ''):
             model = get_current_ai_model()
             self.assertEqual(model, 'gpt-4')
 
     def test_get_current_ai_model_ollama(self):
         # get_current_ai_model 读取 Config 类属性，不读环境变量
         with patch('config.Config.AI_PROVIDER', AI_PROVIDER_OLLAMA), \
-             patch('config.Config.OLLAMA_MODEL', 'llama2'):
+             patch('config.Config.OLLAMA_MODEL', 'llama2'), \
+             patch('config.Config.AI_MODEL', ''):
             model = get_current_ai_model()
             self.assertEqual(model, 'llama2')
 
     def test_get_current_ai_model_azure(self):
         # get_current_ai_model 读取 Config 类属性，不读环境变量
         with patch('config.Config.AI_PROVIDER', AI_PROVIDER_AZURE), \
-             patch('config.Config.AZURE_DEPLOYMENT', 'my-gpt4-deployment'):
+             patch('config.Config.AZURE_DEPLOYMENT', 'my-gpt4-deployment'), \
+             patch('config.Config.AI_MODEL', ''):
             model = get_current_ai_model()
             self.assertEqual(model, 'my-gpt4-deployment')
 

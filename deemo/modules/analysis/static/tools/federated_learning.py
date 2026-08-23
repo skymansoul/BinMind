@@ -70,7 +70,7 @@ class FLRoundResult:
         self.participating_clients = participating_clients if participating_clients is not None else []; self.timestamp = timestamp
 
 class PrivacyProtector:
-    """Gradient privacy layer: clip norm, inject Laplace noise"""
+    """梯度隐私层: 范数裁剪, 注入拉普拉斯噪声"""
 
     def __init__(self, epsilon=1.0, clip_norm=1.0):
         self.epsilon = epsilon; self.clip_norm = clip_norm

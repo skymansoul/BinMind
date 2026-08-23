@@ -133,7 +133,7 @@ HARDENING_SIGNATURES = {
     },
 }
 
-# Data containers
+# 数据容器
 
 @dataclass
 class ProcessInfo:

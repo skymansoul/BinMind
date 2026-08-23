@@ -10,13 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class OutputFormat(str, Enum):
-    """Output format enumeration."""
     MERMAID = "mermaid"
     DOT = "dot"
     ASCII = "ascii"
 
 class BlockType(str, Enum):
-    """Basic block type enumeration."""
     NORMAL = "normal"
     CONDITIONAL = "conditional"
     LOOP = "loop"
@@ -27,7 +25,6 @@ class BlockType(str, Enum):
 
 @dataclass
 class BasicBlock:
-    """Represents a basic block in the control flow graph."""
     id: str
     instructions: List[str]
     block_type: BlockType = BlockType.NORMAL
@@ -38,7 +35,6 @@ class BasicBlock:
 
 @dataclass
 class ControlFlowGraph:
-    """Represents the control flow graph structure of a function."""
     function_name: str
     blocks: List[BasicBlock]
     edges: List[Tuple[str, str]]
@@ -47,13 +43,11 @@ class ControlFlowGraph:
 
 
 class CodeVisualizer:
-    """Code visualizer for generating control flow graphs and structure diagrams from decompiled pseudocode."""
 
     def __init__(self):
         logger.info("Code visualizer initialized")
 
     def generate_cfg(self, pseudocode: str, function_name: str = "function") -> ControlFlowGraph:
-        """Generate a control flow graph from decompiled pseudocode."""
         logger.info(f"Generating control flow graph for function {function_name}...")
 
         blocks = []
@@ -153,7 +147,6 @@ class CodeVisualizer:
         return cfg
 
     def generate_mermaid(self, cfg: ControlFlowGraph) -> str:
-        """Generate Mermaid flowchart text."""
         lines = ["flowchart TD"]
 
         for block in cfg.blocks:
@@ -185,7 +178,6 @@ class CodeVisualizer:
         return "\n".join(lines)
 
     def generate_dot(self, cfg: ControlFlowGraph) -> str:
-        """Generate Graphviz DOT format text."""
         lines = ["digraph CFG {", "    rankdir=TD;"]
 
         for block in cfg.blocks:
@@ -226,7 +218,6 @@ class CodeVisualizer:
         return "\n".join(lines)
 
     def generate_ascii(self, cfg: ControlFlowGraph) -> str:
-        """Generate ASCII text diagram."""
         lines = []
 
         max_instructions = max(len(block.instructions) for block in cfg.blocks) if cfg.blocks else 1
@@ -253,7 +244,6 @@ class CodeVisualizer:
         return "\n".join(lines)
 
     def visualize(self, pseudocode: str, function_name: str = "function", output_format: OutputFormat = OutputFormat.MERMAID) -> str:
-        """Generate visualization output."""
         cfg = self.generate_cfg(pseudocode, function_name)
 
         if output_format == OutputFormat.MERMAID:
@@ -266,7 +256,6 @@ class CodeVisualizer:
             return self.generate_mermaid(cfg)
 
     def save_visualization(self, pseudocode: str, output_path: str, function_name: str = "function", output_format: OutputFormat = OutputFormat.MERMAID) -> bool:
-        """Save visualization results to a file."""
         try:
             content = self.visualize(pseudocode, function_name, output_format)
             os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else '.', exist_ok=True)
@@ -281,7 +270,6 @@ class CodeVisualizer:
             return False
 
     def analyze_pseudocode(self, pseudocode: str) -> Dict[str, Any]:
-        """Analyze pseudocode structure."""
         analysis = {
             'lines': 0,
             'functions': 0,
@@ -316,5 +304,4 @@ class CodeVisualizer:
 
 
 def get_code_visualizer() -> CodeVisualizer:
-    """Factory function to get a CodeVisualizer instance."""
     return CodeVisualizer()

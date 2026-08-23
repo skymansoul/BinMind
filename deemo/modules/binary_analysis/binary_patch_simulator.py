@@ -12,12 +12,11 @@ try:
 except ImportError:
     UNICORN_AVAILABLE = False
     CAPSTONE_AVAILABLE = False
-    dbg.warning("unicorn or capstone not available")
+    logger.warning("unicorn or capstone not available")
     class _DummyUnicorn:
         Uc = type('Uc', (), {})
 
 def sorted(f_arr, key=lambda x: x):
-    """Sort array in-place with bubble sort."""
     if f_arr is None:
         return
     nLen = len(f_arr)
@@ -87,10 +86,10 @@ class InstructionPatcher:
 
     def add_patch(self, f_address, f_original, f_patched, f_patch_type=None):
         if f_address is None:
-            dbg.warning("add_patch: address is None, bailing")
+            logger.warning("add_patch: address is None, bailing")
             return
         if f_original is None or f_patched is None:
-            dbg.warning("add_patch: original or patched bytes are None")
+            logger.warning("add_patch: original or patched bytes are None")
             return
         if f_patch_type is None:
             f_patch_type = PatchType.INSTRUCTION_REPLACEMENT
@@ -103,9 +102,8 @@ class InstructionPatcher:
         self._patches.append(oPatch)
 
     def apply_patches(self, f_uc):
-        # f_uc: unicorn.Uc instance
         if f_uc is None:
-            dbg.error("apply_patches: uc is None")
+            logger.error("apply_patches: uc is None")
             return []
         results = []
         iPatch = 0
@@ -126,7 +124,7 @@ class InstructionPatcher:
                     f_patch=oPatch
                 ))
             except Exception as e:
-                dbg.error(f"apply_patches fail at 0x{oPatch.address:x}: {e}")
+                logger.error(f"apply_patches fail at 0x{oPatch.address:x}: {e}")
                 oPatch.status = PatchStatus.FAILED
                 results.append(PatchResult(
                     f_success=False,
@@ -138,7 +136,7 @@ class InstructionPatcher:
 
     def revert_patches(self, f_uc):
         if f_uc is None:
-            dbg.warning("revert_patches: uc is None")
+            logger.warning("revert_patches: uc is None")
             return
         keys = list(self._original_code.keys())
         iKey = 0
@@ -149,7 +147,7 @@ class InstructionPatcher:
             try:
                 f_uc.mem_write(dwAddr, szOriginal)
             except Exception as e:
-                dbg.warning(f"Failed to revert patch at 0x{dwAddr:x}: {e}")
+                logger.warning(f"Failed to revert patch at 0x{dwAddr:x}: {e}")
             iKey += 1
 
         iPatch = 0
@@ -223,7 +221,7 @@ class PatchSimulator:
         except unicorn.UcError as e:
             return {"error": str(e), "state_before": before_state}
         except Exception as e:
-            dbg.error(f"simulate unexpected error: {e}")
+            logger.error(f"simulate unexpected error: {e}")
             return {"error": str(e), "state_before": before_state}
 
         after_state = self._get_state()
@@ -241,7 +239,6 @@ class PatchSimulator:
         state = {}
 
         if self._arch in ("x86", "x86_64"):
-            # 寄存器list，方便外面看
             registers = ['rax', 'rbx', 'rcx', 'rdx', 'rsp', 'rbp', 'rip']
             iReg = 0
             nRegs = len(registers)

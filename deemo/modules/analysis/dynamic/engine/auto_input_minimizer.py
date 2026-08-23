@@ -1,7 +1,5 @@
-# Crash-input minimizer: delta-debug PoC down a minimal triggering payload
-# 舍入 3: FrameShift-style structure-preserving 变异s — 检测 size/校验和
-# relation fields preserves reduction avoid generating
-# malformed inputs rejected reaching crash site
+# 崩溃输入最小化器：delta-debug 缩减 PoC 至最小触发载荷
+# 舍入3：FrameShift 结构保持变异，检测 size/校验和等关系字段
 
 import logging
 import os
@@ -40,15 +38,10 @@ class MinimizationResult:
     history: list = field(default_factory=list)
 
 class DeltaDebugger:
-    """
-    Delta Debugging minimizer
+    """Delta Debugging 最小化器
 
-    舍入 3: Added FrameShift strategy — 检测 relation fields
-    (size fields, 校验和s, length prefixes) preserves
-    integrity reduction. FrameShift  显示
-    avoids generating malformed inputs rejected
-    reaching actual crash site, improving effective reduction
-    ratio 20-50% structured 格式化
+    舍入3：新增 FrameShift 策略，检测关系字段（size、校验和、长度前缀）
+    保持缩减过程中数据完整性，避免生成畸形输入被拒，提升结构化格式缩减率
     """
 
     # 关系字段模式: (识别正则, 修正函数)
@@ -183,7 +176,7 @@ class DeltaDebugger:
         return cur_bytes
 
     def _ddmin(self, data: bytes) -> bytes:
-        """Zeller Delta Debugging tuned numeric parameters"""
+        """Zeller Delta Debugging 算法"""
         n = 2
         start_ts = time.time()
         while len(data) >= 2 and (time.time() - start_ts) < self.timeout_sec:
@@ -198,7 +191,7 @@ class DeltaDebugger:
                     self._record("reduce_chunk", len(data))
                     break
             else:
-                # Try complement
+                # 尝试互补缩减
                 if n < len(data):
                     n = min(n * 2, len(data))
                 else:
@@ -209,7 +202,7 @@ class DeltaDebugger:
         return data
 
     def _hierarchy(self, data: bytes) -> bytes:
-        # Hierarchical: 1/2, 1/4, 1/8
+        # 分层缩减：1/2, 1/4, 1/8
         cur = data
         for divisor in [2, 4, 8, 16, 32, 64, 128]:
             chunk_size = max(1, len(cur) // divisor)
@@ -230,7 +223,7 @@ class DeltaDebugger:
             tokens.append(data[i:i + TOKEN_ALIGN])
         if not tokens:
             return data
-        # Greedy deletion
+        # 贪心删除
         cur_tokens = list(tokens)
         i = 0
         while i < len(cur_tokens):
@@ -244,9 +237,9 @@ class DeltaDebugger:
         return b"".join(cur_tokens)
 
     def _bits(self, data: bytes) -> bytes:
-        # Bit-level cleanup
+        # 位级清理
         cur = data
-        # 清除 byte's high bits
+        # 清除字节高位
         for i in range(len(cur)):
             for bit in range(BIT_COUNT):
                 test = bytearray(cur)
@@ -261,7 +254,7 @@ class DeltaDebugger:
         self.history.append({'op': op, 'size': size, 'ts': time.time()})
 
 class CrashInputMinimizer:
-    """Crash input minimizer"""
+    """崩溃输入最小化器"""
 
     def __init__(self, binary_path: str,
                  crash_runner: Optional[Callable[[str, bytes], bool]] = None,
@@ -271,7 +264,7 @@ class CrashInputMinimizer:
         self.timeout_sec = timeout_sec
 
     def _default_runner(self, input_data: bytes) -> bool:
-        # Default runner: 执行 binary via subprocess 检测 crash
+        # 默认执行器：通过子进程执行二进制并检测崩溃
         import subprocess
         import tempfile
         with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:
@@ -336,7 +329,7 @@ def minimize_crash_input(
     crash_input: bytes,
     strategy: str = "ddmin"
 ) -> Dict[str, Any]:
-    """Convenience 入口"""
+    """便捷入口"""
     try:
         strat = MinimizationStrategy(strategy)
     except ValueError:

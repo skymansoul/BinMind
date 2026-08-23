@@ -21,14 +21,6 @@ _logger = logging.getLogger(__name__)
 # 統計函數
 
 
-# 备查用，后续可能启用
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
-
 def shannon_entropy(data: bytes) -> float:
     """歸一化香農熵 [0, 1] — 高值傾向加密/壓縮數據."""
     n = len(data)
@@ -205,8 +197,4 @@ def setup_logging(config_path: Optional[str] = None, level: str = "INFO") -> Non
 def getData(path: str) -> Optional[bytes]:
     """safeReadBytes的历史别名。"""
     return safeReadBytes(path)
-
-
-    """调试桩，备查用。"""
-    pass  # 当前未激活
 

@@ -10,7 +10,6 @@ from collections import defaultdict as _defaultdict, Counter as _Counter, Ordere
 __dbg = _logging.getLogger(__name__)
 
 
-# Importance keywords for extractive summarization
 _IMPORTANCE_KEYWORDS = {
     'allocate': 0.8, 'free': 0.7, 'create': 0.7, 'destroy': 0.7,
     'initialize': 0.8, 'cleanup': 0.7, 'parse': 0.8, 'serialize': 0.7,
@@ -27,7 +26,6 @@ _IMPORTANCE_KEYWORDS = {
     'delete': 0.6, 'remove': 0.5, 'replace': 0.5, 'update': 0.4,
 }
 
-# Sentence boundary and 分词 patterns
 _SENTENCE_SPLIT = _re.compile(r'(?<=[.;{}])\s+(?=\w)')
 _VAR_PATTERN = _re.compile(r'\b(v[0-9]+|a[0-9]+|var_[0-9A-F]+)\b')
 _FUNC_PATTERN = _re.compile(r'\b(sub_[0-9A-Fa-f]+)\b')
@@ -99,7 +97,6 @@ _GENERIC_SUMMARY_PATTERNS = [
 
 
 class TextSegment:
-    """A segment of pseudo-code text with an importance score."""
 
     __slots__ = ('m_text', 'm_score', 'm_type', 'm_line_range')
 
@@ -170,7 +167,6 @@ class ParameterInfo:
 
 
 class FunctionSummary:
-    """Structured function summary with extractive and abstractive components."""
 
     __slots__ = ('m_title', 'm_one_liner', 'm_bullets', 'm_details', 'm_confidence',
                  'm_category', 'm_quality_report',
@@ -215,7 +211,6 @@ class FunctionSummary:
         return d
 
     def to_dict(self) -> dict:
-        """旧版摘要接口的字典视图。"""
         return {
             "function_name": self.function_name,
             "address": self.address,
@@ -232,7 +227,6 @@ class FunctionSummary:
         }
 
     def to_enhanced_pseudocode(self, original: str) -> str:
-        """在原始伪代码前插入参数与调用注解。"""
         lines = [f"/* {self.function_name or 'function'} — {self.behavior_summary} */"]
         if self.parameters:
             params = ", ".join(p.name if hasattr(p, "name") else str(p)
@@ -264,11 +258,6 @@ class FunctionSummary:
 
 
 class FunctionSummarizer:
-    """Extractive + template-based function summarizer.
-
-    Pseudo-code is decomposed into segments ranked by importance (API calls,
-    string references, control flow), and assembled into a structured summary.
-    """
 
     __slots__ = ('m_max_sentences', 'm_min_score', 'm_api_knowledge', 'm_cache', 'm_cache_hits', 'm_cache_misses', 'm_max_cache_size',
                  'arch', 'mode', 'KNOWN_FUNCTION_SIGNATURES')
@@ -278,7 +267,6 @@ class FunctionSummarizer:
         self.m_max_sentences = max_sentences
         self.m_min_score = min_score
         self.m_api_knowledge = self._build_api_knowledge()
-        # LRU 缓存，避免对相同反编译代码重复摘要
         self.m_max_cache_size = max_cache_size
         self.m_cache = _OrderedDict() if enable_cache else None
         self.m_cache_hits = 0
@@ -355,7 +343,6 @@ class FunctionSummarizer:
         }
 
     def _make_cache_key(self, code, strings, imports, function_name):
-        """生成确定性缓存键 - 对输入内容做SHA256."""
         mat = "|".join([
             code or "",
             ",".join(sorted(strings)) if strings else "",
@@ -370,7 +357,7 @@ class FunctionSummarizer:
         val = self.m_cache.pop(key, None)
         if val is not None:
             self.m_cache_hits += 1
-            self.m_cache[key] = val  # move to end (most recently used)
+            self.m_cache[key] = val
             __dbg.debug("Cache hit (%d total hits)", self.m_cache_hits)
         return val
 
@@ -378,14 +365,13 @@ class FunctionSummarizer:
         if self.m_cache is None:
             return
         if key in self.m_cache:
-            self.m_cache.pop(key)  # move to end
+            self.m_cache.pop(key)
         elif len(self.m_cache) >= self.m_max_cache_size:
-            self.m_cache.popitem(last=False)  # evict LRU
+            self.m_cache.popitem(last=False)
         self.m_cache[key] = summary
         self.m_cache_misses += 1
 
     def cache_stats(self):
-        """返回缓存命中/未命中统计."""
         return {
             'hits': self.m_cache_hits,
             'misses': self.m_cache_misses,
@@ -394,7 +380,6 @@ class FunctionSummarizer:
         }
 
     def clear_cache(self):
-        """清空缓存."""
         if self.m_cache is not None:
             self.m_cache.clear()
             self.m_cache_hits = 0
@@ -516,8 +501,6 @@ class FunctionSummarizer:
         return report
 
     def summarize_fs(self, decompiled_code, strings=None, imports=None, function_name=None):
-        """Generate a FunctionSummary for decompiled pseudo-code."""
-        # 先查缓存
         cache_key = self._make_cache_key(decompiled_code, strings, imports, function_name)
         cached = self._cache_get(cache_key)
         if cached is not None:
@@ -534,13 +517,10 @@ class FunctionSummarizer:
         str_list = strings if strings else []
         imp_list = imports if imports else []
 
-        # Clean comments
         code_clean = _COMMENT_PATTERN.sub(' ', code)
-        # Normalize variable names for readability
         code_clean = _VAR_PATTERN.sub('var', code_clean)
         code_clean = _FUNC_PATTERN.sub('func', code_clean)
 
-        # 1. Segment code into logical blocks
         segments = self._segment_code(code_clean)
         if not segments:
             summary.m_one_liner = "Could not parse function structure."
@@ -548,17 +528,13 @@ class FunctionSummarizer:
             self._cache_put(cache_key, summary)
             return summary
 
-        # 2. Score each segment for importance
         self._score_segments(segments, str_list, imp_list)
 
-        # 3. Build summary from top segments
         self._assemble_summary(summary, segments, str_list, imp_list, code_clean, function_name)
 
-        # 对摘要进行目的分类
         code_lower = code_clean.lower()
         summary.m_category = self._classify_purpose(segments, imp_list, str_list, code_lower)
 
-        # 对摘要进行质量自检
         sorted_segs = sorted(segments, key=lambda s: s.m_score, reverse=True)
         top_segs_for_audit = [s for s in sorted_segs[:self.m_max_sentences] if s.m_score >= self.m_min_score]
         summary.m_quality_report = self._audit_summary_quality(summary, top_segs_for_audit, imp_list, code_clean)
@@ -568,10 +544,8 @@ class FunctionSummarizer:
         return summary
 
     def _segment_code(self, code):
-        """Split code into logical segments: declarations, API calls, control flow, etc."""
         segments = []
 
-        # Extract blocks by structural patterns
         blocks = _re.split(r'(?<=\})\s*\n', code)
         bi = 0
         while bi < len(blocks):
@@ -581,7 +555,6 @@ class FunctionSummarizer:
                 continue
 
             seg = TextSegment(block)
-            # Determine segment type
             if _re.match(r'\s*\w+\s+\w+\s*\(', block):
                 seg.m_type = 'function_decl'
             elif _re.search(r'\w+\s*\([^)]*\)\s*;', block):
@@ -598,28 +571,23 @@ class FunctionSummarizer:
         return segments
 
     def _score_segments(self, segments, strings, imports):
-        """Assign importance scores to each segment."""
         si = 0
         while si < len(segments):
             seg = segments[si]
             text_lower = seg.m_text.lower()
             score = 0.0
 
-            # 1. Keyword-based scoring
             for kw, w in _IMPORTANCE_KEYWORDS.items():
                 if kw in text_lower:
                     score += w
 
-            # 2. API call bonus
             if seg.m_type == 'api_call':
                 score += 1.0
-                # Bonus for known APIs
                 for api_key in self.m_api_knowledge:
                     if api_key.lower() in text_lower:
                         score += 0.5
                         break
 
-            # 3. String reference bonus
             si_s = 0
             while si_s < len(strings):
                 s = strings[si_s]
@@ -627,20 +595,16 @@ class FunctionSummarizer:
                     score += 0.3
                 si_s += 1
 
-            # 4. Control flow importance
             if seg.m_type == 'control_flow':
                 score += 0.4
-                # Switch/case is more informative
                 if 'switch' in text_lower:
                     score += 0.3
 
-            # 5. Position bonus (first and last segments are often important)
             if si == 0:
                 score += 0.3
             elif si == len(segments) - 1:
                 score += 0.2
 
-            # 6. Error handling patterns
             if _re.search(r'(?:error|fail|null|invalid|exception)', text_lower):
                 score += 0.4
 
@@ -648,34 +612,25 @@ class FunctionSummarizer:
             si += 1
 
     def _assemble_summary(self, summary, segments, strings, imports, code, func_name):
-        """Build the final summary from scored segments."""
-        # Sort by score descending
         sorted_segs = sorted(segments, key=lambda s: s.m_score, reverse=True)
         top_segs = sorted_segs[:self.m_max_sentences]
         top_segs = [s for s in top_segs if s.m_score >= self.m_min_score]
 
-        # Title
         if func_name:
             summary.m_title = f"Summary of {func_name}"
         else:
             summary.m_title = "Function Summary"
 
-        # One-liner
         summary.m_one_liner = self._generate_one_liner(top_segs, imports, code)
 
-        # Bullet points
         summary.m_bullets = self._generate_bullets(top_segs, strings, imports)
 
-        # Detailed description
         summary.m_details = self._generate_details(sorted_segs[:10], imports)
 
-        # Confidence
         avg_score = sum(s.m_score for s in sorted_segs[:self.m_max_sentences]) / max(len(sorted_segs[:self.m_max_sentences]), 1)
         summary.m_confidence = min(avg_score / 2.0, 0.95)
 
     def _generate_one_liner(self, top_segs, imports, code):
-        """Generate a single-sentence summary."""
-        # First, try API-based 框架
         if imports:
             for imp in imports:
                 base_imp = imp.split('@')[-1] if '@' in imp else imp
@@ -683,7 +638,6 @@ class FunctionSummarizer:
                     verb, obj = self.m_api_knowledge[base_imp]
                     return f"This function {verb} {obj}."
 
-        # Check for common patterns
         if any('error' in s.m_text.lower() for s in top_segs):
             return "This function performs operations with error checking."
 
@@ -695,7 +649,6 @@ class FunctionSummarizer:
             return f"This function iterates over data and performs {call_count} sub-operations."
 
         if len(top_segs) > 0:
-            # Extract first meaningful statement
             first = top_segs[0].m_text
             first = _re.sub(r'[\s;{}]+', ' ', first).strip()
             if len(first) > 100:
@@ -705,21 +658,17 @@ class FunctionSummarizer:
         return "This function performs data processing operations."
 
     def _generate_bullets(self, top_segs, strings, imports):
-        """Generate bullet-point observations."""
         bullets = []
 
-        # API usage bullets
         if imports:
             known_apis = [imp for imp in imports if imp.split('@')[-1] if imp in self.m_api_knowledge]
             if known_apis:
                 bullets.append(f"Uses {', '.join(known_apis[:3])}")
 
-        # String-derived context
         meaningful_strings = [s for s in strings if s and len(s) > 3 and not s.startswith('.')]
         if meaningful_strings[:3]:
             bullets.append(f"References: {', '.join(meaningful_strings[:3])}")
 
-        # Operational observations from top segments
         si = 0
         while si < min(len(top_segs), 3):
             seg = top_segs[si]
@@ -729,7 +678,6 @@ class FunctionSummarizer:
                     bullets.append(f"Performs: {call_text}")
             elif seg.m_type == 'control_flow':
                 flow_text = seg.m_text.strip()[:5]
-                # Extract condition for readability
                 cond_match = _re.search(r'\((.*?)\)', seg.m_text)
                 if cond_match:
                     bullets.append(f"Conditionally executes based on: {cond_match.group(1)}")
@@ -738,10 +686,8 @@ class FunctionSummarizer:
         return bullets[:6]
 
     def _generate_details(self, sorted_segs, imports):
-        """Generate a longer descriptive paragraph."""
         parts = []
 
-        # Purpose statement
         if imports:
             known = []
             for imp in imports:
@@ -752,7 +698,6 @@ class FunctionSummarizer:
             if known:
                 parts.append(f"The function {', '.join(known[:3])}.")
 
-        # Structure summary
         control_segs = [s for s in sorted_segs if s.m_type == 'control_flow']
         if control_segs:
             parts.append(f"Contains {len(control_segs)} conditional block(s).")
@@ -764,7 +709,6 @@ class FunctionSummarizer:
         return " ".join(parts) if parts else "No additional details available."
 
     def batch_summarize_fs(self, functions):
-        """Summarize multiple functions at once."""
         results = []
         fi = 0
         while fi < len(functions):
@@ -780,7 +724,6 @@ class FunctionSummarizer:
         return results
 
     def compare_summaries_fs(self, summary_a, summary_b):
-        """Compute similarity between two summaries (Jaccard on significant words)."""
         def _word_set(text):
             words = _re.findall(r'\b[a-zA-Z]{3,}\b', text.lower())
             return set(w for w in words if w not in {'the', 'and', 'for', 'this', 'with', 'from', 'that'})

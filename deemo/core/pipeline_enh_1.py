@@ -23,10 +23,9 @@ def apply_enhancements_1(result, binary_path, binfo, kwargs, binary_hash=None):
     # (a) 路径多样性管理
     if sym_result:
         try:
-            # path_diversity_core 已重写, SimHashCalibrator/ConvergenceAnalyzer 不存在, 该增强当前跳过
             from modules.analysis.symbolic.src.path_diversity_core import (
                 PathDiversityTracker, DiversityAwarePathSelector,
-                DiversityStrategy, SimHashCalibrator, ConvergenceAnalyzer,
+                DiversityStrategy,
             )
             # 惰性初始化——仅在符号执行被激活时构造
             _diversity_tracker = PathDiversityTracker(

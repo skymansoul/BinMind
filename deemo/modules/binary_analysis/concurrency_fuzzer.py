@@ -1,5 +1,3 @@
-"""Concurrency fuzzer: inject sleeps, generate schedules, detect races/deadlocks."""
-
 import json
 import os
 import random
@@ -9,10 +7,6 @@ import threading
 import itertools as _itertools
 from dataclasses import asdict, dataclass
 from enum import Enum
-
-# ─────────────────────────────────────────────────────────────────────────
-# type declarations
-# ─────────────────────────────────────────────────────────────────────────
 
 class RaceType(Enum):
     DATA_RACE = "data_race"
@@ -75,9 +69,20 @@ class ConcurrencyFuzzResult:
         self.unique_interleavings = 0
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# synchronisation points catalog
-# ─────────────────────────────────────────────────────────────────────────
+SYNC_FUNCTIONS = [
+    "pthread_mutex_lock", "pthread_mutex_unlock",
+    "pthread_cond_wait", "pthread_cond_signal",
+    "pthread_rwlock_rdlock", "pthread_rwlock_wrlock",
+    "pthread_rwlock_unlock",
+    "pthread_barrier_wait",
+    "EnterCriticalSection", "LeaveCriticalSection",
+    "WaitForSingleObject", "WaitForMultipleObjects",
+    "SetEvent", "ResetEvent",
+    "AcquireSRWLockExclusive", "AcquireSRWLockShared",
+    "ReleaseSRWLockExclusive", "ReleaseSRWLockShared",
+    "InterlockedIncrement", "InterlockedDecrement",
+    "InterlockedExchange", "InterlockedCompareExchange",
+]
 
 SYNC_FUNCTIONS = [
     "pthread_mutex_lock", "pthread_mutex_unlock",
@@ -122,12 +127,7 @@ RACE_PATTERNS = {
 }
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# interleaving engine
-# ─────────────────────────────────────────────────────────────────────────
-
 def _generate_sequential(n_threads, n_steps):
-    """Thread 1 runs to completion, then 2, etc."""
     schedule = []
     for tid in range(n_threads):
         schedule.extend([tid] * (n_steps // n_threads))
@@ -135,12 +135,10 @@ def _generate_sequential(n_threads, n_steps):
 
 
 def _generate_random(n_threads, n_steps):
-    """Uniform random interleaving of thread steps."""
     return [random.randint(0, n_threads - 1) for _ in range(n_steps)]
 
 
 def _generate_stress(n_threads, n_steps):
-    """Frequent context-switch pattern: round-robin slices of 2-4 steps."""
     schedule = []
     tid = 0
     while len(schedule) < n_steps:
@@ -157,23 +155,17 @@ SCHEDULE_GENERATORS = {
 }
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# lock-order graph for deadlock detection
-# ─────────────────────────────────────────────────────────────────────────
-
 class LockOrderGraph:
     def __init__(self):
-        self.edges = {}    # lock_a -> {lock_b, ...} meaning "held a then b"
+        self.edges = {}    # lock_a -> {lock_b, ...} 表示持有 a 后再获取 b
 
     def record_acquisition(self, held_locks, new_lock):
-        """Record that while holding `held_locks`, thread acquired `new_lock`."""
         for held in held_locks:
             if held not in self.edges:
                 self.edges[held] = set()
             self.edges[held].add(new_lock)
 
     def detect_cycles(self):
-        """Tarjan-like DFS cycle detection."""
         visited = set()
         rec_stack = set()
         cycles = []
@@ -186,7 +178,6 @@ class LockOrderGraph:
                 if neighbor not in visited:
                     _dfs(neighbor, path)
                 elif neighbor in rec_stack:
-                    # found cycle
                     cycle_start = path.index(neighbor)
                     cycles.append(list(path[cycle_start:]) + [neighbor])
             path.pop()
@@ -198,12 +189,7 @@ class LockOrderGraph:
         return cycles
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# fuzzer
-# ─────────────────────────────────────────────────────────────────────────
-
 class ConcurrencyFuzzer:
-    """Schedule-based fuzzing for multithreaded binaries."""
 
     def __init__(self, config=None):
         self.config = config or {}
@@ -214,12 +200,6 @@ class ConcurrencyFuzzer:
         self.sleep_max_us = self.config.get('sleep_max_us', 500)
 
     def fuzz(self, target, iterations=None):
-        """Fuzz a multi-threaded target by replaying interleaving schedules.
-
-        `target` can be:
-          - a list of list-of-operations (one per thread), or
-          - a callable that takes (thread_id, step_index) and returns an op dict
-        """
         # 字符串路径输入：走二进制模糊分支，返回 dict（测试规格）
         if isinstance(target, str):
             return self._fuzz_binary_path(target, iterations)
@@ -251,7 +231,6 @@ class ConcurrencyFuzzer:
                 if op is None:
                     continue
 
-                # track lock acquisitions
                 if op.get('type') == 'lock':
                     lock_id = op.get('lock', f'lock_{tid}_{step}')
                     lock_graph.record_acquisition(
@@ -263,9 +242,14 @@ class ConcurrencyFuzzer:
                     if lock_id in thread_state[tid]['held_locks']:
                         thread_state[tid]['held_locks'].remove(lock_id)
 
-                # track shared accesses
+                # 共享内存访问追踪
                 elif op.get('type') in ('read', 'write'):
                     addr = op.get('address')
+                    if addr is not None:
+                        if addr not in shared_accesses:
+                            shared_accesses[addr] = []
+                        shared_accesses[addr].append(
+                            (tid, op['type'], sched_idx))
                     if addr is not None:
                         if addr not in shared_accesses:
                             shared_accesses[addr] = []
@@ -279,15 +263,15 @@ class ConcurrencyFuzzer:
 
             result.executions += 1
 
-        # data race detection
+        # 竞态检测
         for addr, accesses in shared_accesses.items():
             tids = {a[0] for a in accesses}
             has_write = any(a[1] == 'write' for a in accesses)
             if len(tids) > 1 and has_write:
-                # check if any lock covers these accesses
+                # 检查是否有锁覆盖这些访问
                 locks_held = set()
                 for a in accesses:
-                    # simplified: assume no locks held if not in our model
+                    # 简化：模型中无锁信息时视为无锁保护
                     pass
                 race = RaceCondition()
                 race.type = RaceType.DATA_RACE
@@ -296,7 +280,7 @@ class ConcurrencyFuzzer:
                 race.trigger = f"concurrent read+write by {len(tids)} threads"
                 result.races.append(race)
 
-        # deadlock detection via lock-order cycles
+        # 锁序环检测死锁
         cycles = lock_graph.detect_cycles()
         for cycle in cycles:
             race = RaceCondition()
@@ -314,7 +298,6 @@ class ConcurrencyFuzzer:
         return ScheduleMode.RANDOM
 
     def analyze_race(self, race):
-        """Score exploitability of a detected race condition."""
         exploit = False
         sev = "low"
 
@@ -323,7 +306,7 @@ class ConcurrencyFuzzer:
             exploit = False
         elif race.type == RaceType.DATA_RACE:
             sev = "high"
-            # if the race involves a write to a pointer-sized location, mark exploitable
+            # 涉及指针大小写入的竞态视为可利用
             if 'read' in race.trigger and 'write' in race.trigger:
                 exploit = len(race.threads_involved) >= 2
         elif race.type == RaceType.ATOMICITY:
@@ -332,10 +315,6 @@ class ConcurrencyFuzzer:
 
         return {"exploitable": exploit, "severity": sev}
 
-
-# ─────────────────────────────────────────────────────────────────────────
-# 调度计划生成（测试规格：ThreadSchedule 干预对象）
-# ─────────────────────────────────────────────────────────────────────────
 
     def _generate_schedule(self, sync_points, num_threads=2):
         """为每个线程在每个同步点生成一条调度干预记录。
@@ -366,10 +345,6 @@ class ConcurrencyFuzzer:
             thread_id=thread_id, sync_point=sync_point,
             action='force_order', delay_ms=0, order=order)
 
-
-# ─────────────────────────────────────────────────────────────────────────
-# 竞态识别与干预代码生成
-# ─────────────────────────────────────────────────────────────────────────
 
     def _detect_race_from_output(self, output):
         """从程序输出识别竞态迹象。
@@ -452,10 +427,6 @@ class ConcurrencyFuzzer:
         return '\n'.join(lines)
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# 统计与优化
-# ─────────────────────────────────────────────────────────────────────────
-
     def _calculate_reproduction_rate(self, total, successful):
         """竞态复现率：成功复现次数 / 总迭代次数。"""
         if total <= 0:
@@ -488,10 +459,6 @@ class ConcurrencyFuzzer:
         return output_path
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# 二进制路径模式
-# ─────────────────────────────────────────────────────────────────────────
-
     def _fuzz_binary_path(self, binary_path, iterations=None):
         """二进制路径模式：校验输入后执行调度模糊，返回结果 dict。
 
@@ -523,46 +490,6 @@ class ConcurrencyFuzzer:
         )
         return self._result_to_dict(result)
 
-    def _result_to_dict(self, result):
-        """把 ConcurrencyFuzzResult 转成纯 dict。
-
-        Enum 成员转 value、ThreadSchedule 转 dict，保证 JSON 可序列化。
-        """
-        def _race_to_dict(r):
-            return {
-                'race_type': (r.race_type.value
-                              if isinstance(r.race_type, RaceType)
-                              else r.race_type),
-                'location': r.location,
-                'shared_variable': r.shared_variable,
-                'thread1_access': r.thread1_access,
-                'thread2_access': r.thread2_access,
-                'sync_missing': r.sync_missing,
-                'severity': r.severity,
-                'description': r.description,
-            }
-
-        def _sched_to_dict(s):
-            if isinstance(s, ThreadSchedule):
-                return asdict(s)
-            if isinstance(s, list):
-                return [_sched_to_dict(x) for x in s]
-            return s
-
-        return {
-            'binary_path': result.binary_path,
-            'total_iterations': result.total_iterations,
-            'successful_reproductions': result.successful_reproductions,
-            'reproduction_rate': result.reproduction_rate,
-            'detected_races': [_race_to_dict(r) for r in result.detected_races],
-            'schedules_tested': [_sched_to_dict(s) for s in result.schedules_tested],
-            'best_schedule': (_sched_to_dict(result.best_schedule)
-                              if result.best_schedule else None),
-            'error': result.error,
-        }
-
-
-# ─────────────────────────────────────────────────────────────────────────
 
 def fuzz_concurrency(binary_path, iterations=100):
     fuzzer = ConcurrencyFuzzer()

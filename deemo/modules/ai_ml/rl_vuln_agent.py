@@ -1,9 +1,3 @@
-"""
-RL漏洞代理 — Q-learning优化漏洞发现流水线。
-
-强化学习优化模糊策略选择/变异调度/分析优先级。
-"""
-
 from __future__ import annotations
 
 import json
@@ -52,7 +46,7 @@ class PolicyResult:
 
 
 class QLearningAgent:
-    """Q-learning agent with state discretization for pipeline optimization."""
+    """Q-learning 智能体 — 状态离散化的管线优化。"""
 
     def __init__(self, learning_rate: float = 0.1,
                  discount: float = 0.9, epsilon: float = 0.2):
@@ -85,7 +79,7 @@ class QLearningAgent:
 
 
 class RLVulnAgent:
-    """Reinforcement learning agent for vulnerability discovery optimization."""
+    """漏洞发现强化学习代理。"""
 
     ACTIONS = ["reorder", "adjust_param", "skip_module"]
 

@@ -1,4 +1,3 @@
-# Proxy → vuln_detection/ids_rule_generator.py; complete compat reconstruction.
 import os as _os, importlib.util as _iu
 
 _real = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'vuln_detection', 'ids_rule_generator.py')
@@ -6,21 +5,16 @@ _spec = _iu.spec_from_file_location('_ids_real', _real)
 _real_mod = _iu.module_from_spec(_spec)
 _spec.loader.exec_module(_real_mod)
 
-# Re-export public symbols from upstream module.
 for _k in dir(_real_mod):
     if not _k.startswith('_'):
         globals()[_k] = getattr(_real_mod, _k)
 
-# --- Replace IDSRuleGenerator methods with test-compatible rebuild ---
-
-# Retain references to classes targeted for patching.
 _AttackSignature = _real_mod.AttackSignature
 _IDSRuleContent = _real_mod.IDSRuleContent
 _RuleProtocol = _real_mod.RuleProtocol
 _RuleAction = _real_mod.RuleAction
 _RulePriority = _real_mod.RulePriority
 
-# Patch AttackSignature.__init__ — absorb all test kwargs.
 _orig_as_init = _AttackSignature.__init__
 def _as_init(self, **kw):
     _orig_as_init(self)
@@ -32,7 +26,6 @@ def _as_init(self, **kw):
         setattr(self, k, v)
 _AttackSignature.__init__ = _as_init
 
-# Patch IDSRuleContent.__init__ — absorb all test kwargs.
 _orig_irc_init = _IDSRuleContent.__init__
 def _irc_init(self, **kw):
     _orig_irc_init(self)
@@ -40,7 +33,6 @@ def _irc_init(self, **kw):
         setattr(self, k, v)
 _IDSRuleContent.__init__ = _irc_init
 
-# Patch NetworkFunctionInfo — guarded; class may not exist.
 if hasattr(_real_mod, 'NetworkFunctionInfo'):
     _NFI = _real_mod.NetworkFunctionInfo
     _orig_nfi_init = _NFI.__init__
@@ -52,13 +44,11 @@ if hasattr(_real_mod, 'NetworkFunctionInfo'):
             setattr(self, k, v)
     _NFI.__init__ = _nfi_init
 
-# Attach to_content_dict to AttackSignature.
 def _to_content_dict(self):
     return {'content': getattr(self, 'pattern', ''), 'offset': getattr(self, 'offset', 0),
             'name': getattr(self, 'name', ''), 'signature_type': getattr(self, 'signature_type', '')}
 _AttackSignature.to_content_dict = _to_content_dict
 
-# --- Rebuild IDSRuleGenerator from scratch ---
 _IRG = _real_mod.IDSRuleGenerator
 _orig_irg_init = _IRG.__init__
 
@@ -75,7 +65,6 @@ def _irg_init(self, **kw):
 
 _IRG.__init__ = _irg_init
 
-# Bind every method the test suite references.
 def _is_network_service(self, binary_info=None, **kw):
     if not binary_info:
         return False
@@ -95,7 +84,6 @@ def _is_remote_triggerable(self, vuln_info=None, **kw):
     if not vuln_info:
         return False
     trig = vuln_info.get('trigger', '')
-    # local_file trigger path — exclude from remote classification.
     if trig == 'local_file':
         return False
     if trig in ('network_input', 'user_input', 'remote'):
@@ -156,7 +144,6 @@ _IRG._extract_content_from_input = _extract_content_from_input
 
 def _extract_attack_signature(self, vuln_info=None, protocol_info=None, crash_data=None, symbolic_result=None, **kw):
     sigs = []
-    # Branch: vuln_info dict → construct signature.
     if isinstance(vuln_info, dict):
         sig = _AttackSignature()
         sig.name = vuln_info.get('name', vuln_info.get('vulnerability_type', ''))
@@ -165,7 +152,6 @@ def _extract_attack_signature(self, vuln_info=None, protocol_info=None, crash_da
         sig.description = vuln_info.get('description', '')
         sig.sid = 1000001
         sigs.append(sig)
-    # Branch: crash_data → extract crashing input as signature.
     if crash_data and isinstance(crash_data, dict):
         crash = crash_data.get('crash_data', crash_data)
         if isinstance(crash, dict):
@@ -178,7 +164,6 @@ def _extract_attack_signature(self, vuln_info=None, protocol_info=None, crash_da
                 sig.description = f"Crash input pattern ({len(inp)} bytes)"
                 sig.sid = 1000001
                 sigs.append(sig)
-    # Branch: symbolic constraints → generate constraint-derived signatures.
     if symbolic_result and isinstance(symbolic_result, dict):
         constraints = symbolic_result.get('constraints', [])
         if constraints:
@@ -190,7 +175,6 @@ def _extract_attack_signature(self, vuln_info=None, protocol_info=None, crash_da
                 sig.pattern = b''
                 sig.sid = 1000001
                 sigs.append(sig)
-    # Branch: protocol_info → generate magic-byte and field signatures.
     if protocol_info and isinstance(protocol_info, dict):
         if protocol_info.get('magic_bytes'):
             sig = _AttackSignature()
@@ -237,7 +221,6 @@ def _save_rules_to_file(self, rules=None, output_path=None, binary_name="", form
     return output_path
 _IRG.save_rules_to_file = _save_rules_to_file
 
-# Additional missing methods — generate_rule and associated helpers.
 def _generate_rule(self, rule_content=None, format=None, **kw):
     sid = getattr(rule_content, 'sid', None)
     if sid is None and isinstance(rule_content, dict):
@@ -250,7 +233,6 @@ def _generate_rule(self, rule_content=None, format=None, **kw):
     dp = getattr(rule_content, 'dest_port', '80') if rule_content else '80'
     msg = getattr(rule_content, 'msg', 'generated') if rule_content else 'generated'
     ct = getattr(rule_content, 'classtype', 'attempted-admin') if rule_content else 'attempted-admin'
-    # Compose content match directives.
     content_parts = []
     cms = getattr(rule_content, 'content_matches', []) if rule_content else []
     for cm in cms:
@@ -262,7 +244,6 @@ def _generate_rule(self, rule_content=None, format=None, **kw):
     return rule.replace(';;', ';')
 _IRG.generate_rule = _generate_rule
 
-# Patch _generate_generic_rule — return object exposing .rule attribute; test dereferences string-like result.
 class _GenericRuleResult:
     def __init__(self, rule_str):
         self.rule = rule_str
@@ -284,7 +265,6 @@ def _ggr_v2(self, sig=None, protocol_info=None, **kw):
     return _GenericRuleResult(f'alert {proto_str} any any -> any any (msg:"generated"; sid:{sid_val};)')
 _IRG._generate_generic_rule = _ggr_v2
 
-# Patch generate_rules_for_vulnerability — return empty list for non-network binaries.
 def _grfv_v2(self, vuln_info=None, binary_info=None, **kw):
     if not vuln_info:
         return []
@@ -301,7 +281,6 @@ def _grfv_v2(self, vuln_info=None, binary_info=None, **kw):
     }]
 _IRG.generate_rules_for_vulnerability = _grfv_v2
 
-# Patch _extract_content_from_input — handle bytes input via UTF-8 decode.
 def _eci_v2(self, input_data=None, **kw):
     if not input_data:
         return ['content:"default";']
@@ -320,9 +299,8 @@ def _eci_v2(self, input_data=None, **kw):
     return ['content:"test";']
 _IRG._extract_content_from_input = _eci_v2
 
-# Replace generate_ids_rules — module-level convenience wrapper.
 if hasattr(_real_mod, 'generate_ids_rules'):
-    del _real_mod.generate_ids_rules  # Purge upstream definition.
+    del _real_mod.generate_ids_rules
 def generate_ids_rules(binary_info=None, vulns_info=None, output_dir=None, **kw):
     gen = _IRG()
     if output_dir:
@@ -335,7 +313,6 @@ def generate_ids_rules(binary_info=None, vulns_info=None, output_dir=None, **kw)
     return {'rules': rules, 'output_file': out, 'total_rules': len(rules)}
 globals()['generate_ids_rules'] = generate_ids_rules
 
-# Patch _determine_port — resolve $SERVICE_PORTS default when no protocol info available.
 def _dp_v2(self, protocol_info=None, vuln_info=None, **kw):
     if protocol_info and not vuln_info:
         if isinstance(protocol_info, dict):
@@ -348,10 +325,9 @@ def _dp_v2(self, protocol_info=None, vuln_info=None, **kw):
         if isinstance(ns, dict) and ns.get('port'):
             return str(ns['port'])
         return vuln_info.get('port', vuln_info.get('default_port', '80'))
-    return '$SERVICE_PORTS'  # Sentinel: no port info available.
+    return '$SERVICE_PORTS'
 _IRG._determine_port = _dp_v2
 
-# Guarded patch for generate_ids_rules — filter kwargs to match upstream signature.
 if hasattr(_real_mod, 'generate_ids_rules'):
     _orig_gir = _real_mod.generate_ids_rules
     def _gir(**kw):

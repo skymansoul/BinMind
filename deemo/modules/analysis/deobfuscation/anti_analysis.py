@@ -172,14 +172,14 @@ def _check_proc_exe_symlink() -> Tuple[bool, str]:
     return False, ""
 
 
-# Detection primitives -- a standalone 检查
+# 独立检测原语
 
 def _check_ptrace_call(binary_path: str) -> bool:
-    """Look for PTRACE_TRACEME (value 0) binary's import/plt"""
+    """检测 PTRACE_TRACEME (值 0) 的导入/plt。"""
     try:
         with open(binary_path, "rb") as fh:
             raw = fh.read()
-        # ptrace() with arg0 == 0 (PTRACE_TRACEME) -- scan for common patterns
+        # ptrace() arg0==0 (PTRACE_TRACEME) — 扫描常见模式
         return b"ptrace" in raw and (b"\x31\xff" in raw or b"\x6a\x00" in raw)
     except OSError:
         return False
@@ -190,7 +190,7 @@ def _check_ld_preload(raw_data: bytes) -> bool:
 
 
 def _check_tracer_pid() -> bool:
-    """读取 /proc/self/status Linux; non-zero TracerPid => debugged"""
+    """读取 /proc/self/status; TracerPid 非零表示被调试。"""
     try:
         with open("/proc/self/status") as fh:
             content = fh.read()
@@ -201,7 +201,7 @@ def _check_tracer_pid() -> bool:
 
 
 def _check_ptrace_scope() -> bool:
-    """返回 True ptrace_scope!= 0 (block attach)"""
+    """返回 True 表示 ptrace_scope!=0 (阻止 attach)。"""
     try:
         with open("/proc/sys/kernel/yama/ptrace_scope") as fh:
             return fh.read().strip() != "0"
@@ -210,7 +210,7 @@ def _check_ptrace_scope() -> bool:
 
 
 def _check_timing_anomaly() -> bool:
-    """Crude timing 检查: two successive clock 读取 >2ms apart => breakpoint"""
+    """粗略时序检查: 两次时钟读取差 >2ms 则可能被断点。"""
     t1 = time.perf_counter()
     time.perf_counter()
     t2 = time.perf_counter()
@@ -259,7 +259,7 @@ _DEBUGGER_PORTS = (23946, 4444, 5555, 31337, 1337, 27042, 27043, 9999)
 
 
 def _scan_debugger_ports() -> List[int]:
-    """返回 list 打开 debugger-common ports via connect scan"""
+    """返回已开放的调试器常用端口列表 (connect 扫描)。"""
     open_ports = []
     for port in _DEBUGGER_PORTS:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -389,7 +389,7 @@ class BypassResult:
 
 
 class AntiAnalysisDetector:
-    """运行 反分析 检查 against a binary"""
+    """对二进制运行反分析检测。"""
 
     ANTI_PATTERNS: Dict[str, List[bytes]] = {
         "is_debugger": [b"IsDebuggerPresent", b"CheckRemoteDebugger",
@@ -432,7 +432,7 @@ class AntiAnalysisDetector:
 
 
 class BypassSolver:
-    """detection results, produce concrete bypass steps"""
+    """基于检测结果构造具体绕过步骤。"""
 
     _DIFFICULTY_MAP = {
         "ptrace_scope": "medium", "timing": "medium",

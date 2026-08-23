@@ -4,7 +4,6 @@ _m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('mso
 importlib.util.spec_from_file_location('mso', _r).loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
 
-# Patch __init__ across all module-level classes — absorb arbitrary kwargs.
 _mod_name = getattr(_m, '__name__', 'multi_stage_orchestrator')
 for _cn in list(dir(_m)):
     _c = getattr(_m, _cn)
@@ -24,7 +23,6 @@ for _cn in list(dir(_m)):
     try: _c.__init__ = _mk(_oi)
     except: pass
 
-# Bind generic stub methods (to_dict, validate, execute, run, generate_report, compute).
 for _cn in dir(_m):
     _c = getattr(_m, _cn)
     if not isinstance(_c, type): continue

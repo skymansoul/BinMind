@@ -104,13 +104,9 @@ def apply_enhancements_3(result, binary_path, binfo, kwargs, binary_hash=None):
     # (t) 编译器产物归一化器 (CompilerArtifactNormalizer)
     # 参考: Caballero et al. USENIX Security 2009
     try:
-        # CompilerArtifactNormalizer 已重构为 normalize_cfg 函数 API, 该增强当前跳过
-        from modules.core.compat.compiler_artifact_normalizer import (
-            CompilerArtifactNormalizer,
-        )
-        _compiler_norm = CompilerArtifactNormalizer()
-        result['_compiler_normalizer'] = _compiler_norm
-        logger.debug('CompilerArtifactNormalizer activated')
+        from modules.core.compat.compiler_artifact_normalizer import normalize_cfg
+        result['_compiler_normalizer'] = normalize_cfg
+        logger.debug('compiler artifact normalizer activated')
     except ImportError:
         logger.debug('optional plugin not available')
 

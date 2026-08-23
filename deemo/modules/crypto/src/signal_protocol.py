@@ -204,6 +204,3 @@ def detect_e2ee_bytes(data: bytes, source: str = "memory") -> List[E2EEProtocolR
 
 __all__ = ['E2EEProtocolDetector', 'E2EEProtocolResult',
            'detect_e2ee_protocols', 'detect_e2ee_bytes']
-
-def _debug_print(*a,**kw):
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

@@ -1,10 +1,10 @@
-"""Thin redirection layer core.static_analysis — preserves 遗留 import paths
+"""薄重定向层到 core.static_analysis — 保留遗留导入路径。
 
-2025 增强: 集成 ISA 形式语义的符号执行概念
-本模块作为适配层, 当 BinSym 风格的直接二进制执行可用时，绕过 IR 提升步骤
-将架构原生指令直接送入符号引擎。这消除了 VEX/LLVM IR 提升中的语义失真
-参考: Tempel et al., "BinSym: Binary-Level 符号执行 using
-Formal Descriptions Instruction Semantics" 
+2025 增强: 集成 ISA 形式语义的符号执行概念。
+本模块作为适配层, 当 BinSym 风格的直接二进制执行可用时, 绕过 IR 提升步骤,
+将架构原生指令直接送入符号引擎。这消除了 VEX/LLVM IR 提升中的语义失真。
+参考: Tempel et al., "BinSym: Binary-Level Symbolic Execution using
+Formal Descriptions of Instruction Semantics"
 """
 from core.static_analysis import *  # noqa: F401, F403
 
@@ -36,7 +36,7 @@ def is_native_se_available() -> bool:
     return os.path.exists(_ISA_SPEC_PATH)
 
 def _debug_print(*args, **kwargs):  # 调试残余, 未删除
-    """Print debug info env var set. currently"""
+    """环境变量设置时打印调试信息"""
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)
 

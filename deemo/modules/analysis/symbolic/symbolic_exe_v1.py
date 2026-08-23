@@ -1,9 +1,7 @@
-"""符号执行 primitives via angr
+"""符号执行引擎 — 基于 angr
 
-Covers 路径探索, input recovery, null-deref detection
-per-argument taint propagation, 系统调用 arg tracking, loop-bound
-aware exploration depth capping
-operations fail gracefully angr absent
+覆盖路径探索、输入恢复、空指针解引用检测、逐参数污点传播、
+系统调用参数追踪、循环感知探索深度封顶。angr 缺失时优雅降级。
 
 二轮增强 — 循环感知探索深度：检测 angr 的 LoopSeer exploration technique
 当路径深度 > detected_loop_bound × 3 时自动切换为 BFS 以避免 DFS 陷入
@@ -17,8 +15,8 @@ operations fail gracefully angr absent
 利用内建 BVS 命名约定（taint_arg{N}_{offset}_{width}）递归解析
 输入字节→内存地址的污点映射，返回受影响的输入索引
 
-三轮增强 — 路径剪枝钩子 (PathPruning钩子)：作为 angr SimStatePlugin
-注入，在分支解析后检测 IP 是否落在 abort/__栈_chk_fail/__fortify_fail
+三轮增强 — 路径剪枝钩子 (PathPruningHook)：作为 angr SimStatePlugin
+注入，在分支解析后检测 IP 是否落在 abort/__stack_chk_fail/__fortify_fail
 等不安全终止函数上，丢弃无意义路径以节省探索资源
 
 三轮增强 — SMT-LIB2 序列化：extract_path_constraints_smt2 将约束集
@@ -71,10 +69,9 @@ def _count_ite_nesting(constraint_str: str) -> int:
 
 
 class SymbolicExecutor:
-    """Light 封装 angr for single-binary 符号执行
+    """轻量封装 angr，面向单二进制符号执行
 
-    Accepts a target address or a step budget. 返回 per-state
-    instruction-指针 快照s"""
+    接受目标地址或步数预算，返回逐状态指令指针快照"""
 
     def __init__(self, binary: str | bytes | None = None):
         self.binary = binary
@@ -84,8 +81,7 @@ class SymbolicExecutor:
 
     def run(self, target_addr: int | None = None, avoid_addrs: list[int] | None = None,
             max_steps: int = 200, timeout: int = 120) -> list[dict]:
-        """执行 symbolically. target_addr set, explore toward;
-        otherwise step forward max_steps"""
+        """执行符号执行。设置 target_addr 时朝目标探索，否则步进 max_steps 步"""
         try:
             import angr  # type: ignore[import-untyped]
         except ImportError:
@@ -126,9 +122,9 @@ class SymbolicExecutor:
         return results
 
     def concrete_write_detector(self, max_steps: int = 500) -> list[dict]:
-        """查找 paths symbolic stdin reaches a 写入()/发送() 系统调用 arg
+        """查找符号 stdin 到达 write/send 系统调用参数的路径
 
-        使用 angr 的 SimulationManager 配合 查找=write_addr 探测
+        使用 angr SimulationManager 配合 find=write_addr 探测
         返回每条路径的 syscall 地址以及被写入数据的符号约束摘要"""
         try:
             import angr
@@ -156,7 +152,7 @@ class SymbolicExecutor:
     def assess_explosion_risk(self) -> list[dict]:
         """扫描当前所有 angr 状态，标记 ITE 嵌套过深的风险状态
 
-        返回 [(state_id, ite_depth, risk_level),.]
+        返回 [(state_id, ite_depth, risk_level), ...]
         ITE depth > 20 → 'critical', 10-20 → 'warning', <10 → 'normal'"""
         try:
             import angr
@@ -187,11 +183,12 @@ class SymbolicExecutor:
 
 
 class PathExplorer:
-    """Explores paths entry a target address, collecting basic-block
-    traces. 支持 BFS DFS strategies
+    """从入口探索到目标地址的路径，收集基本块轨迹
 
-    二轮增强 — 循环感知策略切换：当单路径深度 > 200 时自动从 DFS
-    切换到 BFS，因为极大可能陷入循环展开。且增加了 Veritesting
+    支持 BFS/DFS 策略
+
+    二轮增强 — 循环感知策略切换: 当单路径深度 > 200 时自动从 DFS
+    切换到 BFS, 因为极大可能陷入循环展开。且增加了 Veritesting
     作为可选的第三个策略
     """
 
@@ -205,7 +202,7 @@ class PathExplorer:
         self._strategy_switched = False
 
     def explore_to(self, target: int, max_paths: int = 10) -> list[dict]:
-        """查找 up max_paths paths entry target. Records BB traces"""
+        """查找最多 max_paths 条从入口到目标地址的路径，记录基本块轨迹"""
         try:
             import angr  # type: ignore[import-untyped]
         except ImportError:
@@ -238,7 +235,7 @@ class PathExplorer:
         return self._found_paths
 
     def find_input_reaching(self, target: int) -> bytes | None:
-        """Recover a concrete stdin input reaches target address"""
+        """恢复一个能到达目标地址的具体 stdin 输入"""
         try:
             import angr  # type: ignore[import-untyped]
         except ImportError:
@@ -258,8 +255,8 @@ class PathExplorer:
 
 
 def symbolic_check_for_null_deref(binary: str, target_func: int = 0) -> list[dict]:
-    """Step 500 instructions target_func (or entry) collect errored
-    states messages indicate null or uninitialized access"""
+    """步进 500 条指令检查目标函数（或入口），收集 errored 状态中
+    指示空指针或未初始化访问的错误信息"""
     try:
         import angr  # type: ignore[import-untyped]
     except ImportError:
@@ -283,8 +280,8 @@ def symbolic_check_for_null_deref(binary: str, target_func: int = 0) -> list[dic
 
 
 def function_arg_taint(binary: str, func_addr: int, arg_index: int = 0) -> dict[str, Any]:
-    """Mark one calling-convention argument symbolic trace
-    constraints across 200 steps. 返回 taint sinks found"""
+    """将调用约定参数标记为符号，追踪跨 200 步的约束。
+    返回发现的污点汇聚点"""
     try:
         import angr  # type: ignore[import-untyped]
     except ImportError:
@@ -373,12 +370,11 @@ def function_arg_taint_matrix(binary: str, func_addr: int,
 
 
 # 三轮增强 — 符号内存模型
-# 封装 angr memory.加载 / memory.存储，内建 BVS 依赖追踪解析 taint 来源
+# 封装 angr memory.load / memory.store，内建 BVS 依赖追踪解析 taint 来源
 # 命名约定: taint_arg{N}_{offset}_{width} → N 是输入字节/参数索引
 
 class SymbolicMemoryModel:
-    """Wraps angr memory 提供 high-level symbolic 读取/写入 taint
-    source resolution
+    """封装 angr 内存，提供高层符号读/写与污点源解析
 
     三轮增强 — 利用 angr 内建 BVS 命名约定追踪每个内存地址的输入依赖
     sym_read 返回 claripy AST（BVS/BVV）而非具体整数，sym_write 将具体
@@ -499,10 +495,10 @@ class SymbolicMemoryModel:
 
 # 三轮增强 — 路径剪枝钩子
 # 作为 angr SimStatePlugin 注入，分支解析后丢弃到达不安全终止函数的路径
-# 权衡：可能在少数场景下误剪（legit call abort via atexit 处理器）
+# 权衡：可能在少数场景下误剪（合法调用 abort 经由 atexit 处理器）
 # 但收益远大于成本 — 大多数情况下 abort/__fortify_fail 意味着路径结束
 
-# 若 angr 不可用，PathPruning钩子 退化为普通 object（丧失 SimStatePlugin
+# 若 angr 不可用，PathPruningHook 退化为普通 object（丧失 SimStatePlugin
 # 的 copy/merge 接口，但 should_prune 逻辑仍可独立使用）
 _PRUNING_BASE: type = object
 try:
@@ -513,18 +509,11 @@ except ImportError:
 
 
 class PathPruningHook(_PRUNING_BASE):
-    """angr SimStatePlugin drops states reaching -unsafe library code
+    """angr SimStatePlugin，丢弃到达不安全库代码的状态
 
     三轮增强 — 在分支解析后检查 state 的 IP 是否命中不安全终止函数
     若命中则标记该状态为可丢弃（pruned），避免在不可能产生有用结果
     （如信息泄露、控制流劫持）的路径上继续探索
-
-    使用方式:
-    prune_钩子 = PathPruning钩子()
-    state.寄存器_plugin('prune_钩子', prune_钩子)
-    # 后续在 exploration 回调 中:
-    state.prune_钩子.should_prune(state):
-    simgr.move('active', 'pruned', state)
 
     Attributes:
     pruned_count: 累计剪枝计数
@@ -562,7 +551,7 @@ class PathPruningHook(_PRUNING_BASE):
         return True
 
     def set_state(self, state):
-        """angr 在 state.寄存器_plugin() 后自动调用，绑定宿主 state"""
+        """angr 在 state.register_plugin() 后自动调用，绑定宿主 state"""
         self.state = state
 
 # 剪枝判定逻辑

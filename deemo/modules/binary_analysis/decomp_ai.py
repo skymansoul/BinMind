@@ -145,6 +145,29 @@ def _extract_loop_summaries(decompiled: str) -> list[str]:
     return loops
 
 
+def _heuristic_findings(code, heuristic, binfo=None, danger_fns=None, key_strs=None):
+    """启发式结果转统一 Finding Schema"""
+    from modules.llm_client import make_finding
+    fn = (binfo or {}).get('function_name', '') or function_name or ''
+    out = []
+    for v in heuristic.get('vulnerabilities', []):
+        out.append(make_finding(function=fn, input_source='pseudocode',
+            dangerous_op=v.get('vuln_id', ''), confidence=0.3,
+            evidence_snippet=v.get('snippet', ''), vuln_type=v.get('vuln_id', ''),
+            description=v.get('description', ''), severity='Medium'))
+    for df in (danger_fns or []):
+        if df and df in code:
+            out.append(make_finding(function=fn, input_source='binary_analysis',
+                dangerous_op=df, confidence=0.25, vuln_type='dangerous_function',
+                description=f'危险函数 {df} 在反编译代码中出现', severity='Low'))
+    for ks in (key_strs or [])[:20]:
+        if ks and ks in code:
+            out.append(make_finding(function=fn, input_source='binary_analysis',
+                dangerous_op=ks, confidence=0.2, vuln_type='suspicious_string',
+                description=f'关键字符串 "{ks}" 在反编译代码中出现', severity='Low'))
+    return out
+
+
 class DecompilerAI:
     def __init__(self, client=None, model: str = ''):
         self._var_suggestions: dict[str, str] = {}
@@ -216,15 +239,20 @@ class DecompilerAI:
                          dangerous_functions: list = None, key_strings: list = None,
                          crash_log: str = '') -> dict:
         """通过统一适配层发起 LLM 研判，返回结构化 Finding"""
-        from modules.llm_client import call_llm, is_ai_configured, make_finding
+        from modules.llm_client import call_llm, is_ai_configured
         from prompts import DECOMP_ANALYSIS_TEMPLATE
 
-        # 未配置模型时强制 simulation
+        # 未配置模型时强制 simulation, 返回非空结构化 findings
         if not is_ai_configured():
             logger.info("[decomp_ai] AI 未配置，返回纯启发式结果（simulation=true）")
             heuristic = self.analyze(decompiled_code)
             heuristic['simulation'] = True
-            heuristic['llm_findings'] = []
+            heuristic['llm_findings'] = _heuristic_findings(
+                decompiled_code, heuristic, binary_info,
+                dangerous_functions, key_strings)
+            heuristic['model'] = ''
+            heuristic['error'] = 'AI not configured'
+            heuristic['analysis_mode'] = 'heuristic_fallback'
             return heuristic
 
         binfo = binary_info or {}
@@ -250,6 +278,27 @@ class DecompilerAI:
 
         findings = result.get('findings', [])
         simulation = result.get('simulation', False)
+
+        # LLM 不可达导致 simulation=True 且无 findings, 降级填充启发式结果
+        if simulation and not findings:
+            logger.warning("[decomp_ai] LLM 调用降级(%s), 补充启发式 findings",
+                            result.get('error', ''))
+            heuristic = self.analyze(decompiled_code)
+            findings = _heuristic_findings(
+                decompiled_code, heuristic, binfo,
+                dangerous_functions, key_strings)
+
+        # 将 LLM 原始 finding 映射到统一 7 字段 Schema，缺失字段补默认值
+        fn_fallback = binfo.get('function_name', '') or ''
+        for f in (findings or []):
+            if isinstance(f, dict):
+                f['function'] = f.get('function') or f.get('function_name') or fn_fallback
+                f['evidence_address'] = f.get('evidence_address') or f.get('address', '')
+                f['input_source'] = f.get('input_source', 'pseudocode')
+                f['dangerous_op'] = f.get('dangerous_op') or f.get('op') or f.get('vulnerability', '')
+                f['confidence'] = f.get('confidence', 'low')
+                f['evidence_snippet'] = f.get('evidence_snippet') or f.get('snippet', '')
+                f['review_status'] = f.get('review_status', 'pending')
 
         return {
             'simulation': simulation,

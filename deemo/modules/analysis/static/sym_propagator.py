@@ -1,17 +1,4 @@
-"""
-DDSSC符号传播器 (Symbolic Propagator) - 指令级符号表达式构建.
-
-核心决策:
-  在堆溢出检测器的指令分析循环中, 同步维护每个寄存器/栈槽的
-  符号表达式. 当遇到malloc(size_reg)时, 为size_reg创建符号变量;
-  当遇到memcpy(dst, src, len_reg)时, 提取len_reg的符号表达式,
-  用于与分配符号进行关联分析.
-
-  符号表达式仅支持线性形式 a*var+b, 覆盖最常见的模式.
-  超出线性形式的表达式标记为None(未知).
-
-创建: 2023-09-06
-"""
+# DDSSC符号传播器: 指令级符号表达式构建
 
 import re
 from typing import Dict, List, Optional

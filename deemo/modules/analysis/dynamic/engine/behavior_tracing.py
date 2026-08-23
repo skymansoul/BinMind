@@ -1,4 +1,4 @@
-# Entry-point: BehaviorTracer string-level pattern matching typed 报告 输出
+# 入口：BehaviorTracer 字符串级模式匹配，输出分类报告
 
 import os
 import logging
@@ -7,49 +7,49 @@ __log = logging.getLogger(__name__)
 
 
 class BehaviorTracer:
-    """Binary feature scanner — 匹配 API import strings against a behavior taxonomy"""
+    """二进制特征扫描器 — 将 API 导入字符串与行为分类法匹配"""
 
     def __init__(self):
-        """Seed pattern library categorized /O, 网络, process, registry 签名s"""
+        """初始化模式库：I/O、网络、进程、注册表等分类签名"""
         self.patterns = [
-            {'pattern': 'socket',       'type': 'Network',  'description': 'Network socket operation'},
-            {'pattern': 'connect',      'type': 'Network',  'description': 'Network connection attempt'},
-            {'pattern': 'bind',         'type': 'Network',  'description': 'Bind to network port'},
-            {'pattern': 'listen',       'type': 'Network',  'description': 'Listen for connections'},
-            {'pattern': 'send',         'type': 'Network',  'description': 'Send data over network'},
-            {'pattern': 'recv',         'type': 'Network',  'description': 'Receive data from network'},
-            {'pattern': 'open',         'type': 'File',     'description': 'File open operation'},
-            {'pattern': 'read',         'type': 'File',     'description': 'File read operation'},
-            {'pattern': 'write',        'type': 'File',     'description': 'File write operation'},
-            {'pattern': 'close',        'type': 'File',     'description': 'File close operation'},
-            {'pattern': 'CreateFile',   'type': 'File',     'description': 'Windows file creation'},
-            {'pattern': 'DeleteFile',   'type': 'File',     'description': 'File deletion'},
-            {'pattern': 'RegOpenKey',   'type': 'Registry', 'description': 'Registry access'},
-            {'pattern': 'CreateProcess','type': 'Process',  'description': 'Process creation'},
-            {'pattern': 'ExitProcess',  'type': 'Process',  'description': 'Process termination'},
-            {'pattern': 'system',       'type': 'Process',  'description': 'System command execution'},
-            {'pattern': 'fork',         'type': 'Process',  'description': 'Process fork'},
-            {'pattern': 'execve',       'type': 'Process',  'description': 'Execute program'},
-            # 新增: 反分析/反调试模式 — 检测虚拟机、调试器和沙箱环境检查
-            {'pattern': 'IsDebuggerPresent',  'type': 'AntiAnalysis', 'description': 'Debugger presence check'},
-            {'pattern': 'CheckRemoteDebuggerPresent', 'type': 'AntiAnalysis', 'description': 'Remote debug check'},
-            {'pattern': 'NtQuerySystemInformation', 'type': 'AntiAnalysis', 'description': 'System info enumeration (VM detection)'},
-            {'pattern': 'GetTickCount',     'type': 'AntiAnalysis', 'description': 'Timing-based sandbox detection'},
-            {'pattern': 'rdtsc',            'type': 'AntiAnalysis', 'description': 'RDTSC timing check'},
-            # 新增: 持久化机制检测
-            {'pattern': 'RegCreateKey',     'type': 'Persistence', 'description': 'Registry key creation (persistence)'},
-            {'pattern': 'CreateService',    'type': 'Persistence', 'description': 'Windows service creation'},
-            {'pattern': 'schtasks',         'type': 'Persistence', 'description': 'Scheduled task manipulation'},
-            {'pattern': 'crontab',          'type': 'Persistence', 'description': 'Cron job manipulation'},
+            {'pattern': 'socket',       'type': 'Network',  'description': '网络套接字操作'},
+            {'pattern': 'connect',      'type': 'Network',  'description': '发起网络连接'},
+            {'pattern': 'bind',         'type': 'Network',  'description': '绑定网络端口'},
+            {'pattern': 'listen',       'type': 'Network',  'description': '监听连接请求'},
+            {'pattern': 'send',         'type': 'Network',  'description': '发送网络数据'},
+            {'pattern': 'recv',         'type': 'Network',  'description': '接收网络数据'},
+            {'pattern': 'open',         'type': 'File',     'description': '文件打开操作'},
+            {'pattern': 'read',         'type': 'File',     'description': '文件读取操作'},
+            {'pattern': 'write',        'type': 'File',     'description': '文件写入操作'},
+            {'pattern': 'close',        'type': 'File',     'description': '文件关闭操作'},
+            {'pattern': 'CreateFile',   'type': 'File',     'description': 'Windows 文件创建'},
+            {'pattern': 'DeleteFile',   'type': 'File',     'description': '文件删除'},
+            {'pattern': 'RegOpenKey',   'type': 'Registry', 'description': '注册表访问'},
+            {'pattern': 'CreateProcess','type': 'Process',  'description': '进程创建'},
+            {'pattern': 'ExitProcess',  'type': 'Process',  'description': '进程终止'},
+            {'pattern': 'system',       'type': 'Process',  'description': '系统命令执行'},
+            {'pattern': 'fork',         'type': 'Process',  'description': '进程派生'},
+            {'pattern': 'execve',       'type': 'Process',  'description': '执行新程序'},
+            # 反分析/反调试模式：检测虚拟机、调试器和沙箱环境
+            {'pattern': 'IsDebuggerPresent',  'type': 'AntiAnalysis', 'description': '调试器存在检测'},
+            {'pattern': 'CheckRemoteDebuggerPresent', 'type': 'AntiAnalysis', 'description': '远程调试器检测'},
+            {'pattern': 'NtQuerySystemInformation', 'type': 'AntiAnalysis', 'description': '系统信息枚举（虚拟机检测）'},
+            {'pattern': 'GetTickCount',     'type': 'AntiAnalysis', 'description': '基于时序的沙箱检测'},
+            {'pattern': 'rdtsc',            'type': 'AntiAnalysis', 'description': 'RDTSC 时序检测'},
+            # 持久化机制检测
+            {'pattern': 'RegCreateKey',     'type': 'Persistence', 'description': '注册表键创建（持久化）'},
+            {'pattern': 'CreateService',    'type': 'Persistence', 'description': 'Windows 服务创建'},
+            {'pattern': 'schtasks',         'type': 'Persistence', 'description': '计划任务操作'},
+            {'pattern': 'crontab',          'type': 'Persistence', 'description': 'Cron 任务操作'},
         ]
         self.behaviors = []
 
     def trace(self, binary_path, output_dir=None):
-        """Scan binary for pattern 匹配; optionally emit a grouped 报告 disk"""
+        """扫描二进制中的模式匹配，可选输出分组报告到磁盘"""
         try:
             self.behaviors = []
 
-            # Latin-1: safe superset for arbitrary byte sequences binaries
+            # Latin-1：任意字节序列的安全超集
             with open(binary_path, 'rb') as f:
                 content = f.read().decode('latin-1', errors='ignore')
 
@@ -58,19 +58,19 @@ class BehaviorTracer:
                     self.behaviors.append(pattern)
 
             hit_count = min(max(len(self.behaviors), 0), len(self.patterns))
-            logger.debug("Matched %d / %d behavior patterns", hit_count, len(self.patterns))
+            __log.debug("匹配 %d / %d 个行为模式", hit_count, len(self.patterns))
 
             report_path = None
             if output_dir:
                 os.makedirs(output_dir, exist_ok=True)
                 report_path = os.path.join(output_dir, 'behavior_report.txt')
                 with open(report_path, 'w') as f:
-                    f.write("Behavioral Analysis Report\n")
+                    f.write("行为分析报告\n")
                     f.write("=" * 50 + "\n")
-                    f.write(f"Binary: {binary_path}\n")
-                    f.write(f"Behaviors Detected: {hit_count}\n\n")
+                    f.write(f"二进制: {binary_path}\n")
+                    f.write(f"检测到的行为数: {hit_count}\n\n")
 
-                    # Partition matched behaviors category for structured 输出
+                    # 按类别分组输出
                     by_type = {}
                     for behavior in self.behaviors:
                         behavior_type = behavior['type']
@@ -84,9 +84,9 @@ class BehaviorTracer:
                             f.write(f"- {item['pattern']}: {item['description']}\n")
                         f.write("\n")
 
-                    # 新增: 风险摘要区块 — 按类别统计并评估整体风险
+                    # 风险摘要区块：按类别统计并评估整体风险
                     f.write("=" * 50 + "\n")
-                    f.write("Risk Summary\n")
+                    f.write("风险摘要\n")
                     f.write("=" * 50 + "\n")
                     risk_categories = {'AntiAnalysis': 0, 'Persistence': 0, 'Process': 0, 'Network': 0, 'File': 0, 'Registry': 0}
                     for b in self.behaviors:
@@ -102,7 +102,7 @@ class BehaviorTracer:
                         risk_categories['Process'] * 15 +
                         risk_categories['Network'] * 10
                     ))
-                    f.write(f"\nOverall Risk Score: {risk_score}/100\n")
+                    f.write(f"\n整体风险评分: {risk_score}/100\n")
 
             return {
                 'success': True,
@@ -111,7 +111,7 @@ class BehaviorTracer:
             }
 
         except Exception as e:
-            logger.error("Trace error: %s", str(e))
+            __log.error("追踪错误: %s", str(e))
             return {
                 'success': False,
                 'error': str(e),
@@ -119,6 +119,6 @@ class BehaviorTracer:
 
 
 def trace_behavior(binary_path, output_dir=None):
-    """Backward-compatible entry: instantiate tracer delegate"""
+    """向后兼容入口：实例化追踪器并委托执行"""
     tracer = BehaviorTracer()
     return tracer.trace(binary_path, output_dir)

@@ -1,10 +1,3 @@
-"""
-Pseudocode Renamer - Semantic variable and function renaming for decompiled code.
-
-Infers meaningful names from usage patterns and context to replace
-compiler-generated names (sub_XXXX, v1, v2, etc.) in decompiled pseudocode.
-"""
-
 from __future__ import annotations
 
 import re
@@ -15,7 +8,6 @@ from typing import Dict, List, Optional, Set, Tuple
 
 @dataclass
 class RenameOperation:
-    """A single rename operation."""
     original: str
     new_name: str
     reason: str
@@ -24,9 +16,7 @@ class RenameOperation:
 
 
 class VariableRoleInferer:
-    """Infers variable roles and semantic meanings from usage patterns."""
 
-    # Common API patterns that reveal variable purpose
     # 每个 API 映射到 (角色名, 简短别名), 高置信度匹配
     API_PATTERNS: Dict[str, Tuple[str, str]] = {
         'malloc': ('allocated_size', 'buffer'),
@@ -69,7 +59,6 @@ class VariableRoleInferer:
         'RegQueryValue': ('query_result', 'result'),
     }
 
-    # Type-based naming hints
     TYPE_HINTS: Dict[str, str] = {
         'size_t': 'size',
         'ssize_t': 'size',
@@ -123,14 +112,13 @@ class VariableRoleInferer:
         api_calls: Optional[Dict[str, int]] = None,
         min_confidence: float = 0.0,
     ) -> Optional[Tuple[str, float]]:
-        """Infer a meaningful name for a variable based on usage context."""
         # Check immediate surrounding lines for clues
         surrounding = self._get_relevant_lines(context, var_name)
 
-        # Look for API patterns — 最高置信度路径
+        # 最高置信度路径: API 返回值赋值
         for api, (role_name, _) in self.API_PATTERNS.items():
             if api in context and var_name in context:
-                # Check if var is used as result of this API
+                # 检查变量是否为该 API 的返回值
                 if re.search(rf'{re.escape(var_name)}\s*=\s*{re.escape(api)}\s*\(', context):
                     confidence = self.PATTERN_CONFIDENCE['api_return']
                     if confidence >= min_confidence:
@@ -153,11 +141,9 @@ class VariableRoleInferer:
                         self.last_inference_confidence = confidence
                         return (self._unique_name(role_name), confidence)
 
-        # Check for common patterns
         return self._infer_from_patterns(var_name, surrounding, min_confidence)
 
     def _get_relevant_lines(self, context: str, var_name: str) -> List[str]:
-        """Get lines that reference the variable."""
         lines = context.split('\n')
         relevant: List[str] = []
         for i, line in enumerate(lines):
@@ -171,9 +157,7 @@ class VariableRoleInferer:
     def _infer_from_patterns(
         self, var_name: str, surrounding: List[str], min_confidence: float = 0.0,
     ) -> Optional[Tuple[str, float]]:
-        """Infer variable purpose from usage patterns.
-
-        返回值: (建议名称, 置信度) 或 None。置信度低于 min_confidence 时拒绝推荐。
+        """返回值: (建议名称, 置信度) 或 None。置信度低于 min_confidence 时拒绝推荐。
         """
         combined = '\n'.join(surrounding)
         confidence = 0.0
@@ -223,7 +207,6 @@ class VariableRoleInferer:
         return (suggestion, confidence)
 
     def _unique_name(self, base: str) -> str:
-        """Generate a unique name from a base suggestion."""
         if base not in self._name_counter:
             self._name_counter[base] = 1
             return base
@@ -235,7 +218,6 @@ class VariableRoleInferer:
         func_name: str,
         pseudocode: str,
     ) -> Optional[str]:
-        """Infer a meaningful function name from its behavior."""
         code_lower = pseudocode.lower()
 
         if re.search(r'\b(memcpy|memmove|memset|strcpy|strncpy|strcat|sprintf|snprintf)\s*\(', code_lower):
@@ -276,7 +258,6 @@ class VariableRoleInferer:
 
 
 class PseudocodeRenamer:
-    """Renames decompiled pseudocode identifiers with semantic names."""
 
     GENERATED_NAME_PATTERNS = [
         re.compile(r'^sub_[0-9A-Fa-f]+$'),
@@ -315,26 +296,24 @@ class PseudocodeRenamer:
         pseudocode: str,
         function_map: Optional[Dict[str, str]] = None,
     ) -> Tuple[str, List[RenameOperation]]:
-        """Rename generated identifiers in pseudocode with meaningful names."""
         self._rename_log = []
         self._func_rename_map = {}
         # 每次 rename 前重置推断器计数器，避免跨轮次累积
         self.inferer.reset()
         result = pseudocode
 
-        # First pass: rename functions
+        # 第一遍: 重命名函数
         result = self._rename_functions(result, function_map)
 
         # 1.5 pass: rename function call sites -- 确保调用点也替换为新名
         result = self._rename_function_callsites(result)
 
-        # Second pass: rename variables
+        # 第二遍: 重命名变量
         result = self._rename_variables(result)
 
         return result, self._rename_log
 
     def _is_generated_name(self, name: str) -> bool:
-        """Check if a name appears to be compiler-generated."""
         for pattern in self.GENERATED_NAME_PATTERNS:
             if pattern.match(name):
                 return True
@@ -345,13 +324,11 @@ class PseudocodeRenamer:
         code: str,
         function_map: Optional[Dict[str, str]],
     ) -> str:
-        """Rename compiler-generated function names.
-
-        同时建立 _func_rename_map, 供后续调用点替换使用。
+        """同时建立 _func_rename_map, 供后续调用点替换使用。
         """
         result = code
 
-        # Find function definitions
+        # 查找函数定义
         func_pattern = re.compile(
             r'(\w[\w\s*]*?)\s+(sub_[0-9A-Fa-f]+)\s*\(([^)]*)\)',
         )
@@ -387,8 +364,7 @@ class PseudocodeRenamer:
     def _rename_function_callsites(self, code: str) -> str:
         """根据 _func_rename_map 替换所有函数调用点。
 
-        这是新增的关键步骤: 之前只重命名了函数定义,
-        却没有同步修改 call site, 导致反编译输出中产生未定义引用。
+        之前只重命名了函数定义, 却没有同步修改 call site, 导致反编译输出中产生未定义引用。
         """
         if not self._func_rename_map:
             return code
@@ -405,10 +381,9 @@ class PseudocodeRenamer:
         return result
 
     def _rename_variables(self, code: str) -> str:
-        """Rename generated variable names."""
         result = code
 
-        # Find local variable declarations and uses
+        # 查找局部变量声明和使用
         var_pattern = re.compile(r'\b(v\d+|a\d+|var_\d+|loc_[0-9A-Fa-f]+|arg_\d+)\b')
         found_vars: Set[str] = set(var_pattern.findall(code))
 
@@ -425,7 +400,7 @@ class PseudocodeRenamer:
             )
             if suggestion_result is not None:
                 suggestion, confidence = suggestion_result
-                # Use word boundary replacement to avoid partial matches
+                # 使用 word boundary 精确替换, 避免部分匹配
                 result = re.sub(
                     rf'\b{re.escape(var_name)}\b',
                     suggestion,
@@ -446,7 +421,6 @@ class PseudocodeRenamer:
         identifier: str,
         context: str,
     ) -> Optional[str]:
-        """Suggest a better name without modifying code."""
         if self._is_generated_name(identifier):
             result = self.inferer.infer_name(identifier, context)
             if result is not None:
@@ -457,7 +431,6 @@ class PseudocodeRenamer:
         self,
         function_dict: Dict[str, str],
     ) -> Dict[str, Tuple[str, List[RenameOperation]]]:
-        """Rename multiple functions at once."""
         results: Dict[str, Tuple[str, List[RenameOperation]]] = {}
         # 批量分析时重置一次，全局计数器统一管理
         self.inferer.reset()
@@ -467,7 +440,6 @@ class PseudocodeRenamer:
 
     @property
     def rename_history(self) -> List[RenameOperation]:
-        """Return the rename operations from the last rename() call."""
         return self._rename_log
 
     def get_stats(self) -> Dict[str, int]:
@@ -491,6 +463,5 @@ def rename_pseudocode(
     pseudocode: str,
     mode: str = 'balanced',
 ) -> Tuple[str, List[RenameOperation]]:
-    """Convenience function for one-shot pseudocode renaming."""
     renamer = PseudocodeRenamer(mode=mode)
     return renamer.rename(pseudocode)

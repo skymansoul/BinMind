@@ -64,7 +64,6 @@ class DeobfResult:
     compiler_hint: str = ""
 
 
-# 编译器指纹
 _COMPILER_FINGERPRINTS = {
     "gcc": [rb"lea\s+\w+,\s*\[\w+\+0x[\da-f]+\]", rb"endbr64",
             rb"mov\s+eax,\s*0", rb"rep\s+ret"],
@@ -76,13 +75,11 @@ _OLLVM_CLANG_VERSIONS = {
     "ollvm_4": rb"LLVM 4\.0", "ollvm_9": rb"LLVM 9\.0", "ollvm_14": rb"LLVM 14",
 }
 
-# 持久化策略有效性存储路径
 _DEFAULT_EFFECTIVENESS_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), ".strategy_effectiveness.json")
 
 
 class ObfuscationDetector:
-    """混淆 type detection using heuristic analysis r2 反汇编"""
 
     DEFAULT_TIMEOUT = 60
 
@@ -214,12 +211,7 @@ class RecoveryScorer:
         return -sum((c / n) * math.log2(c / n) for c in cnt.values())
 
 
-# 持久化策略有效性存储 - 跨会话学习
-# 将每次运行的策略效果存入 JSON，下次运行时用历史数据调整
-# 预期恢复率。使用指数衰减权重（最近 10 次会话权重更高）
-
 class _PersistentEffectiveness:
-    """JSON-backed persistent storage for strategy effectiveness across sessions"""
 
     def __init__(self, path: str = _DEFAULT_EFFECTIVENESS_PATH):
         self._path = path
@@ -246,7 +238,6 @@ class _PersistentEffectiveness:
         if key not in self._data:
             self._data[key] = []
         self._data[key].append(recovery)
-        # 只保留最近 20 次记录
         if len(self._data[key]) > 20:
             self._data[key] = self._data[key][-20:]
 
@@ -255,7 +246,6 @@ class _PersistentEffectiveness:
         records = self._data.get(key, [])
         if not records:
             return None
-        # 指数衰减加权平均：最新记录权重最高
         n = len(records)
         weights = [0.8 ** (n - 1 - i) for i in range(n)]
         weighted_sum = sum(r * w for r, w in zip(records, weights))
@@ -322,12 +312,10 @@ class StrategySelector:
                 DeobfStrategy("general_simplify", StrategyKind.SYMBOLIC, obf_kind,
                               {}, expected_recovery=0.5, cost_seconds=60)]
 
-        # 融合历史数据
         hist = self._effectiveness.get(obf_kind.value, {})
         for s in strategies:
             if s.name in hist:
                 s.expected_recovery = max(s.expected_recovery, hist[s.name])
-            # 跨会话持久化数据
             persistent_rec = self._persistence.get_historical_recovery(
                 obf_kind.value, s.name)
             if persistent_rec is not None:
@@ -340,7 +328,6 @@ class StrategySelector:
         return strategies
 
     def persist(self):
-        """将内存中的有效性数据写入磁盘。在分析会话结束时调用"""
         self._persistence.save()
 
 

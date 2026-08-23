@@ -65,19 +65,19 @@ def _make_pe32_stub():
 
 @pytest.fixture
 def elf32_stub():
-    """Minimal x86 ELF binary for testing"""
+    """用于测试的最小 x86 ELF 二进制"""
     return _make_elf32_stub()
 
 
 @pytest.fixture
 def pe32_stub():
-    """Minimal x86 PE binary for testing"""
+    """用于测试的最小 x86 PE 二进制"""
     return _make_pe32_stub()
 
 
 @pytest.fixture
 def temp_binary_dir():
-    """Temporary directory test binaries"""
+    """测试二进制的临时目录"""
     with tempfile.TemporaryDirectory() as tmpdir:
         elf_path = os.path.join(tmpdir, "test.elf")
         pe_path = os.path.join(tmpdir, "test.exe")

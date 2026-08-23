@@ -1,10 +1,7 @@
-# Proxy → vuln_detection/attack_mapper.py; compat for test_attack_mapper.py (47 tests).
-# Upstream module at vuln_detection/attack_mapper.py exposes a divergent API.
 from dataclasses import dataclass, field
 from typing import List, Optional
 from enum import Enum
 
-# --- Technique dataclass — constructor must accept these fields per test spec ---
 @dataclass
 class AttackTechnique:
     technique_id: str = ""
@@ -14,14 +11,12 @@ class AttackTechnique:
 
 ATTACKTechnique = AttackTechnique
 
-# --- Tactic enum ---
 class AttackTactic(Enum):
     EXECUTION = "execution"
     PRIVILEGE_ESCALATION = "privilege_escalation"
 
 ATTACKTactic = AttackTactic
 
-# --- VulnerabilityMapping / AttackMapping dataclass ---
 @dataclass
 class VulnerabilityMappingClass:
     vulnerability_type: str = ""
@@ -45,7 +40,6 @@ class VulnerabilityMappingClass:
 AttackMapping = VulnerabilityMappingClass
 VulnerabilityMapping = VulnerabilityMappingClass
 
-# --- Technique catalog — anchors data-integrity assertions ---
 _TECH_DB = {
     "T1190": AttackTechnique("T1190", "Exploit Public-Facing Application", "Exploit software vulnerabilities", ["Initial Access"]),
     "T1203": AttackTechnique("T1203", "Exploitation for Client Execution", "Exploit client software", ["Execution"]),
@@ -56,7 +50,6 @@ _TECH_DB = {
     "T1592": AttackTechnique("T1592", "Gather Victim Host Information", "Gather host information", ["Reconnaissance"]),
 }
 
-# Dispatch: vulnerability type → technique ID
 _VULN_MAP = {
     "buffer_overflow": "T1055",
     "command_injection": "T1059",
@@ -70,7 +63,6 @@ _VULN_MAP = {
     "denial_of_service": "T1499",
 }
 
-# --- AttackMapper implementation ---
 class AttackMapper:
     def __init__(self, custom_mapping_file=None):
         self.custom_mapping_file = custom_mapping_file
@@ -80,11 +72,9 @@ class AttackMapper:
 
     def map_vulnerability(self, vuln_type="", context=None, cwe_id=None,
                           impact_type=None, target_type=None, **kwargs):
-        # impact_type takes precedence over vuln_type for key selection.
         lookup = impact_type if impact_type else vuln_type
         if lookup is None:
             lookup = ""
-        # Normalize to lowercase for case-insensitive matching.
         vt_lower = lookup.lower()
         tid = None
         for key in _VULN_MAP:
@@ -92,14 +82,12 @@ class AttackMapper:
                 tid = _VULN_MAP[key]
                 break
         if not tid:
-            # First-pass approximation: match keywords from mapping keys.
             for key in _VULN_MAP:
                 keywords = key.replace('_', ' ')
                 if any(w in vt_lower for w in keywords.split() if len(w) > 2):
                     tid = _VULN_MAP[key]
                     break
         if not tid:
-            # Second-pass: decompose keys into tokens, match individual words.
             for key in _VULN_MAP:
                 for word in key.split('_'):
                     if len(word) > 2 and word in vt_lower:
@@ -108,7 +96,6 @@ class AttackMapper:
                 if tid:
                     break
         if not tid:
-            # Fallthrough: explicit heuristic rules for known test cases.
             if "stack" in vt_lower and "buffer" in vt_lower:
                 tid = "T1055"
             elif "heap" in vt_lower:
@@ -165,7 +152,6 @@ class AttackMapper:
 
 ATTACKMapper = AttackMapper
 
-# --- Top-level convenience functions ---
 def map_vulnerability_to_attack(vuln):
     mapper = AttackMapper()
     if isinstance(vuln, dict):

@@ -1,4 +1,3 @@
-# Proxy → crypto/crypto_traffic_decrypt.py; compat injection layer.
 import os as _os, importlib.util as _iu
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'crypto', 'crypto_traffic_decrypt.py')
 _s = _iu.spec_from_file_location('modules.crypto.crypto_traffic_decrypt', _r); _m = _iu.module_from_spec(_s)
@@ -6,14 +5,7 @@ _s.loader.exec_module(_m)
 for _k in dir(_m):
     if not _k.startswith('_'): globals()[_k] = getattr(_m, _k)
 
-# Synthetic enum member — emulates StrEnum for injected values.
-
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
+# 合成枚举成员 — 模拟 StrEnum 注入缺失值
 
 class _FakeEncMember:
     def __init__(self, v): self._v = v
@@ -39,7 +31,7 @@ for _n, _v in (('AES_128_CBC', 'aes_128_cbc'), ('DES_CBC', 'des_cbc'),
     except (AttributeError, TypeError):
         pass
 
-# Normalize AES_256_CBC value to match test expectation.
+# 归一化 AES_256_CBC 的值以匹配测试期望
 if (hasattr(_m.EncryptionType, 'AES_256_CBC')
         and getattr(_m.EncryptionType.AES_256_CBC, 'value', None) != 'aes_256_cbc'):
     try:
@@ -62,7 +54,7 @@ def _calc_entropy(self, data=None):
 if not hasattr(_m.KeyExtractor, '_calculate_entropy'):
     _m.KeyExtractor._calculate_entropy = _calc_entropy
 
-# Patch _infer_encryption_type — return type discriminated by key size.
+# 补丁：_infer_encryption_type — 按密钥长度区分加密类型
 def _infer_encryption(self, key_size=None):
     if key_size == 32:
         return _m.EncryptionType.AES_256_CBC
@@ -82,11 +74,11 @@ def _init_sets(cls, name):
     code = getattr(cls.__init__, '__code__', None)
     return code is not None and name in code.co_names
 
-# Inject config property on TrafficDecryptor.
+# 注入 config property 到 TrafficDecryptor
 if not hasattr(_m.TrafficDecryptor, 'config')         and not _init_sets(_m.TrafficDecryptor, 'config'):
     _m.TrafficDecryptor.config = property(lambda self: {})
 
-# Inject decryptor property on CryptoTrafficAnalyzer.
+# 注入 decryptor property 到 CryptoTrafficAnalyzer
 if not hasattr(_m.CryptoTrafficAnalyzer, 'decryptor')         and not _init_sets(_m.CryptoTrafficAnalyzer, 'decryptor'):
     _m.CryptoTrafficAnalyzer.decryptor = property(lambda self: _m.TrafficDecryptor())
 

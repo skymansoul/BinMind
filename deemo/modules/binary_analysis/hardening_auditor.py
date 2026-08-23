@@ -1,6 +1,5 @@
 # Copyright (c) 2024-2026 BinMind Project. All rights reserved.
 # Licensed under the BinMind Proprietary License — see LICENSE file.
-# hardening_auditor.py — Binary Hardening Auditor
 
 import os
 import re
@@ -14,14 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 class HardeningStatus(StrEnum):
-    """Hardening status."""
     ENABLED = "Enabled"
     DISABLED = "Disabled"
     PARTIAL = "Partial"
     UNKNOWN = "Unknown"
 
 class RiskLevel(StrEnum):
-    """Risk level. Weights used in score calculation."""
     CRITICAL = "Critical"
     HIGH = "High"
     MEDIUM = "Medium"
@@ -31,7 +28,6 @@ class RiskLevel(StrEnum):
 
 @dataclass
 class HardeningCheck:
-    """Single hardening check item."""
     strName: str
     strDescription: str
     enStatus: str
@@ -43,7 +39,6 @@ class HardeningCheck:
     strDetails: str = ""
 
     def to_dict(self):
-        """Convert to dict."""
         result = {}
         result['name'] = self.strName
         result['description'] = self.strDescription
@@ -59,7 +54,6 @@ class HardeningCheck:
 
 @dataclass
 class HardeningAuditReport:
-    """Audit report. Aggregates all checks and scores."""
     strBinaryPath: str
     strBinaryFormat: str
     lstChecks: list = field(default_factory=list)
@@ -71,7 +65,6 @@ class HardeningAuditReport:
     strErrorMessage: str = ""
 
     def get_enabled_checks(self):
-        """Get enabled checks."""
         result = []
         for check in (self.lstChecks or []):
             if check is not None and check.enStatus == HardeningStatus.ENABLED:
@@ -79,7 +72,6 @@ class HardeningAuditReport:
         return result
 
     def get_disabled_checks(self):
-        """Get disabled checks."""
         result = []
         for check in (self.lstChecks or []):
             if check is not None and check.enStatus == HardeningStatus.DISABLED:
@@ -87,7 +79,6 @@ class HardeningAuditReport:
         return result
 
     def get_failed_checks(self):
-        """Get failed checks (disabled or unknown)."""
         result = []
         for check in (self.lstChecks or []):
             if check is not None and check.enStatus in [HardeningStatus.DISABLED, HardeningStatus.UNKNOWN]:
@@ -95,7 +86,6 @@ class HardeningAuditReport:
         return result
 
     def to_dict(self):
-        """Convert to dict."""
         result = {}
         result['binary_path'] = self.strBinaryPath
         result['binary_format'] = self.strBinaryFormat
@@ -115,7 +105,6 @@ class HardeningAuditReport:
 
 @dataclass
 class HardeningRecommendation:
-    """Hardening recommendation."""
     strCategory: str
     strIssue: str
     strSolution: str
@@ -124,8 +113,6 @@ class HardeningRecommendation:
     strExplanation: str = ""
 
 class HardeningAuditor:
-    """Binary hardening auditor.
-    Audits ELF/PE/Mach-O binaries for security hardening, generates fix scripts."""
 
     def __init__(self, strBinaryPath=None, nTimeout=120,
                  binary_path=None, timeout=None):
@@ -140,7 +127,6 @@ class HardeningAuditor:
         self.bVerbose = False
 
     def _detect_format(self):
-        """Detect binary format."""
         fmt = 'UNKNOWN'
 
         if self.strBinaryPath is None:
@@ -168,7 +154,6 @@ class HardeningAuditor:
         return fmt
 
     def audit(self):
-        """Perform full hardening audit."""
         logger.info("auditing: %s" % self.strBinaryPath)
 
         report = HardeningAuditReport(
@@ -205,7 +190,6 @@ class HardeningAuditor:
         return report
 
     def _audit_elf(self, report):
-        """Audit ELF binary. Prefer pyelftools, fall back to readelf."""
         if report is None:
             return
 
@@ -237,8 +221,6 @@ class HardeningAuditor:
             raise
 
     def _check_nx_elf(self, elf, report):
-        """Check NX (Non-Executable Stack).
-        NX prevents stack data from being executed as code."""
         if elf is None or report is None:
             return
 
@@ -271,8 +253,6 @@ class HardeningAuditor:
             logger.debug("NX check skipped: %s" % str(e))
 
     def _check_relro_elf(self, elf, report):
-        """Check RELRO (Relocation Read-Only).
-        Read-only GOT prevents overwrites."""
         if elf is None or report is None:
             return
 
@@ -314,8 +294,6 @@ class HardeningAuditor:
             logger.debug("RELRO check skipped: %s" % str(e))
 
     def _check_pie_elf(self, elf, report):
-        """Check PIE (Position Independent Executable).
-        PIE enables code section ASLR."""
         if elf is None or report is None:
             return
 
@@ -340,8 +318,6 @@ class HardeningAuditor:
             logger.debug("PIE check skipped: %s" % str(e))
 
     def _check_canary_elf(self, elf, report):
-        """Check Stack Canary.
-        Canary value checked before return, aborts on overflow."""
         if elf is None or report is None:
             return
 
@@ -394,8 +370,6 @@ class HardeningAuditor:
             logger.debug("Canary check skipped: %s" % str(e))
 
     def _check_fortify_source_elf(self, elf, report):
-        """Check FORTIFY_SOURCE.
-        Compile-time bounds checking for dangerous functions."""
         if elf is None or report is None:
             return
 
@@ -440,8 +414,6 @@ class HardeningAuditor:
             logger.debug("FORTIFY_SOURCE check skipped: %s" % str(e))
 
     def _check_cet_elf(self, elf, report):
-        """Check CET (Control-flow Enforcement Technology).
-        IBT validates indirect branches, SHSTK protects return addresses."""
         if elf is None or report is None:
             return
 
@@ -507,8 +479,6 @@ class HardeningAuditor:
             logger.debug("CET check skipped: %s" % str(e))
 
     def _check_stack_protector_elf(self, elf, report):
-        """Check stack protector level.
-        none / regular / strong -- each level adds more protection."""
         if elf is None or report is None:
             return
 
@@ -550,8 +520,6 @@ class HardeningAuditor:
             logger.debug("Stack Protector check skipped: %s" % str(e))
 
     def _check_bind_now_elf(self, elf, report):
-        """Check BIND_NOW.
-        Resolve all symbols at load, pairs with Full RELRO."""
         if elf is None or report is None:
             return
 
@@ -582,8 +550,6 @@ class HardeningAuditor:
             logger.debug("BIND_NOW check skipped: %s" % str(e))
 
     def _check_glibc_hooks_elf(self, elf, report):
-        """Check glibc hooks availability.
-        glibc 2.34+ removed these hooks; their presence implies older glibc."""
         if elf is None or report is None:
             return
 
@@ -621,7 +587,6 @@ class HardeningAuditor:
             logger.debug("glibc hooks check skipped: %s" % str(e))
 
     def _audit_elf_with_readelf(self, report):
-        """Fallback audit with readelf."""
         if report is None:
             return
 
@@ -660,7 +625,6 @@ class HardeningAuditor:
             logger.error("readelf audit failed: %s" % str(e))
 
     def _audit_pe(self, report):
-        """Audit PE binary."""
         if report is None:
             return
 
@@ -688,8 +652,6 @@ class HardeningAuditor:
             logger.error("PE audit failed: %s" % str(e))
 
     def _check_dep_pe(self, pe, report):
-        """Check DEP (Data Execution Prevention).
-        DEP enforces non-executable memory pages."""
         if pe is None or report is None:
             return
 
@@ -714,8 +676,6 @@ class HardeningAuditor:
             logger.debug("DEP check skipped: %s" % str(e))
 
     def _check_aslr_pe(self, pe, report):
-        """Check ASLR (Address Space Layout Randomization).
-        ASLR randomizes module load addresses."""
         if pe is None or report is None:
             return
 
@@ -740,7 +700,6 @@ class HardeningAuditor:
             logger.debug("ASLR check skipped: %s" % str(e))
 
     def _check_safeseh_pe(self, pe, report):
-        """Check SafeSEH (Structured Exception Handler Overwrite Protection)."""
         if pe is None or report is None:
             return
 
@@ -777,8 +736,6 @@ class HardeningAuditor:
             logger.debug("SafeSEH check skipped: %s" % str(e))
 
     def _check_cfg_pe(self, pe, report):
-        """Check CFG (Control Flow Guard).
-        CFG validates indirect call/jump targets."""
         if pe is None or report is None:
             return
 
@@ -803,8 +760,6 @@ class HardeningAuditor:
             logger.debug("CFG check skipped: %s" % str(e))
 
     def _check_gs_pe(self, pe, report):
-        """Check GS (Stack Security).
-        GS inserts a security cookie on the stack."""
         if pe is None or report is None:
             return
 
@@ -837,8 +792,6 @@ class HardeningAuditor:
             logger.debug("GS check skipped: %s" % str(e))
 
     def _check_high_entropy_va_pe(self, pe, report):
-        """Check High Entropy VA.
-        More entropy for 64-bit address space."""
         if pe is None or report is None:
             return
 
@@ -863,8 +816,6 @@ class HardeningAuditor:
             logger.debug("High Entropy VA check skipped: %s" % str(e))
 
     def _check_authenticode_pe(self, pe, report):
-        """Check Authenticode signature.
-        Signature present does not mean not malicious."""
         if pe is None or report is None:
             return
 
@@ -893,7 +844,6 @@ class HardeningAuditor:
             logger.debug("Authenticode check skipped: %s" % str(e))
 
     def _audit_macho(self, report):
-        """Audit Mach-O binary. Uses otool to extract header info."""
         if report is None:
             return
 
@@ -915,7 +865,6 @@ class HardeningAuditor:
             logger.error("Mach-O audit failed: %s" % str(e))
 
     def _check_macho_pie(self, output, report):
-        """Check Mach-O PIE."""
         if output is None or report is None:
             return
 
@@ -939,7 +888,6 @@ class HardeningAuditor:
             logger.debug("Mach-O PIE check skipped: %s" % str(e))
 
     def _check_macho_canary(self, output, report):
-        """Check Mach-O stack canary."""
         if output is None or report is None:
             return
 
@@ -963,8 +911,6 @@ class HardeningAuditor:
             logger.debug("Mach-O Canary check skipped: %s" % str(e))
 
     def _check_macho_arc(self, output, report):
-        """Check ARC (Automatic Reference Counting).
-        Only meaningful for Objective-C code."""
         if output is None or report is None:
             return
 
@@ -988,7 +934,6 @@ class HardeningAuditor:
             logger.debug("Mach-O ARC check skipped: %s" % str(e))
 
     def _calculate_overall_score(self, report):
-        """Calculate overall hardening score. Weighted by risk level."""
         if report is None:
             return
         if report.lstChecks is None:
@@ -1051,7 +996,6 @@ class HardeningAuditor:
                     report.lstRecommendations.append(rec)
 
     def _generate_hardening_script(self, report):
-        """Generate hardening script. Outputs an executable bash script."""
         if report is None:
             return
 
@@ -1120,7 +1064,6 @@ class HardeningAuditor:
 
 
 def audit_binary(strBinaryPath, nTimeout=120):
-    """Convenience function to audit a binary."""
     if strBinaryPath is None:
         logger.error("binary path is None")
         report = HardeningAuditReport(
@@ -1145,7 +1088,6 @@ def audit_binary(strBinaryPath, nTimeout=120):
 
 
 def format_audit_report(report):
-    """Format audit report into readable string."""
     if report is None:
         return "Error: report is None"
 

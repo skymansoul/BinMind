@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# 基于 LLM 的反混淆器 — 支持 OpenAI/Ollama 后端, 提示模板, 可读性增强,
-# 结构化反混淆结果输出。
-# HTTP 重试与指数退避; token 用量追踪; 防御性 JSON 解析。
+# 基于LLM的反混淆器——支持OpenAI/Ollama后端，提示模板，可读性增强，结构化输出
+# HTTP重试与指数退避，token用量追踪，防御性JSON解析
 
 import logging as _logging
 import json as _json
@@ -13,7 +12,7 @@ from typing import Dict, List, Optional, Any, Tuple, Set, Callable
 __dbg = _logging.getLogger(__name__)
 
 
-# Enums
+# 枚举
 
 class LLMProvider(Enum):
     OPENAI = "openai"
@@ -22,14 +21,14 @@ class LLMProvider(Enum):
     CUSTOM = "custom"
 
 
-# Data classes
+# 数据类
 
 @dataclass
 class DeobfContext:
-    """Context for deobfuscation: obfuscated code and metadata."""
+    """反混淆上下文: 混淆代码及元数据。"""
     obfuscated_code: str = ""
     source_language: str = "c"
-    obfuscation_type: str = ""  # e.g., ollvm, tigress, movfuscator, custom
+    obfuscation_type: str = ""  # ollvm/tigress/movfuscator/custom等
     function_name: str = ""
     architecture: str = "x86_64"
     compiler_hints: List[str] = field(default_factory=list)
@@ -51,7 +50,7 @@ class DeobfContext:
 
 @dataclass
 class LLMDeobfResult:
-    """Structured deobfuscation result."""
+    """结构化反混淆结果。"""
     original_code: str = ""
     deobfuscated_code: str = ""
     readability_score: float = 0.0
@@ -77,13 +76,11 @@ class LLMDeobfResult:
         )
 
 
-# 指数退避重试辅助 — 瞬时故障不应阻断去混淆流水线
+# 指数退避重试辅助——瞬时故障不应阻断去混淆流水线
 
 def _retry_http_call(request_fn, max_retries: int = 3, backoff_base: float = 2.0):
-    """
-    可降级重试包装器：429/5xx 和连接错误触发指数退避。
-    非重试性错误直接向上抛出，由调用方处理。
-    """
+    """可降级重试包装器: 429/5xx和连接错误触发指数退避。
+    非重试性错误直接向上抛出，由调用方处理。"""
     import time as _time
     import urllib.error as _ue
 
@@ -93,7 +90,7 @@ def _retry_http_call(request_fn, max_retries: int = 3, backoff_base: float = 2.0
         try:
             return request_fn()
         except _ue.HTTPError as e:
-            # 仅瞬时性状态码重试：速率限制和服务端错误
+            # 仅瞬时性状态码重试: 速率限制和服务端错误
             if e.code in (429, 500, 502, 503, 504) and attempt < max_retries - 1:
                 delay = backoff_base ** attempt
                 __dbg.warning("HTTP %d 可重试，%.1fs后退避 (%d/%d): %s",
@@ -121,10 +118,10 @@ def _retry_http_call(request_fn, max_retries: int = 3, backoff_base: float = 2.0
     return None
 
 
-# LLM Client Base & Implementations
+# LLM客户端基类与实现
 
 class LLMClientBase:
-    """Abstract base for LLM API communication."""
+    """LLM API通信抽象基类。"""
 
     def complete(self, prompt: str, system_prompt: str = "", max_tokens: int = 4096,
                  temperature: float = 0.3) -> str:
@@ -135,7 +132,7 @@ class LLMClientBase:
 
 
 class OpenAIClient(LLMClientBase):
-    """OpenAI API-compatible client (supports any OpenAI-compatible endpoint)."""
+    """OpenAI API兼容客户端(支持任意OpenAI兼容端点)。"""
 
     __slots__ = ('m_api_key', 'm_model', 'm_base_url', 'm_timeout', 'm_last_token_count')
 
@@ -144,7 +141,7 @@ class OpenAIClient(LLMClientBase):
         self.m_model = model
         self.m_base_url = base_url
         self.m_timeout = timeout
-        # 追踪最近一次请求的token消耗，供上层成本核算使用
+        # 追踪最近一次请求的token消耗，供上层成本核算
         self.m_last_token_count: int = 0
 
     def complete(self, prompt: str, system_prompt: str = "", max_tokens: int = 4096,
@@ -171,17 +168,17 @@ class OpenAIClient(LLMClientBase):
             "Authorization": f"Bearer {self.m_api_key}",
         })
 
-        # 内部闭包：将单次HTTP调用封装为可重试单元
+        # 内部闭包: 将单次HTTP调用封装为可重试单元
         def _do_request():
             with _ur.urlopen(req, timeout=self.m_timeout) as resp:
                 raw = resp.read().decode('utf-8')
-                # 防御性解析：上游返回畸形JSON不应导致整个去混淆任务崩溃
+                # 防御性解析: 上游返回畸形JSON不应导致整个去混淆任务崩溃
                 try:
                     data = _json.loads(raw)
                 except _json.JSONDecodeError as je:
                     __dbg.error("OpenAI响应JSON解析失败: %s", je)
                     return ""
-                # 提取token用量 — 用于模型选型和成本基准测试
+                # 提取token用量——用于模型选型和成本基准测试
                 if isinstance(data, dict) and 'usage' in data:
                     usage = data['usage']
                     self.m_last_token_count = usage.get('total_tokens', 0)
@@ -204,7 +201,7 @@ class OpenAIClient(LLMClientBase):
 
 
 class OllamaClient(LLMClientBase):
-    """Ollama local LLM client."""
+    """Ollama本地LLM客户端。"""
 
     __slots__ = ('m_model', 'm_base_url', 'm_timeout', 'm_last_token_count')
 
@@ -212,7 +209,7 @@ class OllamaClient(LLMClientBase):
         self.m_model = model
         self.m_base_url = base_url
         self.m_timeout = timeout
-        # Ollama 在 /api/构造 响应中返回 eval_count，记录以供分析
+        # Ollama在/api/generate响应中返回eval_count，记录供分析
         self.m_last_token_count: int = 0
 
     def complete(self, prompt: str, system_prompt: str = "", max_tokens: int = 4096,
@@ -246,7 +243,7 @@ class OllamaClient(LLMClientBase):
                 except _json.JSONDecodeError as je:
                     __dbg.error("Ollama响应JSON解析失败: %s", je)
                     return ""
-                # Ollama 返回 eval_count 作为生成的token数
+                # Ollama返回eval_count作为生成token数
                 if isinstance(data, dict):
                     self.m_last_token_count = data.get('eval_count', 0)
                 return data.get("response", "")
@@ -268,7 +265,7 @@ class OllamaClient(LLMClientBase):
 
 
 class MockDeobfClient(LLMClientBase):
-    """Mock client for testing — returns rule-based deobfuscation responses."""
+    """测试用mock客户端——返回基于规则的反混淆响应。"""
 
     def complete(self, prompt: str, system_prompt: str = "", max_tokens: int = 4096,
                  temperature: float = 0.3) -> str:
@@ -278,53 +275,53 @@ class MockDeobfClient(LLMClientBase):
         return LLMProvider.MOCK
 
     def _mock_deobfuscate(self, prompt: str) -> str:
-        """Apply simple regex-based deobfuscation patterns."""
+        """应用简单正则反混淆模式。"""
         code = prompt
 
-        # Extract code block if present
+        # 提取代码块(如有)
         code_match = _re.search(r'```(?:c|cpp|asm)?\s*\n(.*?)```', prompt, _re.DOTALL)
         if code_match:
             code = code_match.group(1)
 
-        # Pattern: XOR-based string obfuscation
+        # XOR字符串混淆模式
         code = _re.sub(
             r'(\w+)\s*=\s*(\w+)\s*\^\s*(0x[0-9a-fA-F]+|\d+);',
-            r'\1 = \2 ^ \3; /* deobfuscated: XOR constant */',
+            r'\1 = \2 ^ \3; /* 反混淆: XOR常量 */',
             code,
         )
 
-        # Pattern: opaque predicate
+        # 不透明谓词模式
         code = _re.sub(
             r'if\s*\(\s*\([^)]+\*\s*[^)]+\)\s*%\s*2\s*==\s*0\s*\)',
-            r'if (1) /* deobfuscated: always-true opaque predicate */',
+            r'if (1) /* 反混淆: 恒真不透明谓词 */',
             code,
         )
 
-        # Pattern: control-flow flattening (simple case)
+        # 控制流平坦化模式(简单情况)
         code = _re.sub(
             r'while\s*\(\s*1\s*\)\s*\{[^}]*switch\s*\(\s*(\w+)\s*\)',
-            r'/* deobfuscated: control-flow flattening with dispatcher var \1 */\n\g<0>',
+            r'/* 反混淆: 控制流平坦化，调度变量 \1 */\n\g<0>',
             code,
         )
 
-        # Pattern: dead code
+        # 死代码模式
         if 'dead_code' in prompt.lower():
             code = _re.sub(
                 r'if\s*\(\s*0\s*\)\s*\{[^}]*\}',
-                r'/* deobfuscated: dead code removed */',
+                r'/* 反混淆: 已移除死代码 */',
                 code,
             )
 
-        # Variable renaming hints
+        # 变量重命名提示
         code = _re.sub(r'\b(var_\d+)\b', r'renamed_\1', code)
 
-        return f"```c\n// Deobfuscated code (mock)\n{code}\n```"
+        return f"```c\n// 反混淆代码(mock)\n{code}\n```"
 
 
-# Prompt Templates
+# 提示模板
 
 class PromptTemplates:
-    """Collection of deobfuscation prompt templates."""
+    """反混淆提示模板集合。"""
 
     SYSTEM_PROMPT = (
         "You are an expert reverse engineer specializing in code deobfuscation. "
@@ -428,10 +425,10 @@ Code:
 Output code with natural control flow restored."""
 
 
-# Readability Enhancer
+# 可读性增强器
 
 class ReadabilityEnhancer:
-    """Post-processing to improve code readability after LLM deobfuscation."""
+    """LLM反混淆后的可读性后处理。"""
 
     __slots__ = ()
 
@@ -439,15 +436,15 @@ class ReadabilityEnhancer:
     def enhance(code: str, language: str = "c") -> str:
         enhanced = code
 
-        # Extract code block if wrapped
+        # 提取代码块(如有包裹)
         code_match = _re.search(r'```(?:\w+)?\s*\n(.*?)```', enhanced, _re.DOTALL)
         if code_match:
             enhanced = code_match.group(1)
 
-        # Remove leading/trailing whitespace
+        # 去除首尾空白
         enhanced = enhanced.strip()
 
-        # Normalize indentation to 4 spaces
+        # 缩进归一为4空格
         lines = enhanced.split('\n')
         normalized: List[str] = []
         for line in lines:
@@ -457,52 +454,52 @@ class ReadabilityEnhancer:
             normalized.append(stripped)
         enhanced = '\n'.join(normalized)
 
-        # Insert blank lines before function definitions
+        # 函数定义前插入空行
         enhanced = _re.sub(r'\n(?!\n)(\w[\w\s*]+)\s+(\w+)\s*\([^)]*\)\s*\{', r'\n\n\1 \2(...) {', enhanced)
 
-        # Collapse multiple blank lines
+        # 合并多余空行
         enhanced = _re.sub(r'\n{3,}', '\n\n', enhanced)
 
         return enhanced
 
     @staticmethod
     def score_readability(code: str) -> float:
-        """Compute a 0-1 readability score based on heuristics."""
+        """基于启发式计算0-1可读性评分。"""
         score = 0.5
         lines = code.split('\n')
         if len(lines) == 0:
             return 0.0
 
-        # Penalize single-letter variable names
+        # 惩罚单字母变量名
         single_letter_count = len(_re.findall(r'\b[a-zA-Z]\b', code))
         score -= min(0.2, single_letter_count * 0.005)
 
-        # Penalize long lines
+        # 惩罚过长行
         long_line_count = sum(1 for l in lines if len(l) > 120)
         score -= min(0.15, long_line_count * 0.01)
 
-        # Reward comments
+        # 奖励注释
         comment_count = sum(1 for l in lines if l.strip().startswith('//') or l.strip().startswith('/*'))
         score += min(0.2, comment_count * 0.01)
 
-        # Reward blank line separation
+        # 奖励空行分隔
         blank_count = sum(1 for l in lines if l.strip() == '')
         if len(lines) > 10:
             ratio = blank_count / len(lines)
             score += min(0.1, ratio * 0.5)
 
-        # Penalize magic numbers (hex constants without context)
+        # 惩罚魔法数字(无上下文的十六进制常量)
         hex_count = len(_re.findall(r'0x[0-9a-fA-F]{3,}', code))
         score -= min(0.1, hex_count * 0.01)
 
         return max(0.0, min(1.0, score))
 
 
-# LLM Deobfuscator
+# LLM反混淆器
 
 class LLMDeobfuscator:
-    """Main LLM-driven deobfuscator with configurable strategies.
-    系统架构原则：策略模式解耦LLM后端与去混淆逻辑，使任一环节可独立演进。"""
+    """LLM驱动的主反混淆器，支持可配置策略。
+    系统架构原则: 策略模式解耦LLM后端与去混淆逻辑，使任一环节可独立演进。"""
 
     __slots__ = ('m_client', 'm_templates', 'm_enhancer', 'm_history',
                  'm_default_temperature')
@@ -524,7 +521,7 @@ class LLMDeobfuscator:
         if temperature <= 0:
             temperature = self.m_default_temperature
 
-        # Select prompt 框架
+        # 选择提示框架
         strategy_map = {
             "general": self.m_templates.general_deobfuscation,
             "ollvm": self.m_templates.ollvm_deobfuscation,
@@ -537,7 +534,7 @@ class LLMDeobfuscator:
         prompt_fn = strategy_map.get(strategy, self.m_templates.general_deobfuscation)
         prompt = prompt_fn(ctx)
 
-        # Call LLM
+        # 调用LLM
         response = self.m_client.complete(
             prompt,
             system_prompt=self.m_templates.SYSTEM_PROMPT,
@@ -548,38 +545,38 @@ class LLMDeobfuscator:
         result.raw_llm_response = response
         result.elapsed_ms = (_time.time() - start) * 1000
 
-        # 从LLM客户端提取token用量 — 支撑成本建模与模型对比
+        # 从LLM客户端提取token用量——支撑成本建模与模型对比
         client_tokens = getattr(self.m_client, 'm_last_token_count', 0)
         if client_tokens > 0:
             result.token_count = client_tokens
 
         if not response:
-            result.errors.append("LLM returned empty response")
+            result.errors.append("LLM返回空响应")
             return result
 
-        # Extract code from response
+        # 从响应提取代码
         code_match = _re.search(r'```(?:\w+)?\s*\n(.*?)```', response, _re.DOTALL)
         if code_match:
             result.deobfuscated_code = code_match.group(1).strip()
         else:
             result.deobfuscated_code = response.strip()
 
-        # Enhance readability
+        # 增强可读性
         result.deobfuscated_code = self.m_enhancer.enhance(result.deobfuscated_code, ctx.source_language)
 
-        # Compute readability score
+        # 计算可读性评分
         result.readability_score = self.m_enhancer.score_readability(result.deobfuscated_code)
 
-        # Identify patterns
+        # 识别混淆模式
         result.identified_patterns = self._identify_patterns(result.deobfuscated_code, response)
 
-        # Detect transformations
+        # 检测变换
         result.transformations_applied = self._detect_transformations(ctx.obfuscated_code, result.deobfuscated_code)
 
-        # Compute confidence
+        # 计算置信度
         result.confidence = self._compute_confidence(result)
 
-        # Extract variable renames
+        # 提取变量重命名
         result.variable_renames = self._extract_renames(ctx.obfuscated_code, result.deobfuscated_code)
 
         self.m_history.append({
@@ -592,8 +589,7 @@ class LLMDeobfuscator:
         return result
 
     def deobfuscate_multi_pass(self, ctx: DeobfContext, strategies: Optional[List[str]] = None) -> LLMDeobfResult:
-        """Apply multiple deobfuscation strategies sequentially.
-        多轮策略级联：前一轮输出作为后一轮输入，逐步精炼。
+        """多轮策略级联: 前一轮输出作为后一轮输入，逐步精炼。
         保持最优结果，即使后续轮次置信度下降也不丢失进展。"""
         if strategies is None:
             strategies = ["general", "string_decrypt", "control_flow_recovery", "variable_recovery"]
@@ -626,7 +622,7 @@ class LLMDeobfuscator:
         if best_result is None:
             return LLMDeobfResult(
                 original_code=ctx.obfuscated_code,
-                errors=["All strategies failed"],
+                errors=["所有策略均失败"],
             )
 
         return best_result
@@ -634,9 +630,7 @@ class LLMDeobfuscator:
     def deobfuscate_with_validation(self, ctx: DeobfContext,
                                     validator: Callable[[str], bool],
                                     max_attempts: int = 3) -> LLMDeobfResult:
-        """Deobfuscate with validation — retry if result is invalid.
-        带校验的重试循环：温度逐步升高以探索更大解空间，
-        上限1.0防止输出退化。"""
+        """带校验的重试循环: 温度逐步升高以探索更大解空间，上限1.0防止输出退化。"""
         best_result: Optional[LLMDeobfResult] = None
 
         attempt = 0
@@ -650,28 +644,28 @@ class LLMDeobfuscator:
             if best_result is None or result.confidence > best_result.confidence:
                 best_result = result
 
-            result.warnings.append(f"Validation failed on attempt {attempt + 1}")
+            result.warnings.append(f"第{attempt + 1}次尝试校验失败")
             attempt += 1
 
         if best_result:
-            best_result.warnings.append("All validation attempts failed, returning best effort")
-        return best_result if best_result else LLMDeobfResult(errors=["All attempts failed"])
+            best_result.warnings.append("所有校验尝试均失败，返回最佳结果")
+        return best_result if best_result else LLMDeobfResult(errors=["所有尝试均失败"])
 
     def _identify_patterns(self, code: str, llm_response: str) -> List[str]:
         patterns: List[str] = []
         pattern_checks = [
-            ("control_flow_flattening", r'(?:state|dispatcher|switch.*state)', "Control-flow flattening"),
-            ("opaque_predicate", r'(?:always.?true|opaque.*pred)', "Opaque predicate"),
-            ("string_encryption", r'(?:string.*(?:encrypt|decrypt|xor))', "String encryption"),
-            ("dead_code", r'(?:dead.*code|unreachable)', "Dead code insertion"),
-            ("instruction_substitution", r'(?:instruction.*(?:substitut|replac))', "Instruction substitution"),
-            ("constant_folding", r'(?:constant.*(?:fold|obfuscat))', "Constant obfuscation"),
-            ("mba_expression", r'(?:MBA|mixed.*boolean.*arithmetic)', "MBA expression"),
-            ("virtualization", r'(?:VM|virtual.*machine|bytecode)', "Virtualization-based obfuscation"),
-            ("anti_debug", r'(?:anti.*debug|ptrace|isDebugger)', "Anti-debugging"),
-            ("anti_analysis", r'(?:anti.*(?:analysis|disassem))', "Anti-analysis"),
-            ("bogus_control_flow", r'(?:bogus.*(?:control|flow|block))', "Bogus control flow"),
-            ("code_splicing", r'(?:code.*(?:splic|split))', "Code splicing"),
+            ("control_flow_flattening", r'(?:state|dispatcher|switch.*state)', "控制流平坦化"),
+            ("opaque_predicate", r'(?:always.?true|opaque.*pred)', "不透明谓词"),
+            ("string_encryption", r'(?:string.*(?:encrypt|decrypt|xor))', "字符串加密"),
+            ("dead_code", r'(?:dead.*code|unreachable)', "死代码插入"),
+            ("instruction_substitution", r'(?:instruction.*(?:substitut|replac))', "指令替换"),
+            ("constant_folding", r'(?:constant.*(?:fold|obfuscat))', "常量混淆"),
+            ("mba_expression", r'(?:MBA|mixed.*boolean.*arithmetic)', "MBA表达式"),
+            ("virtualization", r'(?:VM|virtual.*machine|bytecode)', "虚拟化混淆"),
+            ("anti_debug", r'(?:anti.*debug|ptrace|isDebugger)', "反调试"),
+            ("anti_analysis", r'(?:anti.*(?:analysis|disassem))', "反分析"),
+            ("bogus_control_flow", r'(?:bogus.*(?:control|flow|block))', "虚假控制流"),
+            ("code_splicing", r'(?:code.*(?:splic|split))', "代码拼接"),
         ]
 
         combined = f"{code}\n{llm_response}".lower()
@@ -690,15 +684,15 @@ class LLMDeobfuscator:
         deob_lines = deobfuscated.split('\n')
 
         if len(deob_lines) < len(orig_lines):
-            trans.append("Code reduction")
+            trans.append("代码缩减")
         if _re.search(r'0x[0-9a-fA-F]+', original) and not _re.search(r'0x[0-9a-fA-F]+', deobfuscated):
-            trans.append("Constant unfolding")
+            trans.append("常量展开")
         if _re.search(r'(?:var_|loc_|v\d)', original) and not _re.search(r'(?:var_|loc_|v\d)', deobfuscated):
-            trans.append("Variable renaming")
+            trans.append("变量重命名")
         if _re.search(r'switch\s*\(', original) and not _re.search(r'switch\s*\(', deobfuscated):
-            trans.append("Control-flow unflattening")
+            trans.append("控制流反平坦化")
         if '/*' in deobfuscated or '//' in deobfuscated:
-            trans.append("Comment annotation")
+            trans.append("注释标注")
 
         return trans
 
@@ -717,8 +711,8 @@ class LLMDeobfuscator:
         return min(1.0, conf)
 
     def _extract_renames(self, original: str, deobfuscated: str) -> Dict[str, str]:
-        r"""推断变量重命名映射。启发式：原始混淆名与目标可读名的集合差。
-        注意 \w+ 确保至少匹配一个字符，避免空串污染结果集。"""
+        r"""推断变量重命名映射。启发式: 原始混淆名与目标可读名的集合差。
+        注意\w+确保至少匹配一个字符，避免空串污染结果集。"""
         renames: Dict[str, str] = {}
         orig_vars = set(_re.findall(r'\b((?:var_|loc_|v)\w+)\b', original))
         deob_vars = set(_re.findall(r'\b([a-zA-Z_]\w*)\b', deobfuscated))
@@ -737,7 +731,7 @@ class LLMDeobfuscator:
         self.m_history.clear()
 
 
-# Convenience function
+# 便捷函数
 
 def llm_deobfuscate(obfuscated_code: str,
                     llm_client: Optional[LLMClientBase] = None,

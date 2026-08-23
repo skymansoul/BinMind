@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-# Multimodal 嵌入 — CFG 图, instruction text, and structural feature fusion
-# with confidence-weighted blending and signal-richness 归一化.
-# confidence-weighted fusion with softmax-normalized weights
-# derived from signal richness metrics.
+# 多模态嵌入 -- CFG 图、指令文本、结构特征融合
+# 置信度加权融合，softmax 归一化权重由信号丰富度导出。
 # 单轮消息传递 GNN 邻域聚合；注意力池化替代均值池化；
 # FusionResult 序列化/反序列化支持缓存与跨服务传输。
 
@@ -17,11 +15,8 @@ from typing import Dict, List, Optional, Any, Tuple
 __dbg = _logging.getLogger(__name__)
 
 
-# Data classes
-
 @dataclass
 class GraphEmbedding:
-    """Embedding produced from a CFG graph structure."""
     vector: List[float] = field(default_factory=list)
     dimension: int = 128
     method: str = "GCN"
@@ -35,7 +30,6 @@ class GraphEmbedding:
 
 @dataclass
 class TextEmbedding:
-    """Embedding produced from instruction text / mnemonics."""
     vector: List[float] = field(default_factory=list)
     dimension: int = 256
     method: str = "BERT"
@@ -49,7 +43,6 @@ class TextEmbedding:
 
 @dataclass
 class StructuralFeatures:
-    """Hand-crafted structural features of a function."""
     num_instructions: int = 0
     num_basic_blocks: int = 0
     num_calls: int = 0
@@ -84,7 +77,6 @@ class StructuralFeatures:
 
 @dataclass
 class FusionResult:
-    """Result of fusing graph, text, and structural embeddings."""
     fused_vector: List[float] = field(default_factory=list)
     dimension: int = 512
     graph_weight: float = 0.0
@@ -98,7 +90,6 @@ class FusionResult:
 
     # 序列化 — 缓存落盘 & 跨服务 payload 编解码用
     def to_dict(self) -> Dict[str, Any]:
-        """Serialize to a JSON-friendly dictionary."""
         d: Dict[str, Any] = {
             "fused_vector": self.fused_vector,
             "dimension": self.dimension,
@@ -148,7 +139,6 @@ class FusionResult:
     # 反序列化 — 从缓存或 RPC 回包重建对象
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> "FusionResult":
-        """Deserialize from a dictionary back to a FusionResult."""
         ge = None
         if "graph_embedding" in d and d["graph_embedding"] is not None:
             gd = d["graph_embedding"]
@@ -203,10 +193,10 @@ class FusionResult:
         )
 
 
-# CFG Graph Embedder
+# CFG 图嵌入器
 
 class CFGGraphEmbedder:
-    """Embeds a function's control-flow graph into a fixed-size vector."""
+    """将函数控制流图嵌入为固定维度向量。"""
 
     __slots__ = ('m_dim', 'm_method', 'm_weights')
 
@@ -234,7 +224,7 @@ class CFGGraphEmbedder:
     def _build_adjacency(self, n: int,
                          edges: List[Tuple[int, int, float]]) -> List[List[int]]:
         """构建邻接表用于单跳消息传递。控制流边天然有向，
-        但这里做对称化（入边+出边）以捕获双向结构上下文。"""
+        但对称化以捕获双向结构上下文。"""
         adj: List[List[int]] = [[] for _ in range(n)]
         ei = 0
         while ei < len(edges):
@@ -357,10 +347,10 @@ class CFGGraphEmbedder:
         )
 
 
-# Instruction Text Embedder
+# 指令文本嵌入器
 
 class InstructionTextEmbedder:
-    """Embeds assembly instruction sequences into vector space."""
+    """将汇编指令序列嵌入为向量。"""
 
     __slots__ = ('m_dim', 'm_method', 'm_vocabulary', 'm_unk_vector',
                  'm_attn_query', 'm_attn_key', 'm_attn_value')
@@ -419,7 +409,6 @@ class InstructionTextEmbedder:
         return w
 
     def _matvec(self, mat: List[List[float]], vec: List[float]) -> List[float]:
-        """矩阵乘向量 — 内部工具，不暴露。"""
         out: List[float] = []
         ri = 0
         while ri < len(mat):
@@ -542,7 +531,6 @@ class InstructionTextEmbedder:
 
     # 导出注意力权重 — 诊断/可视化用，看哪些指令被模型"看重"
     def attention_weights(self, instructions: List[str]) -> List[Tuple[str, float]]:
-        """Returns (opcode, attention_weight) sorted by weight descending."""
         if not instructions:
             return []
         instr_embs: List[List[float]] = []
@@ -576,10 +564,10 @@ class InstructionTextEmbedder:
         return pairs
 
 
-# Structural Feature Extractor
+# 结构特征提取器
 
 class StructuralFeatureExtractor:
-    """Extracts hand-crafted structural features from a function."""
+    """从函数信息中提取手工结构特征。"""
 
     __slots__ = ()
 
@@ -614,14 +602,10 @@ class StructuralFeatureExtractor:
         return sf
 
 
-# Multi-Modal Embedder
+# 多模态嵌入器
 
 class MultiModalEmbedder:
-    """Fuses graph, text, and structural embeddings using confidence-weighted fusion.
-
-    The embed() method uses softmax-normalized weights derived from
-    signal richness metrics for each modality.
-    """
+    """置信度加权融合图、文本、结构三模态嵌入。"""
 
     __slots__ = ('m_graph_embedder', 'm_text_embedder', 'm_structural_extractor',
                  'm_output_dim')
@@ -636,30 +620,25 @@ class MultiModalEmbedder:
               edges: Optional[List[Tuple[int, int, float]]] = None,
               instructions: Optional[List[str]] = None,
               function_info: Optional[Dict[str, Any]] = None) -> FusionResult:
-        """Fuse embeddings from all three modalities using confidence-weighted blending.
-
-        Graph, text, and structural vectors are blended with softmax-normalized
-        weights derived from signal richness metrics.
-        """
-        # Graph 嵌入
+        # 图嵌入
         graph_emb = self.m_graph_embedder.embed(nodes, edges)
 
-        # Text 嵌入
+        # 文本嵌入
         if instructions is None:
             instructions = []
         text_emb = self.m_text_embedder.embed(instructions)
 
-        # Structural features
+        # 结构特征
         if function_info is None:
             function_info = {}
         struct_feat = self.m_structural_extractor.extract(function_info)
 
-        # Signal richness metrics
+        # 信号丰富度指标
         g_richness = max(graph_emb.signal_richness, 1e-6)
         t_richness = max(text_emb.signal_richness, 1e-6)
         s_richness = max(struct_feat.signal_richness, 1e-6)
 
-        # Softmax-normalized fusion weights
+        # softmax 归一化融合权重
         exp_g = _math.exp(g_richness)
         exp_t = _math.exp(t_richness)
         exp_s = _math.exp(s_richness)
@@ -669,12 +648,12 @@ class MultiModalEmbedder:
         w_text = exp_t / total_exp
         w_struct = exp_s / total_exp
 
-        # Pad/truncate each modality to output_dim
+        # 各模态向量补齐/截断到 output_dim
         g_vec = self._pad_to_dim(graph_emb.vector, self.m_output_dim)
         t_vec = self._pad_to_dim(text_emb.vector, self.m_output_dim)
         s_vec = self._pad_to_dim(struct_feat.vector, self.m_output_dim)
 
-        # Weighted fusion
+        # 加权融合
         fused: List[float] = []
         di = 0
         while di < self.m_output_dim:
@@ -682,7 +661,7 @@ class MultiModalEmbedder:
             fused.append(val)
             di += 1
 
-        # L2 normalize fused 向量
+        # L2 归一化融合向量
         norm = _math.sqrt(sum(v * v for v in fused))
         if norm > 0:
             di = 0
@@ -690,7 +669,7 @@ class MultiModalEmbedder:
                 fused[di] /= norm
                 di += 1
 
-        # Overall confidence
+        # 总置信度
         confidence = (w_graph * graph_emb.signal_richness +
                       w_text * text_emb.signal_richness +
                       w_struct * struct_feat.signal_richness)
@@ -752,7 +731,7 @@ class MultiModalEmbedder:
         return dot / (_math.sqrt(na) * _math.sqrt(nb))
 
 
-# Convenience
+# 工厂函数
 
 def create_multimodal_embedder(graph_dim=128, text_dim=256, output_dim=512) -> MultiModalEmbedder:
     return MultiModalEmbedder(graph_dim=graph_dim, text_dim=text_dim, output_dim=output_dim)

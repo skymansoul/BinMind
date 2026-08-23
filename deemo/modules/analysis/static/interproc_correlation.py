@@ -12,11 +12,6 @@
 #     3. 传播深度限制为 k=2: 超过2层的间接调用不再追踪.
 #        (理由: 深度>2的指针传递在静态分析中可靠性急剧下降)
 #
-# 理论依据:
-#   组合式函数摘要分析可大幅降低误报
-#   二分搜索确定最小溢出条件
-#
-
 from typing import Dict, List, Optional, Set, Tuple, NamedTuple
 from dataclasses import dataclass, field
 

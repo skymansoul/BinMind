@@ -1,12 +1,4 @@
 # coding: utf-8
-# SAWCE + Loop Accumulate benchmark sample generator
-#
-# Generates 5 new heap overflow sample categories targeting SAWCE and loop accumulation:
-#   1. same_source_fp: malloc(x); memcpy(p, src, x) - should NOT alert (FP test for SAWCE)
-#   2. derived_source_fp: malloc(x); memcpy(p, src, x+1) - boundary safe (padding test)
-#   3. loop_accumulate: malloc(256); loop 5x memcpy(p+i*64, src, 64) - cumulative overflow
-#   4. nested_call_safe: malloc(get_size()); memcpy(p, src, get_size()) - same call-ret source
-#   5. arithmetic_safe: malloc(x*4); memcpy(p, src, x*4) - same binop source
 
 import os
 import json
@@ -45,7 +37,6 @@ SAMPLE_DEFS = [
 
 
 def _c_source(name, desc, pattern, expected_vuln, challenge):
-    """Generate C source for SAWCE test samples."""
     if pattern == "same_source":
         return _src_same_source(name, desc)
     elif pattern == "derived_boundary":
@@ -271,7 +262,6 @@ clean:
 
 
 def generate_all():
-    """Generate all SAWCE benchmark samples."""
     SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     manifest = []
 

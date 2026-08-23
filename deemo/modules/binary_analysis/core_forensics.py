@@ -104,9 +104,6 @@ class CoreForensicsReport:
 
 
 def is_elf_core_file(file_path: str) -> bool:
-    """
-    检测file是否为 ELF core dump 格式
-    """
     try:
         with open(file_path, 'rb') as f:
             header = f.read(18)
@@ -131,9 +128,6 @@ def is_elf_core_file(file_path: str) -> bool:
 
 
 def calculate_entropy(data: bytes) -> float:
-    """
-    计算data熵value
-    """
     if not data:
         return 0.0
 
@@ -156,9 +150,6 @@ def calculate_entropy(data: bytes) -> float:
 
 
 def mask_sensitive_content(content: str, pattern_name: str = "") -> str:
-    """
-    脱敏敏感内容
-    """
     if not content:
         return content
 
@@ -171,17 +162,8 @@ def mask_sensitive_content(content: str, pattern_name: str = "") -> str:
 
 
 class CoreForensicsAnalyzer:
-    """
-    Core Dump 取证analyzer
-
-    利用 pyelftools 解析 ELF core dump file，extractprocessinfo、memory映射、
-    stack/heap内容、environment variable、敏感data等。
-    """
 
     def __init__(self, timeout: int = 300):
-        """
-        initialize取证analyzer
-        """
         self.timeout = timeout
         self.pyelftools_available = self._check_pyelftools()
 
@@ -194,9 +176,6 @@ class CoreForensicsAnalyzer:
             return False
 
     def analyze(self, core_file_path: str, crash_data: Dict[str, Any] = None) -> CoreForensicsReport:
-        """
-        分析 core dump file
-        """
         logger.info(f"start分析 core dump: {core_file_path}")
 
         report = CoreForensicsReport(core_file_path=core_file_path)
@@ -227,9 +206,6 @@ class CoreForensicsAnalyzer:
         return report
 
     def _analyze_elf_core(self, core_path: str, report: CoreForensicsReport) -> None:
-        """
-        使用 pyelftools 分析 ELF core dump
-        """
         try:
             from elftools.elf.elffile import ELFFile
             from elftools.elf.descriptions import describe_p_flags
@@ -358,9 +334,6 @@ class CoreForensicsAnalyzer:
         pass
 
     def _analyze_generic_core(self, core_path: str, report: CoreForensicsReport) -> None:
-        """
-        使用通用method分析 core dump
-        """
         try:
             result = subprocess.run(
                 ['file', core_path],
@@ -400,9 +373,6 @@ class CoreForensicsAnalyzer:
             logger.debug(f"读取file头failed: {e}")
 
     def _extract_strings(self, data: bytes, min_length: int = 6) -> List[str]:
-        """
-        从binarydata中extract可打印string
-        """
         strings = []
         current = []
 
@@ -421,9 +391,6 @@ class CoreForensicsAnalyzer:
         return strings
 
     def _search_sensitive_data(self, report: CoreForensicsReport) -> None:
-        """
-        在 core dump 中search敏感data
-        """
         logger.info("startsearch敏感data...")
 
         all_strings = ' '.join(report.strings_found)
@@ -624,17 +591,11 @@ class CoreForensicsAnalyzer:
 
 
 def analyze_core_dump(core_file_path: str, crash_data: Dict[str, Any] = None, timeout: int = 300) -> CoreForensicsReport:
-    """
-    分析 core dump file的convenience function
-    """
     analyzer = CoreForensicsAnalyzer(timeout=timeout)
     return analyzer.analyze(core_file_path, crash_data)
 
 
 def format_forensics_report(report: CoreForensicsReport) -> str:
-    """
-    将取证报告格式化为可读string
-    """
     lines = []
     lines.append("=" * 70)
     lines.append("Core Dump 取证分析报告")

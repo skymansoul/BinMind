@@ -1,8 +1,3 @@
-"""
-Output formatting utilities. Terminal colors, table rendering,
-and pretty-printing for analysis results.
-"""
-
 import sys
 from typing import Any, Dict, Iterable, List
 
@@ -36,7 +31,6 @@ def severity_color(severity: str) -> str:
 
 def print_table(headers: List[str], rows: List[List[str]],
                 sep: str = '  '):
-    """Print an aligned table to stdout."""
     col_widths = [len(h) for h in headers]
     for row in rows:
         for i, cell in enumerate(row):
@@ -56,7 +50,6 @@ def print_table(headers: List[str], rows: List[List[str]],
 
 
 def print_finding(vuln: Dict, idx: int = 0):
-    """Pretty-print a single vulnerability finding."""
     sev = vuln.get('severity', 'Unknown')
     typ = vuln.get('type', vuln.get('vuln_type', '?'))
     desc = vuln.get('description', 'no details')
@@ -74,7 +67,6 @@ def print_finding(vuln: Dict, idx: int = 0):
 
 
 def print_summary_box(title: str, items: Iterable[tuple]):
-    """Print a simple summary box with key-value pairs."""
     width = max(len(t[0]) for t in items) + 2 if items else 40
     width = max(width, len(title) + 4)
 

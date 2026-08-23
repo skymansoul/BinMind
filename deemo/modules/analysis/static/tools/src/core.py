@@ -1,6 +1,6 @@
-"""Core algorithms for static binary analysis: semantic labeling, diff analysis,
-LLVM IR scanning, abstract interpretation, fuzzing, syscall classification,
-branch exploitability assessment"""
+"""静态二进制分析核心算法: 语义标注、差异分析,
+LLVM IR 扫描、抽象解释、模糊测试、系统调用分类,
+分支可利用性评估。"""
 
 import hashlib
 import logging
@@ -113,10 +113,9 @@ class SemanticRoleLabeler:
 # 2. SemanticDiffAnalyzer
 
 class SemanticDiffAnalyzer:
-    """Binary semantic difference analysis
+    """二进制语义差异分析
 
-    Compare two binaries by extracting instruction/function hashes
-    and computing Jaccard similarity
+    通过提取指令/函数哈希并计算 Jaccard 相似度比较两个二进制
     """
 
     @staticmethod
@@ -290,10 +289,9 @@ class LLVMIRAnalyzer:
 # 4. AbstractInterpreter
 
 class AbstractInterpreter:
-    """Abstract interpretation in interval domain
+    """区间域抽象解释
 
-    Performs fixed-point iteration with widening at loop heads
-    for interval (range) analysis of variable values
+    在循环头处用加宽算子执行不动点迭代, 用于变量值的区间分析
     """
 
     INF = float("inf")
@@ -423,7 +421,7 @@ class AbstractInterpreter:
 # 5. StateGuidedFuzzer
 
 class StateGuidedFuzzer:
-    """State machine inference from execution traces, fuzz sequence generation
+    """从执行轨迹推断状态机, 生成 fuzz 序列
     """
 
     def infer_states(self, execution_traces: list[dict[str, Any]]) -> dict[str, Any]:
@@ -586,9 +584,9 @@ class DifferentialFuzzer:
 # 7. SyscallClassifier
 
 class SyscallClassifier:
-    """Malware family classification from syscall sequences
+    """从系统调用序列进行恶意软件家族分类
 
-    Uses n-gram extraction and cosine similarity against profiles
+    使用 n-gram 提取和余弦相似度比对特征文件
     """
 
     def __init__(self, n: int = 3) -> None:

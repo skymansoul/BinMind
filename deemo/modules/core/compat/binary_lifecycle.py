@@ -1,4 +1,3 @@
-# Proxy → binary_analysis/binary_lifecycle.py; compat shim.
 import os, importlib.util
 _r = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'binary_analysis', 'binary_lifecycle.py')
 _s = importlib.util.spec_from_file_location('binary_lifecycle_impl', _r)
@@ -6,7 +5,7 @@ _m = importlib.util.module_from_spec(_s)
 _s.loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
 
-# Inject missing exports.
+# 补全缺失导出
 if 'BinaryLifecycleManager' not in dir():
     class BinaryLifecycleManager: pass
 
@@ -15,7 +14,7 @@ _SM = getattr(_m, 'SecurityMetrics', None)
 _BS = getattr(_m, 'BinarySignature', None)
 _TD = getattr(_m, 'TrendData', None)
 
-# Absorb surplus kwargs across all __init__ methods — safe factory dispatch.
+# 兼容补丁：所有 __init__ 吸收多余 kwargs
 for _cn, _c in [('BinaryLifecycleManager', _BLM), ('SecurityMetrics', _SM),
                  ('BinarySignature', _BS), ('TrendData', _TD)]:
     if _c is None:
@@ -36,7 +35,7 @@ for _cn, _c in [('BinaryLifecycleManager', _BLM), ('SecurityMetrics', _SM),
             return _w
         _c.__init__ = _make_w(_oi)
 
-# Attach missing methods to BinaryLifecycleManager.
+# 挂载 BinaryLifecycleManager 缺失方法
 if _BLM:
     # 仅在实现缺失时挂桩，避免覆盖真实实现。
     if not hasattr(_BLM, '_analyze_trend_direction'):
@@ -59,7 +58,7 @@ if _BLM:
     _BLM.compute_signature            = _BLM._compute_signature
     _BLM.generate_recommendations     = _BLM._generate_recommendations
 
-# Resolve 'NoneType' callable error — missing logger binding.
+# 修复 logger 绑定缺失
 if _BLM:
     import logging
     for _cn in ['BinaryLifecycleManager', 'SecurityMetrics', 'BinarySignature', 'TrendData']:
@@ -126,9 +125,8 @@ def compute_weighted_maturity(metrics: dict,
     return (round(total, 1), scores)
 
 
-# 安全补丁延迟度量 (Patch Latency Metric)
-# Google Project Zero 的 0day 漏洞披露政策中的 90 天窗口
-# 以及 FIRST.org 的 EPSS (Exploit Prediction Scoring System)
+# 安全补丁延迟度量
+# 基于 Google Project Zero 90 天披露窗口和 FIRST.org EPSS
 # 度量从 CVE 公布到二进制补丁发布的时间差 → 暴露窗口越长，风险越高
 import time as _time
 

@@ -1,18 +1,13 @@
 #!/usr/bin/env python3
-"""
-对数空间约束复杂度预估器 —— 替代线性回归的非线性求解时间预测
+"""对数空间约束复杂度预估器——替代线性回归的非线性求解时间预测
 
-背景: 现有 ConstraintComplexityEstimator 使用线性回归 (w*x) 预测 Z3 求解时间
-但求解时间与 constraint_count 的关系更接近指数 —— 线性模型在约束数超过一定
-阈值后系统性低估求解时间，导致 BudgetManager 超支
+现有 ConstraintComplexityEstimator 使用线性回归 (w*x) 预测 Z3 求解时间，
+但求解时间与 constraint_count 的关系更接近指数——线性模型在约束数超过一定
+阈值后系统性低估求解时间，导致 BudgetManager 超支。
 
 本模块提供 LogSpaceComplexityEstimator，使用 log(y) ~ w*x 的对数空间线性回归
 （本质上是对数-线性模型，即 y ≈ exp(w*x)），同时通过 EMA 追踪预测误差并在线
-检测精度退化信号。当 EMA 偏差连续超过阈值时触发模型重校准
-
-ref: 线性模型 → 对数空间回归的转换参考了 Z3 内部的 heuristics 时间估算思路
-但将其实现为外部可插拔的轻量预测器 —— ref: z3/src/sat/sat_solver.h 的
-restart 策略对 search space s 的近似
+检测精度退化信号。当 EMA 偏差连续超过阈值时触发模型重校准。
 """
 
 from __future__ import annotations
@@ -42,19 +37,15 @@ class LogSpaceComplexityEstimator:
     """对数空间回归求解时间预估器
 
     与线性 ConstraintComplexityEstimator 互补:
-    - 线性模型: 快速，适合约束少且特征分布均匀的场景
-    - 对数模型: 捕捉指数的求解时间增长，适合大型约束集
+    线性模型快速，适合约束少且特征分布均匀的场景;
+    对数模型捕捉指数的求解时间增长，适合大型约束集。
 
-    自动模型选择:
-    维护两个模型在最近 N 次求解上的 RMSE 滚动窗口
-    每次预测前选择 RMSE 更低的模型。这本质上是退火式的在线
-    model selection，不需要离线训练
+    自动模型选择: 维护两个模型在最近 N 次求解上的 RMSE 滚动窗口，
+    每次预测前选择 RMSE 更低的模型——退火式的在线 model selection，
+    不需要离线训练。
 
-    Attributes:
     weights: 当前对数空间回归权重 (5,)
     bias: 对数空间偏置项
-    _linear_rmse: 线性模型最近窗口的均方根误差
-    _log_rmse: 对数空间模型最近窗口的均方根误差
     """
 
     def __init__(self, lr: float = 0.008, window: int = 120):
@@ -141,10 +132,10 @@ class LogSpaceComplexityEstimator:
     # 预测
 
     def predict(self, constraints: List[str]) -> float:
-        """预测 Z3 求解时间（秒）。
+        """预测 Z3 求解时间（秒）
 
-        返回对数空间 regression 的 exp 值;
-        若模型尚未初始化（权重全 0），退化为启发式: 0.01 * n_constraints。
+        返回对数空间回归的 exp 值; 若模型尚未初始化（权重全 0），
+        退化为启发式: 0.01 * n_constraints。
         """
         features = self.extract_features(constraints)
         log_val = self.bias
@@ -158,7 +149,7 @@ class LogSpaceComplexityEstimator:
         return predicted
 
     def predict_linear(self, constraints: List[str]) -> float:
-        """备选: 纯线性预测 —— 用于模型选择比较"""
+        """备选: 纯线性预测——用于模型选择比较"""
         features = self.extract_features(constraints)
         val = self.bias
         for i in range(_FEATURE_DIM):
@@ -169,9 +160,9 @@ class LogSpaceComplexityEstimator:
     # 在线学习
 
     def update(self, constraints: List[str], actual_time: float) -> None:
-        """用一次求解结果更新模型权重。
+        """用一次求解结果更新模型权重
 
-        在 log 空间中执行 SGD —— 损失 = (log(actual) - log(predicted))^2;
+        在 log 空间中执行 SGD——损失 = (log(actual) - log(predicted))^2;
         因为 Z3 求解时间的分布是长尾的（大部分快，少数慢），对数变换
         使梯度更均匀，避免长尾的少数慢查询主导权重更新。
         """
@@ -239,7 +230,7 @@ class LogSpaceComplexityEstimator:
         """重置权重的 70% 为默认值，保留 30% 的历史信息
 
         完全清零会丢失所有已学信息——70/30 是折中: 用默认值的偏置修正
-        漂移方向，但保留方向性信息以避免冷启动
+        漂移方向，但保留方向性信息以避免冷启动。
         """
         defaults = [0.0, 0.15, 0.001, 0.45, 0.25]
         for i in range(_FEATURE_DIM):

@@ -1,5 +1,5 @@
-"""Common utilities: entropy computation, sliding windows, YAML config loading,
-logging setup, error hierarchy for static analysis tools"""
+"""通用工具: 熵值计算、滑动窗口、YAML 配置加载,
+日志设置、静态分析工具的错误层级。"""
 
 import logging
 import math
@@ -20,41 +20,41 @@ __all__ = [
 _log = logging.getLogger(__name__)
 
 
-# Error classes
+# 错误类
 
 class ToolsError(Exception):
-    """Base 异常 for tools errors"""
+    """工具错误基类。"""
     pass
 
 
 class StaticAnalysisError(ToolsError):
-    """Error 静态分析 operations"""
+    """静态分析操作错误。"""
     pass
 
 
 class FuzzError(ToolsError):
-    """Error 模糊测试 operations"""
+    """模糊测试操作错误。"""
     pass
 
 
-# Entropy computation
+# 熵值计算
 
 def compute_entropy(data: bytes) -> float:
-    """计算 Shannon entropy LaPlace smoothing (add-1 counts)
+    """计算带拉普拉斯平滑 (加1计数) 的 Shannon 熵。
 
-    LaPlace smoothing prevents zero probabilities causing
-    log(0) errors and gives a small probability mass to unseen bytes
+    拉普拉斯平滑防止零概率导致 log(0) 错误,
+    并为未出现的字节分配小概率质量。
     """
     if not data:
         return 0.0
 
-    # Count byte frequencies
+    # 统计字节频率
     counts: dict[int, int] = {b: 0 for b in range(256)}
     for byte in data:
       counts[byte] = counts.get(byte, 0) + 1
 
-    # LaPlace smoothing: add 1 count
-    total = len(data) + 256  # +256 for add-1 256 possible bytes
+    # 拉普拉斯平滑: 加1计数
+    total = len(data) + 256  # +256 为 256 种可能字节各加1
     entropy = 0.0
     for count in counts.values():
         prob = (count + 1) / total
@@ -65,7 +65,7 @@ def compute_entropy(data: bytes) -> float:
 
 # 留着备用，以后可能用
 def _legacy_entropy_calc(data: bytes) -> float:
-    """Old entropy calculation LaPlace smoothing"""
+    """旧版熵值计算 (无拉普拉斯平滑)。"""
     if not data:
         return 0.0
     counts: dict[int, int] = {}
@@ -79,10 +79,10 @@ def _legacy_entropy_calc(data: bytes) -> float:
     return entropy
 
 
-# Sliding window
+# 滑动窗口
 
 def sliding_window(items: list[Any], n: int) -> Iterator[tuple[Any, ...]]:
-    """构造 n-grams via sliding window over a list"""
+    """通过滑动窗口在列表上构造 n-gram。"""
     if n <= 0:
         raise ValueError("Window size n must be positive")
     if n > len(items):
@@ -91,13 +91,13 @@ def sliding_window(items: list[Any], n: int) -> Iterator[tuple[Any, ...]]:
         yield tuple(items[i : i + n])
 
 
-# YAML 配置 loading env var substitution
+# YAML 配置加载与环境变量替换
 
 _ENV_VAR_PATTERN: re.Pattern[str] = re.compile(r"\$\{(\w+)\}")
 
 
 def load_yaml_config(path: str) -> dict[str, Any]:
-    """Load a YAML config file with ${VAR} environment variable substitution"""
+    """加载 YAML 配置文件, 替换 ${VAR} 环境变量。"""
     try:
         import yaml
     except ImportError:
@@ -110,7 +110,7 @@ def load_yaml_config(path: str) -> dict[str, Any]:
     with open(path, "r", encoding="utf-8") as f:
         raw = f.read()
 
-    # Substitute ${VAR} environment variable values
+    # 替换 ${VAR} 为环境变量值
     def _substitute(match: re.Match[str]) -> str:
         var_name = match.group(1)
         return os.environ.get(var_name, f"${{{var_name}}}")
@@ -123,10 +123,10 @@ def load_yaml_config(path: str) -> dict[str, Any]:
     return config
 
 
-# Logging setup
+# 日志设置
 
 def setup_logging(config: dict[str, Any]) -> logging.Logger:
-    """Set up a unified logger from a config dict"""
+    """从配置字典设置统一日志器。"""
     log_config = config.get("logging", {})
     level_name = log_config.get("level", "INFO").upper()
     log_format = log_config.get(

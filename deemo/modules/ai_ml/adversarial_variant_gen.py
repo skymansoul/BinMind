@@ -26,13 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class AdversarialVariantGenerator:
-    """语义保持的二进制对抗变体生成管线。
-
-    用途:
-      1. 对抗训练: 对训练集中每个函数生成N个变体，标签不变
-      2. 鲁棒性测试: 不同扰动半径下测量模型预测一致性衰减曲线
-      3. OOD检测训练: 极端变体（半径>0.5）作为OOD负样本
-    """
+    # 语义保持的二进制对抗变体生成管线.
+    # 用途: 对抗训练(标签不变) + 鲁棒性测试(一致性衰减曲线) + OOD检测训练(极端变体作负样本).
 
     def __init__(self, seed: int = 42):
         self._transformer = SemanticPreservingTransform(seed=seed)
@@ -42,7 +37,7 @@ class AdversarialVariantGenerator:
                           n_variants: int = 5,
                           radius_levels: Optional[List[float]] = None
                           ) -> List[Tuple[str, float, List[TransformResult]]]:
-        """为一个函数生成多个语义保持变体。"""
+        # 为一个函数生成多个语义保持变体
         if radius_levels is None:
             radius_levels = [0.05, 0.10, 0.20, 0.30, 0.50][:n_variants]
 
@@ -66,7 +61,7 @@ class AdversarialVariantGenerator:
 
     def _apply_all_transforms(self, lines: List[str],
                               transforms: List[TransformResult]) -> List[str]:
-        """将变换列表应用到指令行序列"""
+        # 将变换列表应用到指令行序列
         result = list(lines)
         for t in transforms:
             if t.kind == TransformKind.INST_REORDER:
@@ -93,7 +88,7 @@ class AdversarialVariantGenerator:
                               functions: List[Tuple[str, List[str]]],
                               variants_per_func: int = 3
                               ) -> List[Tuple[str, List[str], str]]:
-        """为训练集生成对抗增强数据。"""
+        # 为训练集生成对抗增强数据
         augmented = []
         for func_id, instrs in functions:
             variants = self.generate_variants(instrs, n_variants=variants_per_func)

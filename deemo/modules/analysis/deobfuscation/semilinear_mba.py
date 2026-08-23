@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-半线性 MBA 去混淆器
-
-基于 Skees et al. 2024 的半线性 MBA 扩展框架
-将含常量的位运算操作数（如 x&1, (x&0xF)+(y&0xF)）纳入
-简化范围，突破了传统线性 MBA 方法仅处理纯变量操作数的局限
-
-核心方法：
-1. 半线性表达式识别：区分纯变量位运算和含常量位掩码的位运算
-2. 逐位分离：在位级别展开为独立布尔表达式
-3. 位级别简化：在 GF(2) 上应用布尔代数恒等式
-4. 重新组装：将简化后的位表达式还原为字级别运算
-
-与 egraph_mba.py 互补：本模块处理常量掩码场景
-egraph_mba 处理纯线性 MBA 场景
-"""
 
 import logging
 import re
@@ -31,20 +15,9 @@ except ImportError:
     _HAS_Z3 = False
 
 class BitExpr:
-    """
-    位级别布尔表达式 AST
-
-    参考 Zhou et al. 2024 的位级别建模方法
-    支持的节点类型：
-    - AND, OR, XOR（布尔运算）
-    - VAR(name, bit_index)（第 bit_index 位的变量值）
-    - CONST(0/1)（布尔常量）
-    """
-
     pass
 
 class BitConst:
-    """位常量：0 或 1"""
     __slots__ = ('value',)
 
     def __init__(self, value: int):
@@ -64,7 +37,6 @@ class BitConst:
         return hash(('const', self.value))
 
 class BitVar:
-    """位变量：某变量的第 bit_index 位"""
     __slots__ = ('name', 'bit_index')
 
     def __init__(self, name: str, bit_index: int):
@@ -83,7 +55,6 @@ class BitVar:
         return hash(('var', self.name, self.bit_index))
 
 class BitOp:
-    """位操作：AND, OR, XOR"""
     __slots__ = ('op', 'left', 'right')
 
     def __init__(self, op: str, left, right):
@@ -97,7 +68,6 @@ class BitOp:
         return f"({self.left} {self.op} {self.right})"
 
 class BitNot:
-    """位非：NOT"""
     __slots__ = ('operand',)
 
     def __init__(self, operand):
@@ -109,14 +79,7 @@ class BitNot:
 BitExprType = BitConst | BitVar | BitOp | BitNot
 
 class BitLevelSimplifier:
-    """
-    位级别布尔表达式简化器
 
-    应用布尔代数恒等式在位级别进行简化
-    [Skees et al. 2024]
-    """
-
-    # 布尔代数重写规则（bottom-up 应用）
     _RULES = [
         # 常量折叠
         ('and', BitConst(0), None, BitConst(0)),
@@ -142,11 +105,6 @@ class BitLevelSimplifier:
     ]
 
     def simplify(self, expr: BitExprType, depth: int = 0) -> BitExprType:
-        """
-        递归简化位表达式
-
-        深度优先 + 后序重写，最大递归深度 20
-        """
         if depth > 20:
             return expr
 
@@ -226,22 +184,8 @@ class BitLevelSimplifier:
         return expr
 
 class SemiLinearParser:
-    """
-    半线性 MBA 表达式解析器
-
-    解析混合常量和变量的位运算表达式
-    识别模式：
-    - x & C（常量掩码）
-    - (x & C1) + (y & C2)（带掩码的半线性组合）
-    - (x & C1) ^ (y & C2) ^ (x & y)（两种操作混合）
-    """
 
     def parse(self, expr_str: str) -> Optional[Dict[str, Any]]:
-        """解析半线性 MBA 表达式。
-
-        成功返回 {'type': 'semilinear', 'terms': [...],
-        'operations': [...]}, 解析失败返回 None。
-        """
         expr = expr_str.replace(' ', '')
 
         terms = []
@@ -347,12 +291,6 @@ class SemiLinearMBASimplifier:
     def _apply_bitwise_simplification(
         self, parsed: Dict[str, Any]
     ) -> str:
-        """
-        逐位简化半线性表达式
-
-        对每个位构建独立的布尔表达式
-        应用位级别简化规则后重建字级别结果
-        """
         terms = parsed.get('terms', [])
         if not terms:
             return parsed.get('original', '')

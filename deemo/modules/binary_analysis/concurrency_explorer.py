@@ -14,20 +14,17 @@ logger = logging.getLogger(__name__)
 
 
 class ThreadState(str, Enum):
-    """Thread state enumeration."""
     RUNNING = "running"
     WAITING = "waiting"
     BLOCKED = "blocked"
     TERMINATED = "terminated"
 
 class RaceType(str, Enum):
-    """Data race type enumeration."""
     READ_WRITE = "read_write"
     WRITE_WRITE = "write_write"
     READ_READ = "read_read"
 
 class LockType(str, Enum):
-    """Lock type enumeration."""
     MUTEX = "mutex"
     SEMAPHORE = "semaphore"
     RWLOCK = "rwlock"
@@ -36,7 +33,6 @@ class LockType(str, Enum):
 
 @dataclass
 class ThreadInfo:
-    """Thread information data container."""
     tid: int
     name: str
     state: ThreadState = ThreadState.RUNNING
@@ -48,7 +44,6 @@ class ThreadInfo:
 
 @dataclass
 class MemoryAccess:
-    """Memory access tracking point with address, size, and access type."""
     thread_id: int
     address: int
     access_type: str
@@ -58,7 +53,6 @@ class MemoryAccess:
 
 @dataclass
 class LockOperation:
-    """Lock operation detection entry capturing lock address and operation type."""
     thread_id: int
     lock_name: str
     operation: str
@@ -68,7 +62,6 @@ class LockOperation:
 
 @dataclass
 class RaceCondition:
-    """Race condition detection result with participating threads and conflicting address."""
     race_type: str
     location: str
     thread1_id: int
@@ -83,7 +76,6 @@ class RaceCondition:
 
 @dataclass
 class DeadlockPair:
-    """Deadlock pair analysis record listing two mutually waiting locks."""
     thread1_id: int
     thread2_id: int
     lock1_name: str
@@ -93,7 +85,6 @@ class DeadlockPair:
 
 @dataclass
 class ExecutionPath:
-    """Execution path model with path ID and locks traversed."""
     thread_order: list[int]
     events: List
     state_hash: str
@@ -102,15 +93,6 @@ class ExecutionPath:
 
 
 class ConcurrencyExplorer(BaseAnalyzer):
-    """
-    Systematic concurrency vulnerability detection analyzer.
-
-    Core capabilities:
-    1. Enumerate thread interleaving sequences under Unicorn/QEMU instrumentation
-    2. Symbolic execution for data race detection
-    3. Detect deadlocks and atomicity violations
-    4. Generate trigger scripts
-    """
 
     DEFAULT_MAX_PATHS: int = 10000
 
@@ -124,7 +106,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         self.path_count: int = 0
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """Execute concurrency vulnerability analysis."""
         pseudocode = kwargs.get('pseudocode', '')
         binary_info = kwargs.get('binary_info', {})
         max_interleavings = kwargs.get('max_interleavings', 1000)
@@ -166,7 +147,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         max_paths: int,
         detection_mode: str
     ) -> Dict[str, Any]:
-        """Explore thread interleaving sequences."""
         logger.info(f"Starting thread interleaving exploration, max paths: {max_paths}")
 
         thread_count = static_result['summary'].get('total_threads', 2)
@@ -204,7 +184,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         }
 
     def _generate_interleavings(self, thread_count: int, max_paths: int) -> List[List[int]]:
-        """Generate thread interleaving sequences."""
         interleavings = []
         threads = list(range(thread_count))
 
@@ -224,7 +203,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         static_result: dict[str, Any],
         detection_mode: str
     ) -> Dict[str, Any]:
-        """Analyze a single interleaving sequence."""
         result = {
             'deadlock_detected': False,
             'deadlocks': [],
@@ -291,7 +269,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         thread_locks: dict[int, Set[str]],
         lock_states: dict[str, typing.Optional[int]]
     ) -> bool:
-        """Check if a deadlock has occurred."""
         threads = set(thread_locks.keys())
 
         if len(threads) < 2:
@@ -312,7 +289,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         thread_locks: dict[int, Set[str]],
         lock_states: dict[str, typing.Optional[int]]
     ) -> typing.Optional[List[Tuple[int, str]]]:
-        """Find a deadlock cycle."""
         threads = list(thread_locks.keys())
 
         if len(threads) < 2:
@@ -342,7 +318,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         return None
 
     def _has_cycle(self, graph: dict[int, Set[int]]) -> bool:
-        """Detect if a cycle exists in the graph."""
         visited = set()
         rec_stack = set()
 
@@ -368,7 +343,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         return False
 
     def _detect_data_races(self, memory_accesses: list[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Detect data races in memory accesses."""
         races = []
         var_accesses = defaultdict(list)
 
@@ -407,7 +381,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         return races
 
     def _format_races(self, races: list[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Format data race results."""
         formatted = []
         for race in races:
             formatted.append({
@@ -420,7 +393,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         return formatted
 
     def _format_deadlocks(self, deadlocks: list[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Format deadlock results."""
         formatted = []
         for deadlock in deadlocks:
             formatted.append({
@@ -434,7 +406,6 @@ class ConcurrencyExplorer(BaseAnalyzer):
         return formatted
 
     def generate_trigger_script(self, race_condition: dict[str, Any]) -> str:
-        """Generate a data race trigger script."""
         script = []
         script.append("# Data Race Trigger Script")
         script.append(f"# Race variable: {race_condition['variable']}")
@@ -488,6 +459,5 @@ class ConcurrencyExplorer(BaseAnalyzer):
 
 
 def explore_concurrency(pseudocode: str, **kwargs) -> Dict[str, Any]:
-    """Convenience function: execute concurrency vulnerability exploration."""
     explorer = ConcurrencyExplorer()
     return explorer.analyze(pseudocode=pseudocode, **kwargs)

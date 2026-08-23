@@ -19,7 +19,6 @@ class VMInstruction:
 
 @dataclass
 class VMHandler:
-    """表示已解码 VM 处理器的实际指令级细节"""
     address: int
     opcode: int
     semantics: str = 'unknown'
@@ -94,7 +93,6 @@ def _try_import_capstone():
 
 
 def _disasm_chunk(data: bytes, base_addr: int) -> List[Tuple[int, int, str, str]]:
-    """反汇编一块代码。返回 (address, size, mnemonic, op_str) 列表"""
     cs = _try_import_capstone()
     if cs is None:
         return []
@@ -132,10 +130,7 @@ _BYTECODE_PATTERNS = {
 }
 
 
-# //// VMDetector ////
-
 class VMDetector:
-    """基于签名的 VM 保护检测器"""
 
     _VM_INDICATORS = [
         b"VMProtect", b"Themida", b"Code Virtualizer", b"VM_",
@@ -201,7 +196,6 @@ class VMDetector:
 # 调度循环搜索
 
 def _is_indirect_jump(mnem: str, op_str: str) -> bool:
-    """检测间接跳转: jmp reg, jmp [reg], jmp [reg+disp]"""
     m = mnem.lower().strip()
     if m not in ('jmp',):
         return False
@@ -217,7 +211,6 @@ def _is_indirect_jump(mnem: str, op_str: str) -> bool:
 
 
 def _find_dispatch_loop_static(binary_data: bytes, section_start: int) -> Optional[int]:
-    """用 capstone 静态扫描寻找间接跳转，这是调度循环的典型特征"""
     cs = _try_import_capstone()
     if cs is None:
         return None
@@ -254,7 +247,6 @@ def _find_dispatch_loop_static(binary_data: bytes, section_start: int) -> Option
 
 def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
                                 max_handlers: int = 64) -> List[VMHandler]:
-    """在 dispatch 地址附近提取 handler，使用 capstone 反汇编实际指令"""
     cs = _try_import_capstone()
     if cs is None:
         return []
@@ -358,7 +350,6 @@ def _extract_handlers_capstone(binary_data: bytes, dispatch_addr: int,
 
 
 def _classify_handler_semantics(raw_mnems: List[str]) -> str:
-    """基于handler中的实际指令序列推断语义类别"""
     categories = {
         'arithmetic': ['add', 'sub', 'mul', 'div', 'imul', 'idiv', 'inc', 'dec', 'neg', 'adc', 'sbb'],
         'logical': ['and', 'or', 'xor', 'not'],
@@ -384,10 +375,7 @@ def _classify_handler_semantics(raw_mnems: List[str]) -> str:
     return max(scores, key=scores.get)
 
 
-# //// 伪代码提升 ////
-
 def _lift_to_pseudocode(handlers: List[VMHandler]) -> str:
-    """将handler列表转换为可读的伪代码"""
     lines = ["// === VM Handler Pseudocode ===", ""]
 
     for h in handlers:
@@ -442,7 +430,6 @@ def _lift_to_pseudocode(handlers: List[VMHandler]) -> str:
 # VMUnvirtualizer（主类）
 
 class VMUnvirtualizer:
-    """基于 capstone 真实指令提取的 VM 保护去混淆引擎"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)
@@ -457,7 +444,6 @@ class VMUnvirtualizer:
 
     def extract_handlers(self, dispatch_addr: Optional[int] = None,
                          max_handlers: int = 64) -> List[VMHandler]:
-        """从二进制中提取 VM handler，使用 capstone 反汇编真实指令"""
         if not self.data:
             return []
 
@@ -491,19 +477,16 @@ class VMUnvirtualizer:
         return _extract_handlers_capstone(self.data, dispatch_addr, max_handlers)
 
     def identify_dispatch_loop(self) -> Optional[int]:
-        """识别 VM 调度循环地址"""
         if not self.data:
             return None
         return _find_dispatch_loop_static(self.data, 0x1000) or _find_dispatch_loop_static(self.data, 0)
 
     def lift_to_pseudocode(self, handlers: Optional[List[VMHandler]] = None) -> str:
-        """将 handler 提升为可读伪代码"""
         if handlers is None:
             handlers = self.extract_handlers()
         return _lift_to_pseudocode(handlers)
 
     def unvirtualize(self) -> DevirtualizationResult:
-        """执行VM去虚拟化；二进制未加载时返回失败结果。"""
         if not self.data:
             logger.warning("binary not loaded: %s", self.binary_path)
             return DevirtualizationResult(
@@ -516,7 +499,6 @@ class VMUnvirtualizer:
         return self.run()
 
     def run(self) -> DevirtualizationResult:
-        """执行完整的 VM 去虚拟化流程"""
         try:
             if not self.detector.detect_vm():
                 # 即使未检测到已知VM，仍进行handler提取
@@ -586,7 +568,6 @@ class VMUnvirtualizer:
 
 
 def _generate_fallback_handlers(dispatch_addr: int, count: int) -> List[VMHandler]:
-    """当 capstone 不可用或无 handler 被提取时生成占位 handler"""
     _DEFAULT_MNEMONICS = [
         ("vadd", "arithmetic"), ("vsub", "arithmetic"), ("vmul", "arithmetic"),
         ("vdiv", "arithmetic"), ("vxor", "logical"), ("vand", "logical"),

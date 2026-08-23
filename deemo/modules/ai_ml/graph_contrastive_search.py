@@ -17,13 +17,6 @@ g_log = _logging.getLogger(__name__)
 
 
 class SimHash:
-    """SimHash fingerprint for locality-sensitive hashing.
-
-    Uses random hyperplanes to project vectors into binary hash codes.
-    Similar vectors produce similar hash codes (small Hamming distance).
-
-    Enhanced with neighbor bucket probing and bit-flip methods for multi-probe LSH.
-    """
 
     __slots__ = ('m_hash_bits', 'm_hyperplanes', 'm_dim')
 
@@ -47,10 +40,8 @@ class SimHash:
         return planes
 
     def compute_sh(self, vector):
-        """Compute SimHash fingerprint for a vector."""
         if vector is None:
             return 0
-        # Pad or truncate
         vec = list(vector)
         if len(vec) < self.m_dim:
             vec.extend([0.0] * (self.m_dim - len(vec)))
@@ -71,7 +62,6 @@ class SimHash:
         return hash_val
 
     def hamming_distance(self, hash_a, hash_b):
-        """Compute Hamming distance between two hash codes."""
         xor = hash_a ^ hash_b
         dist = 0
         while xor:
@@ -80,23 +70,16 @@ class SimHash:
         return dist
 
     def neighbor_buckets(self, hash_val, probe_radius=2):
-        """Generate neighbor bucket hashes within a given Hamming radius.
-
-        This enables multi-probe LSH: instead of searching only the exact
-        hash bucket, also probe neighboring buckets for higher recall.
-        """
         buckets = [hash_val]
         if probe_radius < 1:
             return buckets
 
-        # Single-bit flips (probe_radius=1)
         bi = 0
         while bi < self.m_hash_bits:
             neighbor = self._flip_bits(hash_val, [bi])
             buckets.append(neighbor)
             bi += 1
 
-        # Two-bit flips (probe_radius=2)
         if probe_radius >= 2:
             bi = 0
             while bi < self.m_hash_bits:
@@ -121,25 +104,15 @@ class SimHash:
         return result
 
     def similarity_from_distance(self, hamming_dist):
-        """Estimate cosine similarity from Hamming distance."""
-        # Probability of agreement on a random hyperplane = 1 - theta/pi
-        # where theta = arccos(similarity)
-        # Approximate inversion:
         if hamming_dist <= 0:
             return 1.0
         if hamming_dist >= self.m_hash_bits:
             return 0.0
-        # cos(theta) = cos(pi * dist / bits)
         angle = _math.pi * hamming_dist / self.m_hash_bits
         return _math.cos(angle)
 
 
 class LSHIndex:
-    """Multi-table LSH index using SimHash for approximate nearest neighbor search.
-
-    Supports multi-probe LSH: queries search multiple neighbor buckets per hash
-    table for improved recall at the cost of slightly more comparisons.
-    """
 
     __slots__ = ('m_tables', 'm_hasher', 'm_probe_radius', 'm_hashers')
 
@@ -152,7 +125,6 @@ class LSHIndex:
         self.m_hashers = [SimHash(hash_bits, input_dim) for _ in range(num_tables)]
 
     def insert_lsh(self, key, vector):
-        """Insert a vector into all LSH tables."""
         if key is None or vector is None:
             return
         ti = 0
@@ -162,7 +134,6 @@ class LSHIndex:
             ti += 1
 
     def insert_batch_lsh(self, items):
-        """Batch insert: list of (key, vector) tuples."""
         ii = 0
         while ii < len(items):
             key, vec = items[ii]
@@ -170,11 +141,6 @@ class LSHIndex:
             ii += 1
 
     def query_lsh(self, query_vector, top_k=10, threshold=0.5):
-        """Multi-probe ANN search.
-
-        Searches not just the exact hash bucket but also neighboring buckets
-        (within probe_radius Hamming distance) for each table.
-        """
         if query_vector is None:
             return []
 
@@ -184,7 +150,6 @@ class LSHIndex:
         while ti < len(self.m_hashers):
             h = self.m_hashers[ti].compute_sh(query_vector)
 
-            # Multi-probe: search the exact bucket AND neighbor buckets
             probe_hashes = self.m_hashers[ti].neighbor_buckets(h, self.m_probe_radius)
 
             pi = 0
@@ -201,7 +166,6 @@ class LSHIndex:
                 pi += 1
             ti += 1
 
-        # Filter and sort
         results = [(k, v) for k, v in candidates.items() if v >= threshold]
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_k]
@@ -251,7 +215,6 @@ class LSHIndex:
             ti += 1
 
     def size_lsh(self):
-        """Total number of indexed entries."""
         total = 0
         ti = 0
         while ti < len(self.m_tables):
@@ -262,11 +225,6 @@ class LSHIndex:
 
 
 class ContrastiveGraphEncoder:
-    """Encodes function graphs into fixed-dimensional embeddings using
-    contrastive learning with a simple graph convolutional network.
-
-    Training objective: pull similar functions closer, push dissimilar apart.
-    """
 
     __slots__ = ('m_input_dim', 'm_hidden_dim', 'm_output_dim', 'm_gnn_weights',
                  'm_projection_weights', 'm_temperature')
@@ -277,11 +235,9 @@ class ContrastiveGraphEncoder:
         self.m_output_dim = output_dim
         self.m_temperature = temperature
 
-        # GNN layer weights
         scale = _math.sqrt(2.0 / (input_dim + hidden_dim))
         self.m_gnn_weights = self._init_weights(input_dim, hidden_dim, scale)
 
-        # Projection head for contrastive learning
         proj_scale = _math.sqrt(2.0 / (hidden_dim + output_dim))
         self.m_projection_weights = self._init_weights(hidden_dim, output_dim, proj_scale)
 
@@ -299,7 +255,6 @@ class ContrastiveGraphEncoder:
         return w
 
     def encode_graph_cge(self, graph):
-        """Encode a function graph to a dense embedding."""
         if graph is None:
             return [0.0] * self.m_output_dim
 
@@ -309,7 +264,6 @@ class ContrastiveGraphEncoder:
         if not nodes:
             return [0.0] * self.m_output_dim
 
-        # Build adjacency
         adj = _defaultdict(list)
         ei = 0
         while ei < len(edges):
@@ -317,7 +271,6 @@ class ContrastiveGraphEncoder:
             adj[src].append(dst)
             ei += 1
 
-        # Initial node features
         node_feats = {}
         ni = 0
         while ni < len(nodes):
@@ -329,19 +282,17 @@ class ContrastiveGraphEncoder:
             node_feats[ni] = feat
             ni += 1
 
-        # GCN layer: aggregate neighbor features
         new_feats = {}
         ni = 0
         while ni < len(nodes):
             feat = node_feats[ni]
             neighbors = adj.get(ni, [])
 
-            # Aggregate: self + mean of neighbors
             agg = list(feat)
             if neighbors:
                 ndi = 0
                 while ndi < self.m_input_dim:
-                    total = feat[ndi]  # self
+                    total = feat[ndi]
                     nbi = 0
                     while nbi < len(neighbors):
                         nb = neighbors[nbi]
@@ -351,7 +302,6 @@ class ContrastiveGraphEncoder:
                     agg[ndi] = total / (len(neighbors) + 1)
                     ndi += 1
 
-            # Linear transform + ReLU
             out = []
             ri = 0
             while ri < len(self.m_gnn_weights):
@@ -365,7 +315,6 @@ class ContrastiveGraphEncoder:
             new_feats[ni] = out
             ni += 1
 
-        # Graph-level readout: mean pooling
         graph_vec = [0.0] * self.m_hidden_dim
         di = 0
         while di < self.m_hidden_dim:
@@ -377,7 +326,6 @@ class ContrastiveGraphEncoder:
             graph_vec[di] = total / max(len(nodes), 1)
             di += 1
 
-        # Projection head
         emb = []
         ri = 0
         while ri < len(self.m_projection_weights):
@@ -389,14 +337,12 @@ class ContrastiveGraphEncoder:
             emb.append(total)
             ri += 1
 
-        # L2 normalize
         norm = _math.sqrt(sum(v * v for v in emb)) + 1e-9
         emb = [v / norm for v in emb]
 
         return emb
 
     def contrastive_loss_cge(self, emb_a, emb_b, label):
-        """NT-Xent (normalized temperature-scaled cross entropy) loss for one pair."""
         if emb_a is None or emb_b is None:
             return 0.0
 
@@ -479,7 +425,6 @@ class ContrastiveGraphEncoder:
             term = 0.0
             ci = 0
             while ci < out_dim:
-                # δ_ij term
                 delta = 1.0 if ci == ri else 0.0
                 term += emb_grad[ci] * (delta / norm - raw_out[ci] * raw_out[ri] / (norm * norm_sq))
                 ci += 1
@@ -501,17 +446,16 @@ class ContrastiveGraphEncoder:
         gnn_out 是 ReLU 输出前的线性变换结果（逐节点），downstream_grad 是上游传回的损失对 gnn_out (ReLU 后) 的梯度。
         这里做简化：对 GNN 权重做逐样本 SGD，累积每个节点的梯度再平均。
         """
-        hidden_dim = len(self.m_gnn_weights)    # out_d
-        input_dim = len(self.m_gnn_weights[0])   # in_d
+        hidden_dim = len(self.m_gnn_weights)
+        input_dim = len(self.m_gnn_weights[0])
         n_nodes = len(agg_list)
 
         ni = 0
         while ni < n_nodes:
             agg = agg_list[ni]
-            out = gnn_out[ni]  # ReLU 前输出
+            out = gnn_out[ni]
             grad_post_relu = downstream_grad[ni]
 
-            # ReLU backward: ∂L/∂pre_relu = grad_post_relu if pre_relu > 0 else 0
             grad_pre_relu = []
             ri = 0
             while ri < hidden_dim:
@@ -534,13 +478,6 @@ class ContrastiveGraphEncoder:
 
 
 class GraphContrastiveSearch:
-    """Semantic binary code search using contrastive graph embeddings and LSH indexing.
-
-    Combines:
-    1. Contrastive learning on function graphs to produce embeddings.
-    2. SimHash LSH index for fast approximate nearest neighbor search.
-    3. Multi-probe bucket exploration for improved recall.
-    """
 
     __slots__ = ('m_encoder', 'm_index', 'm_metadata', 'm_trained', 'm_embeddings_cache')
 
@@ -554,7 +491,6 @@ class GraphContrastiveSearch:
         self.m_trained = False
 
     def index_graph_gcs(self, graph_id, graph, metadata=None):
-        """Index a function graph for search."""
         if graph_id is None or graph is None:
             return
         emb = self.m_encoder.encode_graph_cge(graph)
@@ -566,7 +502,6 @@ class GraphContrastiveSearch:
         g_log.debug(f"Indexed graph {graph_id}")
 
     def index_batch_gcs(self, graphs):
-        """Batch index multiple graphs."""
         gi = 0
         while gi < len(graphs):
             gid, gr, meta = graphs[gi]
@@ -575,7 +510,6 @@ class GraphContrastiveSearch:
         g_log.info(f"Batch indexed {len(graphs)} graphs")
 
     def search_gcs(self, query_graph, top_k=10, threshold=0.5):
-        """Search for similar function graphs."""
         if query_graph is None:
             return []
         query_emb = self.m_encoder.encode_graph_cge(query_graph)
@@ -589,7 +523,6 @@ class GraphContrastiveSearch:
         return enriched
 
     def train_contrastive_gcs(self, pairs, labels, epochs=30, lr=0.001):
-        """Train the graph encoder with contrastive pairs (SGD weight updates)."""
         if pairs is None or labels is None or len(pairs) == 0:
             g_log.warning("train_contrastive: empty input")
             return []
@@ -682,7 +615,6 @@ class GraphContrastiveSearch:
         hidden_dim = self.m_encoder.m_hidden_dim
         gnn_w = self.m_encoder.m_gnn_weights
 
-        # Build adjacency
         adj = _defaultdict(list)
         ei = 0
         while ei < len(edges):
@@ -690,7 +622,6 @@ class GraphContrastiveSearch:
             adj[src].append(dst)
             ei += 1
 
-        # Node features
         node_feats = {}
         ni = 0
         while ni < len(nodes):
@@ -702,7 +633,6 @@ class GraphContrastiveSearch:
             node_feats[ni] = feat
             ni += 1
 
-        # GCN 聚合 + 线性变换
         agg_list = []
         gnn_out_list = []
         new_feats = {}
@@ -727,7 +657,6 @@ class GraphContrastiveSearch:
 
             agg_list.append(agg)
 
-            # Linear transform (pre-ReLU)
             out = []
             ri = 0
             while ri < len(gnn_w):
@@ -741,12 +670,10 @@ class GraphContrastiveSearch:
 
             gnn_out_list.append(out)
 
-            # ReLU
             relu_out = [max(v, 0.0) for v in out]
             new_feats[ni] = relu_out
             ni += 1
 
-        # Graph-level readout: mean pooling
         graph_vec = [0.0] * hidden_dim
         di = 0
         while di < hidden_dim:
@@ -815,7 +742,6 @@ class GraphContrastiveSearch:
         return gnn_grad
 
     def compute_similarity_gcs(self, graph_a, graph_b):
-        """Compute cosine similarity between two graphs."""
         emb_a = self.m_encoder.encode_graph_cge(graph_a)
         emb_b = self.m_encoder.encode_graph_cge(graph_b)
         sim = 0.0
@@ -826,7 +752,6 @@ class GraphContrastiveSearch:
         return sim
 
     def remove_graph_gcs(self, graph_id):
-        """Remove a graph from the index and embedding cache."""
         self.m_index.remove_lsh(graph_id)
         self.m_metadata.pop(graph_id, None)
         self.m_embeddings_cache.pop(graph_id, None)
@@ -849,7 +774,6 @@ class GraphContrastiveSearch:
         g_log.info(f"Index rebuild complete: {rebuild_count} graphs re-inserted")
 
     def get_stats_gcs(self):
-        """Return search engine statistics."""
         return {
             'indexed_graphs': len(self.m_metadata),
             'lsh_entries': self.m_index.size_lsh(),
@@ -859,10 +783,6 @@ class GraphContrastiveSearch:
         }
 
     def _ann_search_gcs(self, query_emb, top_k=10):
-        """Internal ANN search using multi-probe LSH buckets.
-
-        Enhanced to use neighbor bucket probing from SimHash for higher recall.
-        """
         return self.m_index.query_lsh(query_emb, top_k)
 
 

@@ -1,28 +1,4 @@
-#!/usr/bin/env python3
-# 加入 leave-one-out 消融的方差估计（重复 5 次随机种子取均值）
-"""
-GNN 特征重要性消融分析框架 - 对 graph_builder 的 12 维特征做系统化量化
-
-专利差距分析指出: "12 维特征设计原理未文档化（为什么计数不是比例？为什么这 12 维？）"
-本模块提供消融实验的工具链，使特征设计从"领域直觉"升级为"数据驱动的定量决策"
-
-方法:
-1. Individual Abla: 逐维度设为 0，测量 GNN 性能下降幅度
-2. Leave-One-Out: 每次保留一个维度，其他全 0，测量剩余信息量
-3. Correla Matrix: 12×12 Pearson 相关矩阵，识别冗余特征对
-4. Permuta Import: 随机打乱每个维度的值（破坏信息但保持分布），测性能降幅
-
-输出: FeatureImportanceReport，按importance降序排列，含消融方法、方差估计和冗余标记
-
-ref: Fisher et al. " Models Wrong, but 使用 — Assessing
-Feature Import Graph Neural 网络s" 的消融框架设计
-本模块将其适配到二进制 CFG 的特定特征空间
-
-设计假设: graph_builder._compute_block_features 定义的 12 维特征为:
-[in_degree, out_degree, num_instructions, num_calls, num_arith, num_logic
-num_mem, num_branch, size_bytes, has_loop, cyclomatic_contrib, is_entry]
-"""
-
+# leave-out 消融的方差估计（重复 5 次随机种子取均值）
 from __future__ import annotations
 
 import logging

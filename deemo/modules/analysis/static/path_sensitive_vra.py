@@ -5,10 +5,6 @@
 #   本模块在cmp+jcc分支处提取路径约束, 在危险调用点前
 #   检查路径条件是否可将写入大小窄化到安全范围.
 #
-# 理论依据:
-#   选择性路径枚举平衡精度与效率; 分支条件窄化消除系统性误报.
-#
-
 from typing import Dict, List, Optional, Tuple
 
 from .value_range import ValueRange

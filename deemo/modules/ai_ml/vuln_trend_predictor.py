@@ -1,10 +1,3 @@
-"""
-Vulnerability Trend Predictor - Time-series forecasting for CVE/disclosure data.
-
-Simple moving-average-based trend prediction for vulnerability types
-across time periods, with risk alerts and rising trend detection.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -16,7 +9,6 @@ _log = logging.getLogger(__name__)
 
 
 class VulnTrend:
-    """A single vulnerability trend line."""
 
     __slots__ = (
         'vuln_type', 'period', 'historical_counts',
@@ -64,7 +56,6 @@ class VulnTrend:
 
 
 class VulnTrendPredictor:
-    """Predicts vulnerability trends using moving average and direction analysis."""
 
     def __init__(self) -> None:
         self._history: Dict[str, List[int]] = defaultdict(list)
@@ -77,7 +68,6 @@ class VulnTrendPredictor:
         period: str = "weekly",
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Add a data point to the predictor."""
         key = f"{vuln_type}:{period}"
         self._history[key].append(count)
         if metadata:
@@ -88,7 +78,6 @@ class VulnTrendPredictor:
         counts: List[int],
         window: int = 4,
     ) -> Tuple[int, str, float]:
-        """Simple moving average forecast with trend direction."""
         if len(counts) < window:
             avg = sum(counts) // max(1, len(counts))
             return (avg, "stable", 0.3)
@@ -96,7 +85,7 @@ class VulnTrendPredictor:
         recent = counts[-window:]
         predicted = sum(recent) // len(recent)
 
-        # Compare halves for trend direction
+        # 比较前后半段判断趋势方向
         half = window // 2
         first_half_avg = sum(counts[-window:-half]) / max(1, half)
         second_half_avg = sum(counts[-half:]) / max(1, half)
@@ -117,7 +106,6 @@ class VulnTrendPredictor:
         counts: List[int],
         alpha: float = 0.3,
     ) -> Tuple[int, str, float]:
-        """Exponential smoothing forecast."""
         if not counts:
             return (0, "stable", 0.0)
 
@@ -145,15 +133,7 @@ class VulnTrendPredictor:
         counts: List[int],
         multiplier: float = 1.5,
     ) -> List[int]:
-        """Detect anomalous indices using inter-quartile range method.
-
-        Returns list of indices into ``counts`` where the value lies beyond
-        ``multiplier * IQR`` from Q1 or Q3. An empty list means no outliers.
-
-        为什么用 IQR？
-        比 z-score 更适合漏洞数据 - 漏洞爆发通常是尖峰分布，IQR 对
-        极端值更鲁棒，不会因为一两个爆发数据把整个标准差拉大。
-        """
+        """IQR 异常检测 — 比 z-score 更适合漏洞爆发型数据，对极端值更鲁棒。"""
         if len(counts) < 4:
             return []
 
@@ -184,15 +164,7 @@ class VulnTrendPredictor:
     # 增强功能 2: 趋势强度 (slope-based trend strength)
     # 用简单线性回归的斜率来衡量趋势的"劲度"，不是只看方向
     def compute_trend_strength(self, counts: List[int]) -> float:
-        """Compute trend strength as the absolute slope of a simple linear
-        regression over the historical counts.
-
-        Returns a non-negative float. Larger values indicate a steeper trend
-        (either upward or downward). Values near zero mean the series is flat.
-
-        思路：最小二乘法求斜率 b = Σ((x - x̄)(y - ȳ)) / Σ((x - x̄)²)
-        不关心正负号，只取绝对值，因为我们已经在方向判断里知道涨跌了。
-        """
+        """趋势强度 — 最小二乘法斜率绝对值，归一化后跨类型可比。"""
         n = len(counts)
         if n < 2:
             return 0.0
@@ -231,7 +203,6 @@ class VulnTrendPredictor:
         method: str = "moving_average",
         **kwargs: Any,
     ) -> Tuple[int, str, float]:
-        """Route to the correct forecasting implementation."""
         if method == "exponential":
             alpha = kwargs.get('alpha', kwargs.get('smoothing_factor', 0.3))
             return self.exponential_forecast(counts, alpha=alpha)
@@ -244,7 +215,6 @@ class VulnTrendPredictor:
         historical_data: Optional[List[Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Analyze vulnerability trends."""
         forecast_method = kwargs.get('forecast_method', 'moving_average')
         anomaly_mult = kwargs.get('anomaly_multiplier', 1.5)
 
@@ -282,7 +252,7 @@ class VulnTrendPredictor:
                 mean_count=mean_val,
             ))
 
-        # Classify trends
+        # 分类趋势
         rising = [t for t in trends if t.trend_direction == "up"]
         falling = [t for t in trends if t.trend_direction == "down"]
         stable = [t for t in trends if t.trend_direction == "stable"]
@@ -295,7 +265,7 @@ class VulnTrendPredictor:
             if t.anomaly_flags and any(idx >= len(t.historical_counts) - 6 for idx in t.anomaly_flags)
         ]
 
-        # Global trend
+        # 全局趋势
         if len(rising) > len(trends) * 0.3:
             global_trend = "rising"
         elif len(falling) > len(trends) * 0.3:
@@ -337,7 +307,6 @@ class VulnTrendPredictor:
         forecast_method: str = "moving_average",
         **kwargs: Any,
     ) -> Optional[VulnTrend]:
-        """Get trend for a specific vulnerability type."""
         key = f"{vuln_type}:{period}"
         if key not in self._history:
             return None
@@ -364,7 +333,6 @@ class VulnTrendPredictor:
         )
 
     def clear(self) -> None:
-        """Clear all stored data."""
         self._history.clear()
         self._metadata.clear()
 
@@ -373,6 +341,5 @@ def predict_vuln_trends(
     historical_data: List[Dict[str, Any]],
     **kwargs: Any,
 ) -> Dict[str, Any]:
-    """Convenience function for vulnerability trend prediction."""
     predictor = VulnTrendPredictor()
     return predictor.analyze(historical_data=historical_data, **kwargs)

@@ -1,12 +1,9 @@
-# Proxy → project/collaboration.py.
-# Issue #8: Data-layer enrichment — user / comment / audit infrastructure.
-# Extension: Git-style version management for test_collaboration_git.py.
 __all__ = ['CollaborationManager', 'Config', 'UserRole']
 import importlib.util as _iu, os as _os, json as _json, uuid as _uuid, time as _time
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt, List as _List, Dict as _Dict
 
-# Import UserRole from upstream project/collaboration.py.
+# 从上游 project/collaboration.py 导入 UserRole
 _real = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), 'project', 'collaboration.py')
 _spec = _iu.spec_from_file_location('_collab_real', _real)
 _real_mod = _iu.module_from_spec(_spec)
@@ -90,7 +87,7 @@ class CollaborationManager:
                         self._users.append(u)
             except Exception: pass  # 修复: bare except → Exception
 
-# User management
+# 用户管理
     def register_user(self, username, password, role=None):
         if not username or not username.strip(): return (False, '用户名不能为空')
         if len(password) < 6: return (False, '密码长度不足6位')
@@ -136,7 +133,7 @@ class CollaborationManager:
 
     def list_users(self): return list(self._users)
 
-# ACL management
+# ACL 管理
     def set_project_acl(self, project_id: str, user_id: str, permission_mask: int) -> bool:
         """设置项目级 ACL。permission_mask: bit0=read, bit1=write, bit2=admin。"""
         self._acl.setdefault(project_id, {})[user_id] = permission_mask
@@ -156,7 +153,7 @@ class CollaborationManager:
             return bool(perms & 0x02)
         return False
 
-# Git-style binary version management
+# Git 风格二进制版本管理
     def init_binary_repo(self, project_id, user_id=None):
         if project_id in self._projects:
             return (False, '项目已存在')
@@ -251,7 +248,7 @@ class CollaborationManager:
         with open(out, 'wb') as f: f.write(ver.get('data', b''))
         return (True, out)
 
-# Comments and vulnerability status
+# 评论与漏洞状态
     def add_comment(self, user_id, target_id, target_type, content):
         cid = str(_uuid.uuid4())[:8]
         self._comments.append({'comment_id': cid, 'user_id': user_id,

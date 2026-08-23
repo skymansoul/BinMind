@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Analysis depth estimation module -- DepthProfile and AnalysisDepthEstimator classes."""
 
 import logging
 import os
@@ -12,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class DepthProfile:
-    """Analysis depth profile."""
     sz: int = 0
     nfuns: int = 0
     cpx: float = 0.0
@@ -29,11 +27,6 @@ class DepthProfile:
 
 
 class AnalysisDepthEstimator:
-    """Analysis depth estimator.
-
-    Strategy: score size and function count dimensions separately (1-4),
-    take the higher as recommended depth, then compute confidence from history.
-    """
 
     _SZ_LUT = (
         (10 * 1024,        1),
@@ -52,12 +45,7 @@ class AnalysisDepthEstimator:
         self._history = []
         self._load_history(hist_path)
 
-# internal
-
     def _load_history(self, path):
-        """Load historical analysis records if available.
-        Format: JSON list of {size, functions, actual_depth, actual_time_sec, ...}
-        """
         if not path:
             return
         if not os.path.isfile(path):
@@ -72,16 +60,12 @@ class AnalysisDepthEstimator:
             logger.debug("suppressed", exc_info=True)
 
     def _lookup(self, val, lut):
-        """Look up the level for a value in a threshold table using linear scan."""
         for thresh, level in lut:
             if val <= thresh:
                 return level
         return lut[-1][1]
 
-# public
-
     def extract_features(self, binpath):
-        """Extract binary features: size (bytes), function count, complexity (0-10)."""
         if binpath is None:
             return 0, 0, 0.0
         sz = 0
@@ -110,7 +94,6 @@ class AnalysisDepthEstimator:
         return sz, nfuns, cpx
 
     def estimate_depth(self, binpath):
-        """Main entry point: estimate analysis depth."""
         sz, nfuns, cpx = self.extract_features(binpath)
 
         d_sz = self._lookup(sz, self._SZ_LUT)
@@ -131,7 +114,6 @@ class AnalysisDepthEstimator:
 
 
 def estimate_analysis_depth(binpath):
-    """Convenience function: given binary path, returns depth estimate dict."""
     est = AnalysisDepthEstimator()
     prof = est.estimate_depth(binpath)
     return prof.as_dict()

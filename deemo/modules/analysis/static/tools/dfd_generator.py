@@ -27,7 +27,7 @@ class FlowRiskLevel(str, Enum):
     INFO = "info"
 
 class DataFlowTrustZone(str, Enum):
-    """Trust zone 分类 for 数据流分析"""
+    """数据流分析的信任区分"""
     UNTRUSTED = "untrusted"
     DMZ = "dmz"
     INTERNAL = "internal"
@@ -193,7 +193,7 @@ class DataFlowExtractor:
 
 
 class TrustBoundaryDetector:
-    """Trust boundary detector, identifies zone crossings 数据流s"""
+    """信任边界检测器, 识别数据流中的跨区穿越"""
 
     def identify(self, flows: List[Tuple[str, str, str, Dict[str, Any]]]) -> List[Dict[str, Any]]:
         boundaries: List[Dict[str, Any]] = []
@@ -310,7 +310,7 @@ class DFDGraphBuilder:
 
 
 class MermaidRenderer:
-    """Mermaid diagram renderer, produces flowchart sequence diagrams"""
+    """Mermaid 图渲染器, 生成流程图与序列图"""
 
     @staticmethod
     def render_flowchart(graph: DataFlowGraph) -> str:
@@ -410,12 +410,12 @@ class GraphvizRenderer:
 
 
 def _safe_id(node_id: str) -> str:
-    """Sanitize node ID for Mermaid 兼容性"""
+    """清理节点 ID 以兼容 Mermaid"""
     return node_id.replace(" ", "_").replace("-", "_").replace(".", "_").replace("@", "_")
 
 
 def _dot_id(node_id: str) -> str:
-    """Sanitize node ID for DOT 兼容性"""
+    """清理节点 ID 以兼容 DOT"""
     return f'"{node_id}"'
 
 
@@ -566,6 +566,6 @@ class DFDGenerator(BaseAnalyzer):
 __all__ = ["DFDGenerator"]
 
 def _debug_print(*args, **kwargs):  # 调试残余, 未删除
-    """Print debug info env var set. currently"""
+    """环境变量设置时打印调试信息"""
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)

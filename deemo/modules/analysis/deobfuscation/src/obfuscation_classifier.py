@@ -2,21 +2,6 @@
 # 引入 VoteT 多证据融合机制，替换单阈值判定
 # 添加跨架构指令归一化预处理
 
-"""
-混淆类型预分类器 - 在运行恢复pass之前判定目标代码使用了何种混淆
-避免对未混淆代码应用CFF恢复（副作用：引入伪控制流），也避免对CFF代码
-反复尝试谓词消除（浪费算力）
-
-设计依据:
-- Chisel 两阶段综合法思想: 先判定混淆类型再选择恢复策略，证实了分类优先的收益
-本模块将其思想压缩为纯静态特征分类，不需要动态trace
-注：doi:10.1145/3689789 文献经检索未确认，此处保留为概念引用
-- Tkachenko et al.: LLM评估框架中提出的
-三维阻力模型（Bogus CF/CFF/指令替换）为特征选择提供了理论依据
-本模块据此设计了块形状变异系数、分支密度方差、指令熵三个主维度
-- 去除了原论文中的LLM依赖-用统计特征+轻量投票替代，避免API调用延迟
-"""
-
 import math
 from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
@@ -34,15 +19,6 @@ OBFUSCATION_TYPES = frozenset({
 
 
 class VoteTally:
-    """多证据融合投票器 - 各特征维度独立投票，加权汇总后判定
-
-    设计假设：单一特征在对抗性混淆下可靠度不足（攻击者知道你在测什么
-    就会针对性地伪造该特征），但多维度同时伪造的成本显著高于单维度
-    因此每个维度独立给出判定，最终按权重综合
-
-    权重的初始值从50个OLLVM/Tigress样本上手工标定，后续可通过
-    calibr() 在线调整-预留了接口但当前默认为经验值
-    """
 
     def __init__(self) -> None:
         # 各维度的投票权重，经过小样本标定
@@ -58,7 +34,6 @@ class VoteTally:
         }
 
     def cast(self, dimension: str, scores: Dict[str, float]) -> None:
-        """一个特征维度的投票结果，scores={混淆类型: 置信度0.1}"""
         if dimension not in self._weights:
             return
         total = sum(scores.values())
@@ -68,7 +43,6 @@ class VoteTally:
                 self._votes[t][dimension] = s / total
 
     def verdict(self) -> List[Tuple[str, float]]:
-        """返回按置信度降序排列的判定结果列表"""
         results = []
         for obf_type in OBFUSCATION_TYPES:
             if obf_type not in self._votes:
@@ -85,7 +59,6 @@ class VoteTally:
         return results
 
     def calibrate(self, dimension: str, new_weight: float) -> None:
-        """在线校准某维度的权重-调用方需提供校准依据（如人工标注）"""
         if 0.0 < new_weight <= 1.0 and dimension in self._weights:
             self._weights[dimension] = new_weight
 
@@ -93,11 +66,6 @@ class VoteTally:
 # 特征提取
 
 def _instruction_entropy(instructions: List[Dict[str, Any]]) -> float:
-    """计算指令助记符的Shannon熵-归一化到[0,1]
-
-    低熵→指令种类少→可能是CFF（大量cmp/jmp围绕dispatcher）
-    高熵→指令种类多→可能是inst_sub（mov被多种等价指令替换）
-    """
     if not instructions:
         return 0.0
     mnemonics = [
@@ -118,12 +86,6 @@ def _instruction_entropy(instructions: List[Dict[str, Any]]) -> float:
 
 
 def _block_shape_variance(instructions: List[Dict[str, Any]]) -> Tuple[float, int]:
-    """基本块长度的变异系数（CV=std/mean）
-    同时返回拼合后的块数
-
-    CFF特征：大量小块（dispatcher块+原基本块碎片），CV偏高
-    正常代码或inst_sub：块大小分布相对均匀
-    """
     if not instructions:
         return 0.0, 0
     # 用控制流指令作为块边界
@@ -152,12 +114,6 @@ def _block_shape_variance(instructions: List[Dict[str, Any]]) -> Tuple[float, in
 
 
 def _branch_density(instructions: List[Dict[str, Any]]) -> float:
-    """条件分支占总指令的比例-归一化到[0,1]
-
-    bogus_cf：大量jcc指令（不可达分支），densi>0.15
-    CFF：少数条件跳转（分发器处的状态比较），densi~0.03-0.08
-    正常代码：一般0.05-0.12
-    """
     if not instructions:
         return 0.0
     branch_mnemonics = frozenset({
@@ -173,11 +129,6 @@ def _branch_density(instructions: List[Dict[str, Any]]) -> float:
 
 
 def _register_reuse_density(instructions: List[Dict[str, Any]]) -> float:
-    """同一寄存器在相邻指令中出现的频率-归一化
-
-    不透明谓词特征：反复使用同一寄存器进行cmp/test后接条件跳转
-    形成 x xor x; cmp x, 0; jz 这类模式，寄存器复用密度异常高
-    """
     if len(instructions) < 3:
         return 0.0
     import re
@@ -197,11 +148,6 @@ def _register_reuse_density(instructions: List[Dict[str, Any]]) -> float:
 
 
 def _string_section_entropy(data: bytes) -> float:
-    """对二进制数据中的可打印字符串段计算熵-用于检测字符串加密
-
-    加密字符串的区域熵接近随机（>7.0/8.0），正常字符串熵较低
-    传入的data应为.rodata 段或等效区域的原始字节
-    """
     if not data or len(data) < 16:
         return 0.0
     printable = bytearray()
@@ -226,11 +172,6 @@ def _string_section_entropy(data: bytes) -> float:
 # 主分类器
 
 class ObfuscationClassifier:
-    """多特征融合的混淆类型预分类器
-
-    输出一个类型列表（可能多标签）和对应的置信度，供后续恢复pass
-    按优先级选择性执行。对"none"类型高置信度时跳过所有恢复pass
-    """
 
     def __init__(self) -> None:
         self._tally = VoteTally()
@@ -249,12 +190,6 @@ class ObfuscationClassifier:
         instructions: List[Dict[str, Any]],
         rodata_bytes: Optional[bytes] = None,
     ) -> List[Tuple[str, float]]:
-        """对一段指令序列进行混淆类型分类。
-
-        instructions 为指令字典列表 (每项含 mnemonic 与 operands),
-        rodata_bytes 可选, 只读数据段原始字节, 用于字符串加密
-        检测; 返回按置信度降序排列的 [(混淆类型, 置信度 0-1)]。
-        """
         if not instructions:
             return [("none", 1.0)]
 
@@ -318,7 +253,6 @@ class ObfuscationClassifier:
         return True
 
     def calibrate_thresholds(self, **kwargs) -> None:
-        """在线阈值校准-需调用方提供标注数据作为校准依据"""
         for k, v in kwargs.items():
             if k in self.thresholds and 0.0 < v <= 2.0:
                 self.thresholds[k] = v

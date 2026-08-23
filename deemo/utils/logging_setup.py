@@ -1,8 +1,3 @@
-"""
-Logging initialization for the binary analysis pipeline.
-Supports both stdlib logging and loguru as an optional accelerator.
-"""
-
 import logging
 import os
 import re
@@ -18,8 +13,6 @@ except ImportError:
 
 
 class SensitiveDataFilter(logging.Filter):
-    """Strips API keys and tokens from log output."""
-
     _SENSITIVE_RE = re.compile(
         r'(sk-[a-zA-Z0-9]{20,})|'           # OpenAI keys
         r'(Bearer\s+[a-zA-Z0-9\-_\.]+)|'    # Auth tokens
@@ -40,10 +33,6 @@ def _ensure_log_dir(log_dir: str) -> str:
 
 
 def init_logging(level: str = 'INFO', log_dir: str = None):
-    """
-    One-stop logging setup. Creates a timestamped log file under log_dir
-    and attaches a console handler. Returns the root logger.
-    """
     if log_dir is None:
         log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
     _ensure_log_dir(log_dir)
@@ -79,10 +68,8 @@ def init_logging(level: str = 'INFO', log_dir: str = None):
 
 
 def get_log(name: str = None) -> logging.Logger:
-    """Shorthand to grab a module-level logger."""
     return logging.getLogger(name)
 
 
 def mask_sensitive(msg: str) -> str:
-    """One-off redaction of secrets from a string, outside the logging pipeline."""
     return SensitiveDataFilter._SENSITIVE_RE.sub('***REDACTED***', msg)

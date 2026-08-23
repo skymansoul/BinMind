@@ -8,7 +8,7 @@ _m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('ce'
 importlib.util.spec_from_file_location('ce', _r).loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
 
-# Remap methods — "Cx" suffix appended during refactor; restore original names.
+# 方法名映射：上游重构后加了 Cx 后缀，此处恢复原名
 if hasattr(_m, 'ConcolicExecutor'):
     _CE = _m.ConcolicExecutor
     _aliases = {

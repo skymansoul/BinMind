@@ -9,9 +9,9 @@
 #   支持: glibc ptmalloc2, jemalloc, tcmalloc, Windows RtlHeap.
 #
 # 建模来源:
-#   - glibc malloc.c (2.35-2.39): chunk_size = max(MINSIZE, request+2*SIZE_SZ) aligned to MALLOC_ALIGNMENT
-# jemalloc 5.3: size class lookup table
-# tcmalloc: page-level sizing
+#   - glibc malloc.c (2.35-2.39): chunk_size = max(MINSIZE, request+2*SIZE_SZ) 按 MALLOC_ALIGNMENT 对齐
+#   - jemalloc 5.3: size class 查找表
+#   - tcmalloc: page 级大小分配
 #
 
 from enum import Enum
@@ -27,9 +27,9 @@ class AllocatorFamily(Enum):
 
 
 # glibc 2.35+: MALLOC_ALIGNMENT = 16, MINSIZE = 32 (x86-64), SIZE_SZ = 8
-# chunk overhead = 2 * SIZE_SZ = 16 bytes (prev_size + size)
-# minimum usable size = MINSIZE - 2*SIZE_SZ = 16 bytes
-# The request size is stored rounded up to alignment
+# chunk 开销 = 2 * SIZE_SZ = 16 bytes (prev_size + size)
+# 最小可用空间 = MINSIZE - 2*SIZE_SZ = 16 bytes
+# 请求大小按对齐存储
 
 def glibc_chunk_size(request: int) -> int:
     """glibc ptmalloc2 的实际 chunk 大小 (x86-64).

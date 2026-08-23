@@ -122,7 +122,7 @@ class TaintMap:
         return dict(densities)
 
 
-# Sink definitions
+# Sink 定义
 
 @dataclass
 class DynamicTaintSink:
@@ -153,7 +153,7 @@ class DynamicVulnerability:
     severity: str = "MEDIUM"
 
 
-# Sink detection rules
+# Sink 检测规则
 
 _SINK_SIGNATURES = {
     "memcpy_size": {

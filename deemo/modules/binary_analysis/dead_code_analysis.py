@@ -34,7 +34,6 @@ class AnalysisResult:
 
 
 class DeadCodeAnalyzer:
-    """Dead code reachability analyzer -- discover hidden attack surface."""
 
     DANGEROUS_APIS = {
         "system", "execve", "popen", "strcpy", "sprintf", "gets",

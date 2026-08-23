@@ -47,7 +47,7 @@ class ShardStats:
 
 
 class LocalShardBackend:
-    """Local filesystem shard backend (fallback)."""
+    """本地文件系统分片后端（降级回退）。"""
 
     def __init__(self, base_dir: str, num_shards: int = 64):
         self.base_dir = base_dir
@@ -114,7 +114,7 @@ class LocalShardBackend:
 
 
 class RedisShardBackend:
-    """Redis shard backend."""
+    """Redis 分片后端。"""
 
     def __init__(self, host: str = "localhost", port: int = 6379,
                  db: int = 0, prefix: str = "decomp_cache", num_shards: int = 64):
@@ -171,10 +171,10 @@ class RedisShardBackend:
 
 class DecompCache:
     """
-    Decompilation output cache.
-    - Content-addressed via (binary_hash, func_hash) key.
-    - Sharded: default 64 shards.
-    - LRU eviction: evicts when exceeding max_bytes.
+    反编译输出缓存。
+    - 通过 (binary_hash, func_hash) 键进行内容寻址。
+    - 分片：默认 64 个分片。
+    - LRU 淘汰：超过 max_bytes 时触发驱逐。
     """
 
     DEFAULT_BACKEND = "local"

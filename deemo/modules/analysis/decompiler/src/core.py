@@ -1,15 +1,3 @@
-"""Decompiler engine core: binary-to-IR lifting, IR optimization passes,
-control-flow structuring (interval analysis + structural analysis),
-variable recovery (SSA-based type inference), LLM-assisted enhancement,
-pseudocode generation, round-trip validation.
-
-Binary -> IR Lifting -> IR Optimization -> CFG Structuring
--> Variable Recovery -> Type Inference -> Pseudocode Generation
-
-O(n^2) for structural analysis worst case (deeply nested
-irreducible loops), O(n) in practice due to shallow nesting depth.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -25,10 +13,9 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 log = logging.getLogger(__name__)
 
-# IR type enums
 
 class IROperation(str, Enum):
-    """Unified IR operation types"""
+    """统一 IR 操作类型"""
     MOV = "mov"
     ADD = "add"
     SUB = "sub"
@@ -102,21 +89,18 @@ class IRFunction:
     return_type: str = "void"
 
 
-# Decompiler engine — main decompilation pipeline
 
 class DecompilerEngine:
-    """Binary decompiler engine.
+    """二进制反编译引擎
 
-    Pipeline steps:
-    1. Binary -> IR lifting (via capstone or radare2)
-    2. IR optimization (dead code elimination, constant folding,
-       expression simplification)
-    3. Control-flow structuring (interval analysis + structural
-       analysis for CFG recovery)
-    4. Variable recovery (SSA-based type inference)
-    5. Pseudocode generation (structured C-like output)
+    管线步骤:
+    1. 二进制 -> IR 提升 (通过 capstone 或 radare2)
+    2. IR 优化 (死代码消除, 常量折叠, 表达式简化)
+    3. 控制流结构化 (区间分析 + 结构分析)
+    4. 变量恢复 (基于 SSA 的类型推断)
+    5. 伪代码生成 (结构化 C 风格输出)
 
-    Usage::
+    用法:
 
         engine = DecompilerEngine()
         func = engine.decompile("binary.exe", 0x401000)
@@ -132,32 +116,24 @@ class DecompilerEngine:
         )
         self._functions: Dict[int, IRFunction] = {}
 
-# Basic block construction
-
     def lift_function(
         self,
         binary_path: str,
         start_address: int,
         max_instructions: Optional[int] = None,
-    ) -> Optional[IRFunction]:
-        """Lift a function from binary into the unified IR.
-
-        Uses Capstone for disassembly, converts to IR representation.
-        Falls back to radare2 if Capstone unavailable.
-        """
+        ) -> Optional[IRFunction]:
+        """从二进制中提升函数到统一 IR"""
         max_insns = max_instructions or self._max_insns
         log.info("Lifting function at %#x from %s", start_address, binary_path)
 
-        # Read raw bytes from binary
         try:
             with open(binary_path, "rb") as f:
                 f.seek(start_address)
-                raw_code = f.read(max_insns * 15)  # Worst case: avg 15 bytes/insn
+                raw_code = f.read(max_insns * 15)
         except OSError as e:
             log.error("Failed to read binary: %s", e)
             return None
 
-        # Capstone disassembly
         instructions = self._disassemble_capstone(
             raw_code, start_address, max_insns
         )
@@ -169,10 +145,8 @@ class DecompilerEngine:
         if not instructions:
             return None
 
-        # 构建基本块
         blocks = self._build_basic_blocks(instructions)
 
-        # 创建函数对象
         func = IRFunction(
             name=f"sub_{start_address:X}",
             address=start_address,
@@ -185,7 +159,7 @@ class DecompilerEngine:
     def _disassemble_capstone(
         self, raw_code: bytes, base_addr: int, max_insns: int
     ) -> List[IRInstruction]:
-        """Disassemble bytes using Capstone."""
+        """使用 Capstone 反汇编"""
         instructions: List[IRInstruction] = []
         try:
             import capstone
@@ -222,7 +196,7 @@ class DecompilerEngine:
     def _disassemble_r2(
         self, binary_path: str, start_addr: int, max_insns: int
     ) -> List[IRInstruction]:
-        """Disassemble using radare2 as fallback."""
+        """使用 radare2 反汇编作为后备"""
         instructions: List[IRInstruction] = []
         try:
             import subprocess
@@ -256,7 +230,7 @@ class DecompilerEngine:
 
     @staticmethod
     def _map_capstone_op(insn: Any) -> IROperation:
-        """Map Capstone mnemonic to IR op."""
+        """将 Capstone 助记符映射到 IR 操作"""
         mnemonic = insn.mnemonic.lower()
         _OP_MAP = {
             "mov": IROperation.MOV, "movzx": IROperation.MOV,
@@ -274,7 +248,7 @@ class DecompilerEngine:
 
     @staticmethod
     def _map_r2_op(op_type: str) -> IROperation:
-        """Map r2 instruction type to IR op."""
+        """将 r2 指令类型映射到 IR 操作"""
         _R2_MAP = {
             "mov": IROperation.MOV, "add": IROperation.ADD,
             "sub": IROperation.SUB, "mul": IROperation.MUL,
@@ -285,24 +259,14 @@ class DecompilerEngine:
         }
         return _R2_MAP.get(op_type, IROperation.UNKNOWN)
 
-# Basic block construction
-
     def _build_basic_blocks(
         self, instructions: List[IRInstruction]
     ) -> Dict[int, IRBasicBlock]:
-        """Partition instructions into basic blocks.
-
-        A new block starts:
-        - at the first instruction
-        - at a jump/call/ret target
-        - after a jump/call/ret instruction
-        """
-        # Identify block leaders
+        """将指令划分为基本块"""
         leaders: Set[int] = {instructions[0].address}
         for insn in instructions:
             if insn.op in (IROperation.JMP, IROperation.JCC, IROperation.CALL, IROperation.RET):
                 if insn.op != IROperation.RET:
-                    # Next instruction starts a new block
                     idx = next(
                         (i for i, e in enumerate(instructions) if e.address > insn.address),
                         len(instructions),
@@ -310,7 +274,6 @@ class DecompilerEngine:
                     if idx < len(instructions):
                         leaders.add(instructions[idx].address)
 
-        # Build blocks
         blocks: Dict[int, IRBasicBlock] = {}
         current_block_addr = 0
         current_insns: List[IRInstruction] = []
@@ -333,14 +296,12 @@ class DecompilerEngine:
             block = IRBasicBlock(address=current_block_addr, instructions=current_insns)
             blocks[block.address] = block
 
-        # Link successors and predecessors
         sorted_addrs = sorted(blocks.keys())
         for i, addr in enumerate(sorted_addrs):
             block = blocks[addr]
             last = block.instructions[-1]
 
             if last.op == IROperation.JMP:
-                # Try to resolve target
                 target = self._parse_branch_target(last)
                 if target and target in blocks:
                     block.successors.append(target)
@@ -350,12 +311,10 @@ class DecompilerEngine:
                 if target and target in blocks:
                     block.successors.append(target)
                     blocks[target].predecessors.append(addr)
-                # Fallthrough
                 if i + 1 < len(sorted_addrs):
                     block.successors.append(sorted_addrs[i + 1])
                     blocks[sorted_addrs[i + 1]].predecessors.append(addr)
             elif last.op not in (IROperation.RET,):
-                # Fallthrough
                 if i + 1 < len(sorted_addrs):
                     block.successors.append(sorted_addrs[i + 1])
                     blocks[sorted_addrs[i + 1]].predecessors.append(addr)
@@ -364,7 +323,7 @@ class DecompilerEngine:
 
     @staticmethod
     def _parse_branch_target(insn: IRInstruction) -> Optional[int]:
-        """Parse branch target from an operand."""
+        """从操作数中解析分支目标地址"""
         for op_str in insn.operands:
             try:
                 if op_str.startswith("0x"):
@@ -374,18 +333,8 @@ class DecompilerEngine:
                 continue
         return None
 
-# IR optimization
-
     def optimize_ir(self, func: IRFunction) -> IRFunction:
-        """Run IR optimization passes.
-
-        Passes:
-        1. Dead code elimination — remove instructions whose results
-        are never used
-        2. Constant folding — evaluate constant expressions at compile time
-        3. Expression simplification — algebraic identities (x+0=x,
-        x*1=x, etc.)
-        """
+        """运行 IR 优化 pass"""
         log.debug("Optimizing IR for function: %s", func.name)
         for addr, block in func.blocks.items():
             block.instructions = self._dead_code_elimination(block.instructions)
@@ -396,15 +345,13 @@ class DecompilerEngine:
     def _dead_code_elimination(
         self, instructions: List[IRInstruction]
     ) -> List[IRInstruction]:
-        """Eliminate dead instructions (results never used)"""
-        # Track variables used
+        """消除死指令（结果从未使用）"""
         used_vars: Set[str] = set()
         for insn in instructions:
             for op in insn.operands:
                 if op and not op.startswith("0x") and not op.startswith("0b"):
                     used_vars.add(op.split("[")[0])
 
-        # Keep instructions side effects or results used
         side_effect_ops = {IROperation.JMP, IROperation.JCC, IROperation.CALL,
                            IROperation.RET, IROperation.PUSH, IROperation.STORE,
                            IROperation.CMP, IROperation.TEST}
@@ -423,7 +370,7 @@ class DecompilerEngine:
     def _constant_folding(
         self, instructions: List[IRInstruction]
     ) -> List[IRInstruction]:
-        """Fold constant expressions: 2+3 -> 5"""
+        """常量折叠: 2+3 -> 5"""
         for insn in instructions:
             if insn.op in (IROperation.ADD, IROperation.SUB, IROperation.MUL):
                 vals = []
@@ -447,7 +394,7 @@ class DecompilerEngine:
     def _simplify_expressions(
         self, instructions: List[IRInstruction]
     ) -> List[IRInstruction]:
-        """Algebraic simplification: x+0=x, x*1=x, x xor x=0"""
+        """代数化简: x+0=x, x*1=x, x xor x=0"""
         for insn in instructions:
             if len(insn.operands) < 2:
                 continue
@@ -462,27 +409,21 @@ class DecompilerEngine:
                 insn.op = IROperation.MOV  # type: ignore
         return instructions
 
-# Control-flow structuring
-
     def structure_control_flow(self, func: IRFunction) -> Dict[str, Any]:
-        """Structure control flow from CFG into high-level constructs.
+        """从 CFG 结构化控制流为高层构造
 
-        Uses interval analysis + structural analysis to recover:
-        - if/else (2-way conditional)
-        - while loops (loop header dominates back-edge)
-        - for loops (initializer + condition + increment)
-        - do-while loops (condition at bottom)
+        使用区间分析 + 结构分析恢复:
+        - if/else (双路条件)
+        - while 循环 (循环头支配回边)
+        - for 循环 (初始化 + 条件 + 递增)
+        - do-while 循环 (条件在底部)
         """
         intervals = self._interval_analysis(func)
         structure = self._structural_analysis(func, intervals)
         return structure
 
     def _interval_analysis(self, func: IRFunction) -> List[Set[int]]:
-        """Partition CFG into intervals (single-entry regions).
-
-        An interval with header h is the maximal set of nodes where
-        h dominates all nodes and all back-edges stay within the interval.
-        """
+        """将 CFG 划分为 interval (单入口区域)"""
         intervals: List[Set[int]] = []
         visited: Set[int] = set()
         sorted_addrs = sorted(func.blocks.keys())
@@ -524,7 +465,6 @@ class DecompilerEngine:
             if len(interval) == 1:
                 addr = next(iter(interval))
                 block = func.blocks[addr]
-                # Check if a loop (back-edge to itself)
                 if block.successors and block.successors[0] <= addr:
                     structure["body"].append({
                         "type": "while_loop",
@@ -538,7 +478,6 @@ class DecompilerEngine:
             elif len(interval) == 2:
                 addrs = sorted(interval)
                 header = func.blocks[addrs[0]]
-                    # 2-block interval: conditional or sequence
                 if len(header.successors) == 2:
                     structure["body"].append({
                         "type": "if_else",
@@ -557,25 +496,12 @@ class DecompilerEngine:
 
         return structure
 
-# Pseudocode generation
-
     def generate_pseudocode(
         self, func: IRFunction, indent_size: int = 4
     ) -> str:
-        """Generate structured C-like pseudocode from an IR function.
-
-        Produces properly indented, type-annotated pseudocode with
-        control structure nesting.
-
-        Usage:
-
-            func = engine.decompile("binary.exe", 0x401000)
-            pseudocode = engine.generate_pseudocode(func)
-            print(pseudocode)
-        """
+        """从 IR 函数生成结构化 C 风格伪代码"""
         lines: List[str] = []
 
-        # 函数签名
         ret_type = func.return_type or "void"
         arg_strs = []
         for arg in func.arguments:
@@ -584,14 +510,12 @@ class DecompilerEngine:
             arg_strs.append(f"{arg_type} {arg_name}")
         lines.append(f"{ret_type} {func.name}({', '.join(arg_strs)}) {{")
 
-        # Variable declarations
         if func.variables:
             for var_name, var_type in func.variables.items():
                 lines.append(f"{' ' * indent_size}{var_type.value} {var_name};")
             if func.variables:
                 lines.append("")
 
-        # Build body blocks
         for addr in sorted(func.blocks.keys()):
             block = func.blocks[addr]
             lines.append(f"{' ' * indent_size}// Block {addr:#x}")
@@ -610,7 +534,7 @@ class DecompilerEngine:
 
     @staticmethod
     def _instruction_to_pseudocode(insn: IRInstruction) -> str:
-        """Convert a single IR instruction to pseudocode."""
+        """将单条 IR 指令转为伪代码"""
         pseudo_map = {
             IROperation.MOV: lambda o: f"{o[0]} = {o[1]};" if len(o) >= 2 else f"// mov {o}",
             IROperation.ADD: lambda o: f"{o[0]} += {o[1]};" if len(o) >= 2 else f"// add",
@@ -631,15 +555,10 @@ class DecompilerEngine:
         handler = pseudo_map.get(insn.op, lambda o: f"// {insn.op.value} {' '.join(o)}")
         return handler(insn.operands)
 
-# Convenience entry point
-
     def decompile(
         self, binary_path: str, start_address: int
     ) -> Optional[Dict[str, Any]]:
-        """Full decompilation pipeline: lift -> optimize -> structure -> pseudocode.
-
-        Returns a dict with keys: function, pseudocode, structure, stats.
-        """
+        """完整反编译管线: lift -> optimize -> structure -> pseudocode"""
         start_time = time.time()
         func = self.lift_function(binary_path, start_address)
         if func is None:
@@ -653,7 +572,6 @@ class DecompilerEngine:
         total_insns = sum(len(b.instructions) for b in func.blocks.values())
 
         return {
-            "function": func,
             "pseudocode": pseudocode,
             "structure": structure,
             "stats": {
@@ -665,21 +583,19 @@ class DecompilerEngine:
         }
 
 
-# Decompiler validator — round-trip validation
-
 class ValidationError(Exception):
-    """Raised when validation fails."""
+    """验证失败时抛出"""
     pass
 
 
 class DecompilerValidator:
-    """Round-trip validation for decompiled output.
+    """反编译输出的往返验证
 
-    Validates:
-    1. Recompiling decompiled pseudocode and comparing behavior
-    2. Semantic equivalence checking via Z3 (optional, if installed)
+    验证:
+    1. 重编译反编译伪代码并比较行为
+    2. 通过 Z3 进行语义等价检查 (可选)
 
-    Usage::
+    用法:
 
         validator = DecompilerValidator()
         result = validator.validate(original_binary, decompiled_output)
@@ -702,7 +618,7 @@ class DecompilerValidator:
         decompiled_output: str,
         test_inputs: Optional[List[Any]] = None,
     ) -> Dict[str, Any]:
-        """Validate decompiled output against original binary."""
+        """验证反编译输出与原始二进制的一致性"""
         result: Dict[str, Any] = {
             "passed": True,
             "errors": [],
@@ -710,18 +626,18 @@ class DecompilerValidator:
             "semantic_check": None,
         }
 
-        # Check 1: output is parseable (syntax)
+        # 检查1: 语法可解析
         syntax_ok, syntax_errors = self._check_syntax(decompiled_output)
         if not syntax_ok:
             result["passed"] = False
             result["errors"].extend(syntax_errors)
 
-        # Check 2: output is not empty
+        # 检查2: 输出非空
         if not decompiled_output.strip() or "{}" == decompiled_output.strip():
             result["passed"] = False
             result["errors"].append("Decompiled output is empty")
 
-        # Check 3: contains expected patterns
+        # 检查3: 包含预期模式
         required_patterns = ["{", "}", ";", "return"]
         for pattern in required_patterns:
             if pattern not in decompiled_output:
@@ -729,7 +645,7 @@ class DecompilerValidator:
                     f"Missing expected pattern: '{pattern}'"
                 )
 
-        # Check 4: Z3 semantic equivalence (if available)
+        # 检查4: Z3 语义等价 (若可用)
         if self._z3_available and test_inputs:
             z3_result = self._z3_semantic_check(
                 original_binary, decompiled_output, test_inputs
@@ -744,7 +660,7 @@ class DecompilerValidator:
         return result
 
     def _check_syntax(self, code: str) -> Tuple[bool, List[str]]:
-        """Basic syntax check for C-like pseudocode."""
+        """C 风格伪代码的基础语法检查"""
         errors: List[str] = []
         lines = code.split("\n")
         brace_depth = 0
@@ -760,31 +676,24 @@ class DecompilerValidator:
     def _z3_semantic_check(
         self, binary: str, decompiled: str, inputs: List[Any]
     ) -> Dict[str, Any]:
-        """Z3-based semantic equivalence check."""
+        """基于 Z3 的语义等价检查"""
         try:
             import z3
             log.info("Z3 semantic check initiated")
-            # Z3 语义等价检查尚未完全集成，暂返回 None
             return {"equivalent": None, "note": "Z3 available but not fully integrated"}
         except ImportError:
             return {"equivalent": None, "note": "Z3 not available"}
 
 
-# Decompiler enhancer — LLM-assisted enhancement
-
 class DecompilerEnhancer:
-    """LLM-assisted decompiler enhancement.
+    """LLM 辅助反编译增强
 
-    Improves decompiled output:
-    - Renames variables based on usage context (LLM-powered)
-    - Infers function signatures from API usage patterns
-    - Inlines library function definitions
+    改进反编译输出:
+    - 根据使用上下文重命名变量 (LLM-powered)
+    - 从 API 使用模式推断函数签名
+    - 内联库函数定义
 
-    LLM integration is optional. Without an LLM backend, heuristic
-    rules are used for basic enhancements.
-
-    Uses registry pattern instead of inheritance — less type-safe but
-    avoids deep class hierarchies that hurt readability
+    LLM 集成是可选的。无 LLM 后端时使用启发式规则进行基础增强
     """
 
     def __init__(self, llm_backend: Optional[str] = None) -> None:
@@ -793,20 +702,18 @@ class DecompilerEnhancer:
     def enhance_variables(
         self, func: IRFunction, usage_context: int = 3
     ) -> IRFunction:
-        """Rename variables based on usage context.
+        """根据使用上下文重命名变量
 
-        Heuristic rules:
-        - Loop counters -> i, j, k
-        - Variables compared with strings -> str_buf, name
-        - Variables passed to malloc -> buf, ptr
-        - Variables used in arithmetic -> sum, total, len
+        启发式规则:
+        - 循环计数器 -> i, j, k
+        - 与字符串比较的变量 -> str_buf, name
+        - 传递给 malloc 的变量 -> buf, ptr
+        - 用于算术运算的变量 -> sum, total, len
         """
         for var_name, var_type in list(func.variables.items()):
-            # Simple heuristics for naming
             new_name = self._infer_variable_name(var_name, var_type)
             if new_name != var_name:
                 func.variables[new_name] = func.variables.pop(var_name)
-        # Update instruction operands with new name
                 for block in func.blocks.values():
                     for insn in block.instructions:
                         for j, op in enumerate(insn.operands):
@@ -817,7 +724,7 @@ class DecompilerEnhancer:
 
     @staticmethod
     def _infer_variable_name(name: str, vtype: VariableType) -> str:
-        """Infer a meaningful variable name from type and usage."""
+        """从类型和用法推断有意义的变量名"""
         if vtype == VariableType.POINTER:
             return f"ptr_{name.lstrip('var_')}"
         if vtype == VariableType.STRING:
@@ -831,12 +738,12 @@ class DecompilerEnhancer:
     def infer_function_signature(
         self, func: IRFunction, api_traces: Optional[List[str]] = None
     ) -> Dict[str, Any]:
-        """Infer function signature from API usage patterns.
+        """从 API 使用模式推断函数签名
 
-        Examines:
-        - Called functions (callees) to determine context
-        - Return value usage (int, pointer, void)
-        - Argument count from register conventions
+        检查:
+        - 被调用函数 (callees) 以确定上下文
+        - 返回值使用 (int, pointer, void)
+        - 从寄存器约定推断参数数量
         """
         signature: Dict[str, Any] = {
             "name": func.name,
@@ -845,7 +752,6 @@ class DecompilerEnhancer:
             "calling_convention": "cdecl",
         }
 
-        # Count push/pop to infer argument count
         push_count = 0
         for block in func.blocks.values():
             for insn in block.instructions:
@@ -860,11 +766,9 @@ class DecompilerEnhancer:
                     "position": i,
                 })
 
-        # Check for return value
         for block in func.blocks.values():
             for insn in block.instructions:
                 if insn.op == IROperation.RET and insn.operands:
-                    # 有返回值，保持 return_type 为 int
                     pass
                 elif insn.op == IROperation.RET and not insn.operands:
                     signature["return_type"] = "void"
@@ -874,10 +778,7 @@ class DecompilerEnhancer:
     def expand_library_functions(
         self, func: IRFunction, known_libs: Optional[Dict[str, str]] = None
     ) -> IRFunction:
-        """Inline library function bodies.
-
-        For example, strlen implementation is inlined to show intent.
-        """
+        """内联库函数体"""
         if known_libs is None:
             known_libs = {
                 "strlen": "while (*ptr++) len++;",
@@ -896,19 +797,8 @@ class DecompilerEnhancer:
         return func
 
 
-# Pseudocode generator — IR to structured C-like output
-
 class PseudocodeGenerator:
-    """Generate structured C-like pseudocode from IR.
-
-    Produces control structure nesting with proper indentation and
-    type-annotated variable declarations.
-
-    Usage::
-
-        gen = PseudocodeGenerator()
-        output = gen.generate(function, indent_size=4)
-    """
+    """从 IR 生成结构化 C 风格伪代码"""
 
     def __init__(self, indent_size: int = 4) -> None:
         self._indent_size = indent_size
@@ -917,14 +807,9 @@ class PseudocodeGenerator:
     def generate(
         self, func: IRFunction, structure: Optional[Dict[str, Any]] = None
     ) -> str:
-        """Generate pseudocode from an IR function.
-
-        If structure is provided (from structure_control_flow), uses it
-        for control-flow nesting. Otherwise falls back to block-by-block.
-        """
+        """从 IR 函数生成伪代码"""
         output: List[str] = []
 
-        # 构造函数头部
         args = func.arguments if func.arguments else []
         arg_str = ", ".join(
             f"int {a.get('name', f'a{i}')}" for i, a in enumerate(args)
@@ -933,13 +818,11 @@ class PseudocodeGenerator:
 
         indent = " " * self._indent_size
 
-        # Variable declarations
         if func.variables:
             for name, vtype in func.variables.items():
                 output.append(f"{indent}{vtype.value} {name};")
             output.append("")
 
-        # 构造函数体
         if structure and "body" in structure:
             for node in structure["body"]:
                 self._generate_node(output, node, indent)
@@ -987,17 +870,14 @@ class PseudocodeGenerator:
                 self._generate_node(output, child, indent)
 
 
-# Type inferrer — SSA-based type inference
-
 class TypingInferrer:
-    """SSA-based type inference via constraint propagation.
+    """基于 SSA 的类型推断——约束传播
 
-    Infers integer width/signedness from instruction patterns,
-    pointer/reference types from memory access patterns.
+    从指令模式推断整型宽度/符号性，
+    从内存访问模式推断指针/引用类型。
 
-    Type inference on obfuscated binaries can produce contradictory
-    constraints. A scoring system ranks type candidates by evidence
-    weight, resolving conflicts via majority vote.
+    混淆二进制的类型推断可能产生矛盾约束，
+    评分系统按证据权重排序类型候选，多数投票解决冲突
     """
 
     def __init__(self) -> None:
@@ -1006,14 +886,14 @@ class TypingInferrer:
         )
 
     def infer_types(self, func: IRFunction) -> Dict[str, VariableType]:
-        """Infer types for variables in a function.
+        """为函数中的变量推断类型
 
-        For each variable, accumulates evidence:
-        - Instruction operand sizes (8/16/32/64-bit)
-        - Memory access patterns (MOVSX/MOVZX = signed/unsigned extend)
-        - Arithmetic patterns (IDIV = signed, DIV = unsigned)
-        - Comparison patterns (JG/JL = signed, JA/JB = unsigned)
-        - LEA usage (LEA = pointer)
+        对每个变量累积证据:
+        - 指令操作数宽度 (8/16/32/64-bit)
+        - 内存访问模式 (MOVSX/MOVZX = 有符号/无符号扩展)
+        - 算术模式 (IDIV = 有符号, DIV = 无符号)
+        - 比较模式 (JG/JL = 有符号, JA/JB = 无符号)
+        - LEA 使用 (LEA = 指针)
         """
         self._type_scores.clear()
 
@@ -1021,7 +901,6 @@ class TypingInferrer:
             for insn in block.instructions:
                 self._analyze_instruction_types(insn)
 
-        # Resolve types by picking highest-scoring candidate
         result: Dict[str, VariableType] = {}
         for var_name, scores in self._type_scores.items():
             if scores:
@@ -1050,11 +929,10 @@ class TypingInferrer:
             elif size == 8:
                 self._type_scores[var][VariableType.INT64] += 3  # type: ignore
 
-            # LEA -> pointer
             if insn.op == IROperation.LEA:
                 self._type_scores[var][VariableType.POINTER] += 5  # type: ignore
 
     def propagate_types(self, func: IRFunction) -> None:
-        """Propagate inferred types into a function's variables dict."""
+        """将推断的类型传播到函数的 variables 字典"""
         inferred = self.infer_types(func)
         func.variables.update(inferred)

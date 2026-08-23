@@ -1,4 +1,3 @@
-# Proxy → binary_analysis/decompiler_enhancements.py. exec+compile strategy.
 import os as _os, functools as _ft
 import uuid
 _p = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'binary_analysis', 'decompiler_enhancements.py')

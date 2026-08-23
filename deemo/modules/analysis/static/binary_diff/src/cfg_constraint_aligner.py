@@ -1,32 +1,6 @@
 # 两阶段对齐: 粗粒度支配树匹配 -> 细粒度节点对齐
 # 贪婪初始化 + 局部搜索: 避免完整 ILP 在大 CFG 上的指数开销
 
-"""约束驱动的 CFG 对齐器 - 树编辑距离 + 局部搜索的混合求解
-
-cfg_edit_model.py 定义了编辑代价和结构分解
-本模块执行实际的对齐 - 将源 CFG 映射到目标 CFG 以最小化编辑距离
-
-两阶段策略:
-  阶段 1 (粗粒度): 对支配树的树状区域做 Zhang-Shasha 树编辑距离
-    复杂度 O(N⁴) 最坏, 但支配树深度通常 < 10 层, 实际 < 100ms
-    输出: 区域级别的匹配 (哪些区域对应哪些区域)
-
-  阶段 2 (细粒度): 对匹配区域内的节点做约束求解
-    使用贪婪初始化 + 2-opt 局部搜索 - 在多项式时间内获得近似最优
-    约束条件: (a) 节点属性匹配度 (b) 边一致性 (匹配的边应连接匹配的节点)
-
-与精确 ILP 求解的区别:
-  精确 ILP (如 Hungarian + 分支定界) 在 CFG > 50 节点时不可行
-  本模块的贪心+局部搜索在 1000 节点规模仍 < 1s
-  解的质量: 实验表明与 ILP 的差距 < 8% (在 20 个测试二进制的 CFG 对上)
-
-使用方式:
-  aligner = CFGConstraintAligner()
-  result = aligner.align(source_nodes, source_edges, target_nodes, target_edges)
-  # result.edit_distance - 归一化编辑距离 [0,1]
-  # result.node_mapping - {src_id: dst_id} 匹配关系
-"""
-
 from __future__ import annotations
 
 import math

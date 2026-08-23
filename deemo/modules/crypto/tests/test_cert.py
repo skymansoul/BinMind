@@ -1,5 +1,3 @@
-"""Tests for cert_analysis — X.509 certificate detection and analysis."""
-
 import os
 import sys
 import unittest
@@ -9,7 +7,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.cert_analysis import CertAnalyzer, CertFinding, analyze_certificates
 
-# Minimal self-signed cert in PEM (RSA 512-bit, MD5 sig — deliberately weak for testing)
 _WEAK_TEST_CERT = """-----BEGIN CERTIFICATE-----
 MIICATCCAWoCCQDYl0qWvrEC1zANBgkqhkiG9w0BAQQFADBFMQswCQYDVQQGEwJB
 VTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0
@@ -23,7 +20,6 @@ mT8yNx3K5vL7oP2qR4sT6uV8wX0yA1bC2dE3fG4hI5jK6lM7nO8pQ9rS0tU1vW2
 xY3zA4bC5dE6fG7hI8jK9lM0nO1pQ2rS3tU4vW5xY6zA7bC8dE9fG0hI1jK2lM3
 -----END CERTIFICATE-----"""
 
-# A valid-looking but expired cert fragment
 _EXPIRED_PEM = """-----BEGIN CERTIFICATE-----
 MIIDBzCCAe+gAwIBAgIJAJx8qxxxxxxxxxMA0GCSqGSIb3DQEBCwUAMBoxGDAWBgNV
 BAMMD2V4YW1wbGUuY29tIENBMB4XDTIwMDEwMTAwMDAwMFoXDTIxMDEwMTAwMDAw
@@ -57,8 +53,7 @@ class TestCertAnalyzer(unittest.TestCase):
 
     def test_pem_cert_detection(self):
         result = self._write_and_scan(_WEAK_TEST_CERT.encode())
-        self.assertGreater(result.total_certs, 0,
-                           "Should find at least one PEM cert")
+        self.assertGreater(result.total_certs, 0)
 
     def test_no_certs(self):
         result = self._write_and_scan(b"no certificates here at all")
@@ -76,11 +71,8 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
         result = self._write_and_scan(_WEAK_TEST_CERT.encode())
         if result.total_certs > 0:
             cert = result.certs[0]
-            # 512-bit RSA key and MD5 signature should both be flagged
             self.assertTrue(
-                cert.is_weak_sig or cert.is_weak_key or cert.is_self_signed,
-                f"Expected at least one weakness flag, got: sig={cert.is_weak_sig}, "
-                f"key={cert.is_weak_key}, self_signed={cert.is_self_signed}"
+                cert.is_weak_sig or cert.is_weak_key or cert.is_self_signed
             )
 
     def test_convenience_fn(self):

@@ -62,10 +62,6 @@ _PE_MAGIC = b"PE\x00\x00"
 # 允许在没有外部 upx 二进制时直接从 stub 进行静态解压
 
 def _nrv2b_decompress(src: bytes, dst_size: int) -> Optional[bytes]:
-    """NRV2B 解压-UPX 最常用的压缩算法变种
-    输入: 压缩数据（不含 UPX 魔数头）
-    输出: 解压后的字节，失败返回 None
-    """
     if not src or dst_size <= 0:
         return None
     dst = bytearray(dst_size)
@@ -96,14 +92,14 @@ def _nrv2b_decompress(src: bytes, dst_size: int) -> Optional[bytes]:
             if bit < 0:
                 break
             if bit == 0:
-                # literal byte
+                # 原始字节
                 if src_pos >= len(src):
                     break
                 dst[dst_pos] = src[src_pos]
                 src_pos += 1
                 dst_pos += 1
             else:
-                # match: (offset, length)
+                # 匹配: (偏移, 长度)
                 m_off = 0
                 bit = _get_bit()
                 if bit < 0:
@@ -155,10 +151,6 @@ def _nrv2b_decompress(src: bytes, dst_size: int) -> Optional[bytes]:
 
 
 def _try_builtin_upx_unpack(raw: bytes, out_path: str) -> Optional[str]:
-    """尝试从 UPX stub 中直接提取解压数据-无需外部 upx 二进制
-    支持 NRV2B/NRV2D/NRV2E/LZMA 四种 UPX 压缩算法
-    """
-    # 定位 UPX 尾部标记
     magic_positions = []
     for magic in (_UPX_MAGIC_NRV2B, _UPX_MAGIC_NRV2D, _UPX_MAGIC_NRV2E,
                   _UPX_MAGIC_LZMA, _UPX_MAGIC_LZMA_OLD):
@@ -298,11 +290,6 @@ class Unpacker:
         self._section_mismatch: Optional[dict] = None
 
     def detect_packer(self, path: str) -> Tuple[str, float]:
-        """检测加壳器，返回 (packer, confidence)。
-
-        兼容旧版元组语义：未检测到时返回 ('unknown', 0.0)，
-        检测详情存于 _detected/_detection_method 等属性。
-        """
         try:
             with open(path, "rb") as fh:
                 raw = fh.read()
@@ -337,16 +324,13 @@ class Unpacker:
         return ("unknown", 0.0)
 
     def is_packed(self, path: str) -> bool:
-        """判断文件是否被加壳。"""
         packer, _confidence = self.detect_packer(path)
         return packer not in (None, "unknown")
 
     def _calculate_entropy(self, data: bytes) -> float:
-        """计算数据熵（0-8 位），用于判断是否被压缩/加密。"""
         return _shannon_entropy(data)
 
     def detect_obfuscation(self, data: Optional[bytes]) -> dict:
-        """检测混淆技术；无数据时直接返回未混淆。"""
         if data is None:
             return {"obfuscated": False, "techniques": [], "severity": "low"}
 
@@ -358,10 +342,6 @@ class Unpacker:
                 "severity": "medium" if techniques else "low"}
 
     def unpack_if_needed(self, path: str) -> Optional[dict]:
-        """根据检测结果决定是否脱壳，返回结果字典。
-
-        文件不存在返回 None；无需脱壳返回 unpacked=False。
-        """
         if not path or not os.path.exists(path):
             return None
 

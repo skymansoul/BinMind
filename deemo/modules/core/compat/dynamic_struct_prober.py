@@ -1,4 +1,3 @@
-# Proxy → dynamic_analysis/dynamic_struct_prober.py. importlib.import_module strategy.
 import os as _os, sys as _sys
 import hashlib
 _d = _os.path.dirname(_os.path.dirname(_os.path.dirname(__file__)))
@@ -17,7 +16,6 @@ _IOCTL_SIZE_HINTS = {
 }
 
 
-# IOCTL 推断结果缓存 — 控制码→布局的映射在运行时不变，缓存在首次查询后避免重复位分解
 @_ft.lru_cache(maxsize=256)
 def infer_struct_from_ioctl(ioctl_code: int) -> dict | None:
     hint = _IOCTL_SIZE_HINTS.get(ioctl_code)

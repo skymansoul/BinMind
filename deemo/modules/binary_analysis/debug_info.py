@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class DebugInfoType(str, Enum):
-    """Debug info type."""
     PDB = 'pdb'
     DWARF = 'dwarf'
     STABS = 'stabs'
@@ -16,7 +15,6 @@ class DebugInfoType(str, Enum):
 
 
 class SymbolType(str, Enum):
-    """Symbol type."""
     FUNCTION = 'function'
     DATA = 'data'
     TYPE = 'type'
@@ -61,7 +59,6 @@ class DebugInfoResult:
 
 
 class DebugInfoParser:
-    """Debug information parser."""
 
     def __init__(self, binary_path: str = None):
         self.binary_path = binary_path
@@ -78,7 +75,6 @@ class DebugInfoParser:
             logger.info("pyelftools not installed, DWARF parsing limited")
 
     def _detect_binary_type(self) -> str:
-        """Detect binary file type."""
         if not self.binary_path or not os.path.exists(self.binary_path):
             return 'unknown'
 
@@ -94,7 +90,6 @@ class DebugInfoParser:
         return 'unknown'
 
     def _find_pdb_file(self) -> Optional[str]:
-        """Find PDB file."""
         if not self.binary_path:
             return None
 
@@ -114,7 +109,6 @@ class DebugInfoParser:
         return None
 
     def _parse_pdb_with_pdbparse(self, pdb_path: str) -> Tuple[List[DebugSymbol], List[TypeDefinition]]:
-        """Parse PDB file using pdbparse."""
         symbols = []
         types = []
 
@@ -140,7 +134,6 @@ class DebugInfoParser:
         return symbols, types
 
     def _parse_pdb_fallback(self, pdb_path: str) -> Tuple[List[DebugSymbol], List[TypeDefinition]]:
-        """PDB parse fallback using dumpbin."""
         symbols = []
         types = []
 
@@ -172,7 +165,6 @@ class DebugInfoParser:
         return symbols, types
 
     def _parse_dwarf(self, elf_path: str) -> Tuple[List[DebugSymbol], List[TypeDefinition]]:
-        """Parse DWARF debug info."""
         symbols = []
         types = []
 
@@ -229,12 +221,10 @@ class DebugInfoParser:
         return symbols, types
 
     def _download_pdb_from_symbol_server(self) -> Optional[str]:
-        """Download PDB from symbol server (placeholder)."""
         logger.info("Attempting to download PDB from symbol server...")
         return None
 
     def _extract_source_files(self) -> List[str]:
-        """Extract source file list from binary."""
         files = []
 
         if not self.binary_path:
@@ -268,7 +258,6 @@ class DebugInfoParser:
         return files
 
     def parse(self, pdb_path: str = None) -> DebugInfoResult:
-        """Parse debug information."""
         if not self.binary_path:
             return DebugInfoResult(
                 debug_type=DebugInfoType.UNKNOWN,
@@ -319,21 +308,18 @@ class DebugInfoParser:
             enhanced_variables=len([s for s in self.symbols if s.symbol_type == SymbolType.DATA]))
 
     def get_symbol_by_address(self, address: int) -> Optional[DebugSymbol]:
-        """Look up symbol by address."""
         for symbol in self.symbols:
             if symbol.address <= address < symbol.address + symbol.size:
                 return symbol
         return None
 
     def get_type_by_name(self, name: str) -> Optional[TypeDefinition]:
-        """Look up type definition by name."""
         for type_def in self.types:
             if type_def.name == name:
                 return type_def
         return None
 
     def enhance_decompilation(self, decompiled_code: str) -> str:
-        """Enhance decompiled code using debug info."""
         if not self.symbols:
             return decompiled_code
 
@@ -347,7 +333,6 @@ class DebugInfoParser:
         return enhanced_code
 
     def generate_header_file(self, output_path: str) -> bool:
-        """Generate C header file."""
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write('// Type definitions\n')
@@ -372,7 +357,6 @@ class DebugInfoParser:
             return False
 
     def get_analysis_summary(self) -> Dict[str, Any]:
-        """Get analysis summary."""
         result = self.parse()
 
         return {

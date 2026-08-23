@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""循环上界-分配同源判定辅助.
-
-决策:
-  判断循环上界是否与分配 size 参数同源 (含等号边界循环):
-  for(i=0; i<=n; i++) buf[i]='A' 且 buf=malloc(n) 时, 循环含等号
-  边界 (jae/jbe/jge/jle) 且上界栈槽与分配 size 参数同源, 写入次数
-  = alloc+1, 必然 off-by-one 越界. 区间分析无法证明 (迭代次数未知).
-
-创建: 2024-01-04
-"""
+# 循环上界-分配同源判定: 判断循环上界是否与分配 size 参数同源
 
 import re
 from typing import List, Optional

@@ -19,9 +19,9 @@
 #
 # Zeller & Hildebrandt, "Simplifying Isolating Failure-Inducing
 #      Input." IEEE TSE 28.2: 183-200. — ddmin 原始算法
-# Rebert et al., "Optimizing Seed Selec for 模糊测试."
-# USENIX Securi 2014. — 覆盖率引导的种子选择，本项目将其思想
-#      反转用于种子最小化（保留覆盖率而非寻找新覆盖率）
+# Rebert et al., "Optimizing Seed Selection for Fuzzing."
+# USENIX Security 2014. — 覆盖率引导的种子选择, 本项目将其思想
+#      反转用于种子最小化 (保留覆盖率而非寻找新覆盖率)
 
 import hashlib
 import struct

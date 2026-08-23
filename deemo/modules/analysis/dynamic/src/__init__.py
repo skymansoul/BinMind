@@ -1,13 +1,12 @@
-# dynamic — lazy-loading module 入口
-# Exports sub-systems: engine, memory, 追踪, 插桩
+# dynamic — 惰性加载模块入口
+# 导出子系统: engine, memory, 追踪, 插桩,
 # 仿真, forensic, vmi
 #
-# Using registry pattern instead inheritance — less type-safe but avoids
-# deep class hierarchies hurt readability
+# 使用注册表模式而非继承 — 类型安全稍弱但避免
+# 过深类层级损害可读性
 #
-# Architecture note: sub-module a thin facade over engine/
-# directory, 包含 real implementation. facades 提供
-# a stable public API engine/ internals churn freely
+# 架构说明: 子模块是 engine/ 目录的薄封装,
+# 提供稳定公共 API, engine/ 内部可自由变更
 
 import importlib
 import logging
@@ -17,7 +16,7 @@ log = logging.getLogger(__name__)
 __version__ = "0.4.0"
 
 _SUB_MODULES: dict[str, str] = {
-    # Public facade modules — thin 封装s over engine/ internals
+    # 公共 facade 模块 — engine/ 内部的薄封装
     "engine": ".engine",
     "memory": ".memory",
     "tracing": ".tracing",

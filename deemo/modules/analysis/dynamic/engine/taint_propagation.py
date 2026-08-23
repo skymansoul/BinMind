@@ -11,9 +11,9 @@ from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 
-# 舍入 4: Error taxonomy
-# Ghidra headless scripting emphasizes domain-specific error types
-# over generic 异常s, enabling precise error recovery strategies
+# 错误分类法
+# Ghidra 无头脚本强调领域特定错误类型
+# 而非通用异常, 以实现精确的错误恢复策略
 
 class TaintError(Exception):
     """污点分析错误基类"""

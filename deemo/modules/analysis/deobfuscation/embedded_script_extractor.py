@@ -127,7 +127,6 @@ class EmbeddedScriptExtractor:
         self.binary_path = binary_path
         self.binary_data = binary_data
         self.scripts: list = []
-        # 哈希去重 - 缓存已见内容的 SHA256 以避免重复提取
         self._seen_hashes: Set[str] = set()
         if binary_path and not binary_data:
             self._load_binary()
@@ -142,10 +141,6 @@ class EmbeddedScriptExtractor:
 
     @staticmethod
     def _content_digest(content: str) -> str:
-        """对脚本内容计算 SHA256 指纹用于去重
-        在嵌入式脚本提取中，同一脚本可能因不同的前导/后缀字节被重复提取
-        hash 去重可消除 40-60% 的重复项（经验值）
-        """
         return hashlib.sha256(content.encode('utf-8', errors='replace')).hexdigest()
 
     def _detect_script_engine(self) -> list:

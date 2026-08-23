@@ -1,13 +1,4 @@
 import typing
-"""Analysis state management module.
-
-Provides state persistence, checkpoint save/restore, progress tracking,
-and bridge classes for symbolic execution, taint analysis, concolic
-execution, and pipeline state capture/restore.
-
-Compatible with Windows and Linux file system paths.
-"""
-
 import os
 import pickle
 import logging
@@ -21,13 +12,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 
 
-# -- Memoization decorator --
 class _Memoize:
-    """Hand-written caching decorator for expensive function calls.
-
-    Useful in symbolic execution scenarios with path explosion to avoid
-    repeated computation for identical arguments.
-    """
     def __init__(self, func):
         self.func = func
         self.cache = {}
@@ -38,9 +23,7 @@ class _Memoize:
         return self.cache[args]
 
 
-# -- Utility: deduplicate while preserving insertion order --
 def _uniq(lst):
-    """Deduplicate list while preserving insertion order."""
     seen = set()
     result = []
     for item in lst:
@@ -50,13 +33,7 @@ def _uniq(lst):
     return result
 
 
-# -- Hand-written serializer: replaces json, uses __dict__ iteration --
 def _to_plain(obj):
-    """Recursively convert object to plain Python struct (dict/list/primitive).
-
-    Uses __dict__ iteration instead of JSON reflection to avoid
-    circular reference stack overflows.
-    """
     if obj is None:
         return None
     if isinstance(obj, bool):
@@ -68,7 +45,7 @@ def _to_plain(obj):
     if isinstance(obj, bytes):
         return {"__bytes__": obj.hex()}
     if isinstance(obj, (set, frozenset)):
-        return sorted(list(obj))  # Deterministic output
+        return sorted(list(obj))
     if isinstance(obj, datetime):
         return {"__datetime__": obj.isoformat()}
     if isinstance(obj, (list, tuple)):
@@ -76,36 +53,27 @@ def _to_plain(obj):
     if isinstance(obj, dict):
         return {str(k): _to_plain(v) for k, v in obj.items()}
     if hasattr(obj, '__dict__') and not isinstance(obj, type):
-        # __dict__ iteration: core hand-written serialization path
         return {"__class__": type(obj).__name__, "__dict__": _to_plain(obj.__dict__)}
     raise TypeError(f"Cannot serialize type {type(obj).__name__}")
 
 
 def _mini_dumps(obj):
-    """Compact string representation (replaces json.dumps)."""
     return repr(_to_plain(obj))
 
 
 def _mini_loads(s):
-    """Parse compact string back to object (replaces json.loads).
-
-    Uses ast.literal_eval for safe parsing that does not execute arbitrary code.
-    """
     return ast.literal_eval(s)
 
 
 __log = logging.getLogger(__name__)
 
-# -- Module-level constants --
 SUPPORTED_FORMATS = ('pickle', 'dict', 'msgpack')
 DEFAULT_STORAGE = "data/analysis_states"
 MAX_HISTORY = 100
 SID_LENGTH = 24
 
 
-# -- StateStatus: analysis status constants --
 class StateStatus(str, Enum):
-    """Analysis status constants."""
     ACTIVE = "active"
     PAUSED = "paused"
     COMPLETED = "completed"
@@ -113,9 +81,7 @@ class StateStatus(str, Enum):
     SAVED = "saved"
 
 
-# -- StateType: analysis type constants --
 class StateType(str, Enum):
-    """Analysis type constants."""
     SYMBOLIC_EXECUTION = "symbolic_execution"
     DYNAMIC_TAINT = "dynamic_taint"
     CONCOLIC = "concolic"
@@ -124,12 +90,8 @@ class StateType(str, Enum):
     EXPLOIT_GENERATION = "exploit_generation"
 
 
-# -- StateSnapshot: checkpoint data container --
-# Memory optimization: symbolic execution can produce tens of thousands
-# of snapshots per run.
 @dataclass
 class StateSnapshot:
-    """Analysis state snapshot for checkpoint persistence."""
     snapshot_id: str
     timestamp: datetime = field(default_factory=datetime.now)
     state_type: Optional[str] = None
@@ -140,17 +102,14 @@ class StateSnapshot:
     dependencies: list = field(default_factory=list)
 
     def __post_init__(self):
-        """Validate snapshot_id on construction."""
         if not isinstance(self.snapshot_id, str):
             raise ValueError(f"Invalid snapshot_id type: {type(self.snapshot_id).__name__}")
 
     def serialize_r2(self):
-        """Pickle serialization with protocol 4 for backward compatibility."""
         return pickle.dumps(self, protocol=4)
 
     @classmethod
     def deserialize_r2(cls, raw_bytes):
-        """Deserialize from pickle bytes with error protection."""
         if raw_bytes is None or len(raw_bytes) == 0:
             return None
         try:
@@ -163,10 +122,8 @@ class StateSnapshot:
             return None
 
 
-# -- AnalysisProgress: progress tracking --
 @dataclass
 class AnalysisProgress:
-    """Progress tracking fields, updated incrementally during analysis."""
     current_stage: str = ""
     stage_progress: int = 0
     total_progress: int = 0
@@ -176,13 +133,8 @@ class AnalysisProgress:
     total_items: int = 0
 
 
-# -- State data classes --
-# Use dataclass for maintainability.
-# Symbolic execution may produce thousands of instances.
-
 @dataclass
 class SymbolicStateData:
-    """Symbolic execution state: PC, constraints, memory snapshot."""
     state_id: str = ""
     pc: int = 0
     constraints: list = field(default_factory=list)
@@ -196,7 +148,6 @@ class SymbolicStateData:
 
 @dataclass
 class TaintStateData:
-    """Taint tracking: sources, sinks, memory tags."""
     taint_sources: dict = field(default_factory=dict)
     taint_sinks: dict = field(default_factory=dict)
     tainted_memory: dict = field(default_factory=dict)
@@ -206,7 +157,6 @@ class TaintStateData:
 
 @dataclass
 class ConcolicStateData:
-    """Concolic execution: concrete + symbolic."""
     concrete_input: bytes = b''
     symbolic_constraints: list = field(default_factory=list)
     path_conditions: list = field(default_factory=list)
@@ -217,7 +167,6 @@ class ConcolicStateData:
 
 @dataclass
 class PipelineStateData:
-    """Pipeline state: stages, results, options."""
     stages: list = field(default_factory=list)
     current_stage_index: int = 0
     stage_results: dict = field(default_factory=dict)
@@ -226,10 +175,6 @@ class PipelineStateData:
     vulnerability_results: list = field(default_factory=list)
 
 
-# -- StateSerializer --
-# Supports pickle/dict/msgpack formats.
-# msgpack is an optional dependency; falls back to pickle if unavailable.
-# dict format uses hand-written serializer instead of json.
 class StateSerializer:
     SUPPORTED_FORMATS = list(SUPPORTED_FORMATS)
 
@@ -240,7 +185,6 @@ class StateSerializer:
         self.format = format
         self._msgpack_available = False
 
-        # msgpack optional dependency: silent fallback on import failure
         if format == 'msgpack':
             try:
                 import msgpack
@@ -249,9 +193,7 @@ class StateSerializer:
                 logger.warning("msgpack not installed, falling back to pickle format")
                 self.format = 'pickle'
 
-    # -- Serialization entry points --
     def serialize_r2(self, data_obj):
-        """Serialize data object to bytes."""
         if data_obj is None:
             return b''
 
@@ -262,12 +204,9 @@ class StateSerializer:
         elif self.format == 'msgpack' and self._msgpack_available:
             import msgpack
             return msgpack.packb(data_obj, default=self._msgpack_fb_r2)
-        # Fallback: pickle
         return pickle.dumps(data_obj, protocol=4)
 
-    # -- Deserialization entry points --
     def deserialize_r2(self, raw_bytes):
-        """Deserialize bytes back to object."""
         if raw_bytes is None or len(raw_bytes) == 0:
             return None
 
@@ -281,24 +220,19 @@ class StateSerializer:
         elif self.format == 'msgpack' and self._msgpack_available:
             import msgpack
             return msgpack.unpackb(raw_bytes)
-        # Fallback: try pickle
+        # 回退: 尝试 pickle
         try:
             return pickle.loads(raw_bytes)
         except Exception:
             return None
 
-    # -- msgpack fallback handler --
     @staticmethod
     def _msgpack_fb_r2(obj):
-        """Handle types that msgpack can't serialize natively (e.g. datetime)."""
         if isinstance(obj, datetime):
             return {'__datetime__': obj.isoformat()}
         raise TypeError(f"Cannot serialize type {type(obj).__name__}")
 
 
-# -- StateManager: core state manager --
-# Maintains active states in memory and persistent snapshots on disk.
-# Uses RLock for recursive call scenarios in certain analysis paths.
 class StateManager:
     def __init__(self, storage_path=DEFAULT_STORAGE):
         if storage_path is None:
@@ -313,22 +247,17 @@ class StateManager:
 
         logger.info("State manager initialized -- storage path: %s", self.storage_path)
 
-    # -- Snapshot ID generation --
     def _generate_snapshot_id_r2(self):
-        """Generate unique snapshot ID using SHA-256."""
         salt = os.urandom(16).hex()
         ts = datetime.now().isoformat()
         raw = f"{ts}_{salt}".encode('utf-8')
         return hashlib.sha256(raw).hexdigest()[:SID_LENGTH]
 
     def _get_snapshot_path_r2(self, sid):
-        """Get filesystem path for a snapshot."""
         return self.storage_path / f"{sid}.snapshot"
 
-    # -- CRUD operations --
     def create_snapshot_r2(self, state_type, checkpoint_data,
                            metadata=None, dependencies=None):
-        """Create a snapshot and return its ID, or None on failure."""
         if checkpoint_data is None:
             logger.warning("checkpoint_data is empty, refusing to create snapshot")
             return None
@@ -336,7 +265,6 @@ class StateManager:
         sid = self._generate_snapshot_id_r2()
         ts = datetime.now()
 
-        # Serialize checkpoint using the configured serializer
         serialized_bytes = self.serializer.serialize_r2(checkpoint_data)
 
         snap = StateSnapshot(
@@ -350,7 +278,6 @@ class StateManager:
             dependencies=dependencies or []
         )
 
-        # Write to disk; log IO errors without raising
         spath = self._get_snapshot_path_r2(sid)
         try:
             with open(spath, 'wb') as fh:
@@ -359,13 +286,11 @@ class StateManager:
             logger.error("Snapshot write failed: %s", exc)
             return None
 
-        # Update history queue -- track latest snapshots by type
         hist_key = f"{state_type}_latest"
         if hist_key not in self._state_history:
             self._state_history[hist_key] = []
         self._state_history[hist_key].append(sid)
 
-        # FIFO eviction of old snapshots to prevent unbounded disk growth
         if len(self._state_history[hist_key]) > MAX_HISTORY:
             old_sid = self._state_history[hist_key].pop(0)
             self._delete_snapshot_r2(old_sid)
@@ -374,7 +299,6 @@ class StateManager:
         return sid
 
     def load_snapshot_r2(self, sid):
-        """Load a snapshot from disk."""
         if sid is None:
             return None
 
@@ -395,7 +319,6 @@ class StateManager:
             return None
 
     def get_checkpoint_data_r2(self, sid):
-        """Extract checkpoint data from a snapshot."""
         snap = self.load_snapshot_r2(sid)
         if snap is None:
             return None
@@ -406,7 +329,6 @@ class StateManager:
             return None
 
     def delete_snapshot_r2(self, sid):
-        """Delete a snapshot with lock protection."""
         with self._lock:
             return self._delete_snapshot_r2(sid)
 
@@ -421,7 +343,6 @@ class StateManager:
             logger.error("Snapshot deletion failed: %s", exc)
             return False
 
-        # Clean history records across all types
         for key in list(self._state_history.keys()):
             if sid in self._state_history[key]:
                 self._state_history[key].remove(sid)
@@ -430,7 +351,6 @@ class StateManager:
         return True
 
     def list_snapshots_r2(self, state_type=None):
-        """List snapshots, optionally filtered by type, sorted by timestamp descending."""
         result_list = []
 
         for item in self.storage_path.iterdir():
@@ -453,13 +373,11 @@ class StateManager:
                 'size_bytes': len(snap.checkpoint_data)
             })
 
-        # Sort by timestamp descending
         result_list = sorted(result_list, key=lambda x: x['timestamp'], reverse=True)
 
         return result_list
 
     def get_latest_snapshot_r2(self, state_type):
-        """Get the most recent snapshot ID for a given type."""
         if state_type is None:
             return None
         hist_key = f"{state_type}_latest"
@@ -467,15 +385,12 @@ class StateManager:
         if len(history) > 0:
             return history[-1]
 
-        # Fallback: scan disk
         snapshots = self.list_snapshots_r2(state_type)
         if len(snapshots) > 0:
             return snapshots[0]['snapshot_id']
         return None
 
-    # -- Active state management (in-memory only) --
     def save_active_state_r2(self, state_id, state_data):
-        """Save state to in-memory active states dict."""
         if state_id is None:
             return
         with self._lock:
@@ -486,7 +401,6 @@ class StateManager:
         logger.debug("Active state saved: %s", state_id)
 
     def get_active_state_r2(self, state_id):
-        """Retrieve active state from memory."""
         if state_id is None:
             return None
         with self._lock:
@@ -496,7 +410,6 @@ class StateManager:
         return None
 
     def remove_active_state_r2(self, state_id):
-        """Remove active state from memory."""
         if state_id is None:
             return
         with self._lock:
@@ -505,9 +418,6 @@ class StateManager:
                 logger.debug("Active state removed: %s", state_id)
 
 
-# -- AnalysisStateTracker --
-# Extends StateManager with pause/resume and progress tracking.
-# Callback mechanism: notifies registered callbacks on state changes.
 class AnalysisStateTracker:
     def __init__(self, manager=None):
         self.manager = manager if manager is not None else StateManager()
@@ -515,41 +425,33 @@ class AnalysisStateTracker:
         self.progress = AnalysisProgress()
         self._paused = False
         self._pause_event = threading.Event()
-        self._pause_event.set()  # Initial state: not blocked
+        self._pause_event.set()  # 初始状态: 未阻塞
         self._state_callbacks = []
 
         logger.info("Analysis state tracker initialized")
 
-    # -- Pause / Resume --
     def pause_r2(self):
-        """Pause analysis -- clears the pause event."""
         self._paused = True
         self._pause_event.clear()
         logger.info("Analysis paused")
 
     def resume_r2(self):
-        """Resume analysis -- sets the pause event."""
         self._paused = False
         self._pause_event.set()
         logger.info("Analysis resumed")
 
     def wait_if_paused_r2(self, timeout=None):
-        """Block until analysis is resumed, or timeout."""
         if self._paused:
             return self._pause_event.wait(timeout)
         return True
 
     def is_paused_r2(self):
-        """Check if analysis is currently paused."""
         return self._paused
 
-    # -- Checkpoint save / load --
     def save_checkpoint_r2(self, state_type, checkpoint_data, metadata=None):
-        """Save checkpoint with embedded progress info."""
         if metadata is None:
             metadata = {}
 
-        # Embed progress info for restoration on load
         metadata['progress'] = {
             'current_stage': self.progress.current_stage,
             'stage_progress': self.progress.stage_progress,
@@ -574,7 +476,6 @@ class AnalysisStateTracker:
         return sid
 
     def load_checkpoint_r2(self, sid):
-        """Load checkpoint and restore progress."""
         if sid is None:
             return None
 
@@ -582,7 +483,6 @@ class AnalysisStateTracker:
         if data is None:
             return None
 
-        # Restore progress from snapshot metadata
         snap = self.manager.load_snapshot_r2(sid)
         if snap is not None and 'progress' in snap.metadata:
             pd = snap.metadata['progress']
@@ -600,12 +500,10 @@ class AnalysisStateTracker:
         logger.info("Checkpoint loaded: %s", sid)
         return data
 
-    # -- Progress updates --
     def update_progress_r2(self, current_stage=None, stage_progress=None,
                            total_progress=None, current_task=None,
                            estimated_time_remaining=None,
                            processed_items=None, total_items=None):
-        """Update progress fields incrementally -- unset fields keep current value."""
         if current_stage is not None:
             self.progress.current_stage = current_stage
         if stage_progress is not None:
@@ -623,35 +521,25 @@ class AnalysisStateTracker:
 
         self._fire_callbacks_r2('progress_updated', self.progress)
 
-    # -- Callback management --
     def register_callback_r2(self, cb):
-        """Register a callback for state change events."""
         if cb is not None and callable(cb):
             self._state_callbacks.append(cb)
 
     def unregister_callback_r2(self, cb):
-        """Remove a previously registered callback."""
         if cb in self._state_callbacks:
             self._state_callbacks.remove(cb)
 
     def _fire_callbacks_r2(self, evt_type, data):
-        """Notify all registered callbacks of a state event.
-
-        Callback exceptions must not disrupt the main analysis flow.
-        """
         for cb in self._state_callbacks:
             try:
                 cb(evt_type, data)
             except Exception as exc:
                 logger.error("Callback execution failed [%s]: %s", evt_type, exc)
 
-    # -- Status queries --
     def get_progress_r2(self):
-        """Return current progress object."""
         return self.progress
 
     def get_status_r2(self):
-        """Return comprehensive status dict."""
         return {
             'is_paused': self._paused,
             'current_snapshot_id': self.current_snapshot_id,
@@ -667,91 +555,70 @@ class AnalysisStateTracker:
         }
 
 
-# -- Engine bridge classes --
-# Bridge pattern: capture/restore interface for specific analysis engines.
-
 class SymbolicExecutionState:
-    """Bridge: wraps symbolic engine, provides capture/restore."""
     def __init__(self, engine=None):
         self.engine = engine
         self._states = []
         self._current_index = 0
 
     def capture_r2(self):
-        """Capture current symbolic execution state."""
         return SymbolicStateData(
             state_id=f"sym_state_{id(self)}",
             pc=0,
         )
 
     def restore_r2(self, state_data):
-        """Restore symbolic execution from state data."""
         if state_data is not None:
             logger.info("Restoring symbolic execution state: %s", state_data.state_id)
 
     def serialize_r2(self):
-        """Pickle-serialize captured state."""
         return pickle.dumps(self.capture_r2(), protocol=4)
 
     def deserialize_r2(self, raw):
-        """Pickle-deserialize and restore state."""
         if raw is not None:
             data = pickle.loads(raw)
             self.restore_r2(data)
 
 
 class TaintAnalysisState:
-    """Bridge: wraps taint engine."""
     def __init__(self, tracker=None):
         self.tracker = tracker
 
     def capture_r2(self):
-        """Capture current taint analysis state."""
         return TaintStateData()
 
     def restore_r2(self, state_data):
-        """Restore taint analysis from state data."""
         if state_data is not None:
             logger.info("Restoring taint analysis state")
 
 
 class ConcolicExecutionState:
-    """Bridge: wraps concolic executor."""
     def __init__(self, executor=None):
         self.executor = executor
 
     def capture_r2(self):
-        """Capture current concolic execution state."""
         return ConcolicStateData()
 
     def restore_r2(self, state_data):
-        """Restore concolic execution from state data."""
         if state_data is not None:
             logger.info("Restoring concolic execution state")
 
 
 class PipelineState:
-    """Bridge: wraps analysis pipeline."""
     def __init__(self, pipeline=None):
         self.pipeline = pipeline
 
     def capture_r2(self):
-        """Capture current pipeline state."""
         return PipelineStateData()
 
     def restore_r2(self, state_data):
-        """Restore pipeline from state data."""
         if state_data is not None:
             logger.info("Restoring analysis pipeline state")
 
 
-# -- Factory functions --
-
 def create_state_manager_r2(storage_path=DEFAULT_STORAGE):
-    """Factory: create StateManager with optional custom path."""
     return StateManager(storage_path)
 
 
 def create_state_tracker_r2(manager=None):
-    """Factory: create AnalysisStateTracker with optional existing manager."""
     return AnalysisStateTracker(manager)

@@ -1,19 +1,5 @@
-"""二进制级格式化字符串检测 - objdump 反汇编 → printf(user_input) 识别.
-
-v2.0: .rdata 交叉引用 - 读取二进制中实际格式字符串,
-  分类危险说明符 (%n/%s/%x/%p) 并计算 CVSS 风格评分.
-
-理论: Scut / team teso "Exploiting Format String Vulnerabilities"
-算法 (二进制级):
-  1. 识别所有 printf/fprintf/sprintf/snprintf 调用
-  2. 检测格式字符串参数 (rcx/rdi = arg0)
-  3. 若来自 lea reg, [rip+off] → .rdata 字面量 → 读取实际字符串
-     a. 含 %n → 写原语危险 (confidence 0.85+)
-     b. 含 %s → 信息泄露 (confidence 0.60+)
-     c. 仅安全说明符 → 无风险 (confidence 0.0)
-  4. 若来自栈加载 → 用户控制格式字符串 → 漏洞
-  5. 计算 FSCS (Format String CVSS Score) 0-10 评分
-"""
+# 二进制级格式化字符串检测 - objdump 反汇编 → printf(user_input) 识别.
+# v2.0: .rdata 交叉引用 - 读取实际格式字符串, 分类危险说明符并计算 CVSS 风格评分.
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional

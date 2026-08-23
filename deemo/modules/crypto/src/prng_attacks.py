@@ -176,8 +176,3 @@ __all__ = ['untemper_mt19937', 'clone_mt19937', 'lcg_parameter_recovery',
            'crack_xorshift128_plus', 'detect_dual_ec_drbg',
            'java_random_seed_recover']
 
-
-def _debug_print(*args, **kwargs):
-    """调试输出桩, 暂未启用."""
-    pass
-

@@ -15,7 +15,7 @@ from modules.analysis.dynamic.src.config import (
 
 
 class TestDefaultConfig:
-    """Test default 配置 loading"""
+    """测试默认配置加载"""
 
     def test_load_default_config(self):
         """Default 配置 加载 arguments"""
@@ -75,7 +75,7 @@ class TestDeepMerge:
 
 
 class TestEnvOverrides:
-    """Test environment variable overrides"""
+    """测试环境变量覆盖"""
 
     def test_cast_int(self):
         assert _cast_env_value("42") == 42
@@ -119,7 +119,7 @@ class TestEnvOverrides:
 
 
 class TestGetConfigValue:
-    """Test dotted key access"""
+    """测试点分隔键访问"""
 
     def test_get_existing_key(self):
         cfg = {"a": {"b": {"c": 42}}}

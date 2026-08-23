@@ -31,7 +31,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 _log = logging.getLogger(__name__)
 
-# Error hierarchy
+# 错误层级
 
 class SymbolicError(Exception):
     """符号执行操作的基类异常。"""
@@ -108,7 +108,7 @@ class Z3ExpressionBuilder:
             bits = self.default_bits
         return self.z3.BitVecVal(value, bits)
 
-# Arithmetic
+# 算术运算
 
     def bv_add(self, lhs: Any, rhs: Any) -> Any: return lhs + rhs
     def bv_sub(self, lhs: Any, rhs: Any) -> Any: return lhs - rhs
@@ -130,7 +130,7 @@ class Z3ExpressionBuilder:
         """有符号取模。"""
         return lhs % rhs
 
-# Bitwise
+# 位运算
 
     def bv_and(self, lhs: Any, rhs: Any) -> Any: return lhs & rhs
     def bv_or(self, lhs: Any, rhs: Any) -> Any: return lhs | rhs
@@ -145,7 +145,7 @@ class Z3ExpressionBuilder:
         """算术右移 (有符号)。"""
         return lhs >> rhs
 
-# Comparisons
+# 比较运算
 
     def bv_eq(self, lhs: Any, rhs: Any) -> Any: return lhs == rhs
     def bv_ne(self, lhs: Any, rhs: Any) -> Any: return lhs != rhs
@@ -171,17 +171,17 @@ class Z3ExpressionBuilder:
     def bv_sle(self, lhs: Any, rhs: Any) -> Any: return lhs <= rhs
     def bv_sge(self, lhs: Any, rhs: Any) -> Any: return lhs >= rhs
 
-# Memory (Array Theory)
+# 内存建模（Array 理论）
 
     def make_memory_array(self, name: str, addr_bits: int = 32, data_bits: int = 8) -> Any:
         """
         创建符号内存建模用的 Array: Array(address_bitvec, data_bitvec),
         字节级内存。
 
-        // 设计策略: Array 理论比 ITE 链更精确
-        // 但 Z3 的数组求解器在大规模存储操作下更慢
-        // 小函数 (<100 次存储) 用 array 即可
-        // 更大规模时考虑把"冷"内存页具体化
+        # 设计策略: Array 理论比 ITE 链更精确
+        # 但 Z3 的数组求解器在大规模存储操作下更慢
+        # 小函数 (<100 次存储) 用 array 即可
+        # 更大规模时考虑把"冷"内存页具体化
         """
         addr_sort = self.z3.BitVecSort(addr_bits)
         data_sort = self.z3.BitVecSort(data_bits)
@@ -195,7 +195,7 @@ class Z3ExpressionBuilder:
         """写数组: Store(arr, idx, val), 创建新的 SSA 数组, O(1)。"""
         return self.z3.Store(arr, idx, val)
 
-# Utility
+# 工具方法
 
     def bool_to_bv(self, cond: Any) -> Any:
         """把 Bool 转为 BitVec(1): If(cond, 1, 0)。"""
@@ -257,7 +257,7 @@ class ConstraintSolver:
                 try:
                     self._z3_solver.set("max_memory", self.memory_mb)
                 except Exception:
-                    pass  # Z3 versions don't 支持 max_memory
+                    pass  # 部分 Z3 版本不支持 max_memory
         return self._z3_solver
 
     def solve(self, constraints: List[Any], target_var: str) -> Optional[int]:
@@ -267,7 +267,7 @@ class ConstraintSolver:
         constraints 为约束字典列表或 Z3 BoolRef; 可满足时返回
         具体整数值, 否则返回 None。
 
-        # Z3 旧版 workaround: 无符号 BV 会返回负值, 提取时取模掩码
+        # Z3 旧版 workaround: 无符号 BV 会返回负值，提取时取模掩码
         # 后续版本修复后可删
         """
         if not has_z3():
@@ -323,20 +323,20 @@ class ConstraintSolver:
 
         except SolverTimeout:
             self._stats["timeouts"] += 1
-            return True  # Safe over-approximation: assume satisfiable
+            return True  # 安全过近似: 假设可满足
         except Exception as e:
             _log.error("Solver error in is_satisfiable: %s", e)
-            return True  # Safe over-approximation
+            return True  # 安全过近似
 
     def simplify(self, expr: Any) -> Any:
         """
         用 Z3 内置化简器化简表达式。
 
-        // 注意: Z3 的 simplify() 是启发式的, 不保证最简形式,
-        // 但通常对大多数场景足够
+        # 注意: Z3 的 simplify() 是启发式的，不保证最简形式
+        # 但通常对大多数场景足够
         """
         if not has_z3():
-            return expr  # -op concrete mode
+            return expr  # 无 Z3 时的具体值模式
         import z3  # noqa: F811
         try:
             return z3.simplify(expr)
@@ -373,7 +373,7 @@ class ConstraintSolver:
                     val = model[decl]
                     if hasattr(val, 'as_long'):
                         raw = val.as_long()
-                        # Mask 32-bit for consistency
+                        # 32 位掩码保持一致性
                         return raw & 0xFFFFFFFF
                     return None
         except Exception:
@@ -392,7 +392,7 @@ class ConstraintSolver:
         result = []
         for c in constraints:
             if hasattr(c, 'decl'):
-                # a Z3 expression
+                # Z3 表达式直接使用
                 result.append(c)
             elif isinstance(c, dict):
                 z3_expr = self._dict_to_z3(bld, c)
@@ -446,8 +446,8 @@ class ConstraintSolver:
         仅支持简单的 eq/neq 整数值; 约束一致时返回该值,
         否则返回 None。
 
-        // 这是严重受限的子集 — 完整符号求解请安装 Z3:
-        // pip install z3-solver
+        # 这是严重受限的子集 — 完整符号求解请安装 Z3:
+        # pip install z3-solver
         """
         target_val = None
         for c in constraints:
@@ -457,12 +457,12 @@ class ConstraintSolver:
                 if c.get("type") == "eq":
                     candidate = c.get("value")
                     if target_val is not None and target_val != candidate:
-                        return None  # Contradiction
+                        return None  # 矛盾
                     target_val = candidate
                 elif c.get("type") == "neq":
                     candidate = c.get("value")
                     if target_val == candidate:
-                        return None  # Contradiction
+                        return None  # 矛盾
         return target_val
 
     def _is_satisfiable_concrete(self, constraints: List[Any]) -> bool:
@@ -500,7 +500,7 @@ def simplify_expression_ast(expr_tree: dict) -> dict:
     if not isinstance(expr_tree, dict):
         return expr_tree
     typ = expr_tree.get("type", "")
-    # Constant folding: const op const
+    # 常量折叠: const op const
     if typ in ("add", "sub", "mul") and "left" in expr_tree and "right" in expr_tree:
         left = expr_tree["left"]
         right = expr_tree["right"]

@@ -2,17 +2,16 @@
 """
 symbolic — 命令行入口 (BinMind symbolic CLI)
 
-Subcommands:
-执行 — 运行 符号执行 a target binary/IR
-优化 — 运行 path 优化 (pruning, merging, unrolling)
-solve — standalone 约束求解 SMT-LIB or JSON
+子命令:
+执行 — 运行符号执行, 目标为二进制/IR
+优化 — 运行路径优化 (裁剪, 合并, 展开)
+solve — 独立约束求解 SMT-LIB 或 JSON
 
-Usage:
+用法:
 binmind-symbolic 执行 --ir demo.ir --entry 0x401000
 binmind-symbolic 优化 --ir demo.ir
 binmind-symbolic solve --constraints "x > 5 x < 10" --var x
 """
-# from collections import OrderedDict  # python3.7+不需要了
 import argparse
 import logging
 import os
@@ -24,7 +23,7 @@ _log = logging.getLogger(__name__)
 
 
 def _load_config(config_path: Optional[str] = None) -> Any:
-    """Load config, falling back to defaults. O(|config_file|)"""
+    """加载配置, 回退到默认值"""
     try:
         from analysis.symbolic.src.config import load_config
         return load_config(config_path)
@@ -33,17 +32,17 @@ def _load_config(config_path: Optional[str] = None) -> Any:
         return None
 
 
-# Subcommand: 执行
+# 子命令: 执行
 
 def _cmd_execute(args: argparse.Namespace) -> int:
     """
-    运行 符号执行 a target
+    运行符号执行
 
-    这个命令会读取IR文件，逐行解析IR指令，然后喟给SymbolicExecutor跑符号执行
+    读取 IR 文件, 逐行解析 IR 指令, 喂给 SymbolicExecutor 跑符号执行
     """
     _log.info("Executing symbolic exploration...")
 
-    # 校验 inputs
+    # 校验输入
     if not args.ir or not os.path.exists(args.ir):
         print("Error: IR file not found: {}".format(args.ir), file=sys.stderr)
         return 1
@@ -59,14 +58,14 @@ def _cmd_execute(args: argparse.Namespace) -> int:
     if not ir_instructions:
         print("Warning: IR file contains no parseable instructions.", file=sys.stderr)
 
-    # 构建 IR fetcher
+    # 构建 IR 取指器
     ir_map: Dict[int, Any] = {}
     for instr in ir_instructions:
         if hasattr(instr, 'address'):
             ir_map[instr.address] = instr
 
     def ir_fetcher(addr: int) -> Any:
-        # try 提供 a NOP exact match
+        # 尝试提供 NOP 精确匹配
         return ir_map.get(addr)
 
     # 执行
@@ -119,14 +118,13 @@ def _cmd_execute(args: argparse.Namespace) -> int:
     return 0
 
 
-# Subcommand: 优化
+# 子命令: 优化
 
 def _cmd_optimize(args: argparse.Namespace) -> int:
     """
-    运行 path 优化 constraints/states
+    运行路径优化
 
-    Edge case: Z3 installed, prune mode skip fully
-    symbolic 检查 heuristic simplification
+    Z3 可用时启用求解裁剪, 不可用时降级为启发式简化
     """
     _log.info("Running path optimization...")
 
@@ -147,7 +145,7 @@ def _cmd_optimize(args: argparse.Namespace) -> int:
         merging_enabled=args.mode in ("merge", "all"),
     )
 
-    # 加载 constraints provided
+    # 加载约束
     constraints: List[Dict] = []
     if args.constraints and os.path.exists(args.constraints):
         import json
@@ -171,14 +169,13 @@ def _cmd_optimize(args: argparse.Namespace) -> int:
     return 0
 
 
-# Subcommand: solve
+# 子命令: 求解
 
 def _cmd_solve(args: argparse.Namespace) -> int:
     """
-    Solve constraints standalone (execution needed)
+    独立求解约束
 
-    // 策略: 独立求解模式允许在不跑完整符号执行的情况下快速
-    // 验证某条路径的约束是否可满足，这对路径可行性分析有用
+    无需跑完整符号执行, 快速验证单条路径约束的可满足性
     """
     _log.info("Solving constraints...")
 
@@ -229,18 +226,16 @@ def _cmd_solve(args: argparse.Namespace) -> int:
         return 0 if satisfiable else 1
 
 
-# 辅助: IR file loading
+# 辅助: IR 文件加载
 
 def _load_ir_file(path: str) -> List[Any]:
     """
-    加载 IR instructions a JSON-lines file
+    从 JSON-lines 文件加载 IR 指令
 
-    格式化 (one JSON object per line):
+    每行一个 JSON 对象:
     {"op": "MOV", "operands": ["%eax", "$0x10"], "address": 0x401000}
 
-    返回 a list IRInstruction objects
-
-    Time: O(|file_lines|). Space: O(|instructions|)
+    返回 IRInstruction 对象列表
     """
     from analysis.symbolic.src.executor import IRInstruction
     import json
@@ -267,7 +262,7 @@ def _load_ir_file(path: str) -> List[Any]:
 
 
 def _save_json_result(path: str, data: Dict[str, Any]) -> None:
-    """保存 result dict JSON. O(|data|)"""
+    """保存结果到 JSON 文件"""
     import json
     try:
         with open(path, "w", encoding="utf-8") as f:
@@ -277,17 +272,13 @@ def _save_json_result(path: str, data: Dict[str, Any]) -> None:
         print("Error saving result: {}".format(e), file=sys.stderr)
 
 
-# Main CLI
+# 主入口 CLI
 
 def main(argv: Optional[List[str]] = None) -> int:
     """
-    Main 入口 for binmind-symbolic CLI
+    binmind-symbolic CLI 主入口
 
-    解析 args, sets up 日志, 分派 subcommands
-
-    Time: O(|argv|) for parsing. Space: O(1)
-
-    Edge case: argv None, sys.argv used (standard argparse behavior)
+    解析参数, 配置日志, 分派子命令
     """
     p = argparse.ArgumentParser(
         prog="binmind-symbolic",
@@ -298,7 +289,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--debug", action="store_true", help="Debug logging")
     p.add_argument("--output", "-o", default=None, help="Output file path")
 
-    # Subcommands
+    # 子命令
     sp = p.add_subparsers(dest="command", help="Sub-commands")
 
     # 执行
@@ -320,7 +311,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                         choices=["prune", "merge", "simplify", "all"],
                         help="Optimization mode")
 
-    # solve
+    # 求解
     sp_sol = sp.add_parser("solve", help="Solve constraints standalone")
     sp_sol.add_argument("--constraints", default=None,
                         help="Constraints (JSON string or file path)")
@@ -329,7 +320,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     args = p.parse_args(argv)
 
-    # Setup 日志
+    # 配置日志
     if args.debug:
         logging.basicConfig(level=logging.DEBUG,
                           format="%(asctime)s [%(levelname)s] %(message)s")
@@ -345,7 +336,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     _log.info("Running command: %s", args.command)
 
-    # Route subcommand
+    # 分派子命令
     if args.command == "execute":
         return _cmd_execute(args)
     elif args.command == "optimize":

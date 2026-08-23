@@ -17,7 +17,7 @@ class TestEntropy:
         entropy = -sum(
             (c / n) * math.log2(c / n) for c in counter.values() if c > 0
         )
-        assert entropy > 7.9  # Near max 8.0
+        assert entropy > 7.9  # 接近最大值 8.0
 
     def test_entropy_single_value(self) -> None:
         data = b"\x42" * 100
@@ -35,13 +35,13 @@ class TestEntropy:
         assert entropy == 0.0
 
     def test_entropy_laplace_smoothing(self) -> None:
-        # Small sample: bytes 0x41 0x42
+        # 小样本: 字节 0x41 0x42
         data = b"AABB"
         n = len(data)
         entropy = 0.0
         for byte_val in range(256):
             raw_count = data.count(byte_val)
-            count = raw_count + 1  # Laplace +1
+            count = raw_count + 1  # 拉普拉斯平滑 +1
             p = count / (n + 256)
             if p > 0:
                 entropy -= p * math.log2(p)
@@ -132,7 +132,7 @@ class TestPrintableRatio:
         ratio = sum(
             1 for c in s if 0x20 <= ord(c) <= 0x7E or c in "\n\r\t"
         ) / len(s)
-        # 3 printable out 6 = 0.5
+        # 3 个可打印 / 6 = 0.5
         assert 0.4 < ratio < 0.6
 
 
@@ -152,14 +152,14 @@ class TestEnglishScore:
         assert bigram_hits > 0
 
     def test_random_string_scores_low(self) -> None:
-        s = "zxqjv kpwgy bmfcl dhrnt"  # Low-frequency letter combinations
+        s = "zxqjv kpwgy bmfcl dhrnt"  # 低频字母组合
         s_lower = s.lower()
         common_bigrams = {"th", "he", "in", "er", "an"}
         bigram_hits = sum(
             1 for i in range(len(s_lower) - 1)
             if s_lower[i:i + 2] in common_bigrams
         )
-        assert bigram_hits <= 1  # Very few common bigrams
+        assert bigram_hits <= 1  # 极少常见二元组
 
     def test_score_range(self) -> None:
         scores = []
@@ -211,7 +211,7 @@ class TestCJKDetection:
         assert has_cjk
 
     def test_korean_detected(self) -> None:
-        s = "가각갂"  # Basic Hangul
+        s = "가각갂"  # 基础谚文
         has_cjk = any(
             0x4E00 <= ord(c) <= 0x9FFF or
             0x3040 <= ord(c) <= 0x309F or

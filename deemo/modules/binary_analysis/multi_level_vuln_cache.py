@@ -25,7 +25,6 @@ class CacheEntry:
 
 
 class LRUMemoryCache:
-    """L1 in-memory LRU cache."""
 
     def __init__(self, max_size: int = 512):
         self.max_size = max_size
@@ -54,7 +53,6 @@ class LRUMemoryCache:
 
 
 class DiskCache:
-    """L2 disk-backed cache."""
 
     def __init__(self, cache_dir: str = ""):
         self.cache_dir = cache_dir or os.path.join(
@@ -92,7 +90,6 @@ class DiskCache:
 
 
 class MultiLevelVulnCache:
-    """Two-level vulnerability analysis cache (L1 memory + L2 disk)."""
 
     def __init__(self, l1_size: int = 512, cache_dir: str = ""):
         self.l1 = LRUMemoryCache(l1_size)

@@ -27,7 +27,7 @@ from modules.analysis.dynamic.src.tracing import (
 
 
 class TestEntropyScanPass:
-    """Test entropy scanning pass"""
+    """测试熵扫描阶段"""
 
     def test_empty_data_entropy_zero(self):
         """Empty data entropy 0"""
@@ -73,7 +73,7 @@ class TestEntropyScanPass:
 
 
 class TestDynamicAnalysisEngine:
-    """Test main engine"""
+    """测试主引擎"""
 
     def test_engine_initialization(self):
         """Engine 初始化 errors"""
@@ -267,7 +267,7 @@ class TestIntelPTDecoder:
 
 
 class TestHWTraceAnalyzer:
-    """Test hardware trace analyzer"""
+    """测试硬件追踪分析器"""
 
     def test_collect_trace(self):
         """collect_trace succeed binary"""

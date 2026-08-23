@@ -191,7 +191,6 @@ class DecompilerValidator:
             logger.info(f"Ground truth loaded: {len(self.ground_truth_lines)} lines")
 
     def _load_ground_truth(self) -> None:
-        # 加载 ground truth source file, provided
         if not self.ground_truth_path or not os.path.exists(self.ground_truth_path):
             self.ground_truth_lines = []
             return

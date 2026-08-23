@@ -1,33 +1,6 @@
 # 多污点 + 控制流标记 -> Spectre v1/v2/v4 检测
-# 移除装饰性引用, 替换为 Schwartz et al.
-"""
-二进制级推测执行小工具检测器 - Spectre 类漏洞的静态发现。
-
-现有常量时间验证 (const_time_pipeline.py) 检测秘密依赖的分支/访存-
-假设 CPU 按程序顺序执行。推测执行打破此假设:
-  - 即使分支条件依赖秘密, CPU 可能推测执行错误路径
-  - 推测执行期间的访存会改变缓存状态 → 可被侧信道观测
-  - 传统的"无秘密依赖分支"规则不充分
-
-本模块在二进制 IR 层检测三类 Spectre 小工具:
-  1. Bounds-check bypass (Spectre v1): 数组边界检查→推测越界访问
-  2. Branch target injection (Spectre v2): 间接跳转目标可被污染
-  3. Speculative store bypass (Spectre v4): 推测执行期间的 store-to-load 转发
-
-检测方法:
-  - 多污点追踪: 秘密输入→条件分支→推测执行的访存路径
-  - 不确定性跟踪: 区分 confirmed gadget (必然可利用) vs potential (条件触发)
-  - 缓存效应建模: 仅标记会改变缓存状态 (非寄存器) 的推测访存
-
-ref: SCOUT-CT - multi-taint + uncertainty tracking for
-     binary-level CT analysis, 本项目将其 uncertainty tracking 扩展到推测执行场景
-ref: ExfilState - timer-free cache side channel discovery
-ref: Spectre - Spectre v1/v2/v4 的原始论文,
-     本模块的 gadget 分类 (bounds-check-bypass/branch-target-injection/store-bypass)
-     直接对应其三类 Spectre 变体
-ref: 多污点追踪 - 二进制级污点分析基础,
-     本项目将其适配到推测执行场景 (控制流标记+条件分支标记)
-"""
+# 二进制级推测执行小工具检测器: 秘密依赖分支 + 推测访存路径追踪.
+# 检测三类: bounds-check bypass (v1) / branch target injection (v2) / store bypass (v4).
 
 from __future__ import annotations
 

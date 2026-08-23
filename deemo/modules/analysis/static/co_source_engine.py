@@ -13,11 +13,6 @@
 #   若分配根与写入根等价 (同栈槽/同参数/同返回值且线性变换相同),
 #   则判定 SAFE (分配=写入); 若写入根 = 分配根 + k (k>0) → 溢出 k 字节.
 #
-# 与现有组件的差异 (论文贡献点):
-#   - SymbolicSizeTracker (symbolic_size_expr.py) 前向传播符号表达式,
-#     遇到 call 即清空 rax, 跨函数/循环精度差.
-# 本引擎仅依赖后向线性归约, 不构建全局符号表达式,
-#     天然处理寄存器 clobber 与函数边界 (遇到 call 即终止或标记未知).
 #
 
 from typing import Dict, List, Optional, Tuple

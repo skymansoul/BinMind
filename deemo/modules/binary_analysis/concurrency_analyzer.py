@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-from typing import List, Optional
-"""Concurrency analyzer: thread scheduling simulation and data race detection.
-Uses radare2 ESIL to simulate thread interleaving and heuristically detect lock-free shared accesses."""
-
 import logging
 import os
 import subprocess
+from typing import List, Optional
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -13,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ThreadOperation:
-    """Thread operation record."""
     tid: int = 0
     op: str = ''
     addr: int = 0
@@ -28,7 +24,6 @@ class ThreadOperation:
 
 @dataclass
 class DataRace:
-    """Data race record."""
     addr: int = 0
     ops_a: List = field(default_factory=list)
     ops_b: List = field(default_factory=list)
@@ -43,7 +38,6 @@ class DataRace:
 
 @dataclass
 class AtomicityViolation:
-    """Atomicity violation record."""
     fna: str = ''
     fnb: str = ''
     miss_lock: str = ''
@@ -58,7 +52,6 @@ class AtomicityViolation:
 
 @dataclass
 class AnalysisResult:
-    """Concurrency analysis result container."""
     ok: bool = False
     races: List = field(default_factory=list)
     viols: List = field(default_factory=list)
@@ -72,7 +65,6 @@ class AnalysisResult:
 
 
 class ThreadScheduler:
-    """Thread scheduler based on radare2 ESIL simulation."""
 
     def __init__(self, binpath):
         if binpath is None:
@@ -81,7 +73,6 @@ class ThreadScheduler:
         self._sched = []
 
     def instrument(self):
-        """ESIL instruction-level instrumentation to extract thread operations."""
         try:
             r = subprocess.run(
                 ['r2', '-q', '-c', 'aa; aei; aeim 1 entry0', self._path],
@@ -97,16 +88,13 @@ class ThreadScheduler:
             logger.debug("suppressed", exc_info=True)
 
     def get_schedule(self):
-        """Return the collected thread schedule."""
         return self._sched
 
 
 class RaceDetector:
-    """Data race detector using heuristics."""
 
     @staticmethod
     def detect(ops):
-        """Detect: same address accessed by multiple threads without locks -> data race."""
         if ops is None:
             return []
         by_addr = {}
@@ -140,7 +128,6 @@ class RaceDetector:
 
 
 class ConcurrencyAnalyzer:
-    """Concurrency analyzer entry point."""
 
     def __init__(self, binpath):
         if binpath is None:
@@ -150,7 +137,6 @@ class ConcurrencyAnalyzer:
         self._detector = RaceDetector()
 
     def run(self):
-        """Execute a full concurrency analysis."""
         try:
             self._scheduler.instrument()
             ops = self._scheduler.get_schedule()
@@ -162,5 +148,4 @@ class ConcurrencyAnalyzer:
 
 
 def create_concurrency_analyzer(binpath):
-    """Factory function."""
     return ConcurrencyAnalyzer(binpath)

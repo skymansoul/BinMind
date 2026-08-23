@@ -272,7 +272,6 @@ class DistilledVulnDetectorAnalyzer:
 
 
 class ModelWeights:
-    """Container for model weights with basic serialization."""
 
     __slots__ = ('m_layers', 'm_config')
 
@@ -284,14 +283,11 @@ class ModelWeights:
         return len(self.m_layers)
 
     def clone_mw(self):
-        """Deep copy weights."""
         import copy
         return ModelWeights(copy.deepcopy(self.m_layers), dict(self.m_config))
 
 
 class TeacherModel:
-    """Simulated large teacher model. In production, this would be a pre-trained
-    transformer or GNN with millions of parameters."""
 
     __slots__ = ('m_weights', 'm_temperature', 'm_num_classes')
 
@@ -303,7 +299,6 @@ class TeacherModel:
     # 合成教师权重
     def _init_teacher_weights(self):
         layers = []
-        # Deep network: 8 layers
         dims = [(256, 512), (512, 512), (512, 512), (512, 256),
                 (256, 256), (256, 128), (128, 64), (64, self.m_num_classes)]
         di = 0
@@ -316,7 +311,6 @@ class TeacherModel:
         return layers
 
     def predict_tm(self, features):
-        """Teacher forward pass returning soft labels (logits)."""
         if features is None:
             return [0.0] * self.m_num_classes
 
@@ -328,7 +322,6 @@ class TeacherModel:
             layer = self.m_weights[layer_idx]
             w = layer['weight']
             b = layer['bias']
-            # Linear transform
             out = []
             ri = 0
             while ri < len(w):
@@ -340,7 +333,6 @@ class TeacherModel:
                 out.append(total)
                 ri += 1
 
-            # Activation
             if layer['activation'] == 'relu':
                 out = [max(v, 0.0) for v in out]
             elif layer['activation'] == 'softmax':
@@ -392,10 +384,6 @@ class TeacherModel:
 
 
 class StudentModel:
-    """Compact student model designed for fast inference.
-
-    Much smaller than teacher (3 layers vs 8) but learns to mimic teacher behavior.
-    """
 
     __slots__ = ('m_weights', 'm_temperature', 'm_num_classes', 'm_frozen_layers', 'm_ema_weights')
 
@@ -429,7 +417,6 @@ class StudentModel:
         self.m_ema_weights = copy.deepcopy(self.m_weights)
 
     def predict_sm(self, features):
-        """Student forward pass."""
         if features is None:
             return [0.0] * self.m_num_classes
 
@@ -577,14 +564,12 @@ class StudentModel:
             li += 1
 
     def freeze_layer_sm(self, layer_idx):
-        """Freeze a layer (no gradient updates during training)."""
         self.m_frozen_layers.add(layer_idx)
 
     def unfreeze_all_sm(self):
         self.m_frozen_layers.clear()
 
     def get_trainable_layers_sm(self):
-        """Return indices of trainable layers."""
         result = []
         li = 0
         while li < len(self.m_weights):
@@ -594,7 +579,6 @@ class StudentModel:
         return result
 
     def apply_gradients_sm(self, gradients, lr):
-        """Apply computed gradients to trainable parameters."""
         for layer_idx, grad_data in gradients.items():
             if layer_idx in self.m_frozen_layers:
                 continue
@@ -615,8 +599,6 @@ class StudentModel:
 
 
 class DistillationLoss:
-    """Knowledge distillation loss: KL divergence between teacher and student soft labels
-    + optional hard-label cross-entropy."""
 
     __slots__ = ('m_alpha', 'm_temperature')
 
@@ -626,7 +608,6 @@ class DistillationLoss:
         self.m_temperature = temperature
 
     def compute_dl(self, student_logits, teacher_logits, hard_labels=None):
-        """Compute combined distillation loss."""
         if student_logits is None or teacher_logits is None:
             return 0.0
 
@@ -711,7 +692,6 @@ class ContrastivePreTrainer:
         if n < 2:
             return 0.0
 
-        # L2 normalize all embeddings
         normalized = [self.l2_normalize_cpt(e) for e in embeddings]
 
         # 构建相似度矩阵 S[i][j] = cos_sim(zi, zj) / tau
@@ -761,16 +741,6 @@ class ContrastivePreTrainer:
 
 
 class DistilledVulnDetector:
-    """Knowledge-distilled vulnerability detector.
-
-    Trains a compact student model to match a larger teacher's predictions,
-    achieving near-teacher accuracy with a fraction of the inference cost.
-
-    Enhancements:
-      - Adaptive temperature scheduling via cosine annealing.
-      - EMA (Exponential Moving Average) shadow weights for stable inference.
-      - CLAP-inspired contrastive pre-training for better embedding separation.
-    """
 
     __slots__ = ('m_teacher', 'm_student', 'm_loss_fn', 'm_trained',
                  'm_training_history', 'm_contrastive_trainer', 'm_use_ema_inference')
@@ -786,7 +756,6 @@ class DistilledVulnDetector:
 
     def distill_dv(self, features, labels, epochs=20, batch_size=32, lr=0.001,
                     use_adaptive_temp=False, use_ema=False, ema_decay=0.999):
-        """Train student model via knowledge distillation."""
         if features is None or labels is None or len(features) == 0:
             __dbg.warning("distill: empty input")
             return
@@ -827,16 +796,13 @@ class DistilledVulnDetector:
                     # Teacher 前向传播
                     teacher_out = self.m_teacher.predict_tm(feat)
 
-                    # Student forward + compute loss
                     student_out = self.m_student.predict_sm(feat)
                     loss = self.m_loss_fn.compute_dl(student_out, teacher_out, [lbl])
                     batch_loss += loss
 
-                    # Simple 梯度 approximation: move student toward teacher
                     ci = 0
                     while ci < len(student_out):
                         diff = (teacher_out[ci] - student_out[ci]) * lr * 0.5
-                        # Update last layer bias as a simple 梯度 step
                         last_layer = self.m_student.m_weights[-1]
                         last_layer['bias'][ci] += diff
                         ci += 1
@@ -927,11 +893,6 @@ class DistilledVulnDetector:
         __dbg.info("Contrastive pretraining complete - embedding space primed for distillation")
 
     def progressive_freeze_dv(self, epochs_per_stage=10):
-        """Progressive layer freezing: freeze layers from bottom up over training stages.
-
-        After initial distillation, progressively freeze earlier layers to reduce overfitting
-        and speed up fine-tuning.
-        """
         n_layers = len(self.m_student.m_weights)
         if n_layers <= 1:
             return
@@ -945,7 +906,6 @@ class DistilledVulnDetector:
                 break
 
     def predict_dv(self, features):
-        """Predict vulnerability probability using the distilled student model."""
         if not self.m_trained:
             __dbg.warning("Model not trained yet")
             return {'vulnerable': False, 'confidence': 0.0}
@@ -956,7 +916,6 @@ class DistilledVulnDetector:
         # 推理时优先用 EMA 权重（若启用）
         predict_fn = self.m_student.predict_with_ema_sm if self.m_use_ema_inference else self.m_student.predict_sm
 
-        # Single sample
         if isinstance(features[0], (int, float)):
             probs = predict_fn(features)
             vuln_idx = 1 if len(probs) > 1 else 0
@@ -966,7 +925,6 @@ class DistilledVulnDetector:
                 'probabilities': probs,
             }
 
-        # Batch
         results = []
         fi = 0
         while fi < len(features):
@@ -981,10 +939,6 @@ class DistilledVulnDetector:
         return results
 
     def evaluate_dv(self, features, labels):
-        """Evaluate student model accuracy against ground truth.
-
-        Returns dict with accuracy, precision, recall, f1.
-        """
         if features is None or labels is None:
             return {}
         predictions = self.predict_dv(features)
@@ -1011,10 +965,6 @@ class DistilledVulnDetector:
         return {'accuracy': acc, 'precision': prec, 'recall': rec, 'f1': f1, 'tp': tp, 'fp': fp, 'tn': tn, 'fn': fn}
 
     def generate_benign_samples_dv(self, features, count=10):
-        """Generate synthetic benign feature vectors by interpolating between benign samples.
-
-        Useful for data augmentation when negative samples are scarce.
-        """
         if features is None or len(features) < 2:
             return []
         benign_feats = []
@@ -1042,14 +992,9 @@ class DistilledVulnDetector:
         return generated
 
     def self_distill_dv(self, features, epochs=10, lr=0.0005):
-        """Self-distillation: use student as its own teacher for refinement.
-
-        The student's own predictions at higher temperature serve as soft targets.
-        """
         if features is None or len(features) == 0:
             return
 
-        # Temporarily increase temperature
         original_temp = self.m_student.m_temperature
         self.m_student.m_temperature = original_temp * 2.0
 
@@ -1060,17 +1005,14 @@ class DistilledVulnDetector:
             while fi < len(features):
                 feat = features[fi]
 
-                # Student as teacher (higher temp)
                 soft_target = self.m_student.predict_sm(feat)
 
-                # Reset temp for student forward
                 self.m_student.m_temperature = original_temp
                 student_out = self.m_student.predict_sm(feat)
 
                 loss = self.m_loss_fn.compute_dl(student_out, soft_target)
                 total_loss += loss
 
-                # Restore higher temp
                 self.m_student.m_temperature = original_temp * 2.0
                 fi += 1
 
@@ -1081,10 +1023,6 @@ class DistilledVulnDetector:
         self.m_student.m_temperature = original_temp
 
     def get_inference_latency_ratio_dv(self):
-        """Estimate student vs teacher inference speedup.
-
-        Based on parameter count ratio.
-        """
         teacher_params = sum(
             len(l['weight']) * (len(l['weight'][0]) if l['weight'] else 0) + len(l['bias'])
             for l in self.m_teacher.m_weights)

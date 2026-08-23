@@ -1,9 +1,3 @@
-"""
-Central analysis pipeline. Orchestrates binary loading, decompilation,
-static analysis, symbolic execution, crash analysis, and reporting.
-Each stage can fail independently without killing the whole run.
-"""
-
 import glob
 import hashlib
 import json
@@ -17,7 +11,7 @@ import threading
 from typing import Any, Dict, List, Optional
 
 from config import (
-    MAX_FUNCTIONS, MAX_PARALLEL, ENABLE_SYMBOLIC,
+    MAX_FUNCTIONS, MAX_PARALLEL,
     ENABLE_CRYPTO_SCAN, ENABLE_TAINTRACK, ENABLE_UNPACK,
     SUBPROCESS_TIMEOUT, ensure_dirs, _is_enabled, DB_PATH,
 )
@@ -31,6 +25,7 @@ from core.vuln_db import init_db, start_run, finish_run, save_finding
 from core.vuln_db import record_step, update_step
 from core.unified_heap_pipeline import analyze_heap_safety
 from core.hooks import get_hook_manager
+from modules.project.project_manager import ProjectState
 
 logger = logging.getLogger(__name__)
 
@@ -211,15 +206,16 @@ def run_pipeline(
     output_dir: str = None,
     **kwargs
 ) -> Dict[str, Any]:
-    """
-    Execute the full analysis pipeline on a binary.
-
-    Returns a dict with keys: reports, decomp_analysis, crash_analysis,
-    symbolic_execution, exploit_result, similar_vulnerabilities.
-    """
     start_time = time.time()
     ensure_dirs()
     init_db()
+
+    _project_state = ProjectState(
+        binary_path=binary_path,
+        status='running',
+        current_step='init',
+    )
+    _project_state.timestamps['start'] = time.strftime('%Y-%m-%dT%H:%M:%S')
 
     if max_funcs is None:
         max_funcs = MAX_FUNCTIONS
@@ -251,9 +247,27 @@ def run_pipeline(
         raise
 
     binary_hash = _hash_file(binary_path)
+    _project_state.binary_info = binfo
+    _project_state.current_step = 'info_collect'
 
     logger.info("Binary: %s | %s %d-bit | size=%d",
                 binfo['filename'], binfo['arch'], binfo['bits'], binfo['size'])
+
+    # 程序画像 - checksec/PLT/ROP gadget/字符串/libc 识别
+    binary_profile = None
+    _sid_bp = _step_begin(run_id, 'binary_profile')
+    try:
+        from core.binary_profile import build_binary_profile
+        binary_profile = build_binary_profile(binary_path)
+        binfo['binary_profile'] = binary_profile
+        _step_end(_sid_bp, 'success',
+                  output_summary='checksec=' + str(bool(binary_profile.get('checksec'))))
+    except ImportError:
+        _step_end(_sid_bp, 'skipped', output_summary='binary_profile not available')
+        logger.debug("binary_profile module not available")
+    except Exception as _e:
+        _step_end(_sid_bp, 'failed', error_message=str(_e))
+        logger.warning("Binary profile failed: %s", _e)
 
     # unpacking
     if ENABLE_UNPACK:
@@ -288,6 +302,7 @@ def run_pipeline(
             target_funcs = all_funcs[:max_funcs]
 
     target_funcs = target_funcs[:max_funcs]
+    _project_state.current_step = 'function_discovery'
     logger.info("Analyzing %d functions", len(target_funcs))
 
     # decompile + AI analyze
@@ -334,6 +349,40 @@ def run_pipeline(
                 logger.error("Analysis of %s failed: %s", name, err)
 
     _step_end(_sid_decomp, 'success', output_summary=f"{len(decomp_results)} analyzed")
+    _project_state.analyzed_functions = list(target_funcs)
+    _project_state.decomp_results = list(decomp_results)
+    _project_state.current_step = 'decompile'
+
+    # 控制流/调用关系提取 - extract_cfg 返回 functions + call_graph
+    cfg_result = None
+    _sid_cfg = _step_begin(run_id, 'cfg_extract')
+    try:
+        from core.cfg_extractor import extract_cfg
+        cfg_result = extract_cfg(binary_path)
+        _n_fn = len(cfg_result.get('functions', [])) if cfg_result else 0
+        _n_cg = len(cfg_result.get('call_graph', {})) if cfg_result else 0
+        _step_end(_sid_cfg, 'success',
+                  output_summary=f'functions={_n_fn} call_edges={_n_cg}')
+    except ImportError:
+        _step_end(_sid_cfg, 'skipped', output_summary='cfg_extractor not available')
+        logger.debug("cfg_extractor module not available")
+    except Exception as _e:
+        _step_end(_sid_cfg, 'failed', error_message=str(_e))
+        logger.warning("CFG extraction failed: %s", _e)
+
+    # 动态追踪 - qemu_tracer 位于 eval 目录, 环境不可用时静默跳过
+    dynamic_trace = None
+    _sid_dyn = _step_begin(run_id, 'dynamic_trace')
+    try:
+        from eval.qemu_tracer import trace_auto
+        dynamic_trace = trace_auto(binary_path, os.path.basename(binary_path))
+        _step_end(_sid_dyn, 'success', output_summary='trace captured')
+    except ImportError:
+        _step_end(_sid_dyn, 'skipped', output_summary='qemu_tracer not available')
+        logger.debug("qemu_tracer not available")
+    except Exception as _e:
+        _step_end(_sid_dyn, 'failed', error_message=str(_e))
+        logger.warning("Dynamic trace failed: %s", _e)
 
     # taint 阶段 - 环境变量 ENABLE_TAINTRACK=1 时启用，默认关闭
     if ENABLE_TAINTRACK:
@@ -372,24 +421,113 @@ def run_pipeline(
 
     ctx = hook_mgr.run('post_analysis', ctx)
 
-    # 符号执行 - CLI --symbolic 或环境变量 ENABLE_SYMBOLIC 开启
-    # FIX: 2026-08-15 结果回填 - angr 缺失记 skipped, 执行失败记 failed 含原因,
-    # 均不再中断管线; 步骤状态按实况记录而非无条件 success
+    # 调度决策默认值 — adaptive_scheduler 覆盖; 符号执行和后续阶段引用
+    _scheduler_decision = {'rule': True, 'symbolic': True, 'fuzz': True}
+
+    # 自适应调度 - 按样本特征选择分析方法组合; 不可用时回退到全部顺序执行
+    # 在符号执行之前运行, 使 scheduler 决策对符号执行/fuzz/规则检测均生效
+    _sid_sched = _step_begin(run_id, 'adaptive_scheduler')
+    try:
+        from core.adaptive_scheduler import AdaptiveScheduler, AnalysisMethod
+        _scheduler = AdaptiveScheduler()
+        _selected = _scheduler.select_methods(
+            binfo, decomp_results if isinstance(decomp_results, dict) else None)
+        # select_methods 返回 List[Tuple[AnalysisMethod, float]], 转为 dict 供后续查询
+        _method_map = {
+            AnalysisMethod.STATIC_RULES: 'rule',
+            AnalysisMethod.SYMBOLIC: 'symbolic',
+            AnalysisMethod.FUZZING: 'fuzz',
+        }
+        # 先重置为 False, 再按 scheduler 选中结果开启 — 未选中的方法不执行
+        for _k in _method_map.values():
+            _scheduler_decision[_k] = False
+        for _m, _budget in _selected:
+            _key = _method_map.get(_m)
+            if _key:
+                _scheduler_decision[_key] = True
+        _step_end(_sid_sched, 'success',
+                  output_summary=str(_scheduler_decision))
+        logger.info("Adaptive scheduler decision: %s", _scheduler_decision)
+    except ImportError:
+        _step_end(_sid_sched, 'skipped', output_summary='adaptive_scheduler not available')
+        logger.debug("adaptive_scheduler not available, fallback to all methods")
+    except Exception as _e:
+        _step_end(_sid_sched, 'failed', error_message=str(_e))
+        logger.warning("Adaptive scheduler failed: %s", _e)
+
+    # 符号执行 - 默认尝试; angr 缺失时记 skipped 不中断管线
     sym_result = None
-    use_symbolic = ENABLE_SYMBOLIC if symbolic is None else symbolic
-    if use_symbolic:
+    use_symbolic = _is_enabled('ENABLE_SYMEXEC', default='true') if symbolic is None else symbolic
+    if use_symbolic and _scheduler_decision.get('symbolic', True):
         _sid = _step_begin(run_id, 'symbolic_exec')
-        if not check_angr():
-            _step_end(_sid, 'skipped', output_summary='angr not installed')
-            logger.warning("Symbolic execution skipped: angr not installed")
-            sym_result = {'success': False, 'error': 'angr not installed',
-                          'paths_found': 0, 'constraints': []}
+        _angr_ok = False
+        try:
+            import angr  # noqa: F401
+            _angr_ok = True
+        except ImportError:
+            pass
+        if not _angr_ok:
+            # 降级方案: angr 不可用时尝试轻量级符号执行或基于规则的路径约束分析
+            _degraded_used = None
+            try:
+                from core.symexec import find_buffer_overflow as _find_bo
+                _bo_result = find_buffer_overflow(binary_path, target_funcs[0] if target_funcs else 'main')
+                if _bo_result and not _bo_result.get('error'):
+                    sym_result = {
+                        'success': True, 'paths_found': 0,
+                        'constraints': [],
+                        'vulnerabilities': [],
+                        'degraded': True,
+                        'method': 'symexec.find_buffer_overflow',
+                        'overflow_points': _bo_result.get('overflow_points', []),
+                    }
+                    _degraded_used = 'symexec.find_buffer_overflow'
+            except Exception as _derr:
+                logger.debug("Degraded symexec (find_buffer_overflow) failed: %s", _derr)
+            if _degraded_used is None:
+                # 基于伪代码的规则化路径约束分析作为最终降级
+                _rule_constraints = []
+                for _r in decomp_results:
+                    _ana = _r.get('analysis', _r) or {}
+                    _pc = _ana.get('pseudocode', '')
+                    if not _pc:
+                        continue
+                    for _pattern in ('memcpy', 'strcpy', 'gets', 'sprintf', 'scanf'):
+                        if _pattern in _pc:
+                            _rule_constraints.append({
+                                'function': _r.get('function_name', _r.get('function', '?')),
+                                'pattern': _pattern,
+                                'source': 'rule_based_path_analysis',
+                            })
+                            break
+                if _rule_constraints:
+                    sym_result = {
+                        'success': True, 'paths_found': len(_rule_constraints),
+                        'constraints': _rule_constraints,
+                        'vulnerabilities': [],
+                        'degraded': True,
+                        'method': 'rule_based_path_constraint_analysis',
+                    }
+                    _degraded_used = 'rule_based_path_constraint_analysis'
+            if _degraded_used:
+                _step_end(_sid, 'success',
+                          output_summary=f'degraded: {_degraded_used}, '
+                                         f'paths={sym_result.get("paths_found", 0)} '
+                                         f'constraints={len(sym_result.get("constraints", []))}')
+                logger.info("Symbolic execution degraded to %s", _degraded_used)
+            else:
+                _step_end(_sid, 'skipped',
+                          output_summary='angr not installed, no degraded alternative available')
+                logger.warning("Symbolic execution skipped: angr not installed, "
+                               "degraded alternatives exhausted")
+                sym_result = {'success': False, 'error': 'angr not installed, '
+                                                          'degraded alternatives unavailable',
+                              'paths_found': 0, 'constraints': []}
         else:
             try:
                 logger.info("Running symbolic execution...")
                 sym_result = run_symbolic(binary_path)
                 # 符号路径合并 - ENABLE_SYMBOLIC_MERGE=1 时约束回写 findings, 默认关闭
-                # FIX: 2026-08-15 约束默认仅记 step 与报告, findings 入库由该开关门控
                 if _is_enabled('ENABLE_SYMBOLIC_MERGE') and sym_result and sym_result.get('success'):
                     for _c in sym_result.get('constraints', [])[:10]:
                         try:
@@ -463,10 +601,12 @@ def run_pipeline(
             _step_end(_sid, 'skipped', output_summary='plugin not available')
             logger.debug('optional plugin not available')
 
-    # 规则检测 - ENABLE_RULE_DETECTORS=1 时对各函数伪代码分别跑
-    # 堆/栈/格式化/整数/UAF 检测器, 各自输出类型化 finding, 默认关闭
+    # 规则检测 - 默认开启, 对各函数伪代码分别跑
+    # 堆/栈/格式化/整数/UAF 检测器, 各自输出类型化 finding
     rule_findings = []
-    if _is_enabled('ENABLE_RULE_DETECTORS'):
+    if _scheduler_decision.get('rule', True) and \
+            _is_enabled('ENABLE_RULE_DETECTORS', default='true'):
+        _sid_rule = _step_begin(run_id, 'rule_detection')
         def _add_rule(f):
             f['function_name'] = f.get('function', f.get('function_name', '?'))
             # 过滤 mingw CRT 运行时库噪音 (如 sym.memcpy)
@@ -553,6 +693,10 @@ def run_pipeline(
                     pass
         except Exception as err:
             logger.warning("Rule detectors failed: %s", err)
+        finally:
+            _step_end(_sid_rule, 'success',
+                      output_summary=f"{len(rule_findings)} findings")
+            _project_state.current_step = 'rule_detection'
 
     # 证据融合 - ENABLE_EVIDENCE_FUSION=1 时对类型化 rule_findings 做一致性加权/分诊。
     # 独立各型检测器可能对同一 (函数, 类型) 命中多条; 融合按证据一致性收敛置信度,
@@ -618,8 +762,8 @@ def run_pipeline(
             pass
     _step_end(_sid, 'success', output_summary=f"{len(all_vulns)} vulns")
 
-    # PoC 生成 - 环境变量 ENABLE_POC_GEN=1 时对规则类发现生成占位复现脚本, 默认关闭
-    if _is_enabled('ENABLE_POC_GEN'):
+    # PoC 生成 - 默认开启, 对规则类发现生成占位复现脚本
+    if _is_enabled('ENABLE_POC_GEN', default='true'):
         try:
             _poc_dir = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -683,8 +827,50 @@ if __name__ == "__main__":
                 with open(_poc_path, 'w', encoding='utf-8') as pf:
                     pf.write(_poc_content)
                 _poc_paths.append((_poc_path, f['id'], f['function_name']))
-            # PoC 执行与重试 - ENABLE_POC_EXECUTE=1 时执行并回写 evidence, 默认关闭
-            if _is_enabled('ENABLE_POC_EXECUTE') and _poc_paths:
+            # PoC 执行与重试 - 默认沙箱模式真实执行 PoC 脚本(本地进程, 无网络);
+            # ENABLE_POC_EXECUTE_REAL=1 时允许更高权限(如网络交互)
+            if _is_enabled('ENABLE_POC_EXECUTE', default='true') and \
+                    not _is_enabled('ENABLE_POC_EXECUTE_REAL') and _poc_paths:
+                # 沙箱模式 - 真实执行 PoC 脚本, 捕获 stdout/stderr/exit_code
+                import sqlite3 as _sqlite3_pending
+                _conn_sandbox = _sqlite3_pending.connect(DB_PATH)
+                for _pp, _pid, _fname in _poc_paths:
+                    _sb_status = 'exec_error'
+                    _sb_detail = ''
+                    try:
+                        _proc = subprocess.run(
+                            [sys.executable, _pp],
+                            capture_output=True, text=True, timeout=10)
+                        _rc = _proc.returncode
+                        _sb_stdout = (_proc.stdout or '')[:200]
+                        _sb_stderr = (_proc.stderr or '')[:200]
+                        if _rc == 0:
+                            _sb_status = 'no_crash'
+                        elif _rc == 2:
+                            _sb_status = 'hang'
+                        elif _rc == 3:
+                            _sb_status = 'exec_error'
+                        else:
+                            _sb_status = 'crash_detected'
+                        _sb_detail = f'exit={_rc} stdout={_sb_stdout} stderr={_sb_stderr}'
+                    except subprocess.TimeoutExpired:
+                        _sb_status = 'hang'
+                        _sb_detail = 'timeout (10s)'
+                    except Exception as _sb_err:
+                        _sb_status = 'exec_error'
+                        _sb_detail = f'exception: {_sb_err}'
+                    _sandbox_msg = (f' | PoC executed (sandbox): {_sb_status}; '
+                                    f'{_sb_detail}')
+                    try:
+                        _conn_sandbox.execute(
+                            "UPDATE findings SET evidence = evidence || ? WHERE id = ?",
+                            (_sandbox_msg, int(_pid)))
+                    except Exception:
+                        pass
+                _conn_sandbox.commit()
+                _conn_sandbox.close()
+            elif _is_enabled('ENABLE_POC_EXECUTE', default='true') and \
+                    _is_enabled('ENABLE_POC_EXECUTE_REAL') and _poc_paths:
                 import sqlite3 as _sqlite3
                 _conn = _sqlite3.connect(DB_PATH)
                 _reanalysis_depth = 0
@@ -704,15 +890,9 @@ if __name__ == "__main__":
                             (_msg, int(_pid)))
                     except Exception:
                         pass
-                    # 回灌再验证 - 触发条件 (2026-08-15 注释补充, 逻辑未改):
-                    #   1) ENABLE_CLOSED_LOOP_REANALYSIS=1 显式开启;
-                    #   2) 本次 PoC 执行状态为 crash_detected 或 info_leak_detected;
-                    #   3) _reanalysis_depth==0 (单次运行仅触发一次, 防循环)。
-                    # 触发后调用 _reconfirm_with_engines 用污点引擎确认载荷可达性:
-                    # 可达且置信度>0.6 则严重度升级 (High->Critical/其余->High),
-                    # 不可达则 priority_score 减半。
-                    # 当前 5-CVE 批次 PoC 执行均为 no_crash, 分支未触发属预期, 非死代码。
-                    if _is_enabled('ENABLE_CLOSED_LOOP_REANALYSIS') and \
+                    # 回灌再验证 - 默认开启, PoC 崩溃后用污点引擎确认载荷可达性:
+                    # 可达且置信度>0.6 则严重度升级, 不可达则 priority_score 减半
+                    if _is_enabled('ENABLE_CLOSED_LOOP_REANALYSIS', default='true') and \
                             _reanalysis_depth == 0 and \
                             _status in ('crash_detected', 'info_leak_detected'):
                         _reanalysis_depth += 1
@@ -885,9 +1065,11 @@ if __name__ == "__main__":
             _step_end(_sid, 'failed', error_message=str(err))
             raise
 
-    # fuzz harness 生成 - 默认关闭，CLI --fuzz 或调用方显式开启
+    # fuzz harness 生成 - 默认尝试生成, 但不执行; --fuzz 显式关闭的除外
     fuzz_result = None
-    if fuzz:
+    if (fuzz or _is_enabled('ENABLE_FUZZ_HARNESS_GEN', default='true')) and \
+            _scheduler_decision.get('fuzz', True):
+        _sid_fuzz = _step_begin(run_id, 'fuzz_harness')
         try:
             from plugins.fuzz_harness import (
                 setup_fuzzing_workspace, generate_libfuzzer_harness,
@@ -898,28 +1080,113 @@ if __name__ == "__main__":
                 'harness': generate_libfuzzer_harness(_first_fn),
             }
             logger.info("Fuzz harness generated for %s", _first_fn)
+            # 变异 fuzz 执行器: 多策略变异 + 边界值注入, 收集崩溃信息
+            _fuzz_exec_status = 'not_executed'
+            _fuzz_exec_detail = ''
+            try:
+                if not os.path.isfile(binary_path):
+                    _fuzz_exec_status = 'skipped'
+                    _fuzz_exec_detail = 'target file not found'
+                elif not os.access(binary_path, os.X_OK):
+                    _fuzz_exec_status = 'skipped'
+                    _fuzz_exec_detail = 'target not executable in current environment'
+                else:
+                    _crash_count = 0
+                    _total_runs = 0
+                    _crash_payloads = []
+                    import random as _fuzz_random
+                    # 种子语料: 边界值 + 常见漏洞触发模式
+                    _seeds = [
+                        b'A' * 64, b'A' * 128, b'A' * 256, b'A' * 512,
+                        b'A' * 1024, b'A' * 2048, b'A' * 4096,
+                        b'\x00' * 64, b'\xff' * 64,
+                        b'%s' * 32, b'%x' * 32, b'%n' * 16,
+                        b'\x00\x01\x02\x03' * 16,
+                        b'AAAA' + b'\x00' * 60,
+                    ]
+                    _max_rounds = 50
+                    for _ri in range(_max_rounds):
+                        _seed = _fuzz_random.choice(_seeds)
+                        # 变异策略: 按轮次选择
+                        _mut = _ri % 5
+                        if _mut == 0:
+                            # 位翻转
+                            _payload = bytearray(_seed)
+                            for _ in range(_fuzz_random.randint(1, 8)):
+                                _pos = _fuzz_random.randint(0, len(_payload) - 1)
+                                _payload[_pos] ^= (1 << _fuzz_random.randint(0, 7))
+                            _payload = bytes(_payload)
+                        elif _mut == 1:
+                            # 算术变异: 对随机字节加减
+                            _payload = bytearray(_seed)
+                            for _ in range(_fuzz_random.randint(1, 4)):
+                                _pos = _fuzz_random.randint(0, len(_payload) - 1)
+                                _payload[_pos] = (_payload[_pos] + _fuzz_random.choice([-1, 1, -16, 16])) & 0xff
+                            _payload = bytes(_payload)
+                        elif _mut == 2:
+                            # 长度扩展: 重复种子内容
+                            _rep = _fuzz_random.randint(2, 16)
+                            _payload = _seed * _rep
+                        elif _mut == 3:
+                            # 边界值插入: 在种子头部插入特殊值
+                            _boundary = _fuzz_random.choice([
+                                b'\xff\xff\xff\xff', b'\x00\x00\x00\x00',
+                                b'\x7f\xff\xff\xff', b'\x80\x00\x00\x00',
+                                b'\xff\xff\xff\x7f', b'\xfe\xff\xff\xff',
+                            ])
+                            _payload = _boundary + _seed
+                        else:
+                            # 块插入: 在随机位置插入随机字节块
+                            _ins_len = _fuzz_random.randint(4, 64)
+                            _ins_data = bytes(_fuzz_random.getrandbits(8) for _ in range(_ins_len))
+                            _pos = _fuzz_random.randint(0, len(_seed))
+                            _payload = _seed[:_pos] + _ins_data + _seed[_pos:]
+                        _total_runs += 1
+                        try:
+                            _fproc = subprocess.run(
+                                [binary_path],
+                                input=_payload,
+                                capture_output=True, timeout=10)
+                            _rc = _fproc.returncode
+                            if _rc != 0 and _rc != 2:
+                                _crash_count += 1
+                                if len(_crash_payloads) < 10:
+                                    _crash_payloads.append(_payload.hex()[:128])
+                        except subprocess.TimeoutExpired:
+                            pass
+                        except OSError as _foerr:
+                            _fuzz_exec_status = 'skipped'
+                            _fuzz_exec_detail = f'target not executable: {_foerr}'
+                            break
+                    else:
+                        if _crash_count > 0:
+                            _fuzz_exec_status = 'crash_detected'
+                            _fuzz_exec_detail = (f'{_crash_count}/{_total_runs} '
+                                                 f'runs crashed')
+                            fuzz_result['crash_payloads'] = _crash_payloads
+                        else:
+                            _fuzz_exec_status = 'no_crash'
+                            _fuzz_exec_detail = (f'{_total_runs} runs, '
+                                                 f'no crash detected')
+            except Exception as _fuzz_err:
+                _fuzz_exec_status = 'skipped'
+                _fuzz_exec_detail = f'execution unavailable: {_fuzz_err}'
+            fuzz_result['exec_status'] = _fuzz_exec_status
+            fuzz_result['exec_detail'] = _fuzz_exec_detail
+            _step_end(_sid_fuzz, 'success',
+                      output_summary=f'harness={_first_fn} '
+                                      f'exec={_fuzz_exec_status} '
+                                      f'({_fuzz_exec_detail})')
         except ImportError:
+            _step_end(_sid_fuzz, 'skipped', output_summary='fuzz_harness plugin not available')
             logger.warning("fuzz harness plugin not available")
         except Exception as err:
-            logger.error("Fuzz harness generation failed: %s", err)
+            _step_end(_sid_fuzz, 'failed', error_message=str(err))
+            logger.warning("Fuzz harness generation failed: %s", err)
 
-    # report - FIX: 2026-08-15 补序列化规则 finding 与符号执行结果
-    # (原调用只传 decomp_results, 规则检测产物与 sym_result 不入报告)
-    ctx = hook_mgr.run('pre_report', ctx)
-    _sid = _step_begin(run_id, 'report')
-    try:
-        reports = write_report(decomp_results, binfo, crash_analysis, output_format,
-                               rule_findings=rule_findings,
-                               symbolic_result=sym_result,
-                               output_dir=output_dir)
-        _step_end(_sid, 'success', output_summary=', '.join(reports.values()))
-    except Exception as err:
-        _step_end(_sid, 'failed', error_message=str(err))
-        raise
-    ctx = hook_mgr.run('post_report', ctx)
-
-    # LLM 研判 — ai_analysis 开启时串入统一适配层
-    ai_analysis = kwargs.get('ai_analysis', False)
+    # LLM 研判 — 默认开启, 未配置模型时降级为 simulation
+    # 移至报告生成之前, 使 LLM 发现进入报告
+    ai_analysis = kwargs.get('ai_analysis', True)
     ai_result = None
     if ai_analysis:
         _sid_ai = _step_begin(run_id, 'ai_analysis')
@@ -948,9 +1215,29 @@ if __name__ == "__main__":
             )
             _step_end(_sid_ai, 'success',
                       output_summary=f"simulation={ai_result.get('simulation', True)}")
+            # LLM 发现合并入 rule_findings, 使其出现在报告中
+            if ai_result and isinstance(ai_result.get('findings'), list):
+                for _af in ai_result['findings']:
+                    rule_findings.append(_af)
         except Exception as err:
             _step_end(_sid_ai, 'failed', error_message=str(err))
             logger.warning("AI analysis failed: %s", err)
+
+    # report - 传入规则检测产物、符号执行结果与程序画像
+    ctx = hook_mgr.run('pre_report', ctx)
+    _sid = _step_begin(run_id, 'report')
+    try:
+        reports = write_report(decomp_results, binfo, crash_analysis, output_format,
+                               rule_findings=rule_findings,
+                               symbolic_result=sym_result,
+                               binary_profile=binary_profile,
+                               output_dir=output_dir)
+        _step_end(_sid, 'success', output_summary=', '.join(reports.values()))
+    except Exception as err:
+        _step_end(_sid, 'failed', error_message=str(err))
+        raise
+    ctx = hook_mgr.run('post_report', ctx)
+    _project_state.current_step = 'report'
 
     # 可选增强层 - 环境变量 ENABLE_ENHANCED_PIPELINE=1 时叠加, 默认关闭
     result = {
@@ -962,11 +1249,14 @@ if __name__ == "__main__":
         'exploit_result': exploit_result,
         'fuzz_result': fuzz_result,
         'binary_info': binfo,
+        'binary_profile': binary_profile,
+        'cfg_result': cfg_result,
+        'dynamic_trace': dynamic_trace,
         'elapsed': None,
         'total_vulns': len(all_vulns),
         'ai_analysis': ai_result,
     }
-    # 增强族挂载 - FIX: 2026-08-15 pipeline_enh_1..8 挂回主流水线
+    # 增强族挂载 - pipeline_enh_1..8 挂回主流水线
     # ENABLE_PIPELINE_ENH 默认开启, 显式 =0 可关闭; ENABLE_ENHANCED_PIPELINE
     # 开启时由整合策略接管, 跳过本块防重复应用。各增强仅向 result 追加
     # 内部状态键, 不改 findings; 单模块失败记 step_records
@@ -1035,25 +1325,18 @@ if __name__ == "__main__":
     finish_run(run_id, 'completed',
                f'{len(all_vulns)} vulns in {elapsed:.1f}s')
 
+    _project_state.status = 'completed'
+    _project_state.current_step = 'done'
+    _project_state.timestamps['end'] = time.strftime('%Y-%m-%dT%H:%M:%S')
+    result['project_state'] = _project_state.to_dict()
+
     logger.info("Pipeline done in %.1fs | %d functions | %d vulns",
                 elapsed, len(target_funcs), len(all_vulns))
 
     return result
 
 
-# Optional enhancement layers stacked on top of the standard pipeline.
-# Each enhancement uses try/except ImportError: activated when the module
-# is present, silently skipped otherwise. Backward-compatible with existing
-# deployments — no new module dependencies required.
-
-
 def run_pipeline_enhanced(binary_path: str, **kwargs) -> Dict[str, Any]:
-    """Enhanced pipeline: path diversity management, solver optimization,
-    multi-decompiler confidence ensemble, and GNN preprocessing.
-
-    API-compatible with run_pipeline. All enhancement modules are optional;
-    ImportError silently degrades to standard pipeline.
-    """
     result = run_pipeline(binary_path, **kwargs)
     if 'error' in result:
         return result

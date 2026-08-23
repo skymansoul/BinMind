@@ -27,7 +27,7 @@ class TestIRLifter:
 
 
 class TestLifting:
-    """Basic lifting functionality (hardware deps)"""
+    """基础提升功能测试 (依赖硬件)"""
 
     def test_nop_lifting(self):
         """Try lifting NOP instructions"""

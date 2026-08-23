@@ -74,8 +74,7 @@ def _build_feature_vector(call_count: int, avg_us: float, stddev_us: float,
                           p95_us: int, max_us: int, total_us: int,
                           call_depth_avg: float, thread_diversity: float,
                           duration_entropy: float) -> List[float]:
-    """从函数统计量构建 8 维归一化特征向量 — 嵌入投影的输入端。
-    各维度经 log 压缩和缩放，避免长尾分布扭曲语义空间。"""
+    # 从函数统计量构建8维归一化特征向量, log压缩+缩放避免长尾分布扭曲语义空间.
     rough_hotness = (call_count * avg_us) / 2000.0  # 预衰减热度近似，避免与衰减计算的循环依赖
     features = [0.0] * 8
     features[0] = math.log1p(call_count) / 10.0
@@ -89,8 +88,7 @@ def _build_feature_vector(call_count: int, avg_us: float, stddev_us: float,
     return features
 
 def _project_to_embedding(features: List[float]) -> List[float]:
-    """线性投影 + L2 归一化 → 8 维嵌入向量。
-    投影矩阵近似 CLAP 式对比学习的跨模态对齐——将统计特征映射到与威胁原型可比的语义空间。"""
+    # 线性投影+L2归一化→8维嵌入; 投影矩阵近似CLAP式跨模态对齐, 将统计特征映射到与威胁原型可比的语义空间.
     dim = len(_PROJECTION_MATRIX)
     embedded = [0.0] * dim
     i = 0
@@ -147,11 +145,7 @@ class Profiler:
             self._arrival_last[wf_key] = now_ts
 
     def _compute_adaptive_half_life(self, func_key: Tuple[str,int]) -> Tuple[float, float]:
-        """自适应半衰期计算 — 基于采样到达间隔的变异系数(CV)动态调节。
-        CV > 0.5：突发采样 → 短半衰期 15s，侧重近期行为
-        CV < 0.2：稳态采样 → 大半衰期 60s，保留历史信息
-        中间值线性插值，EMA 平滑避免跳变。
-        返回 (半衰期_秒, 变异系数)。"""
+        # 自适应半衰期: CV>0.5突发→短半衰期15s, CV<0.2稳态→长半衰期60s, 中间线性插值+EMA平滑.
         deltas = self._arrival_deltas.get(func_key)
         if not deltas or len(deltas) < 3:
             return 30.0, 0.0
@@ -232,8 +226,7 @@ class Profiler:
         except Exception as e: logger.warning(f"Frida collection aborted: {e}"); self._simulate()
 
     def _pin_collect(self, runner, timeout_sec):
-        """Intel PIN 后端桩——通过 `pin -t` 注入 pintool 收集基本块执行计数。
-        当前为桩实现，生产环境需替换为实际 PIN 工具链调用。"""
+        # Intel PIN后端桩-通过pin -t注入pintool收集基本块执行计数; 当前为桩, 生产环境需替换实际PIN工具链.
         logger.info("PIN backend selected; falling back to simulation (PIN toolchain not wired)")
         self._simulate()
 

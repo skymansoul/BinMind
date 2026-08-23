@@ -1,7 +1,5 @@
-"""二进制级抽象解释引擎 - objdump上的跨步区间VSA + 跨函数堆数据流.
-理论: Balakrishnan & Reps CC 2004 - VSA应用于反汇编.
-设计: 零外部依赖; 跨函数堆追踪; 保守汇合→TOP; 后向约束窄化.
-"""
+# 二进制级抽象解释引擎 - objdump 上的跨步区间 VSA + 跨函数堆数据流.
+# 零外部依赖; 跨函数堆追踪; 保守汇合→TOP; 后向约束窄化.
 
 from typing import Dict, List, Optional, Set, Tuple
 

@@ -70,10 +70,10 @@ class CachedConstraint:
         return entry_to_dict(self)
 
 
-# CacheTelemetry: 类 Span 的操作延迟追踪器
-# 按操作类型 (/put/evict/vacuum) 分开记录耗时到环形缓冲区
-# 容量上限 TELEMETRY_RING_CAPACITY，自动丢弃最旧样本
-# 对 /put 的写路径要求 O(1) 追加，不分配新内存（pre-alloc buffer）
+# CacheTelemetry: Span 式操作延迟追踪器
+# 按操作类型 (get/put/evict/vacuum) 分开记录耗时到环形缓冲区
+# 容量上限 TELEMETRY_RING_CAPACITY, 自动丢弃最旧样本
+# 对 get/put 的写路径要求 O(1) 追加, 不分配新内存 (预分配缓冲区)
 class CacheTelemetry:
     """缓存操作的 Span 式延迟追踪器。
 
@@ -327,10 +327,10 @@ class CacheWarmingPolicy:
         return loaded
 
 
-# TTL lazy eviction daemon: 后台线程每 60 秒扫描所有 shard 和 SQLite表
-# 剔除已过期的条目。 与 eager eviction (per- 检查 ttl) 相比
-# 懒驱逐在命中路径上无额外开销，适合高 QPS 场景
-# 设计取舍 — daemon 持有 shard 锁的时间极短（逐条 pop），不会阻塞读路径
+# TTL 懒驱逐守护线程: 后台线程每 60 秒扫描所有 shard 和 SQLite 表
+# 剔除已过期的条目。与即时驱逐 (每次查询检查 TTL) 相比
+# 懒驱逐在命中路径上无额外开销, 适合高 QPS 场景
+# 设计取舍 — 守护线程持有 shard 锁的时间极短 (逐条 pop), 不会阻塞读路径
 class _TTLEvictionDaemon:
     """后台线程定期扫描并驱逐过期的缓存条目。
 
@@ -439,10 +439,10 @@ class ConstraintCachePersistence:
     语义相同的 '(bvadd x y)' 共享同一键。
     """
 
-    # SMT-LIB operator canonical-symbol lookup (imported serializer)
+    # SMT-LIB 操作符规范符号表 (从 serializer 模块导入)
     NORMALIZE_PATTERNS = NORMALIZE_PATTERNS
 
-    # Fast category 分类 (imported serializer)
+    # 快速类别分类 (从 serializer 模块导入)
     CATEGORY_SIGNATURES = CATEGORY_SIGNATURES
 
     def __init__(self):
@@ -672,7 +672,7 @@ class ConstraintCachePersistence:
             return None
 
         kwargs = db_row_to_init_kwargs(row)
-        kwargs["hit_count"] = kwargs["hit_count"] + 1  # increment promotion
+        kwargs["hit_count"] = kwargs["hit_count"] + 1  # 提升时递增命中计数
         entry = CachedConstraint(**kwargs)
         slot_idx = self._shard_of(bytes.fromhex(constraint_hash))
         shard = self._shards[slot_idx]
@@ -1009,7 +1009,7 @@ def manage_constraint_cache(**kwargs) -> Dict[str, Any]:
 __all__ = [
     "ConstraintCachePersistence",
     "manage_constraint_cache",
-    # Re-exported serializer for backward 兼容性
+    # Re-exported serializer for 向后兼容
     "NORMALIZE_PATTERNS",
     "CATEGORY_SIGNATURES",
     "normalize_constraint",

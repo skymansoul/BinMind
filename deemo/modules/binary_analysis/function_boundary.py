@@ -1,4 +1,3 @@
-"""Function boundary detection using heuristics and ML."""
 import logging
 from enum import Enum
 

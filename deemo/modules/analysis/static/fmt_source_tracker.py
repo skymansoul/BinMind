@@ -1,33 +1,5 @@
-# 格式字符串来源追踪器 v4 (Format String Source Provenance Tracker)
-#
-# v4: 全局函数指针追踪 - 支持通过全局变量间接调用的格式字符串检测.
-# 追踪 refptr→寄存器→全局变量→寄存器→间接调用的完整链
-# 两阶段分析: 预扫阶段建立全局函数指针映射, 主分析阶段使用该映射
-# 解决callback/函数指针模式下的漏报问题
-#
-# v3: 三通道来源追踪 (寄存器→内存→栈) + 跨函数参数传播.
-#
-# 核心决策:
-#   现有检测器仅追踪单层mov/lea的立即数来源, 但对跨函数传播
-#   和间接加载无能为力. 例如:
-#     lea rcx, [rip+.fmt]  → rcx="literal"  ✓
-#     mov rcx, [rbp-0x8]   → rcx="stack"    ✓
-#     但 caller: mov rcx, argv[0]; call debug
-#          callee: fprintf(stderr, rcx)       ✗ (rcx来源丢失)
-#     但 callback:  g_log = printf; call g_log(user_input)  ✗ (间接调用)
-#
-#   本模块增强四层追踪:
-#     1. 寄存器→寄存器 (现有)
-#     2. 寄存器→内存→寄存器 (栈槽/RIP-relative)
-#     3. 跨函数参数传播 (caller→callee, depth=1)
-#     4. 全局函数指针追踪 (refptr→global→间接调用) [v4 NEW]
-#
-# 理论依据:
-#   "Precise and Scalable Taint Tracking for Binary":
-#     寄存器+内存的双向污点传播提升格式字符串检测精度.
-#   "UAFx: Use-After-Free Detection with Path-Sensitive Analysis":
-#     全局变量状态追踪对二进制级漏洞检测至关重要.
-#
+# 格式字符串来源追踪器 v4
+# 四通道传播: reg→reg / reg→mem→reg / 跨函数参数 / 全局函数指针
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple

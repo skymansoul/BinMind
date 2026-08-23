@@ -16,10 +16,6 @@
 # 对 free-use 对, 若 free 在 taken 路径且 use 在 fallthrough 路径
 # (或反之), 两者互斥 → 过滤该 UAF 告警.
 #
-# 理论依据:
-#   分支条件驱动的区间窄化; 路径敏感二进制分析降低误报;
-#   跨入口UAF检测用路径敏感排除不可达对.
-#
 
 import re
 from typing import Dict, List, Optional, Set, Tuple

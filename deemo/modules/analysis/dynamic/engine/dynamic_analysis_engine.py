@@ -14,7 +14,7 @@ C2/injection/ransomware 轨迹), 改为受控本地执行: 超时保护,
 import logging, time, json, uuid, math, hashlib
 import os, sys, platform, struct, shutil, re
 import subprocess
-import signal as _sigmod  # aliased avoid shadowing signal() 系统调用 name
+import signal as _sigmod  # 别名避免与系统调用名 signal 冲突
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple, Callable
 from dataclasses import dataclass, field
@@ -27,23 +27,23 @@ log = logging.getLogger(__name__)
 
 _LEGACY_MODE = False
 
-# Execution-engine constants
-_HARD_TIMEOUT_CAP = 300         # seconds — never let a binary 运行 longer
-_STRACE_LINE_LIMIT = 50000      # max strace lines 解析 (avoid OOM noisy binaries)
-_DEFAULT_TIMEOUT = 30           # seconds — caller's default nothing specified
+# 执行引擎常量
+_HARD_TIMEOUT_CAP = 300         # 秒 — 不允许二进制运行超过此时间
+_STRACE_LINE_LIMIT = 50000      # 最大 strace 解析行数 (避免 OOM)
+_DEFAULT_TIMEOUT = 30           # 秒 — 调用方未指定时的默认超时
 
-# POSIX signal numbers indicate a crash (a graceful exit)
+# POSIX 信号编号表示崩溃 (非优雅退出)
 _CRASH_SIGNALS: Dict[int, str] = {
-    4:  "SIGILL",    # illegal instruction
-    5:  "SIGTRAP",   # breakpoint / trace trap
+    4:  "SIGILL",    # 非法指令
+    5:  "SIGTRAP",   # 断点 / 跟踪陷阱
     6:  "SIGABRT",   # abort()
-    7:  "SIGBUS",    # bus error (misaligned access, mmap failure)
-    8:  "SIGFPE",    # floating-point 异常 (div--zero, overflow)
-    11: "SIGSEGV",   # segmentation violation
-    31: "SIGSYS",    # bad 系统调用
+    7:  "SIGBUS",    # 总线错误 (对齐访问失败, 映射失败)
+    8:  "SIGFPE",    # 浮点异常 (除零, 溢出)
+    11: "SIGSEGV",   # 段错误
+    31: "SIGSYS",    # 错误系统调用
 }
 
-# Windows NTSTATUS / HRESULT codes indicate a hard crash
+# Windows NTSTATUS / HRESULT 码表示硬崩溃
 _WIN_CRASH_CODES: Dict[int, str] = {
     0xC0000005: "ACCESS_VIOLATION",
     0xC0000017: "NO_MEMORY",
@@ -64,7 +64,7 @@ _WIN_CRASH_CODES: Dict[int, str] = {
     0xC0000142: "DLL_INIT_FAILED",
     0xC0000409: "STACK_BUFFER_OVERRUN",
 }
-# Type taxonomy
+# 类型分类法
 
 class RuntimeBehaviorType(str, Enum):
     FILE_CREATE = "file_create"
@@ -104,10 +104,9 @@ class BehaviorSeverity(str, Enum):
     LOW = "low"
     INFO = "info"
 
-# 系统调用-name prefix → (behavior_type, severity) for strace 输出 parsing
-# Covers commonly-observed 系统调用s malware 沙箱es
-# live enums above because values 引用 RuntimeBehaviorType /
-# BehaviorSeverity members
+# 系统调用名前缀 -> (行为类型, 严重度) 用于 strace 输出解析
+# 覆盖恶意软件沙箱中常见系统调用
+# 引用上方枚举因为值依赖 RuntimeBehaviorType / BehaviorSeverity 成员
 _SYSCALL_MAP: Dict[str, Tuple[str, str]] = {
     "open":   (RuntimeBehaviorType.FILE_CREATE, BehaviorSeverity.INFO),
     "openat": (RuntimeBehaviorType.FILE_CREATE, BehaviorSeverity.INFO),
@@ -152,7 +151,7 @@ _SYSCALL_MAP: Dict[str, Tuple[str, str]] = {
     "getrandom": (RuntimeBehaviorType.UNKNOWN, BehaviorSeverity.INFO),
 }
 
-# Data containers
+# 数据容器
 
 @dataclass
 class RuntimeTrace:
@@ -217,17 +216,17 @@ class DynamicAnalysisResult:
     section_entropies: Dict[str, float] = field(default_factory=dict)
     behavior_fingerprint: str = ""
     pass_artifacts: Dict[str, Any] = field(default_factory=dict)
-    # 舍入 5: real-execution metadata
-    execution_mode: str = ""          # "strace", "direct", or "static_回退"
+    # 真实执行元数据
+    execution_mode: str = ""          # "strace", "direct", 或 "static_回退"
     exit_code: Optional[int] = None
     crash_signal: Optional[str] = None
-    stdout_snippet: str = ""          # first 4 KiB stdout
-    stderr_snippet: str = ""          # first 4 KiB stderr
+    stdout_snippet: str = ""          # stdout 前 4 KiB
+    stderr_snippet: str = ""          # stderr 前 4 KiB
 
     def duration_seconds(self) -> float:
         return self.end_time - self.start_time
 
-# ── 舍入 4: angr-style Analysis Pass architecture ───────────────────────────
+# ── angr 风格 Analysis Pass 架构 ───────────────────────────
 # 每个分析子任务（熵值扫描、模式匹配、风险评分）注册为独立Pass
 # Pass之间通过AnalysisResult的artifacts字典交换数据，类似于angr的
 # knowledge_base模式。新增子分析只需实现AnalysisPass接口并注册即可
@@ -435,7 +434,7 @@ class FingerprintPass(AnalysisPass):
         api_seq = "|".join(t.api_name for t in result.traces[:200])
         result.behavior_fingerprint = hashlib.sha256(api_seq.encode()).hexdigest()
 
-# Main engine
+# 主引擎
 
 class DynamicAnalysisEngine(BaseAnalyzer):
 
@@ -877,7 +876,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 return sec_raw + (rva - sec_va)
         return None
 
-# Real execution dispatch
+# 真实执行分派
 
     def _execute_binary(
         self,
@@ -886,20 +885,20 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         arguments: Optional[List[str]],
         timeout_seconds: int,
     ) -> None:
-        """执行 binary a controlled subprocess
+        """在受控子进程中执行二进制。
 
-        Pre-flight 检查:
-        1. File exist readable
-        2. Architecture match host (or fall back 静态分析)
-        3. File 可执行文件 (or.exe Windows)
+        预检:
+        1. 文件存在且可读
+        2. 架构匹配宿主 (否则回退静态分析)
+        3. 文件为可执行文件 (或 Windows .exe)
 
-        Linux, prefer strace-based execution for 系统调用 capture
-        Windows / macOS, or strace unavailable, 使用 direct
-        subprocess execution exit-code interpretation
-        execution structurally impossible (arch mismatch, missing file)
-        fall back honest 静态分析
+        Linux 优先使用 strace 执行以捕获系统调用;
+        Windows / macOS 或 strace 不可用时使用 direct
+        子进程执行并解析退出码;
+        执行结构上不可行 (架构不匹配, 文件缺失) 时
+        回退到诚实的静态分析。
         """
-# Pre-flight: existence
+# 预检: 存在性
         if not os.path.isfile(binary_path):
             log.warning("Binary not found, falling back to static analysis: %s", binary_path)
             self._static_fallback(result, binary_path, "file_not_found")
@@ -1018,7 +1017,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         except OSError:
             pass
 
-# Direct subprocess execution (跨平台)
+# 直接子进程执行 (跨平台)
 
     def _execute_direct(
         self,
@@ -1027,11 +1026,11 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         arguments: List[str],
         timeout: int,
     ) -> None:
-        """执行 binary directly via subprocess.运行 resource limits
+        """通过子进程直接执行二进制, 受资源限制约束。
 
-        系统调用 追踪 — rely exit code, stdout/stderr, timing
-        for behavioral signals. 回退 strace unavailable
-        (Windows, macOS, stripped Linux containers)
+        无系统调用追踪 — 依赖退出码、stdout/stderr、时序
+        获取行为信号。在 strace 不可用时
+        (Windows, macOS, 精简 Linux 容器) 回退使用。
         """
         result.execution_mode = "direct"
         cmd = [binary_path] + arguments
@@ -1087,7 +1086,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             f"direct execution: exit={proc.returncode}, elapsed={elapsed:.2f}s"
         )
 
-# Honest static-analysis 回退
+# 诚实静态分析回退
 
     def _static_fallback(
         self,
@@ -1098,8 +1097,8 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         """原生执行不可行时回退静态分析。
 
         *诚实* 路径: 不伪造轨迹, 记录清晰的警告, 对二进制文件
-        本身做静态分析 (entropy, section layout, 导入表 — 由
-        pass 流水线处理)。result.execution_mode 字段记录原因,
+        本身做静态分析 (熵值, 节布局, 导入表 — 由 pass
+        流水线处理)。result.execution_mode 字段记录原因,
         使下游消费者知道这不是一次真实运行。
         """
         result.execution_mode = f"static_fallback:{reason}"
@@ -1107,22 +1106,22 @@ class DynamicAnalysisEngine(BaseAnalyzer):
             "Dynamic analysis fell back to static: %s (reason: %s)",
             binary_path, reason,
         )
-        # pass 流水线 运行 entropy scan, pattern detection
-        # (against whatever traces import parsing), risk
-        # scoring. add an anomaly note 报告 transparent
+        # pass 流水线运行熵值扫描、模式检测
+        # (针对导入解析的轨迹) 和风险评分。
+        # 添加异常注释使报告透明
         result.anomalies.append(
             f"STATIC_FALLBACK: binary was not executed natively — "
             f"reason={reason}. Analysis based on static features only."
         )
 
-# Architecture detection
+# 架构检测
 
     @staticmethod
     def _detect_binary_arch(binary_path: str) -> Optional[str]:
-        """Determine target architecture binary headers
+        """从二进制头确定目标架构。
 
-        返回 a normalized arch string matching platform.machine() conventions
-        ('x86_64', 'aarch64', 'i386', 'armv7l', etc.) or None unknown
+        返回归一化架构字符串, 遵循 platform.machine() 约定
+        ('x86_64', 'aarch64', 'i386', 'armv7l' 等), 未知返回 None。
         """
         try:
             with open(binary_path, 'rb') as fh:
@@ -1191,15 +1190,15 @@ class DynamicAnalysisEngine(BaseAnalyzer):
 
         return None
 
-# Exit status interpretation
+# 退出状态解析
 
     @staticmethod
     def _interpret_exit_status(result: DynamicAnalysisResult, exit_code: int) -> None:
-        """Classify exit code clean exit or crash signal
+        """将退出码分类为正常退出或崩溃信号。
 
-        POSIX, a process killed signal N 返回 -N (or 128+N shells
-        but subprocess.运行 报告 -N Unix). Windows, crash codes
-        large negative 32-bit integers (NTSTATUS)
+        POSIX 下, 信号 N 终止的进程返回 -N (或 shell 的 128+N,
+        但 subprocess.run 在 Unix 上报告 -N)。Windows 下, 崩溃码
+        为大的负 32 位整数 (NTSTATUS)。
         """
         if sys.platform == 'win32':
             # Windows: crash codes >= 0x80000000 unsigned, negative signed
@@ -1216,7 +1215,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 )
             return
 
-        # POSIX: subprocess.运行 报告 -signum for signal-killed 处理
+        # POSIX: subprocess.run 报告 -signum 表示信号终止
         if exit_code < 0:
             sig = -exit_code
             sig_name = _CRASH_SIGNALS.get(sig, f"SIG_{sig}")
@@ -1225,7 +1224,7 @@ class DynamicAnalysisEngine(BaseAnalyzer):
                 f"Binary crashed (signal): {sig_name} (signal {sig})"
             )
 
-# strace 输出 解析器
+# strace 输出解析器
 
     def _parse_strace_output(
         self,

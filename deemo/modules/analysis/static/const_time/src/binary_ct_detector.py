@@ -1,33 +1,6 @@
 # 编译器模式数据库: GCC/Clang/MSVC 的已知优化模式, 用于假阳性抑制
 # 秘密依赖度评分: 从二值 (CT-violation/not) 升级为连续值 [0,1]
-
-"""二进制级常量时间违规检测 - 编译器感知的侧信道分析
-
-现有 CT 验证工具 (CtChecker, CT-Prover, CT-LLVM) 在源码级工作
-但编译器优化可能引入源码级不存在的时序侧信道
-
-例如:
-  GCC -O2 的 if-conversion: if (secret) x = a; else x = b;
-  被转换为 cmov, 常量时间。但若 cmov 不可用 (x86 无 64-bit cmov)
-  GCC 回退为分支, 引入时序差异
-
-  Clang -O2 的 Loop Unrolling: 展开后循环体大小变化, cache line 访问模式改变
-
-二进制级检测的必要性:
-  1. 源码级 CT 不能保证二进制级 CT, 编译器可能破坏它
-  2. 闭源库没有源码可用, 只能分析二进制
-  3. CT 违规的利用可能性依赖于具体指令序列, 源码级无法评估
-
-本模块在二进制级做三件事:
-  A. 秘密依赖追踪: 从 taint 源标记秘密数据, 沿数据流传播
-  B. CT 违规检测: 秘密依赖的条件分支 + 秘密依赖的内存访问模式
-  C. 编译器模式假阳性抑制: 识别编译器特有的 CT 保护措施 (cmov, setcc, 等)
-
-与现有工作的关系:
-- CtChecker: 源码级, 域/上下文/流敏感 -> 本模块: 二进制级
-- Breaking Bad: 识别编译器引入的 CT 破坏 -> 本模块: 检测+抑制假阳性
-- CT-LLVM: LLVM IR 级 -> 本模块: x86/ARM 汇编级, 不依赖 IR
-"""
+# 二进制级常量时间违规检测 - 编译器感知的侧信道分析.
 
 from __future__ import annotations
 

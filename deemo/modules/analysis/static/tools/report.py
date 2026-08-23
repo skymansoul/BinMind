@@ -7,7 +7,7 @@ import os as _os
 
 
 class ReportGenerator:
-    """Accumulates step data produces analysis 报告"""
+    """累积步骤数据并生成分析报告"""
 
     def __init__(self, output_dir="./reports"):
         self.output_dir = output_dir

@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 _log = logging.getLogger(__name__)
 
 
-# Error hierarchy
+# 错误层次结构
 
 class SymbolicError(Exception):
     """符号执行错误的基类异常。
@@ -108,7 +108,7 @@ def smtlib_to_z3(smtlib_str: str) -> Optional[Any]:
             smtlib_str = f"(assert {stripped})"
         ctx = z3.Context()
         parsed = z3.parse_smt2_string(smtlib_str, ctx=ctx)
-        # parsed a list BoolRef
+        # parsed 是 BoolRef 列表，取第一个
         if parsed:
             return parsed[0]
         return None
@@ -137,7 +137,7 @@ def z3_to_smtlib(expr: Any) -> str:
         return repr(expr)
 
 
-# Constraint parsing
+# 约束解析
 
 def parse_constraints(raw: Any) -> List[Dict[str, Any]]:
     """
@@ -152,7 +152,7 @@ def parse_constraints(raw: Any) -> List[Dict[str, Any]]:
     if raw is None:
         return []
 
-    # a list dicts
+    # dict 列表
     if isinstance(raw, list):
         result = []
         for item in raw:
@@ -162,7 +162,7 @@ def parse_constraints(raw: Any) -> List[Dict[str, Any]]:
                 result.append({"type": "raw", "smtlib": item})
         return result
 
-    # Single dict
+    # 单个 dict
     if isinstance(raw, dict):
         return [raw]
 
@@ -176,7 +176,7 @@ def parse_constraints(raw: Any) -> List[Dict[str, Any]]:
                 return [parsed]
         except json.JSONDecodeError:
             pass
-        # Try SMT-LIB
+        # 尝试 SMT-LIB
         if raw.strip().startswith("(assert") or raw.strip().startswith("("):
             z3_expr = smtlib_to_z3(raw)
             if z3_expr is not None:
@@ -213,17 +213,17 @@ def serialize_state(state: Any) -> Dict[str, Any]:
             "metadata": dict(getattr(state, "metadata", {})),
         }
 
-        # 序列化 寄存器s
+        # 序列化寄存器
         registers = getattr(state, "registers", {})
         for reg_name, val in registers.items():
             result["registers"][reg_name] = _serialize_symexpr(val)
 
-        # 序列化 memory
+        # 序列化内存
         memory = getattr(state, "memory", {})
         for addr, val in memory.items():
             result["memory"][str(addr)] = _serialize_symexpr(val)
 
-        # 序列化 constraints
+        # 序列化约束
         constraints = getattr(state, "path_constraints", [])
         for c in constraints:
             if isinstance(c, dict):
@@ -257,16 +257,16 @@ def deserialize_state(data: Dict[str, Any]) -> Any:
             metadata=dict(data.get("metadata", {})),
         )
 
-        # 反序列化 寄存器s
+        # 反序列化寄存器
         for reg_name, val_dict in data.get("registers", {}).items():
             state.registers[reg_name] = _deserialize_symexpr(val_dict)
 
-        # 反序列化 memory
+        # 反序列化内存
         for addr_str, val_dict in data.get("memory", {}).items():
             addr = int(addr_str)
             state.memory[addr] = _deserialize_symexpr(val_dict)
 
-        # Constraints preserved dicts
+        # 保留 dict 格式的约束
         state.path_constraints = list(data.get("constraints", []))
 
         return state
@@ -286,7 +286,7 @@ def _serialize_symexpr(val: Any) -> Dict[str, Any]:
         }
     if isinstance(val, dict):
         return val
-    # 回退: treat int
+    # 回退: 尝试当作整数处理
     try:
         return {"value": int(val), "symbolic": False, "name": ""}
     except (ValueError, TypeError):
@@ -320,7 +320,7 @@ def compute_path_coverage(
     """
     if total_basic_blocks <= 0:
         return 0.0
-    # 计算 unique addresses (steps)
+    # 计算唯一地址（忽略步号）
     unique_addrs = set(addr for addr, _ in reached)
     return min(1.0, len(unique_addrs) / total_basic_blocks)
 
@@ -347,10 +347,10 @@ def _validate_symbolic_smt(smtlib_str: str) -> bool:
     smtlib_str = smtlib_str.strip()
     if not smtlib_str:
         return False
-    # 启动 '('
+    # 必须以 '(' 开头
     if not smtlib_str.startswith("("):
         return False
-    # Balanced parentheses 检查
+    # 括号配对检查
     depth = 0
     for ch in smtlib_str:
         if ch == '(':
@@ -375,12 +375,12 @@ def _coverage_report_text(coverage: Set[Tuple[int, int]]) -> str:
 
 
 __all__ = [
-    # Error hierarchy
+# 错误层级
     "SymbolicError", "SolverTimeout", "PathExplosionError",
     "UnsupportedInstructionError", "StateSerializationError",
     # 格式转换
     "smtlib_to_z3", "z3_to_smtlib",
-    # Constraint parsing
+# 约束解析
     "parse_constraints",
     # State 序列化
     "serialize_state", "deserialize_state",

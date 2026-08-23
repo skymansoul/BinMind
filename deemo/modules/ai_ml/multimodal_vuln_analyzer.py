@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Multimodal vulnerability analyzer — weighted evidence fusion across analysis modalities.
-# evidence fusion with modality weights; consensus 检测; contradiction resolution.
+# 多模态漏洞分析器 -- 跨分析模态的加权证据融合。
+# 模态权重融合；共识检测；矛盾解决。
 
 import logging as _logging
 from collections import defaultdict as _defaultdict
@@ -9,10 +9,10 @@ from typing import Dict, Any, List, Optional, Tuple
 __dbg = _logging.getLogger(__name__)
 
 
-# Analysis Modality
+# 分析模态
 
 class AnalysisModality:
-    """Labels for distinct analysis modalities."""
+    """分析模态标签。"""
 
     STATIC = "static_analysis"
     DYNAMIC = "dynamic_analysis"
@@ -51,10 +51,10 @@ class AnalysisModality:
         return weights.get(modality, 0.5)
 
 
-# Modal Result
+# 模态结果
 
 class ModalResult:
-    """A single finding from one analysis modality."""
+    """单个分析模态的一条发现。"""
 
     __slots__ = ('m_modality', 'm_vuln_type', 'm_confidence', 'm_severity',
                  'm_evidence', 'm_false_positive_rate', 'm_location',
@@ -93,10 +93,10 @@ class ModalResult:
                 f"conf={self.m_confidence:.2f} sev={self.m_severity}>")
 
 
-# Fused Vulnerability
+# 融合漏洞
 
 class FusedVuln:
-    """Result of fusing multiple ModalResult instances."""
+    """多个 ModalResult 融合后的结果。"""
 
     __slots__ = ('m_vuln_id', 'm_vuln_type', 'm_modalities', 'm_fused_confidence',
                  'm_severity', 'm_is_consensus', 'm_contradictory',
@@ -146,12 +146,10 @@ class FusedVuln:
                 f"conf={self.m_fused_confidence:.2f} consensus={self.m_is_consensus}>")
 
 
-# Evidence Fusion Engine
+# 证据融合引擎
 
 class EvidenceFusion:
-    """Fuses multiple modal results into a single confidence score using
-    modality-specific weights and false-positive-rate penalization.
-    """
+    """按模态权重和误报率惩罚融合多个模态结果为单一置信度。"""
 
     __slots__ = ('m_modality_weights', 'm_consensus_threshold',
                  'm_contradiction_threshold')
@@ -190,7 +188,7 @@ class EvidenceFusion:
         fused_conf = weighted_confidence / max(0.01, total_weight)
         fused_conf = min(1.0, max(0.0, fused_conf))
 
-        # Most common vuln type
+        # 出现最多的漏洞类型
         type_counts: Dict[str, float] = _defaultdict(float)
         ri = 0
         while ri < len(results):
@@ -198,10 +196,10 @@ class EvidenceFusion:
             ri += 1
         vuln_type = max(type_counts, key=lambda k: type_counts[k]) if type_counts else "unknown"
 
-        # Most common severity
+        # 出现最多的严重度
         severity = max(severity_counts, key=lambda k: severity_counts[k]) if severity_counts else "info"
 
-        # Consensus: at least 2 modalities with confidence > threshold
+        # 共识: 至少2个模态置信度超过阈值
         high_conf_count = 0
         ri = 0
         while ri < len(results):
@@ -210,7 +208,7 @@ class EvidenceFusion:
             ri += 1
         is_consensus = high_conf_count >= 2
 
-        # Contradiction: different vuln types with high confidence
+        # 矛盾: 不同漏洞类型且高置信度
         vuln_types = set()
         ri = 0
         while ri < len(results):
@@ -244,14 +242,10 @@ class EvidenceFusion:
         return fused_list
 
 
-# Multimodal Vulnerability Analyzer
+# 多模态漏洞分析器
 
 class MultimodalVulnAnalyzer:
-    """Orchestrates multimodal vulnerability analysis with evidence fusion.
-
-    Accepts results from multiple analysis modalities (static, dynamic,
-    symbolic, ML, fuzzing, etc.) and fuses them into consensus scores.
-    """
+    """多模态漏洞分析编排 -- 接收静态/动态/符号执行/ML/模糊测试等结果，融合为共识置信度。"""
 
     __slots__ = ('m_fusion', 'm_modal_results', 'm_fused',
                  'm_history', 'm_config')
@@ -326,7 +320,7 @@ class MultimodalVulnAnalyzer:
             }
             ki += 1
 
-        # Summary
+        # 汇总
         consensus_vulns = [f.to_dict() for f in self.m_fused if f.m_is_consensus and not f.m_contradictory]
         contradictory_vulns = [f.to_dict() for f in self.m_fused if f.m_contradictory]
         high_confidence = [f.to_dict() for f in self.m_fused if f.m_fused_confidence > 0.7]
@@ -396,7 +390,7 @@ def _import_time():
     return time.time()
 
 
-# Convenience
+# 工厂函数
 
 def analyze_multimodal(modal_results: List[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
     analyzer = MultimodalVulnAnalyzer()

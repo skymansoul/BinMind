@@ -1,20 +1,5 @@
-"""
-DDSSC协调器 (DDSSC Coordinator) - 三层混合分析编排.
-
-核心决策:
-  将堆溢出误报过滤从单层区间分析升级为三层级联:
-    Layer 1: 区间抽象解释 - 快速判定确定安全/确定溢出
-    Layer 2: 符号尺寸关联 - 消除"同变量分配=写入"的伪告警
-    Layer 3: 按需SMT求解 - 验证剩余告警的路径可行性
-
-  分层设计基于成本递增原则: 廉价分析先跑, 昂贵分析仅处理
-  前层无法判定的告警. 实测中, Layer1过滤约60%告警,
-  Layer2过滤约20%, Layer3再过滤约10%, 最终误报率<15%.
-
-  与现有HeapFPFilter的关系:
-    HeapFPFilter的三阶段保留不变, 本模块作为Stage 6/7/8
-    插入到finalize()的过滤管线末尾, 不破坏已有逻辑.
-"""
+# DDSSC协调器 - 三层混合分析编排
+# Layer1 区间抽象 / Layer2 符号尺寸关联 / Layer3 按需SMT
 
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass

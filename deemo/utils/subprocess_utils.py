@@ -1,8 +1,3 @@
-"""
-Subprocess runner with timeout and sandbox support. Used by
-decompiler wrappers and external tool integrations.
-"""
-
 import logging
 import subprocess
 import shlex
@@ -13,10 +8,6 @@ logger = logging.getLogger(__name__)
 
 def run(cmd, timeout: int = 300, stdin_data: Optional[bytes] = None,
         capture: bool = True, check: bool = False) -> Tuple[int, str, str]:
-    """
-    Run a command with a timeout. Returns (returncode, stdout, stderr).
-    Raises subprocess.TimeoutExpired on timeout.
-    """
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
 
@@ -37,7 +28,6 @@ def run(cmd, timeout: int = 300, stdin_data: Optional[bytes] = None,
 
 
 def quick_run(cmd, timeout: int = 60):
-    """Convenience wrapper: raises on non-zero exit or timeout."""
     rc, out, err = run(cmd, timeout=timeout, check=False)
     if rc != 0:
         raise RuntimeError(f"Command failed (rc={rc}): {err[:200]}")
@@ -45,11 +35,6 @@ def quick_run(cmd, timeout: int = 60):
 
 
 def run_sandboxed(cmd, timeout: int = 120):
-    """
-    Run a command in a basic sandbox (subprocess only — no kernel
-    namespaces unless you wrap with firejail/bubblewrap yourself).
-    """
-    # Just a subprocess with resource limits where possible
     try:
         import resource
         soft, hard = resource.getrlimit(resource.RLIMIT_AS)

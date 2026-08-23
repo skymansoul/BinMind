@@ -1,10 +1,3 @@
-"""
-Threat Intelligence Module - MISP and OTX backends for threat data queries.
-
-Provides hash/CVE/indicator lookups against MISP and AlienVault OTX,
-batch queries, local DB caching, and report generation.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -56,11 +49,7 @@ class Config:
 
 @dataclass
 class ThreatIntelResult:
-    """Result from a threat intelligence query.
-
-    字段同时兼容旧版扁平结构（query_id/task_id/provider 等）与新版结构化结构，
-    保证调用方可按任一接口访问。
-    """
+    """字段同时兼容旧版扁平结构与新版结构化结构，保证调用方可按任一接口访问。"""
     query: str = ""
     query_type: str = ""  # 哈希, cve, indicator, ip, domain
     source: str = ""  # misp, otx, local
@@ -118,7 +107,6 @@ class ThreatIntelResult:
 
 
 class ThreatIntelClient:
-    """Threat intelligence client with MISP and OTX backends."""
 
     def __init__(
         self,
@@ -322,7 +310,6 @@ class ThreatIntelClient:
         query: str,
         query_type: str,
     ) -> Optional[ThreatIntelResult]:
-        """Check local cache for a previous query result."""
         key = self._cache_key(query, query_type)
         with self._lock, self._conn() as conn:
             row = conn.execute(
@@ -339,7 +326,6 @@ class ThreatIntelClient:
         return None
 
     def _save_cache(self, result: ThreatIntelResult) -> None:
-        """Save a query result to local cache."""
         key = self._cache_key(result.query, result.query_type)
         result_json = json.dumps(result.to_dict())
         with self._lock, self._conn() as conn:
@@ -352,11 +338,7 @@ class ThreatIntelClient:
             )
 
     def purge_stale_cache(self, older_than_seconds: Optional[int] = None) -> int:
-        """清理过期缓存条目，防止SQLite无限膨胀。
-
-        定期调用此方法（如通过cron/scheduler）清除超出TTL的记录。
-        如果缓存表很大，建议在低负载时段执行。
-        """
+        """定期清除超出TTL的记录，缓存表大时建议低负载时段执行。"""
         ttl = older_than_seconds if older_than_seconds is not None else self._cache_ttl
         cutoff = time.time() - ttl
         with self._lock, self._conn() as conn:
@@ -370,8 +352,6 @@ class ThreatIntelClient:
         return deleted
 
     def query_hash(self, file_hash: str) -> ThreatIntelResult:
-        """Query threat intelligence for a file hash (MD5, SHA1, SHA256)."""
-        # Determine 哈希 type
         hash_len = len(file_hash)
         if hash_len == 32:
             query_type = "hash_md5"
@@ -382,7 +362,6 @@ class ThreatIntelClient:
         else:
             query_type = "hash"
 
-        # Check cache
         cached = self._check_cache(file_hash, query_type)
         if cached:
             return cached
@@ -394,13 +373,11 @@ class ThreatIntelClient:
             found=False,
         )
 
-        # Try OTX
         if self.otx_key:
             otx_result = self._query_otx_hash(file_hash)
             if otx_result.found:
                 result = otx_result
 
-        # Try MISP
         if self.misp_key and not result.found:
             misp_result = self._query_misp_hash(file_hash)
             if misp_result.found:
@@ -410,7 +387,6 @@ class ThreatIntelClient:
         return result
 
     def query_cve(self, cve_id: str) -> ThreatIntelResult:
-        """Query threat intelligence for a CVE identifier."""
         cached = self._check_cache(cve_id, "cve")
         if cached:
             return cached
@@ -422,13 +398,11 @@ class ThreatIntelClient:
             found=False,
         )
 
-        # Try MISP
         if self.misp_key:
             misp_result = self._query_misp_cve(cve_id)
             if misp_result.found:
                 result = misp_result
 
-        # Try OTX — OTX也有CVE pulse数据，优先级低于MISP
         if self.otx_key and not result.found:
             otx_result = self._query_otx_cve(cve_id)
             if otx_result.found:
@@ -442,7 +416,6 @@ class ThreatIntelClient:
         indicator: str,
         indicator_type: str = "auto",
     ) -> ThreatIntelResult:
-        """Query threat intelligence for an indicator (IP, domain, URL, email)."""
         if indicator_type == "auto":
             indicator_type = self._detect_indicator_type(indicator)
 
@@ -471,7 +444,6 @@ class ThreatIntelClient:
         return result
 
     def _query_otx_hash(self, file_hash: str) -> ThreatIntelResult:
-        """Query AlienVault OTX for a file hash."""
         try:
             import requests
             url = f"https://otx.alienvault.com/api/v1/indicators/file/{file_hash}/general"
@@ -511,7 +483,6 @@ class ThreatIntelClient:
         )
 
     def _query_misp_hash(self, file_hash: str) -> ThreatIntelResult:
-        """Query MISP for a file hash."""
         if not self.misp_url:
             return ThreatIntelResult(
                 query=file_hash,
@@ -568,11 +539,7 @@ class ThreatIntelClient:
         )
 
     def _query_misp_cve(self, cve_id: str) -> ThreatIntelResult:
-        """Query MISP for a CVE — 通过 restSearch 按 CVE 标签检索关联事件。
-
-        实现思路：搜索 type=cve 或 tag 中包含 CVE-ID 的属性，
-        聚合关联事件和标签，计算置信度。
-        """
+        """搜索 type=cve 或 tag 中包含 CVE-ID 的属性，聚合关联事件和标签。"""
         if not self.misp_url:
             return ThreatIntelResult(
                 query=cve_id,
@@ -646,10 +613,7 @@ class ThreatIntelClient:
         )
 
     def _query_otx_cve(self, cve_id: str) -> ThreatIntelResult:
-        """Query AlienVault OTX for a CVE — 通过 pulses 搜索 CVE 引用。
-
-        OTX 的 CVE 关联在 pulse 级别，通过搜索 CVE ID 获取关联 pulses。
-        """
+        """通过搜索 CVE ID 获取关联 pulses。"""
         try:
             import requests
             url = "https://otx.alienvault.com/api/v1/search/pulses"
@@ -709,10 +673,7 @@ class ThreatIntelClient:
     def _query_otx_indicator(
         self, indicator: str, indicator_type: str
     ) -> ThreatIntelResult:
-        """Query OTX for an indicator — 通用 indicator 查询实现。
-
-        根据类型构造 OTX API endpoint，解析 general 和 malware 数据。
-        """
+        """根据类型构造 OTX API endpoint，解析 general 和 malware 数据。"""
         try:
             import requests
 
@@ -774,11 +735,7 @@ class ThreatIntelClient:
     def _query_misp_indicator(
         self, indicator: str, indicator_type: str
     ) -> ThreatIntelResult:
-        """Query MISP for an indicator — 通用 IOC 检索。
-
-        映射 indicator_type 到 MISP 的 attribute type，
-        搜索所有匹配的 attribute 并聚合事件上下文。
-        """
+        """映射 indicator_type 到 MISP attribute type，搜索匹配 attribute 并聚合事件上下文。"""
         if not self.misp_url:
             return ThreatIntelResult(
                 query=indicator,
@@ -862,7 +819,6 @@ class ThreatIntelClient:
 
     @staticmethod
     def _detect_indicator_type(indicator: str) -> str:
-        """Auto-detect indicator type."""
         if re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', indicator):
             return "ip"
         if re.match(r'^[a-fA-F0-9:]+$', indicator):
@@ -880,11 +836,7 @@ class ThreatIntelClient:
         hashes: List[str],
         max_workers: int = 5,
     ) -> List[ThreatIntelResult]:
-        """Query multiple file hashes concurrently.
-
-        利用线程池并发查询，信号量控制并发度避免API限流。
-        结果按输入顺序返回。
-        """
+        """线程池并发查询，信号量控制并发度避免API限流，结果按输入顺序返回。"""
         results: Dict[int, ThreatIntelResult] = {}
 
         def _rate_limited_query(idx: int, h: str) -> Tuple[int, ThreatIntelResult]:
@@ -911,11 +863,7 @@ class ThreatIntelClient:
         cves: List[str],
         max_workers: int = 5,
     ) -> List[ThreatIntelResult]:
-        """Query multiple CVEs concurrently.
-
-        与 batch_query_hashes 同样的并发模式。
-        每个 worker 持有信号量保证不超过 rate limit。
-        """
+        """每个 worker 持有信号量保证不超过 rate limit。"""
         results: Dict[int, ThreatIntelResult] = {}
 
         def _rate_limited_cve(idx: int, c: str) -> Tuple[int, ThreatIntelResult]:
@@ -969,7 +917,6 @@ class ThreatIntelClient:
         return [results[i] for i in range(len(indicators))]
 
     def save_to_db(self, result: ThreatIntelResult) -> None:
-        """Persist a result to the local cache database."""
         self._save_cache(result)
 
     def load_from_db(
@@ -977,7 +924,6 @@ class ThreatIntelClient:
         query: str,
         query_type: str,
     ) -> Optional[ThreatIntelResult]:
-        """Load a cached result from the local database."""
         return self._check_cache(query, query_type)
 
     def format_report(
@@ -985,7 +931,6 @@ class ThreatIntelClient:
         results: List[ThreatIntelResult],
         format: str = "text",
     ) -> str:
-        """Format threat intel results as a report."""
         if format == "json":
             return json.dumps(
                 {'results': [r.to_dict() for r in results]},
@@ -1014,7 +959,6 @@ class ThreatIntelClient:
 
             return '\n'.join(lines)
 
-        # Text format
         lines = [
             "=" * 60,
             "THREAT INTELLIGENCE REPORT",
@@ -1231,10 +1175,7 @@ class ThreatIntelClient:
         task_id: str = "",
         anonymize: bool = False,
     ) -> List[ThreatIntelResult]:
-        """批量查询威胁情报，聚合各提供商结果。
-
-        参数为空时直接返回空列表，避免无意义的初始化调用。
-        """
+        """参数为空时直接返回空列表，避免无意义的初始化调用。"""
         results: List[ThreatIntelResult] = []
 
         if hashes:

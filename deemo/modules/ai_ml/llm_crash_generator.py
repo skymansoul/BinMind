@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-# LLM 引导崩溃输入构造器 — 迭代精化/delta 调试最小化/语法学习/
-# 差分分析/可利用性评估。
-# differential_analysis 做多目标崩溃对比; exploitability_report
-# 整合栈/堆/寄存器分析。
-# 温度自适应调度, 覆盖率引导变异反馈, 加权策略变异流水线, 输入去重缓存。
+# LLM引导崩溃输入构造器——迭代精化/delta调试最小化/语法学习/差分分析/可利用性评估
+# 差分分析做多目标崩溃对比，可利用性报告整合栈/堆/寄存器分析
+# 温度自适应调度，覆盖率引导变异反馈，加权策略变异流水线，输入去重缓存
 
 from collections import OrderedDict
 import logging as _logging
@@ -19,21 +17,21 @@ from collections import defaultdict as _defaultdict
 _logger = _logging.getLogger(__name__)
 
 
-# 变异策略枚举 — 给每种子代生成路径打标签，方便事后审计
+# 变异策略枚举——给每种子代生成路径打标签方便审计
 
 class MutationStrategy(_enum.IntEnum):
-    BIT_FLIP = 1        # 单比特翻转 — 最容易触发边界条件解析错误
-    BYTE_FLIP = 2       # 单字节翻转 — 比bit_flip更激进
-    ARITHMETIC = 3      # 算术变异 — 对长度字段/偏移量做±1/±n
+    BIT_FLIP = 1        # 单比特翻转——最易触发边界条件解析错误
+    BYTE_FLIP = 2       # 单字节翻转——比bit_flip更激进
+    ARITHMETIC = 3      # 算术变异——对长度字段/偏移量做±1/±n
     SPLICE = 4          # 拼接两个有效输入的片段
-    HAVOC = 5           # 随机摧毁模式 — AFL风格的多层叠加
-    INTERESTING = 6     # 注入interesting values (0, -1, INT_MAX, etc.)
+    HAVOC = 5           # 随机摧毁模式——AFL风格多层叠加
+    INTERESTING = 6     # 注入边界值(0/-1/INT_MAX等)
     LLM_GUIDED = 7      # LLM推荐的突变
-    REPEAT = 8          # 重复某个片段N次 — 触发缓冲区溢出
+    REPEAT = 8          # 重复片段N次——触发缓冲区溢出
 
     @classmethod
     def weighted_pool(cls) -> List["MutationStrategy"]:
-        """返回带权重的策略池 — BIT_FLIP/BYTE_FLIP是主力，HAVOC做兜底"""
+        """返回带权重的策略池——BIT_FLIP/BYTE_FLIP是主力，HAVOC兜底"""
         weights = [
             (cls.BIT_FLIP, 20),
             (cls.BYTE_FLIP, 18),
@@ -53,7 +51,7 @@ class MutationStrategy(_enum.IntEnum):
         return pool
 
 
-# 有趣的边界值 — 专门用来替换长度字段/偏移/指针
+# 有趣的边界值——专门替换长度字段/偏移/指针
 
 _INTERESTING_32 = [
     0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256,
@@ -66,10 +64,10 @@ _INTERESTING_16 = [
 _INTERESTING_8 = [0, 1, 2, 4, 8, 16, 32, 64, 127, 128, 255]
 
 
-# 覆盖率位图 — 轻量级bloom-filter风格的edge coverage追踪
+# 覆盖率位图——轻量级bloom-filter风格edge coverage追踪
 
 class CoverageBitmap:
-    """轻量覆盖率位图 — 判断某个mutation是否命中了新代码路径"""
+    """轻量覆盖率位图——判断mutation是否命中新代码路径"""
 
     __slots__ = ('m_map', 'm_size')
 
@@ -81,7 +79,7 @@ class CoverageBitmap:
         self.m_map[edge_id % self.m_size] = 1
 
     def record_block(self, block_addr: int):
-        # 用FNV-1a哈希简单搅一下地址当edge id用
+        # 用FNV-1a哈希搅地址当edge id用
         h = 0x811c9dc5
         h = ((h ^ (block_addr & 0xFF)) * 0x01000193) & 0xFFFFFFFF
         h = ((h ^ ((block_addr >> 8) & 0xFF)) * 0x01000193) & 0xFFFFFFFF
@@ -93,7 +91,7 @@ class CoverageBitmap:
         return sum(self.m_map)
 
     def novelty_of(self, other: "CoverageBitmap") -> float:
-        """计算other相对于self的新颖度 — (new_bits / total_bits_in_other)"""
+        """计算other相对self的新颖度——new_bits/total_bits_in_other"""
         if other.count_bits() == 0:
             return 0.0
         new_count = 0
@@ -117,24 +115,24 @@ class CoverageBitmap:
         return c
 
 
-# Data classes
+# 数据类
 
 @dataclass
 class CrashContext:
-    """Captured crash context from target execution."""
+    """目标执行捕获的崩溃上下文。"""
     signal: str = ""
     fault_address: str = ""
     instruction: str = ""
     registers: Dict[str, str] = field(default_factory=dict)
     stack_trace: List[str] = field(default_factory=list)
     memory_regions: List[Dict[str, Any]] = field(default_factory=list)
-    crash_type: str = ""  # SIGSEGV, SIGABRT, SIGBUS, SIGFPE, SIGILL
-    sanitizer_report: Optional[str] = None  # ASan / UBSan output
+    crash_type: str = ""  # SIGSEGV/SIGABRT/SIGBUS/SIGFPE/SIGILL
+    sanitizer_report: Optional[str] = None  # ASan/UBSan输出
     input_bytes: bytes = b""
     input_length: int = 0
     crash_hash: str = ""
     exploitability_hint: str = ""
-    # 新增：触发此crash的变异策略标签
+    # 触发此crash的变异策略标签
     mutation_strategy: Optional[MutationStrategy] = None
 
     def __post_init__(self):
@@ -157,7 +155,7 @@ class CrashContext:
 
 @dataclass
 class InferredInputStructure:
-    """LLM-inferred structure of the input format."""
+    """LLM推断的输入格式结构。"""
     format_name: str = ""
     fields: List[Dict[str, Any]] = field(default_factory=list)
     magic_bytes: Optional[bytes] = None
@@ -177,7 +175,7 @@ class InferredInputStructure:
 
 @dataclass
 class LearnedGrammar:
-    """Grammar learned from corpus of valid/seed inputs."""
+    """从有效/种子输入语料学习的语法。"""
     tokens: List[str] = field(default_factory=list)
     production_rules: Dict[str, List[List[str]]] = field(default_factory=dict)
     byte_transitions: Dict[int, Dict[int, float]] = field(default_factory=dict)
@@ -187,7 +185,7 @@ class LearnedGrammar:
     unique_samples: int = 0
 
     def generate(self, min_length=1, max_length=4096) -> bytes:
-        """Stochastic generation from learned grammar."""
+        """从学习的语法随机生成。"""
         import random as _r
         buf = bytearray()
         if self.tokens and len(self.tokens) > 0:
@@ -197,8 +195,7 @@ class LearnedGrammar:
                 buf.extend(tok.encode('utf-8', errors='surrogateescape'))
             return bytes(buf[:length])
 
-        # 回退: byte_transitions的Markov链
-        if self.byte_transitions:
+        # 回退: byte_transitions的Markov链        if self.byte_transitions:
             length = _r.randint(min_length, max_length)
             current = _r.choice(list(self.byte_transitions.keys()))
             buf.append(current)
@@ -219,7 +216,7 @@ class LearnedGrammar:
 
 @dataclass
 class DifferentialTrace:
-    """Differential execution trace comparing two targets."""
+    """两个目标的差分执行轨迹。"""
     target_a: str = ""
     target_b: str = ""
     shared_blocks: int = 0
@@ -232,7 +229,7 @@ class DifferentialTrace:
 
 @dataclass
 class MinimizationResult:
-    """Result of delta-debugging minimization."""
+    """delta调试最小化结果。"""
     original_size: int = 0
     minimized_size: int = 0
     original_bytes: bytes = b""
@@ -248,10 +245,10 @@ class MinimizationResult:
 
 @dataclass
 class ExploitabilityReport:
-    """Assessment of crash exploitability."""
+    """崩溃可利用性评估。"""
     crash_context: Optional[CrashContext] = None
     exploitability_score: float = 0.0
-    category: str = "UNKNOWN"  # EXPLOITABLE, PROBABLY_EXPLOITABLE, UNKNOWN, NOT_EXPLOITABLE
+    category: str = "UNKNOWN"  # EXPLOITABLE/PROBABLY_EXPLOITABLE/UNKNOWN/NOT_EXPLOITABLE
     reasoning: str = ""
     controlled_registers: List[str] = field(default_factory=list)
     controlled_memory: List[Dict[str, Any]] = field(default_factory=list)
@@ -265,7 +262,7 @@ class ExploitabilityReport:
 
 @dataclass
 class GenerationResult:
-    """Aggregate result from crash input generation."""
+    """崩溃输入生成汇总结果。"""
     success: bool = False
     seed_inputs: List[bytes] = field(default_factory=list)
     generated_inputs: List[bytes] = field(default_factory=list)
@@ -277,14 +274,14 @@ class GenerationResult:
     differential: Optional[DifferentialTrace] = None
     stats: Dict[str, Any] = field(default_factory=dict)
     elapsed_seconds: float = 0.0
-    # 新增：变异策略命中统计 — 每种策略触发了几次crash
+    # 变异策略命中统计——每种策略触发了多少次crash
     strategy_stats: Dict[str, int] = field(default_factory=dict)
 
 
-# LLM Client Interface (mockable)
+# LLM客户端接口(可mock)
 
 class LLMClientBase:
-    """Abstract base for LLM API calls."""
+    """LLM API调用抽象基类。"""
 
     def complete(self, prompt: str, system_prompt: str = "", max_tokens: int = 2048) -> str:
         raise NotImplementedError
@@ -294,7 +291,7 @@ class LLMClientBase:
 
 
 class MockLLMClient(LLMClientBase):
-    """Mock LLM client for testing — returns heuristic responses."""
+    """测试用mock LLM客户端——返回启发式响应。"""
 
     def __init__(self, seed=42):
         self.m_seed = seed
@@ -346,10 +343,10 @@ class MockLLMClient(LLMClientBase):
         return _json.dumps({"analysis": "completed", "confidence": 0.5})
 
 
-# LLM Crash 构造器
+# LLM崩溃构造器
 
 class LLMCrashGenerator:
-    """LLM-guided crash test case generation with iterative refinement."""
+    """LLM引导的崩溃测试用例生成器，含迭代精化。"""
 
     __slots__ = ('m_client', 'm_max_iterations', 'm_temperature',
                  'm_grammar', 'm_history', 'm_target_binary',
@@ -367,22 +364,21 @@ class LLMCrashGenerator:
 
         # 变异策略加权池
         self.m_mutation_pool: List[MutationStrategy] = MutationStrategy.weighted_pool()
-        # 输入去重缓存 — 存sha256 hash前8字节避免碰撞
+        # 输入去重缓存——存sha256前8字节避免碰撞
         self.m_input_dedup: Set[int] = set()
-        # 全局覆盖率位图 — 跨所有mutation累积
+        # 全局覆盖率位图——跨所有mutation累积
         self.m_global_coverage: CoverageBitmap = CoverageBitmap()
-        # 自适应温度参数 — 模仿模拟退火：crash越多温度越高(探测)，无crash时冷却
+        # 自适应温度参数——模拟退火: crash多则升温(探测)，无crash则冷却
         self.m_temperature_min: float = 0.1
         self.m_temperature_max: float = 1.5
         self.m_cooling_rate: float = 0.95
         self.m_consecutive_no_crash: int = 0
-        # 每种策略的命中计数
+        # 每种策略命中计数
         self.m_strategy_stats: Dict[str, int] = _defaultdict(int)
-        # 预计算interesting values的4字节编码列表
+        # 预计算interesting values的4字节编码
         self.m_interesting_values: List[bytes] = self._build_interesting_bytes()
 
 # 构建interesting值字节表
-
     def _build_interesting_bytes(self) -> List[bytes]:
         """预构建所有interesting值的little-endian字节表示"""
         vals: List[bytes] = []
@@ -394,7 +390,6 @@ class LLMCrashGenerator:
         return vals
 
 # 输入去重
-
     # 快速哈希去重
     def _is_duplicate(self, data: bytes) -> bool:
         h = int.from_bytes(_hashlib.sha256(data).digest()[:8], 'little')
@@ -412,7 +407,7 @@ class LLMCrashGenerator:
     def _adapt_temperature(self, found_crash: bool):
         if found_crash:
             self.m_consecutive_no_crash = 0
-            # 每发现一个crash略微升温，鼓励exploration
+            # 发现crash略微升温，鼓励探索
             self.m_temperature = min(
                 self.m_temperature_max,
                 self.m_temperature + 0.05,
@@ -420,24 +415,23 @@ class LLMCrashGenerator:
         else:
             self.m_consecutive_no_crash += 1
             if self.m_consecutive_no_crash >= 5:
-                # 连续无crash — 退火，更保守地微调
+                # 连续无crash——退火，保守微调
                 self.m_temperature = max(
                     self.m_temperature_min,
                     self.m_temperature * self.m_cooling_rate,
                 )
 
 # 变异管线
-
     def _apply_mutation(self, base: bytes, strategy: MutationStrategy, corpus: Optional[List[bytes]] = None) -> bytes:
-        """根据策略对base做变异 — 返回新bytes"""
+        """根据策略对base做变异——返回新bytes"""
         data = bytearray(base)
         dlen = len(data)
         if dlen < 1:
             return bytes(data)
 
-# BIT_FLIP: 翻转单个比特 — 最小扰动
+# BIT_FLIP: 翻转单个比特——最小扰动
         if strategy == MutationStrategy.BIT_FLIP:
-            # 同时翻1~3个比特 — 经验表明单个bit的复合效果更好
+            # 同时翻1~3个比特——单个bit的复合效果更好
             flips = _rnd.randint(1, min(3, dlen * 8))
             fi = 0
             while fi < flips:
@@ -446,7 +440,7 @@ class LLMCrashGenerator:
                 data[byte_pos] ^= (1 << bit_pos)
                 fi += 1
 
-# BYTE_FLIP: 翻转整字节 — 对magic byte/长度字段有效
+# BYTE_FLIP: 翻转整字节——对magic byte/长度字段有效
         elif strategy == MutationStrategy.BYTE_FLIP:
             count = _rnd.randint(1, max(1, dlen // 32))
             ci = 0
@@ -455,7 +449,7 @@ class LLMCrashGenerator:
                 data[pos] ^= _rnd.randint(1, 255)
                 ci += 1
 
-# ARITHMETIC: 对多字节整数做±运算 — 瞄准长度/偏移字段
+# ARITHMETIC: 对多字节整数做±运算——瞄准长度/偏移字段
         elif strategy == MutationStrategy.ARITHMETIC:
             for width in [1, 2, 4, 8]:
                 if dlen >= width:
@@ -467,11 +461,10 @@ class LLMCrashGenerator:
                         data[pos:pos+width] = new_val.to_bytes(width, 'little')
                     except Exception:
                         pass
-                    # 只做一次arithmetic — 太多会完全破坏结构
+                    # 只做一次arithmetic——太多会破坏结构
                     break
 
-# SPLICE: 从corpus取片段拼接到当前输入
-        elif strategy == MutationStrategy.SPLICE:
+# SPLICE: 从corpus取片段拼接到当前输入        elif strategy == MutationStrategy.SPLICE:
             if corpus and len(corpus) > 0:
                 other = _rnd.choice(corpus)
                 if len(other) > 0:
@@ -479,12 +472,12 @@ class LLMCrashGenerator:
                     splice_len = min(_rnd.randint(1, max(1, len(other) // 4)), len(other) - splice_start)
                     chunk = other[splice_start:splice_start + splice_len]
                     insert_pos = _rnd.randint(0, dlen - 1)
-                    # splice = 替换而不是插入，避免无限膨胀
+                    # splice=替换而非插入，避免无限膨胀
                     end_pos = min(insert_pos + len(chunk), dlen)
                     replace_len = end_pos - insert_pos
                     data[insert_pos:end_pos] = chunk[:replace_len]
 
-# HAVOC: AFL风格的随机摧毁 — 多层叠加
+# HAVOC: AFL风格随机摧毁——多层叠加
         elif strategy == MutationStrategy.HAVOC:
             rounds = _rnd.randint(1, 16)
             ri = 0
@@ -523,8 +516,7 @@ class LLMCrashGenerator:
                         data[len(block_b):len(block_b)+len(block_a)] = block_a
                 ri += 1
 
-# INTERESTING: 注入boundary values到固定偏移
-        elif strategy == MutationStrategy.INTERESTING:
+# INTERESTING: 注入boundary values到固定偏移        elif strategy == MutationStrategy.INTERESTING:
             width = _rnd.choice([1, 2, 4])
             if dlen >= width:
                 pos = _rnd.randint(0, dlen - width)
@@ -543,7 +535,7 @@ class LLMCrashGenerator:
                     except Exception:
                         pass
 
-# REPEAT: 重复某片段N次触发膨胀/溢出
+# REPEAT: 重复片段N次触发膨胀/溢出
         elif strategy == MutationStrategy.REPEAT:
             if dlen > 0:
                 chunk_start = _rnd.randint(0, dlen - 1)
@@ -557,11 +549,10 @@ class LLMCrashGenerator:
         return bytes(data)
 
     def _pick_strategy(self) -> MutationStrategy:
-        """从加权池选策略 — 未来可根据历史命中率动态调整权重"""
+        """从加权池选策略——未来可根据历史命中率动态调整权重"""
         return _rnd.choice(self.m_mutation_pool)
 
-# Extract crash context
-
+# 提取崩溃上下文
     def extract_crash_context(self, crash_output: str, input_bytes: bytes = b"") -> CrashContext:
         ctx = CrashContext()
         ctx.input_bytes = input_bytes
@@ -589,7 +580,7 @@ Respond with ONLY valid JSON."""
             ctx.exploitability_hint = data.get("exploitability_hint", "")
         except Exception as e:
             _logger.warning("extract_crash_context parse error: %s", e)
-            # Simple regex-based 回退
+            # 正则回退
             import re as _re
             sig_match = _re.search(r'(SIG\w+)', crash_output)
             if sig_match:
@@ -601,8 +592,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "extract_crash_context", "context": ctx})
         return ctx
 
-# Infer input structure
-
+# 推断输入结构
     def infer_input_structure(self, seed_inputs: List[bytes],
                               crash_contexts: List[CrashContext]) -> InferredInputStructure:
         structure = InferredInputStructure()
@@ -643,27 +633,26 @@ Respond with ONLY valid JSON."""
         except Exception as e:
             _logger.warning("infer_input_structure parse error: %s", e)
             structure.confidence = 0.1
-            structure.evidence = "Parse error during structure inference"
+            structure.evidence = "解析错误"
 
         self.m_history.append({"step": "infer_input_structure", "structure": structure})
         return structure
 
-    # ---- Step 3: 构造 crash input (iterative refinement) ----
+    # ---- 步骤3: 构造crash输入(迭代精化) ----
 
     def generate_crash_input(self, target_executor: Callable[[bytes], Optional[CrashContext]],
                              seed_inputs: List[bytes],
                              input_structure: Optional[InferredInputStructure] = None,
                              iterations: int = 0,
                              coverage_callback: Optional[Callable[[bytes], Optional[CoverageBitmap]]] = None) -> List[bytes]:
-        """生成crash输入 — 支持多种变异策略+覆盖率反馈。"""
+        """生成crash输入——支持多种变异策略+覆盖率反馈。"""
         if iterations <= 0:
             iterations = self.m_max_iterations
 
         generated: List[bytes] = []
         crash_ctxs: List[CrashContext] = []
         best_inputs: Set[bytes] = set()
-        # 保留一份corpus用于SPLICE策略
-        corpus: List[bytes] = []
+        # 保留一份corpus用于SPLICE策略        corpus: List[bytes] = []
 
         if seed_inputs:
             best_inputs.update(seed_inputs)
@@ -671,17 +660,17 @@ Respond with ONLY valid JSON."""
 
         iter_idx = 0
         while iter_idx < iterations:
-            # 选择策略 — LLM_GUIDED优先，其他用管线
+            # 选择策略——LLM_GUIDED优先，其他用管线
             strategy = MutationStrategy.LLM_GUIDED  # 每N轮走一次LLM
 
             # 自适应温度调参
             self._adapt_temperature(len(crash_ctxs) > 0 and iter_idx > 0)
 
-            # 每5轮用LLM，其余用变异管线 -- LLM慢但能理解语义
+            # 每5轮用LLM，其余用变异管线——LLM慢但能理解语义
             if iter_idx % 5 != 0 and len(best_inputs) > 0:
                 strategy = self._pick_strategy()
 
-            # Build prompt with history
+            # 构建带历史的提示
             crash_desc = ""
             if crash_ctxs:
                 crash_desc = "\n".join(c.summary() for c in crash_ctxs[-3:])
@@ -694,7 +683,7 @@ Respond with ONLY valid JSON."""
                     "constraints": input_structure.constraints,
                 }, indent=2)
 
-            # Select a base input to mutate
+            # 选择基础输入做变异
             if best_inputs:
                 base = _rnd.choice(list(best_inputs))
             elif seed_inputs:
@@ -724,7 +713,7 @@ Respond with ONLY valid JSON."""
                     mutated = bytes.fromhex(input_hex) if input_hex else base
                 except Exception as e:
                     _logger.warning("generate_crash_input parse error at iter %d: %s", iter_idx, e)
-                    # Fallback: random byte flips
+                    # 回退: 随机字节翻转
                     mutated = bytearray(base)
                     flip_count = max(1, len(mutated) // 10)
                     fi = 0
@@ -737,14 +726,14 @@ Respond with ONLY valid JSON."""
                 # 使用变异管线
                 mutated = self._apply_mutation(base, strategy, corpus)
 
-            # 去重检查 — 跳过已生成过的输入
+            # 去重检查——跳过已生成输入
             if self._is_duplicate(mutated) and strategy != MutationStrategy.LLM_GUIDED:
                 iter_idx += 1
                 continue
 
             generated.append(mutated)
 
-            # Execute and check for crash
+            # 执行并检查crash
             crash = target_executor(mutated) if target_executor else None
             if crash:
                 crash.input_bytes = mutated
@@ -757,12 +746,12 @@ Respond with ONLY valid JSON."""
                 # 记录策略命中
                 self.m_strategy_stats[strategy.name] += 1
             else:
-                # 覆盖率反馈 — 未crash但有新覆盖也算有价值
+                # 覆盖率反馈——未crash但有新覆盖也有价值
                 if coverage_callback:
                     cov = coverage_callback(mutated)
                     if cov:
                         novelty = self.m_global_coverage.novelty_of(cov)
-                        if novelty > 0.05:  # 5%新路径 — 保留这个输入
+                        if novelty > 0.05:  # 5%新路径——保留此输入
                             best_inputs.add(mutated)
                             corpus.append(mutated)
                             self.m_global_coverage.merge(cov)
@@ -778,14 +767,14 @@ Respond with ONLY valid JSON."""
         })
         return generated
 
-# Learn grammar
+        # 学习语法
 
     def learn_grammar(self, corpus: List[bytes], max_tokens=1000) -> LearnedGrammar:
         grammar = LearnedGrammar()
         grammar.corpus_size = len(corpus)
         grammar.unique_samples = len(set(corpus))
 
-        # Extract byte-level n-grams
+        # 提取字节级n-gram
         all_bytes: List[int] = []
         ci = 0
         while ci < len(corpus):
@@ -796,7 +785,7 @@ Respond with ONLY valid JSON."""
                 bi += 1
             ci += 1
 
-        # 2-gram frequencies
+        # 2-gram频率
         if len(all_bytes) >= 2:
             ngram_freqs_2: Dict[str, int] = {}
             bi = 0
@@ -806,7 +795,7 @@ Respond with ONLY valid JSON."""
                 bi += 1
             grammar.ngram_freqs[2] = dict(sorted(ngram_freqs_2.items(), key=lambda x: -x[1])[:max_tokens])
 
-        # Byte transition probabilities
+        # 字节转移概率
         trans: Dict[int, Dict[int, int]] = {}
         bi = 0
         while bi < len(all_bytes) - 1:
@@ -821,7 +810,7 @@ Respond with ONLY valid JSON."""
             total = sum(targets.values())
             grammar.byte_transitions[b] = {nb: cnt / total for nb, cnt in targets.items()}
 
-        # Entropy per position
+        # 每位置熵值
         if corpus:
             max_len = max(len(s) for s in corpus)
             pos = 0
@@ -845,7 +834,7 @@ Respond with ONLY valid JSON."""
                     grammar.entropy_map[pos] = entropy
                 pos += 1
 
-        # Token extraction (common substrings)
+        # 提取token(公共子串)
         tokens_set: Set[str] = set()
         sample_count = min(len(corpus), 20)
         si = 0
@@ -853,7 +842,7 @@ Respond with ONLY valid JSON."""
             sample = corpus[si]
             try:
                 text = sample.decode('utf-8', errors='surrogateescape')
-                # Extract printable ASCII runs
+                # 提取可打印ASCII连续段
                 import re as _re
                 for match in _re.finditer(r'[\x20-\x7e]{3,}', text):
                     tok = match.group(0)
@@ -865,7 +854,7 @@ Respond with ONLY valid JSON."""
 
         grammar.tokens = list(tokens_set)[:max_tokens]
 
-        # Basic production rules
+        # 基本产生式规则
         if grammar.tokens:
             grammar.production_rules["S"] = [
                 ["header", "payload"],
@@ -878,8 +867,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "learn_grammar", "corpus_size": len(corpus)})
         return grammar
 
-# Differential analysis
-
+# 差分分析
     def differential_analysis(self, target_a_name: str, target_b_name: str,
                               shared_inputs: List[bytes],
                               executor_a: Callable[[bytes], Optional[Dict]],
@@ -900,7 +888,7 @@ Respond with ONLY valid JSON."""
                 b_results.append(rb)
             si += 1
 
-        # Compare block coverage (simulated)
+        # 比较基本块覆盖(模拟)
         a_blocks: Set[str] = set()
         b_blocks: Set[str] = set()
         ri = 0
@@ -922,7 +910,7 @@ Respond with ONLY valid JSON."""
         total = max(trace.shared_blocks + trace.divergent_blocks, 1)
         trace.similarity_score = trace.shared_blocks / total
 
-        # Use LLM for 发散 analysis
+        # 用LLM做发散分析
         if a_results or b_results:
             prompt = f"""Compare execution of targets '{target_a_name}' and '{target_b_name}':
 - Shared basic blocks: {trace.shared_blocks}
@@ -944,8 +932,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "differential_analysis", "trace": trace})
         return trace
 
-# Minimize input (delta-调试)
-
+# 最小化输入(delta调试)
     def minimize_input(self, crash_input: bytes,
                        crash_tester: Callable[[bytes], bool],
                        granularity: int = 1) -> MinimizationResult:
@@ -958,7 +945,7 @@ Respond with ONLY valid JSON."""
         result.minimized_bytes = bytes(current)
         result.minimized_size = current_size
 
-        # Simplified delta-调试: try removing chunks
+        # 简化delta调试: 尝试移除块
         chunk_size = max(granularity, current_size // 16)
         iteration = 0
         max_iterations = 200
@@ -983,7 +970,7 @@ Respond with ONLY valid JSON."""
             if iteration >= max_iterations:
                 break
 
-        # Byte-level minimization: try zeroing individual bytes
+        # 字节级最小化: 尝试置零单个字节
         bi = 0
         while bi < len(current) and iteration < max_iterations:
             original_byte = current[bi]
@@ -1004,49 +991,48 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "minimize_input", "result": result})
         return result
 
-# Assess exploitability
-
+# 评估可利用性
     def assess_exploitability(self, crash_context: CrashContext) -> ExploitabilityReport:
         report = ExploitabilityReport()
         report.crash_context = crash_context
 
-        # Heuristic scoring
+        # 启发式评分
         score = 0.0
         reasoning_parts: List[str] = []
 
         ctx_type = crash_context.crash_type.upper()
         if "SEGV" in ctx_type:
-            reasoning_parts.append("Segmentation fault detected")
+            reasoning_parts.append("段错误")
             score += 0.3
-            # Check for controlled instruction pointer
+            # 检查是否控制指令指针
             if "rip" in str(crash_context.registers).lower():
                 rip_val = crash_context.registers.get("rip", crash_context.registers.get("RIP", ""))
                 if rip_val and "41" in str(rip_val):  # 'A' = 0x41
-                    reasoning_parts.append("RIP appears user-controlled (0x41 pattern)")
+                    reasoning_parts.append("RIP疑似用户可控(0x41模式)")
                     report.controlled_registers.append("RIP")
                     score += 0.4
         elif "ABRT" in ctx_type:
-            reasoning_parts.append("Abort signal — likely heap corruption or assert failure")
+            reasoning_parts.append("中止信号——可能是堆损坏或断言失败")
             score += 0.2
         elif "FPE" in ctx_type:
-            reasoning_parts.append("Floating-point exception")
+            reasoning_parts.append("浮点异常")
             score += 0.1
         elif "ILL" in ctx_type:
-            reasoning_parts.append("Illegal instruction — possible ROP/jump to shellcode")
+            reasoning_parts.append("非法指令——可能ROP/跳转到shellcode")
             score += 0.5
         elif "BUS" in ctx_type:
-            reasoning_parts.append("Bus error — unaligned access")
+            reasoning_parts.append("总线错误——非对齐访问")
             score += 0.15
 
-        # Stack trace analysis
+        # 栈回溯分析
         if crash_context.stack_trace:
             st_depth = len(crash_context.stack_trace)
             st0 = crash_context.stack_trace[0].lower() if crash_context.stack_trace else ""
             if any(kw in st0 for kw in ("memcpy", "strcpy", "sprintf", "gets", "read", "recv", "malloc", "free")):
-                reasoning_parts.append(f"Sensitive function in top frame: {crash_context.stack_trace[0]}")
+                reasoning_parts.append(f"顶层帧含敏感函数: {crash_context.stack_trace[0]}")
                 score += 0.2
 
-        # 基于LLM assessment
+        # 基于LLM评估
         prompt = f"""Assess exploitability of this crash:
 
 Crash type: {crash_context.crash_type}
@@ -1091,8 +1077,7 @@ Respond with ONLY valid JSON."""
         self.m_history.append({"step": "assess_exploitability", "report": report})
         return report
 
-# 构造 seed 批次
-
+# 构造种子批次
     def generate_seed_batch(self, count: int = 10, min_size: int = 1, max_size: int = 4096) -> List[bytes]:
         seeds: List[bytes] = []
 
@@ -1102,7 +1087,7 @@ Respond with ONLY valid JSON."""
                 seeds.append(self.m_grammar.generate(min_size, max_size))
                 si += 1
         else:
-            # Random seed 构造
+            # 随机种子构造
             si = 0
             while si < count:
                 size = _rnd.randint(min_size, max_size)
@@ -1126,14 +1111,12 @@ Respond with ONLY valid JSON."""
 
         return seeds
 
-# Get strategy hit statistics
-
+# 策略命中统计
     def get_strategy_stats(self) -> Dict[str, int]:
-        """返回变异策略命中统计 — 用于事后分析哪种策略最有效"""
+        """返回变异策略命中统计——用于事后分析哪种策略最有效"""
         return dict(self.m_strategy_stats)
 
-# Full pipeline
-
+# 完整流水线
     def analyze(self, target_executor: Callable[[bytes], Optional[CrashContext]],
                 seed_inputs: Optional[List[bytes]] = None,
                 corpus: Optional[List[bytes]] = None,
@@ -1143,7 +1126,7 @@ Respond with ONLY valid JSON."""
         start = _time.time()
         result = GenerationResult()
 
-        # 构造 seeds
+        # 构造种子
         if seed_inputs is None:
             seed_inputs = self.generate_seed_batch(10)
         result.seed_inputs = []
@@ -1152,7 +1135,7 @@ Respond with ONLY valid JSON."""
             result.seed_inputs.append(seed_inputs[si])
             si += 1
 
-        # Collect initial crashes from seeds
+        # 从种子收集初始crash
         crash_ctxs: List[CrashContext] = []
         si = 0
         while si < len(seed_inputs):
@@ -1167,11 +1150,11 @@ Respond with ONLY valid JSON."""
 
         result.crash_contexts = crash_ctxs
 
-        # Infer structure
+        # 推断结构
         if seed_inputs:
             result.input_structure = self.infer_input_structure(seed_inputs, crash_ctxs)
 
-        # Learn grammar
+# 学习语法
         if corpus:
             result.grammar = self.learn_grammar(corpus)
             self.m_grammar = result.grammar
@@ -1179,7 +1162,7 @@ Respond with ONLY valid JSON."""
             result.grammar = self.learn_grammar(seed_inputs)
             self.m_grammar = result.grammar
 
-        # 构造 crash inputs — 传入coverage callback
+        # 构造crash输入——传入coverage callback
         generated = self.generate_crash_input(
             target_executor, seed_inputs, result.input_structure, iterations,
             coverage_callback=coverage_callback,
@@ -1190,16 +1173,16 @@ Respond with ONLY valid JSON."""
             result.generated_inputs.append(generated[gi])
             gi += 1
 
-        # Minimize best crashing input
+        # 最小化最佳crash输入
         if crash_tester and result.generated_inputs:
             best_input = result.generated_inputs[0]
             result.minimization = self.minimize_input(best_input, crash_tester)
 
-        # Exploitability
+        # 可利用性
         if crash_ctxs:
             result.exploitability = self.assess_exploitability(crash_ctxs[0])
 
-        # Stats
+        # 统计
         total_crashes = len(crash_ctxs) + sum(
             1 for gi in range(len(result.generated_inputs))
             if target_executor and target_executor(result.generated_inputs[gi])
@@ -1229,7 +1212,7 @@ Respond with ONLY valid JSON."""
         self.m_strategy_stats.clear()
 
 
-# Convenience
+# 便捷函数
 
 def create_crash_generator(target_binary="", llm_client=None, max_iterations=20) -> LLMCrashGenerator:
     return LLMCrashGenerator(

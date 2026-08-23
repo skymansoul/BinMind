@@ -189,8 +189,7 @@ def gen_calloc(is_vuln: bool) -> str:
     else:
         body = 'char *src = malloc(64); memset(src,88,64); memcpy(p, src, 64); free(src);'
     desc = "OVERFLOW: memcpy 128 > calloc 64" if is_vuln else "SAFE: memcpy 64 = calloc 64"
-    # calloc is the alloc function here
-    alloc_func = "calloc(64, 1)"  # both use calloc
+    alloc_func = "calloc(64, 1)"
     return f"""/** calloc_{'vuln' if is_vuln else 'safe'}: {desc} */
 {_HEADER}
 int main() {{

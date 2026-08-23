@@ -54,7 +54,7 @@ class TestMLFeatures:
 
 
 class TestFunctionBoundary:
-    """Function boundary detection tests"""
+    """函数边界检测测试"""
 
     def test_prologue_detection_x86(self):
         """检测 standard x86 prologue patterns"""

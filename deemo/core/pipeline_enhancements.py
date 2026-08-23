@@ -495,12 +495,9 @@ def apply_static_concurrency_checks(result, binary_path, binfo, kwargs, binary_h
 
     # (t) 编译器产物归一化器 (CompilerArtifactNormalizer)
     try:
-        from modules.core.compat.compiler_artifact_normalizer import (
-            CompilerArtifactNormalizer,
-        )
-        _compiler_norm = CompilerArtifactNormalizer()
-        result['_compiler_normalizer'] = _compiler_norm
-        logger.debug('CompilerArtifactNormalizer activated')
+        from modules.core.compat.compiler_artifact_normalizer import normalize_cfg
+        result['_compiler_normalizer'] = normalize_cfg
+        logger.debug('compiler artifact normalizer activated')
     except ImportError:
         logger.debug('optional plugin not available')
 
@@ -577,9 +574,9 @@ def apply_evm_reentrancy_check(result, binary_path, binfo, kwargs, binary_hash=N
 
     try:
         from modules.analysis.static.tools.protocol_state_inferrer import (
-            ProtocolStateMachineInferrer,
+            ProtocolStateInferrer,
         )
-        _proto_inferrer = ProtocolStateMachineInferrer()
+        _proto_inferrer = ProtocolStateInferrer()
         result['_protocol_state_inferrer'] = _proto_inferrer
         logger.debug('协议状态机推断器已就绪（SimHash 消息聚类）')
     except ImportError:

@@ -8,10 +8,6 @@
 # narrowing: 在widening收敛后精化区间
 #     - heap allocation modeling: 将malloc参数传播到返回值指针
 #
-# 理论依据:
-#   抽象解释框架; 组合式堆对象不相交性分析降低区间重叠误报.
-#
-
 from collections import deque
 from typing import Dict, List, Optional, Tuple
 

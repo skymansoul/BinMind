@@ -133,7 +133,7 @@ def _cmd_fuzz(args: argparse.Namespace) -> int:
 
 
 def _cmd_syscall(args: argparse.Namespace) -> int:
-    """Handler for 'syscall' subcommand"""
+    """'syscall' 子命令处理器"""
     from .core import SyscallClassifier
 
     input_path = getattr(args, "input", None)

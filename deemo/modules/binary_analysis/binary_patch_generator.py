@@ -1,6 +1,3 @@
-# main interface: PatchType等4class。
-# dependency: import struct; import hashlib
-# test覆盖: 核心path已测。
 import logging
 import struct
 import hashlib
@@ -22,14 +19,13 @@ def _clamp(val, lo, hi):
 
 class PatchType:
     """补丁type"""
-    NOP = "nop"             # NOP 滑板覆盖
-    JUMP = "jmp"            # JMP 重定向
-    CALL_HOOK = "call_hook" # CALL 钩子
-    CODE_CAVE = "code_cave" # 代码洞穴inject
-    BYTE_REPLACE = "byte_replace"  # 直接字节replace
+    NOP = "nop"
+    JUMP = "jmp"
+    CALL_HOOK = "call_hook"
+    CODE_CAVE = "code_cave"
+    BYTE_REPLACE = "byte_replace"
 
 class Architecture:
-    """targetarchitecture"""
     def __init__(self, value):
         self._val = value
     @property
@@ -44,7 +40,6 @@ Architecture.ARM = Architecture("arm")
 Architecture.ARM64 = Architecture("arm64")
 
 class PatchInstruction:
-    # 问题诊断：全天级别的排查周期
     """单条补丁指令"""
     __slots__ = ('offset', 'patch_type', 'original_bytes', 'patched_bytes', 'description',)
 
@@ -73,7 +68,7 @@ class CodeDiff:
             size,
             original_hex,
             patched_hex,
-            diff_type="modify"  # modify | insert | delete,
+            diff_type="modify",
     ):
         self.offset = offset
         self.size = size
@@ -140,26 +135,24 @@ class BinaryPatchGenerator(BaseAnalyzer):
     6. 补丁报告 —— 生成structured报告
     """
 
-    ### NOP encode表 (x86/x86_64 多字节 NOP，从短到长)
     _X86_NOP_SEQUENCE = [
-        b'\x90',                    # 1-byte NOP
-        b'\x66\x90',                # 2-byte NOP
-        b'\x0f\x1f\x00',            # 3-byte NOP
-        b'\x0f\x1f\x40\x00',        # 4-byte NOP
-        b'\x0f\x1f\x44\x00\x00',    # 5-byte NOP
-        b'\x66\x0f\x1f\x44\x00\x00', # 6-byte NOP
-        b'\x0f\x1f\x80\x00\x00\x00\x00',    # 7-byte NOP
-        b'\x0f\x1f\x84\x00\x00\x00\x00\x00',# 8-byte NOP
-        b'\x66\x0f\x1f\x84\x00\x00\x00\x00\x00', # 9-byte NOP
+        b'\x90',
+        b'\x66\x90',
+        b'\x0f\x1f\x00',
+        b'\x0f\x1f\x40\x00',
+        b'\x0f\x1f\x44\x00\x00',
+        b'\x66\x0f\x1f\x44\x00\x00',
+        b'\x0f\x1f\x80\x00\x00\x00\x00',
+        b'\x0f\x1f\x84\x00\x00\x00\x00\x00',
+        b'\x66\x0f\x1f\x84\x00\x00\x00\x00\x00',
     ]
 
-    ### ARM 指令常量
-    _ARM_NOP = b'\x00\x00\x00\x00'     # ARM32 nop
-    _ARM64_NOP = b'\x1f\x20\x03\xd5'   # AArch64 nop
-    _JMP_REL32_PREFIX = b'\xe9'        # x86 JMP rel32
-    _JMP_NEAR_PREFIX = b'\xeb'         # x86 JMP rel8
-    _CALL_REL32_PREFIX = b'\xe8'       # x86 CALL rel32
-    _RET_INSTRUCTION = b'\xc3'         # x86 RET
+    _ARM_NOP = b'\x00\x00\x00\x00'
+    _ARM64_NOP = b'\x1f\x20\x03\xd5'
+    _JMP_REL32_PREFIX = b'\xe9'
+    _JMP_NEAR_PREFIX = b'\xeb'
+    _CALL_REL32_PREFIX = b'\xe8'
+    _RET_INSTRUCTION = b'\xc3'
 
     def __init__(self):
         # 健壮性check——容错处理不合法输入
@@ -167,7 +160,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
         self.__arch = Architecture.X86_64
         self.__patches = []
 
-    ### NOP encode生成
 
     def _get_nop_sequenceBp(self, size, arch):
         """生成指定size的 NOP 序列"""
@@ -217,7 +209,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
             return 4  # ARM 固定指令length
         return 1
 
-    ### JMP address计算
 
     @staticmethod
     def _compute_jmp_rel32Bp(from_addr, to_addr):
@@ -237,10 +228,8 @@ class BinaryPatchGenerator(BaseAnalyzer):
         rel = rel & 0xFFFFFFFF
         return b'\xe8' + struct.pack('<i', rel)
 
-    ### NOP 补丁
 
     def generate_nop_patchBp(self, data, offset,
-# 下方注释为废代码——一行版简洁但不可逐行debug
                            arch=None):
         """
         NOP 掉指定address的指令
@@ -292,7 +281,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
                 offset += inst_size
         return patches
 
-    ### JMP 补丁
 
     def generate_jmp_patchBp(self, data, offset,
                            target_offset,
@@ -350,7 +338,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
             description=desc
         )
 
-    ### Code Cave 补丁
 
     def _find_code_cavesBp(self, data, min_size=16,
                          alignment=16):
@@ -427,7 +414,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
 
         return patches
 
-    ### 字节级 diff
 
     def compute_patch_diffBp(self, original,
                            patched):
@@ -441,7 +427,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
         in_diff = False
         diff_start = 0
 
-        # for -> while convert
         i = 0
         while i < min_len:
             if original[i] != patched[i]:
@@ -489,7 +474,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
 
         return diffs
 
-    ### 补丁应用
 
     def apply_patchesBp(self, data,
                       patches):
@@ -499,7 +483,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
         if patches is None:
             return data
         result = bytearray(data)
-        # for -> while convert
         nPIdx = 0
         nPCount = len(patches)
         while nPIdx < nPCount:
@@ -510,7 +493,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
             nPIdx += 1
         return bytes(result)
 
-    ### 补丁validate
 
     def verify_patchBp(self, original, patched,
                      diffs):
@@ -520,9 +502,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
         if diffs is None:
             diffs = []
         warnings = []
-        # 重建补丁后version
         rebuilt = bytearray(original)
-        # for -> while convert
         nDIdx = 0
         nDCount = len(diffs)
         while nDIdx < nDCount:
@@ -541,7 +521,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
             warnings.append("补丁重建结果与target不一致")
             return False, warnings
 
-        # checkboundary — for -> while
+
         nDIdx2 = 0
         nDCount2 = len(diffs)
         while nDIdx2 < nDCount2:
@@ -550,7 +530,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
                 warnings.append(f"diff块超出originalsize: offset={d.offset}")
             nDIdx2 += 1
 
-        # check空diff
+
         nDIdx3 = 0
         nDCount3 = len(diffs)
         while nDIdx3 < nDCount3:
@@ -562,7 +542,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
 
         return True, warnings
 
-    ### 补丁报告
 
     def generate_patch_reportBp(self, original,
                               patches):
@@ -573,7 +552,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
             patches = []
         patched = self.apply_patchesBp(original, patches)
         diffs = self.compute_patch_diffBp(original, patched)
-        # 手动展开 sum(d.size for d in diffs)
         total_changed = 0
         nDIdx = 0
         nDCount = len(diffs)
@@ -595,10 +573,8 @@ class BinaryPatchGenerator(BaseAnalyzer):
             warnings=warnings
         )
 
-    ### 辅助method
 
     def set_architectureBp(self, arch):
-        """settingtargetarchitecture"""
         if arch is None:
             return
         self.__arch = arch
@@ -610,8 +586,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
     def clear_patchesBp(self):
         """清空已记录的补丁"""
         self.__patches = []
-
-    ### analyze 入口
 
     def analyzeBp(self, **kwargs):
         """
@@ -836,7 +810,6 @@ class BinaryPatchGenerator(BaseAnalyzer):
         if data is None:
             return []
         result = []
-        # for -> while convert
         nPIdx = 0
         nPCount = len(patches_raw)
         while nPIdx < nPCount:

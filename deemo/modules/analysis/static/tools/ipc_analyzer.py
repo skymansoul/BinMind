@@ -1,6 +1,6 @@
-# Public API: 5 classes, IPCType, IPCSecurityIssue, IPCEndpoint, IPCInteraction, IPCAnalysisResult
-# Dependency: os (文件系统), 日志, typing, dataclasses
-# Computational bound: O(n*m) per scan pass; memory: O(n) for raw binary 缓冲区s
+# 公共 API: 5 个类, IPCType, IPCSecurityIssue, IPCEndpoint, IPCInteraction, IPCAnalysisResult
+# 依赖: os (文件系统), 日志, typing, dataclasses
+# 计算复杂度: O(n*m) 每次扫描; 内存: O(n) 原始二进制缓冲区
 #
 # 2025 升级: GUARD 启发的通用 API 反混淆
 # GUARD 使用模拟执行 + 栈布局分析 + sIAT 恢复被混淆的导入函数
@@ -69,9 +69,8 @@ class IPCAnalysisResult:
 
 
 # GUARD 启发的 sIAT 栈布局分析
-# Hwang et al., "GUARD: Generic API De-混淆 被混淆
-# Malware 脱壳 sIAT"
-# 核心方法: Theida/VMProtect 等加壳器将 API 调用混淆为 push/call 序列
+# Hwang et al., "GUARD: 针对加壳恶意软件的通用 API 反混淆与 sIAT 恢复"
+# 核心方法: Themida/VMProtect 等加壳器将 API 调用混淆为 push/call 序列
 # 通过分析 call 前的 push 指令数量推断参数个数，重建 Scattered IAT
 # 这大大提高了加壳二进制中 IPC API 的检测率
 

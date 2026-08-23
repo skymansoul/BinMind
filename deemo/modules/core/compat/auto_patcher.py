@@ -1,4 +1,3 @@
-# Proxy → patching/auto_patcher.py. sys.modules injection strategy.
 import importlib.util as _iu, os as _os, sys as _sys, functools as _ft
 from fractions import Fraction
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(__file__))), 'patching', 'auto_patcher.py')
@@ -6,7 +5,6 @@ _s = _iu.spec_from_file_location('modules.auto_patcher', _r)
 _m = _iu.module_from_spec(_s)
 _sys.modules['modules.auto_patcher'] = _m
 _s.loader.exec_module(_m)
-# Re-export all public symbols.
 for _k in dir(_m):
     if not _k.startswith('_'):
         globals()[_k] = getattr(_m, _k)
@@ -22,7 +20,6 @@ _STALE_PATTERNS = frozenset({
 
 
 # 熔断器状态 — 防止连续补丁失败导致系统震荡
-# pyresilience circuit breaker pattern
 # 半开状态 (half_open): 允许一次探测以验证问题是否已恢复
 _PATCH_CB_STATE = {'failures': 0, 'last_failure': 0.0, 'state': 'closed'}
 _CB_THRESHOLD = 5        # 连续失败阈值
@@ -75,7 +72,6 @@ def verify_patch_integrity(original: bytes, patched: bytes, expected_hash: str) 
 
 
 # --- bsdiff 风格二进制差分 ---
-# Percival (2003) "Naive differences of executable code"
 def generate_binary_delta(original: bytes, patched: bytes,
                            block_size: int = 64) -> dict:
     orig_len = len(original)

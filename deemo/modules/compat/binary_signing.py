@@ -4,7 +4,6 @@ _m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('bs'
 importlib.util.spec_from_file_location('bs', _r).loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
 
-# Patch __init__ across all classes — absorb surplus kwargs; skip __slots__ types.
 for _cn in list(dir(_m)):
     _c = getattr(_m, _cn)
     if not isinstance(_c, type): continue

@@ -1,8 +1,3 @@
-"""
-ELF binary parsing helpers. Lightweight wrappers around pyelftools
-with reasonable fallbacks for stripped binaries.
-"""
-
 import struct
 import os
 
@@ -13,7 +8,6 @@ ELFCLASS64 = 2
 
 
 def get_elf_class(path: str) -> int:
-    """Read the EI_CLASS byte. Returns ELFCLASS32, ELFCLASS64, or 0 on failure."""
     try:
         with open(path, 'rb') as f:
             magic = f.read(5)
@@ -29,7 +23,6 @@ def is_elf(path: str) -> bool:
 
 
 def elf_arch_name(path: str) -> str:
-    """Map ELF machine field to a human name."""
     try:
         with open(path, 'rb') as f:
             if f.read(4) != ELFMAG:
@@ -54,7 +47,6 @@ def elf_arch_name(path: str) -> str:
 
 
 def read_elf_sections(path: str):
-    """Return a minimal list of {name, addr, size, type} dicts using pyelftools."""
     try:
         from elftools.elf.elffile import ELFFile
         sections = []

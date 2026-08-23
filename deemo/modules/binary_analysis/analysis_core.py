@@ -1,8 +1,3 @@
-"""
-Binary Analysis Core  --  CFG construction, data-flow solving, complexity scoring,
-decompilation, static analysis primitives, anti-analysis countermeasures.
-"""
-
 from typing import Dict, Any, List, Optional, Set, Tuple, Callable
 import logging
 import re
@@ -20,10 +15,7 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 
-# --- shared r2 wrappers ---
-
 def _r2_json(cmd: str, binary_path: str, timeout: int = 60) -> list:
-    """Execute radare2 command, parse stdout as JSON array. Returns [] on any failure."""
     try:
         r = subprocess.run(
             ['r2', '-q', '-c', f'{cmd}; q', binary_path],
@@ -36,7 +28,6 @@ def _r2_json(cmd: str, binary_path: str, timeout: int = 60) -> list:
 
 
 def _r2_text(cmd: str, binary_path: str, timeout: int = 30) -> str:
-    """Execute radare2 command, return raw stdout. Returns '' on any failure."""
     try:
         r = subprocess.run(
             ['r2', '-q', '-c', f'{cmd}; q', binary_path],
@@ -48,10 +39,7 @@ def _r2_text(cmd: str, binary_path: str, timeout: int = 30) -> str:
         return ''
 
 
-# --- enums / dataclasses ---
-
 class ComplexityFeatureType(str, Enum):
-    """Taxonomy of complexity dimensions for risk scoring."""
     CONTROL_FLOW_COMPLEXITY = "control_flow_complexity"
     CYCLOMATIC_COMPLEXITY = "cyclomatic_complexity"
     LOOP_DEPTH = "loop_depth"
@@ -62,26 +50,17 @@ class ComplexityFeatureType(str, Enum):
 
 @dataclass
 class ComplexityFeature:
-    """Single complexity measurement: type, numeric value, source location."""
     feature_type: ComplexityFeatureType
     value: float
     location: str
     metadata: dict = field(default_factory=dict)
 
 
-# --- ComplexityRiskPredictor ---
-
 class ComplexityRiskPredictor:
-    """
-    Heuristic ranking of functions by vulnerability likelihood.
-    Directs analysis budget toward highest-risk targets first.
-    """
 
     def __init__(self):
         self.model = None
         self.feature_cache: Dict[str, List[ComplexityFeature]] = {}
-
-    # -- feature extraction -------------------------------------------------
 
     def extract_control_flow_features(self, function_addr: int,
                                        binary_path: str = "") -> List[ComplexityFeature]:
@@ -93,7 +72,6 @@ class ComplexityRiskPredictor:
             n_blocks = len(blocks)
             n_edges = sum(len(b.get('jumps', [])) + (1 if b.get('fail') else 0)
                           for b in blocks)
-            # McCabe cyclomatic complexity: M = E - N + 2P
             cyclo = max(1, n_edges - n_blocks + 2)
             features.append(ComplexityFeature(
                 feature_type=ComplexityFeatureType.CONTROL_FLOW_COMPLEXITY,
@@ -112,7 +90,6 @@ class ComplexityRiskPredictor:
             return features
         try:
             blocks = _r2_json(f'afbj @ {function_addr}', binary_path, timeout=30)
-            # Back-edge criterion: target address <= source address
             back_edge_count = 0
             for b in blocks:
                 src = b.get('addr', 0)
@@ -123,7 +100,6 @@ class ComplexityRiskPredictor:
                 fail = b.get('fail', 0)
                 if fail and fail <= src:
                     back_edge_count += 1
-            # Nesting depth approximation: one level per back-edge, ceiling at 10
             depth = min(back_edge_count, 10)
             features.append(ComplexityFeature(
                 feature_type=ComplexityFeatureType.LOOP_DEPTH,
@@ -165,13 +141,7 @@ class ComplexityRiskPredictor:
             logger.debug(f"Memory density extraction failed: {e}")
         return features
 
-    # -- risk scoring -------------------------------------------------------
-
     def predict_vulnerable_functions(self, binary_path: str) -> List[Tuple[str, float]]:
-        """
-        Score every function by instruction count, argument count, and code size.
-        Returns (name, risk) tuples ordered highest-risk first.
-        """
         results = []
         try:
             funcs = _r2_json('aflj', binary_path, timeout=120)
@@ -192,18 +162,14 @@ class ComplexityRiskPredictor:
 
     def prioritize_analysis(self, functions: List[str],
                             binary_path: str = "") -> List[str]:
-        """Reorder function list so highest-risk targets are analyzed first."""
         risks = dict(self.predict_vulnerable_functions(binary_path)) if binary_path else {}
         return sorted(functions,
                       key=lambda f: risks.get(f, 0.0),
                       reverse=True)
 
 
-# --- CFG ---
-
 @dataclass
 class CFGNode:
-    """Basic-block vertex within a control-flow graph."""
     addr: int
     size: int = 0
     successors: list = field(default_factory=list)
@@ -211,14 +177,12 @@ class CFGNode:
 
 @dataclass
 class CFG:
-    """Directed graph of basic blocks: nodes keyed by address, single entry point."""
     nodes: dict = field(default_factory=dict)
     entry: int = 0
     func_name: str = ""
 
 
 class ControlFlowGraphBuilder:
-    """Constructs per-function CFG from radare2 basic-block JSON output."""
 
     def build(self, binary_path: str, func_name: str = "",
               func_addr: int = 0) -> CFG:
@@ -243,17 +207,13 @@ class ControlFlowGraphBuilder:
             return CFG(entry=func_addr)
 
 
-# --- CallGraph ---
-
 @dataclass
 class CallGraph:
-    """Interprocedural call graph: caller->callee edges, function address lookup."""
     edges: dict = field(default_factory=dict)
     functions: dict = field(default_factory=dict)
 
 
 class CallGraphBuilder:
-    """Traverses radare2 global call-graph (agj) to populate CallGraph edges."""
 
     def build(self, binary_path: str) -> CallGraph:
         cg = CallGraph()
@@ -280,11 +240,8 @@ class CallGraphBuilder:
         return cg
 
 
-# --- IndirectCallResolver ---
-
 @dataclass
 class IndirectCallTarget:
-    """Candidate target of an indirect call: address, confidence, constraint type."""
     target_addr: int
     target_name: Optional[str]
     confidence: float
@@ -293,11 +250,6 @@ class IndirectCallTarget:
 
 
 class IndirectCallResolver:
-    """
-    Resolves virtual calls and function-pointer invocations via type
-    constraint propagation and register value-set inspection. Fills
-    gaps in the static call graph where symbol data is absent.
-    """
 
     def __init__(self):
         self.call_graph: Dict[int, Set[int]] = {}
@@ -351,20 +303,17 @@ class IndirectCallResolver:
 
     def analyze_value_set(self, location: int,
                           binary_path: str = "") -> Set[Any]:
-        """Extract immediate constants and pushed addresses visible in the instruction stream."""
         values: Set[Any] = set()
         if not binary_path:
             return values
         try:
             text = _r2_text(f'pD 50 @ {location}', binary_path, timeout=30)
-            # Immediate operands from arithmetic / data-movement instructions
             for m in re.finditer(
                 r'(?:mov|add|sub|cmp|xor|and|or)\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)',
                 text,
             ):
                 val = m.group(1)
                 values.add(int(val, 16) if val.lower().startswith('0x') else int(val))
-            # Stack-pushed addresses (common in call sequences)
             for m in re.finditer(r'push\s+(0x[0-9a-fA-F]+)', text):
                 values.add(int(m.group(1), 16))
         except Exception as e:
@@ -390,10 +339,7 @@ class IndirectCallResolver:
         return self.call_graph
 
 
-# --- OpaquePredicateAnalyzer ---
-
 class OpaquePredicateType(str, Enum):
-    """Classification of branch conditions that evaluate to a fixed truth value."""
     CONSTANT_TRUE = "constant_true"
     CONSTANT_FALSE = "constant_false"
     COMPUTABLE = "computable"
@@ -402,7 +348,6 @@ class OpaquePredicateType(str, Enum):
 
 @dataclass
 class BranchAnalysisResult:
-    """Verdict on a single branch: predicate classification, reachability, simplified form."""
     branch_addr: int
     predicate_type: OpaquePredicateType
     is_reachable: bool
@@ -411,11 +356,6 @@ class BranchAnalysisResult:
 
 
 class OpaquePredicateAnalyzer:
-    """
-    Lightweight pattern matching against instruction sequences to flag
-    branches that are constant-true or constant-false  --  typical of
-    control-flow obfuscation. Feeds simplification into CFG recovery.
-    """
 
     def __init__(self):
         self.branch_cache: Dict[int, BranchAnalysisResult] = {}
@@ -467,7 +407,6 @@ class OpaquePredicateAnalyzer:
 
     def refine_reachability(self, function_addr: int,
                              binary_path: str = "") -> Set[int]:
-        """BFS traversal from function entry; returns every reachable basic-block address."""
         reachable: Set[int] = set()
         if not binary_path:
             return reachable
@@ -475,7 +414,7 @@ class OpaquePredicateAnalyzer:
             blocks = _r2_json(f'afbj @ {function_addr}', binary_path, timeout=30)
             if not blocks:
                 return reachable
-            # Build adjacency map: block address -> successor list
+            # 构建邻接表: 块地址 -> 后继列表
             succ_map: Dict[int, List[int]] = {}
             entry = blocks[0].get('addr', 0)
             for b in blocks:
@@ -489,7 +428,7 @@ class OpaquePredicateAnalyzer:
                 if fail and fail not in succs:
                     succs.append(fail)
                 succ_map[addr] = succs
-            # Standard BFS from entry node
+            # 从入口节点做标准 BFS
             q = deque([entry])
             while q:
                 cur = q.popleft()
@@ -504,11 +443,8 @@ class OpaquePredicateAnalyzer:
         return reachable
 
 
-# --- StackLifetimeTracker ---
-
 @dataclass
 class StackVariable:
-    """Stack-resident variable: offset, size, allocation/deallocation program points."""
     name: str
     offset: int
     size: int
@@ -519,11 +455,6 @@ class StackVariable:
 
 
 class StackLifetimeTracker:
-    """
-    Models stack-frame lifecycle across function boundaries. Tracks pointer
-    escape and dangling-reference conditions that create use-after-return
-    and use-after-free vulnerabilities.
-    """
 
     def __init__(self):
         self.stack_frames: Dict[int, List[StackVariable]] = {}
@@ -532,7 +463,6 @@ class StackLifetimeTracker:
 
     def simulate_stack_frame(self, function_addr: int,
                               binary_path: str = "") -> List[StackVariable]:
-        """Query radare2 stack-variable metadata; fall back to prologue parsing."""
         variables: List[StackVariable] = []
         if not binary_path:
             return variables
@@ -549,7 +479,7 @@ class StackLifetimeTracker:
                     lifetime_end=None,
                 ))
         except Exception:
-            # Fallback: infer frame size from `sub rsp, imm` in function prologue
+            # 回退: 从函数序言的 sub rsp, imm 推断栈帧大小
             try:
                 dis = _r2_text(f'pD 30 @ {function_addr}', binary_path, timeout=30)
                 m = re.search(r'sub\s+rsp,\s*(0x[0-9a-fA-F]+|\d+)', dis)
@@ -567,14 +497,9 @@ class StackLifetimeTracker:
 
     def track_pointer_escape(self, pointer_addr: int, var_addr: int,
                               escape_site: int) -> None:
-        """Log an escape event: pointer to var_addr leaves the frame at escape_site."""
         self.escaped_pointers[var_addr].add(escape_site)
 
     def detect_dangling_pointer(self, function_addr: int) -> List[Tuple[int, int]]:
-        """
-        Identify pointers whose referent stack frame has been deallocated.
-        Returns (escaped_ptr_addr, freed_var_addr) pairs.
-        """
         dangling = []
         for var_addr, escape_sites in self.escaped_pointers.items():
             for site in escape_sites:
@@ -584,18 +509,14 @@ class StackLifetimeTracker:
     def analyze_cross_function_ref(self, caller_addr: int,
                                     callee_addr: int,
                                     binary_path: str = "") -> bool:
-        """
-        True when callee captures a pointer into the caller's frame  -- 
-        prerequisite condition for use-after-return.
-        """
         if not binary_path:
             return False
         try:
-            # LEA into caller's base/frame register -> stack-address capture
+            # LEA 引用调用方基址/帧寄存器 -> 栈地址泄露
             dis = _r2_text(f'pD 30 @ {callee_addr}', binary_path, timeout=30)
             if re.search(r'lea\s+\w+,\s*\[r[bp]', dis, re.I):
                 return True
-            # Indirect write through a register  --  possible frame escape
+            # 通过寄存器间接写 -> 可能的帧逃逸
             if re.search(r'mov\s+\[r\w+\],', dis, re.I):
                 return True
         except Exception:
@@ -603,20 +524,13 @@ class StackLifetimeTracker:
         return False
 
 
-# --- DataFlowEquationSolver ---
-
 @dataclass
 class ConstantValue:
-    """Abstract-domain lattice element: a known constant or TOP (unknown)."""
     value: Any
     is_top: bool = False
 
 
 class DataFlowEquationSolver:
-    """
-    Forward iterative constant propagation with a worklist algorithm.
-    Feeds indirect-jump resolution and buffer-size inference downstream.
-    """
 
     def __init__(self):
         self.constraint_graph: Dict[int, Set[int]] = {}
@@ -625,7 +539,6 @@ class DataFlowEquationSolver:
     def solve_dataflow(self, function_addr: int,
                         entry_state: Dict[int, ConstantValue],
                         binary_path: str = "") -> Dict[int, ConstantValue]:
-        """Worklist-driven forward dataflow: converge constants across basic blocks."""
         if not binary_path:
             return dict(entry_state)
         result = dict(entry_state)
@@ -642,7 +555,7 @@ class DataFlowEquationSolver:
                     succs.append(fail)
                 succ_map[addr] = [s for s in succs if s]
 
-            # Iterate to fixed point: merge predecessor constants, propagate forward
+            # 迭代至不动点: 合并前驱常量, 前向传播
             worklist = deque(all_addrs)
             changed = set(all_addrs)
             MAX_ITER = 100
@@ -650,12 +563,12 @@ class DataFlowEquationSolver:
                 if not changed:
                     break
                 cur = changed.pop()
-                # Meet-over-predecessors: merge constants from all incoming edges
+                # 前驱合并: 从所有入边合并常量
                 predecessors = [p for p in all_addrs
                                 if cur in succ_map.get(p, [])]
                 if not predecessors:
                     continue
-                # Constant folding rule: unanimous predecessor agreement -> known value; disagreement -> ⊤
+                # 常量折叠规则: 前驱一致 -> 已知值; 不一致 -> 顶元素
                 merged: Dict[int, ConstantValue] = {}
                 for p in predecessors:
                     if p in result:
@@ -673,7 +586,6 @@ class DataFlowEquationSolver:
 
     def constant_propagation(self, function_addr: int,
                               binary_path: str = "") -> Dict[int, Any]:
-        """Scan disassembly for mov-immediate patterns; return address->constant map."""
         props: Dict[int, Any] = {}
         if not binary_path:
             return props
@@ -691,9 +603,8 @@ class DataFlowEquationSolver:
         return props
 
     def constant_folding(self, expression: str) -> Optional[Any]:
-        """Evaluate a binary arithmetic expression to a constant; return None if symbolic."""
         expr = expression.strip().replace(' ', '')
-        # Supported binary operators  --  each maps to its Python lambda
+        # 支持的二元运算符 -> 各自映射到 Python lambda
         safe_ops = {'+': lambda a, b: a + b,
                     '-': lambda a, b: a - b,
                     '*': lambda a, b: a * b,
@@ -705,7 +616,7 @@ class DataFlowEquationSolver:
                     '|': lambda a, b: a | b,
                     '^': lambda a, b: a ^ b}
         for op, func in safe_ops.items():
-            # Full-match: both operands must be numeric literals
+            # 全匹配: 两个操作数均为数字字面量
             pat = rf'(0x[0-9a-fA-F]+|\d+){re.escape(op)}(0x[0-9a-fA-F]+|\d+)'
             m = re.fullmatch(pat, expr)
             if m:
@@ -715,7 +626,7 @@ class DataFlowEquationSolver:
                     return func(a, b)
                 except ZeroDivisionError:
                     return None
-        # Degenerate case: expression is already a lone constant
+        # 退化情形: 表达式本身即为单一常量
         m = re.fullmatch(r'(0x[0-9a-fA-F]+|\d+)', expr)
         if m:
             val = m.group(1)
@@ -724,14 +635,13 @@ class DataFlowEquationSolver:
 
     def resolve_indirect_jump(self, jump_addr: int,
                                context: Dict[str, Any]) -> List[int]:
-        """Scan instructions preceding an indirect jump for loaded address constants."""
         targets: List[int] = []
         binary_path = context.get('binary_path', '')
         if not binary_path:
             return targets
         try:
             dis = _r2_text(f'pD 20 @ {jump_addr}', binary_path, timeout=30)
-            # Collect every immediate address loaded prior to the indirect jump
+            # 收集间接跳转前加载的所有立即地址
             found = set()
             for m in re.finditer(r'(?:mov|lea)\s+\w+,\s*(0x[0-9a-fA-F]+)', dis):
                 found.add(int(m.group(1), 16))
@@ -742,37 +652,33 @@ class DataFlowEquationSolver:
 
     def infer_buffer_size(self, buffer_addr: int,
                            binary_path: str = "") -> Optional[int]:
-        """Heuristic size inference: scan for malloc argument or stack-frame delta."""
         if not binary_path:
             return None
         try:
             dis = _r2_text(f'pD 80 @ {buffer_addr}', binary_path, timeout=30)
-            # Pattern 1: mov reg, size; call malloc
+            # 模式1: mov reg, size; call malloc
             m = re.search(r'mov\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)\s*\n.*call.*malloc', dis)
             if m:
                 val = m.group(1)
                 return int(val, 16) if val.lower().startswith('0x') else int(val)
-            # Pattern 2: stack allocation via sub rsp, N
+            # 模式2: 通过 sub rsp, N 的栈分配
             m = re.search(r'sub\s+rsp,\s*(0x[0-9a-fA-F]+|\d+)', dis)
             if m:
                 val = m.group(1)
                 return int(val, 16) if val.lower().startswith('0x') else int(val)
-            # Pattern 3: LEA into stack frame  --  offset approximates buffer extent
+            # 模式3: LEA 到栈帧 -> 偏移近似缓冲区范围
             m = re.search(r'lea\s+\w+,\s*\[rsp\s*\+\s*(0x[0-9a-fA-F]+|\d+)\]', dis)
             if m:
                 val = m.group(1)
                 offset = int(val, 16) if val.lower().startswith('0x') else int(val)
-                return offset  # approximate size from offset
+                return offset
         except Exception:
             logger.debug("suppressed", exc_info=True)
         return None
 
 
-# --- LoopAnalyzer ---
-
 @dataclass
 class LoopInvariant:
-    """Instruction within a loop body whose operands are loop-invariant."""
     invariant_expr: str
     location: int
     loop_header: int
@@ -780,7 +686,6 @@ class LoopInvariant:
 
 @dataclass
 class InductionVariable:
-    """Loop variable updated by a constant stride each iteration."""
     name: str
     initial_value: Any
     step_value: Any
@@ -789,11 +694,6 @@ class InductionVariable:
 
 
 class LoopAnalyzer:
-    """
-    Discovers natural loops via back-edge detection, then classifies
-    induction variables and invariant instructions within each loop.
-    Outputs feed pseudocode structuring and bounds analysis.
-    """
 
     def __init__(self):
         self.loop_headers: Set[int] = set()
@@ -801,7 +701,6 @@ class LoopAnalyzer:
 
     def identify_loops(self, function_addr: int,
                         binary_path: str = "") -> Set[int]:
-        """Back-edge detection over basic blocks: target <= source -> loop header."""
         headers: Set[int] = set()
         if not binary_path:
             return headers
@@ -812,7 +711,7 @@ class LoopAnalyzer:
                 for j in b.get('jumps', []):
                     tgt = j.get('jump', 0)
                     if tgt and tgt <= src:
-                        headers.add(tgt)  # Back-edge target = natural loop header
+                        headers.add(tgt)
                 fail = b.get('fail', 0)
                 if fail and fail <= src:
                     headers.add(fail)
@@ -823,12 +722,11 @@ class LoopAnalyzer:
 
     def find_loop_invariants(self, loop_header: int,
                               binary_path: str = "") -> List[LoopInvariant]:
-        """Flag loop-body instructions whose operands are all defined outside the loop."""
         invariants: List[LoopInvariant] = []
         if not binary_path:
             return invariants
         try:
-            # Loop body: all instructions at addresses >= header
+            # 循环体: 地址 >= 头部的所有指令
             dis = _r2_text(f'pD 200 @ {loop_header}', binary_path, timeout=60)
             defs_outside: Set[str] = set()
             for line in dis.split('\n'):
@@ -838,18 +736,18 @@ class LoopAnalyzer:
                 )
                 if m and re.fullmatch(r'0x[0-9a-fA-F]+|[a-z_]\w*', m.group(2)):
                     defs_outside.add(m.group(1).lower())
-            # Invariant test: every register operand must be defined outside the loop
+            # 不变式判定: 每个寄存器操作数必须在循环外定义
             addr_pattern = r'^\s*(0x[0-9a-fA-F]+)'
             for line in dis.split('\n'):
                 addr_match = re.match(addr_pattern, line)
                 if not addr_match:
                     continue
                 addr = int(addr_match.group(1), 16)
-                # Exclude control-flow instructions from invariant classification
+                # 排除控制流指令
                 if re.search(r'\b(jmp|je|jne|jz|jnz|jg|jl|jge|jle|call|ret)\b',
                              line, re.I):
                     continue
-                # All referenced registers must be in the external-def set
+                # 所有引用的寄存器须在外部定义集中
                 operands = re.findall(r'\b(r[a-z]{1,2}\d*|e[a-z]{1,2}x)\b', line, re.I)
                 all_invariant = all(
                     op.lower() in defs_outside for op in operands
@@ -866,13 +764,12 @@ class LoopAnalyzer:
 
     def identify_induction_variables(self, loop_header: int,
                                       binary_path: str = "") -> List[InductionVariable]:
-        """Detect variables modified by constant add/sub/inc/dec within the loop body."""
         variables: List[InductionVariable] = []
         if not binary_path:
             return variables
         try:
             dis = _r2_text(f'pD 100 @ {loop_header}', binary_path, timeout=60)
-            # Category 1: add/sub reg, imm  --  constant-stride arithmetic
+            # 类别1: add/sub reg, imm -> 常量步长算术
             for m in re.finditer(
                 r'(?:add|sub)\s+(\w+),\s*(0x[0-9a-fA-F]+|\d+)',
                 dis, re.I,
@@ -885,12 +782,12 @@ class LoopAnalyzer:
                 variables.append(InductionVariable(
                     name=var, initial_value=0, step_value=step,
                     base_variable=var, linear_coefficient=float(step)))
-            # Category 2: inc reg  --  unit positive stride
+            # 类别2: inc reg -> 单位正步长
             for m in re.finditer(r'inc\s+(\w+)', dis, re.I):
                 variables.append(InductionVariable(
                     name=m.group(1), initial_value=0, step_value=1,
                     base_variable=m.group(1), linear_coefficient=1.0))
-            # Category 3: dec reg  --  unit negative stride
+            # 类别3: dec reg -> 单位负步长
             for m in re.finditer(r'dec\s+(\w+)', dis, re.I):
                 variables.append(InductionVariable(
                     name=m.group(1), initial_value=0, step_value=-1,
@@ -901,40 +798,35 @@ class LoopAnalyzer:
 
     def hoist_invariants(self, loop_header: int,
                           binary_path: str = "") -> List[int]:
-        """Collect addresses of invariant instructions  --  candidates for code motion."""
         invs = self.find_loop_invariants(loop_header, binary_path)
         return sorted(set(i.location for i in invs))
 
     def analyze_loop_bounds(self, loop_header: int,
                              binary_path: str = "") -> Tuple[Optional[int], Optional[int]]:
-        """Infer (lower, upper) from cmp-imm and conditional-jump patterns at the header."""
         lo, hi = None, None
         if not binary_path:
             return lo, hi
         try:
             dis = _r2_text(f'pD 50 @ {loop_header}', binary_path, timeout=30)
-            # Extract all cmp-against-immediate operands
+            # 提取所有与立即数比较的操作数
             comps = re.findall(r'cmp\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)', dis, re.I)
             if comps:
                 for c in comps:
                     val = int(c, 16) if c.lower().startswith('0x') else int(c)
-                    # jle/jl/jbe/jb -> cmp value is upper bound
+                    # jle/jl/jbe/jb -> cmp 值为上界
                     if re.search(r'\b(jle|jl|jbe|jb)\b', dis, re.I):
                         hi = val
                     elif re.search(r'\b(jge|jg|jae|ja)\b', dis, re.I):
                         lo = val
                     else:
-                        hi = val  # Default: treat as upper bound
+                        hi = val
         except Exception as e:
             logger.debug(f"Loop bound analysis failed: {e}")
         return lo, hi
 
 
-# --- ExceptionSensitiveDataFlow ---
-
 @dataclass
 class ExceptionPath:
-    """Exception-handling control path: try entry, catch landing, cleanup sites."""
     try_entry: int
     catch_entry: int
     exception_type: Optional[str]
@@ -942,11 +834,6 @@ class ExceptionPath:
 
 
 class ExceptionSensitiveDataFlow:
-    """
-    Tracks C++ and SEH exception paths through static analysis so
-    destructor calls and deallocations along unwind paths are not
-    missed  --  eliminating false negatives from ignored exception edges.
-    """
 
     def __init__(self):
         self.exception_paths: List[ExceptionPath] = []
@@ -954,18 +841,17 @@ class ExceptionSensitiveDataFlow:
 
     def build_exception_graph(self, function_addr: int,
                                binary_path: str = "") -> None:
-        """Scan disassembly for C++ EH and SEH signatures; populate exception_paths."""
         if not binary_path:
             return
         try:
             dis = _r2_text(f'pD 300 @ {function_addr}', binary_path, timeout=60)
-            # C++ exception handling: __CxxFrameHandler / __gxx_personality / _Unwind_Resume
+            # C++ 异常处理: __CxxFrameHandler / __gxx_personality / _Unwind_Resume
             if re.search(r'__CxxFrameHandler|__gxx_personality|_Unwind_Resume', dis):
-                # Each call site after EH registration is a potential throw point
+                # EH 注册后的每个调用点都是潜在抛出点
                 calls = re.findall(r'(0x[0-9a-fA-F]+)\s+.*call\s+', dis)
                 for i, addr_str in enumerate(calls):
                     addr = int(addr_str, 16)
-                    # Mark as throw-capable: every post-registration call
+                    # 标记为可抛出: 注册后每个调用
                     self.exception_paths.append(ExceptionPath(
                         try_entry=function_addr,
                         catch_entry=addr if i + 1 < len(calls)
@@ -973,10 +859,10 @@ class ExceptionSensitiveDataFlow:
                         exception_type="cxx",
                         cleanup_sites=[],
                     ))
-            # SEH: fs:[0] chain manipulation, __except / __finally keywords
+            # SEH: fs:[0] 链操作, __except / __finally 关键字
             if re.search(r'fs:\[\s*0\s*\]|__except|__finally', dis):
                 self.seh_chain.append(function_addr)
-                # Locate the __except filter function / handler address
+                # 定位 __except 过滤函数 / 处理器地址
                 handler_match = re.search(r'(0x[0-9a-fA-F]+)\s+.*call.*__except', dis)
                 if handler_match:
                     self.exception_paths.append(ExceptionPath(
@@ -990,13 +876,12 @@ class ExceptionSensitiveDataFlow:
 
     def track_destructor_side_effects(self, exception_thrown: int,
                                        binary_path: str = "") -> Set[int]:
-        """Collect call sites reachable after a throw point  --  potential destructors."""
         effects: Set[int] = set()
         if not binary_path:
             return effects
         try:
             dis = _r2_text(f'pD 100 @ {exception_thrown}', binary_path, timeout=30)
-            # Calls at addresses greater than the throw site are unwind-path candidates
+            # 地址大于抛出点的调用是展开路径候选
             for m in re.finditer(r'(0x[0-9a-fA-F]+)\s+.*call\s+', dis, re.I):
                 addr = int(m.group(1), 16)
                 if addr > exception_thrown:
@@ -1007,18 +892,17 @@ class ExceptionSensitiveDataFlow:
 
     def analyze_seh_path(self, seh_entry: int,
                           binary_path: str = "") -> ExceptionPath:
-        """Extract handler and cleanup addresses from a single SEH entry point."""
         path = ExceptionPath(
             try_entry=seh_entry, catch_entry=0, exception_type="seh")
         if not binary_path:
             return path
         try:
             dis = _r2_text(f'pD 100 @ {seh_entry}', binary_path, timeout=30)
-            # SEH handler address is typically pushed onto the stack before the fs:[0] write
+            # SEH 处理器地址通常在 fs:[0] 写入前压栈
             push_match = re.search(r'push\s+(0x[0-9a-fA-F]+)', dis)
             if push_match:
                 path.catch_entry = int(push_match.group(1), 16)
-            # __finally blocks serve as cleanup sites
+            # __finally 块作为清理点
             finally_match = re.search(r'(0x[0-9a-fA-F]+)\s+.*__finally', dis)
             if finally_match:
                 path.cleanup_sites.append(int(finally_match.group(1), 16))
@@ -1029,12 +913,11 @@ class ExceptionSensitiveDataFlow:
     def check_resource_leak_on_exception(self, resource_addr: int,
                                           throw_site: int,
                                           binary_path: str = "") -> bool:
-        """True if an allocation precedes a throw with no corresponding free on the unwind path."""
         if not binary_path:
             return False
         try:
             dis = _r2_text(f'pD 200 @ {resource_addr}', binary_path, timeout=60)
-            # Check for resource acquisition before the throw point
+            # 检查抛出点前是否有资源获取
             alloc_before = False
             free_after = False
             alloc_match = re.search(
@@ -1042,7 +925,7 @@ class ExceptionSensitiveDataFlow:
                 dis, re.I)
             if alloc_match:
                 alloc_before = True
-            # Verify no deallocation after throw  --  if absent, leak confirmed
+            # 验证抛出后无释放 -> 若缺则确认泄漏
             post_dis = _r2_text(
                 f'pD 100 @ {throw_site + 16}', binary_path, timeout=30)
             if re.search(r'(?:call.*(?:free|delete|close|CloseHandle))', post_dis, re.I):
@@ -1052,11 +935,8 @@ class ExceptionSensitiveDataFlow:
             return False
 
 
-# --- ThreadHappensBeforeAnalyzer ---
-
 @dataclass
 class ThreadCreate:
-    """Thread spawn record: call address, thread identity, entry routine."""
     addr: int
     thread_id: Any
     start_routine: Optional[int]
@@ -1065,7 +945,6 @@ class ThreadCreate:
 
 @dataclass
 class LockOperation:
-    """Synchronization primitive access: lock address, acquire/release direction."""
     addr: int
     lock_addr: int
     is_acquire: bool
@@ -1074,17 +953,12 @@ class LockOperation:
 
 @dataclass
 class HappensBeforeRelation:
-    """Partial-order edge: event1 must complete before event2 begins."""
     event1: Any
     event2: Any
     relation_type: str
 
 
 class ThreadHappensBeforeAnalyzer:
-    """
-    Constructs partial-order constraints from lock acquire/release pairs
-    and thread creation/join events. Surfaces data races and lock cycles.
-    """
 
     def __init__(self):
         self.thread_creates: List[ThreadCreate] = []
@@ -1092,7 +966,6 @@ class ThreadHappensBeforeAnalyzer:
         self.happens_before_graph: Dict[HappensBeforeRelation, float] = {}
 
     def identify_thread_creation(self, binary_path: str) -> List[ThreadCreate]:
-        """Match imported symbols against known thread-creation API names."""
         creates: List[ThreadCreate] = []
         if not binary_path:
             return creates
@@ -1112,7 +985,6 @@ class ThreadHappensBeforeAnalyzer:
         return creates
 
     def identify_lock_operations(self, binary_path: str) -> List[LockOperation]:
-        """Match imported symbols against known mutex/synchronization API names."""
         ops: List[LockOperation] = []
         if not binary_path:
             return ops
@@ -1147,21 +1019,16 @@ class ThreadHappensBeforeAnalyzer:
         return ops
 
     def build_happens_before_graph(self) -> Dict[HappensBeforeRelation, float]:
-        """
-        Derive happens-before edges from three sources: program order
-        (same-thread), lock release->acquire chains, and thread fork/join.
-        Each edge carries a confidence weight.
-        """
         graph: Dict[HappensBeforeRelation, float] = {}
-        # Rule 1: release->acquire on the same lock object imposes ordering
+        # 规则1: 同一锁对象的释放->获取施加顺序
         releases = [l for l in self.lock_operations if not l.is_acquire]
         acquires = [l for l in self.lock_operations if l.is_acquire]
         for rel in releases:
             for acq in acquires:
                 if rel.lock_addr == acq.lock_addr and rel.addr < acq.addr:
                     rel_key = HappensBeforeRelation(rel, acq, 'lock_order')
-                    graph[rel_key] = 1.0  # Highest confidence: direct lock ordering
-        # Rule 2: thread creation imposes parent->child ordering
+                    graph[rel_key] = 1.0  # 最高置信: 直接锁顺序
+        # 规则2: 线程创建施加父->子顺序
         for tc in self.thread_creates:
             for other_tc in self.thread_creates:
                 if tc is not other_tc and tc.addr < other_tc.addr:
@@ -1172,19 +1039,15 @@ class ThreadHappensBeforeAnalyzer:
 
     def detect_data_race(self, access1: Tuple[int, int, str],
                           access2: Tuple[int, int, str]) -> bool:
-        """
-        Data-race condition: overlapping memory regions, at least one write,
-        and no happens-before edge connecting the two accesses.
-        """
         addr1, sz1, kind1 = access1
         addr2, sz2, kind2 = access2
-        # Criterion 1: address ranges overlap
+        # 准则1: 地址范围重叠
         if not (addr1 <= addr2 < addr1 + sz1 or addr2 <= addr1 < addr2 + sz2):
             return False
-        # Criterion 2: at least one access is a write
+        # 准则2: 至少一个访问是写
         if kind1 != 'write' and kind2 != 'write':
             return False
-        # Criterion 3: no happens-before relation connects the two accesses
+        # 准则3: 两个访问间无 happens-before 关系
         for rel in self.happens_before_graph:
             e1, e2 = rel.event1, rel.event2
             if (getattr(e1, 'addr', None) == addr1 and
@@ -1196,52 +1059,42 @@ class ThreadHappensBeforeAnalyzer:
         return True
 
     def detect_potential_deadlock(self, lock_cycle: List[int]) -> bool:
-        """A lock-acquisition cycle of >=2 distinct locks is sufficient for deadlock risk."""
         if len(lock_cycle) < 2:
             return False
-        # Trivial cycle (single lock) is not a deadlock  --  need >=2 distinct resources
+        # 平凡环(单锁)不是死锁 -> 需 >=2 个不同资源
         seen = set()
         unique_locks = []
         for lk in lock_cycle:
             if lk not in seen:
                 seen.add(lk)
                 unique_locks.append(lk)
-        # Different acquisition orders of the same lock set across threads -> deadlock
+        # 同一锁集在不同线程中以不同顺序获取 -> 死锁
         return len(unique_locks) >= 2
 
 
-# --- VMDecompilerAccelerator ---
-
 @dataclass
 class VMSchedulerInfo:
-    """VM dispatch metadata: entry point, dispatch loop address, virtual register layout."""
     entry_point: int
     dispatch_loop: int
     vm_register_defs: dict = field(default_factory=dict)
 
 
 class VMDecompilerAccelerator:
-    """
-    Detects VM dispatch patterns (switch-based interpreter loops),
-    recovers virtual register mapping, and emits simplified equivalent
-    instructions  --  bypassing virtualization obfuscation directly.
-    """
 
     def __init__(self):
         self.vm_schedulers: Dict[int, VMSchedulerInfo] = {}
 
     def detect_vm_entry(self, function_addr: int,
                          binary_path: str = "") -> bool:
-        """Score function against VM-dispatcher heuristics: push/pop density, indirect jumps, switch tables."""
         if not binary_path:
             return False
         try:
             dis = _r2_text(f'pD 200 @ {function_addr}', binary_path, timeout=60)
-            # VM dispatcher signature: context save (many pushes), indirect dispatch (jmp reg), dense switch
+            # VM 分发器特征: 上下文保存(大量push), 间接分发(jmp reg), 密集switch
             push_count = len(re.findall(r'\bpush\b', dis, re.I))
             pop_count = len(re.findall(r'\bpop\b', dis, re.I))
             jmp_reg = len(re.findall(r'\bjmp\s+\w+\b', dis, re.I))
-            # Composite score: push density (context save) + pop density (restore) + indirect jump + switch density
+            # 复合评分: push密度 + pop密度 + 间接跳转 + switch密度
             score = (push_count > 3) + (pop_count > 3) + (jmp_reg > 0) + (
                 'switch' in dis.lower() or len(re.findall(r'\bcase\b', dis, re.I)) > 4)
             return score >= 3
@@ -1251,7 +1104,6 @@ class VMDecompilerAccelerator:
 
     def identify_vm_handler(self, handler_addr: int,
                               binary_path: str = "") -> str:
-        """Categorize VM handler by instruction mix: arithmetic, call, branch, memory, conditional."""
         if not binary_path:
             return "unknown"
         try:
@@ -1272,13 +1124,12 @@ class VMDecompilerAccelerator:
 
     def recover_vm_context(self, vm_entry: int,
                             binary_path: str = "") -> VMSchedulerInfo:
-        """Map virtual register offsets by analyzing load/store patterns in the dispatch loop."""
         info = VMSchedulerInfo(entry_point=vm_entry, dispatch_loop=0)
         if not binary_path:
             return info
         try:
             dis = _r2_text(f'pD 200 @ {vm_entry}', binary_path, timeout=60)
-            # Displacement-based register access: base+offset patterns reveal virtual register layout
+            # 基址+偏移模式揭示虚拟寄存器布局
             reg_matches = re.finditer(
                 r'(?:mov|lea)\s+(\w+),\s*\[(\w+)\s*\+(0x[0-9a-fA-F]+|\d+)\]',
                 dis, re.I,
@@ -1288,7 +1139,7 @@ class VMDecompilerAccelerator:
                 offset = (int(offset_str, 16) if offset_str.lower().startswith('0x')
                           else int(offset_str))
                 info.vm_register_defs[m.group(1)] = offset
-            # Dispatch loop = back-edge target of the indirect jump at the end of the handler table
+            # 分发循环 = 处理器表末尾间接跳转的后边目标
             back_edges = re.findall(r'(0x[0-9a-fA-F]+).*\bjmp\s+\w+\b', dis)
             if back_edges:
                 info.dispatch_loop = int(back_edges[0], 16)
@@ -1298,7 +1149,6 @@ class VMDecompilerAccelerator:
 
     def decompile_vm_handler(self, handler_addr: int,
                               context: VMSchedulerInfo) -> str:
-        """Map VM bytecode handler to pseudo-C, substituting virtual register names."""
         try:
             dis = _r2_text(f'pD 50 @ {handler_addr}', '', timeout=30)
             lines: List[str] = []
@@ -1306,9 +1156,9 @@ class VMDecompilerAccelerator:
                 line = line.strip()
                 if not line:
                     continue
-                # Strip address prefix: keep only instruction mnemonic and operands
+                # 去除地址前缀: 仅保留指令助记符和操作数
                 body = re.sub(r'^\s*0x[0-9a-fA-F]+\s+', '', line)
-                # Substitute base+offset operands with vm_reg[index] notation
+                # 用 vm_reg[index] 替换基址+偏移操作数
                 for reg, off in context.vm_register_defs.items():
                     body = body.replace(f'[{reg}+{off}]',
                                         f'vm_reg[{off // 4}]')
@@ -1320,28 +1170,18 @@ class VMDecompilerAccelerator:
         return ""
 
 
-# --- FunctionInlineRecovery ---
-
 @dataclass
 class InlineSite:
-    """Record of a detected inline expansion: call site, function identity, nesting depth."""
     call_site: int
     inlined_function: str
     inline_depth: int
 
 
 class FunctionInlineRecovery:
-    """
-    Identifies compiler-inlined functions through prologue/epilogue
-    signature matching and calling-convention inference. Recovers
-    inlined bodies as standalone functions for cross-binary correlation.
-    """
 
     def __init__(self):
         self.inline_sites: List[InlineSite] = []
         self.function_signatures: Dict[int, Dict[str, Any]] = {}
-
-    # --- patterns ---------------------------------------------------------
 
     _PROLOGUE_PATTERNS = [
         r'push\s+(?:rbp|ebp)',
@@ -1358,9 +1198,9 @@ class FunctionInlineRecovery:
     ]
 
     _INLINE_CALL_PATTERNS = [
-        r'mov\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)',   # Parameter load before call
-        r'call\s+\w+',                             # Direct call instruction
-        # Inline bodies lack a ret between prologue/epilogue pairs
+        r'mov\s+\w+,\s*(0x[0-9a-fA-F]+|\d+)',   # 调用前参数加载
+        r'call\s+\w+',                             # 直接调用指令
+        # 内联体在序言/尾声对之间缺少 ret
     ]
 
     _CALLING_CONVENTIONS = {
@@ -1371,7 +1211,6 @@ class FunctionInlineRecovery:
 
     def detect_inline_pattern(self, call_site: int,
                                binary_path: str = "") -> bool:
-        """True when multiple prologue patterns appear without an intervening ret."""
         if not binary_path:
             return False
         try:
@@ -1380,7 +1219,7 @@ class FunctionInlineRecovery:
                          if re.search(p, dis, re.I))
             ecount = sum(1 for p in self._EPILOGUE_PATTERNS
                          if re.search(p, dis, re.I))
-            # Criteria: >=2 prologue signatures + absent ret -> inline expansion
+            # 判定: >=2 个序言特征 + 无 ret -> 内联展开
             has_ret = bool(re.search(r'\bretn?\b', dis, re.I))
             return pcount >= 2 and not has_ret
         except Exception:
@@ -1388,7 +1227,6 @@ class FunctionInlineRecovery:
 
     def recover_prologue_pattern(self, function_addr: int,
                                   binary_path: str = "") -> Optional[str]:
-        """Read first 32 bytes of function as a hex-encoded prologue signature."""
         if not binary_path:
             return None
         try:
@@ -1399,11 +1237,10 @@ class FunctionInlineRecovery:
 
     def recover_epilogue_pattern(self, function_addr: int,
                                   binary_path: str = "") -> Optional[str]:
-        """Read last 16 bytes of function as a hex-encoded epilogue signature."""
         if not binary_path:
             return None
         try:
-            # Query radare2 for function size, then read last 16 bytes from (end-16)
+            # 查询 radare2 函数大小, 从末尾读 16 字节
             funcs = _r2_json(f'aflj @ {hex(function_addr)}', binary_path)
             if not funcs:
                 return None
@@ -1416,13 +1253,12 @@ class FunctionInlineRecovery:
 
     def recover_parameter_convention(self, function_addr: int,
                                       binary_path: str = "") -> Dict[str, int]:
-        """Score x86_64_win vs x86_64_sysv conventions by register usage; return best match."""
         if not binary_path:
             return {}
         try:
             dis = _r2_text(f'pD 50 @ {function_addr}', binary_path, timeout=30)
             result: Dict[str, int] = {}
-            # Count register hits for each convention; highest score wins
+            # 统计各调用约定的寄存器命中数, 最高分胜出
             for conv_name, mapping in self._CALLING_CONVENTIONS.items():
                 score = 0
                 for reg, idx in mapping.items():
@@ -1436,18 +1272,14 @@ class FunctionInlineRecovery:
 
     def undo_inline(self, inline_site: InlineSite,
                      binary_path: str = "") -> None:
-        """Register a confirmed inline site for downstream re-analysis."""
         if inline_site.call_site not in self.function_signatures:
             self.function_signatures[inline_site.call_site] = {}
         self.function_signatures[inline_site.call_site]['inlined'] = inline_site
         self.inline_sites.append(inline_site)
 
 
-# --- CrossBinaryGlobalAnalyzer ---
-
 @dataclass
 class GlobalBinding:
-    """Cross-module global symbol: name, address, shared-module list, access frequency."""
     symbol_name: str
     address: int
     shared_modules: list = field(default_factory=list)
@@ -1455,16 +1287,11 @@ class GlobalBinding:
 
 
 class CrossBinaryGlobalAnalyzer:
-    """
-    Maps GOT/PLT entries and shared global symbols across binary boundaries.
-    Flags concurrent-access risks on globals visible to multiple modules.
-    """
 
     def __init__(self):
         self.global_bindings: Dict[str, GlobalBinding] = {}
 
     def analyze_got_plt_access(self, binary_path: str) -> Dict[str, GlobalBinding]:
-        """Merge import table with relocation entries to map symbols to GOT/PLT addresses."""
         bindings: Dict[str, GlobalBinding] = {}
         try:
             imports = _r2_json('iij', binary_path, timeout=30)
@@ -1484,11 +1311,10 @@ class CrossBinaryGlobalAnalyzer:
         return bindings
 
     def find_shared_globals(self, binaries: List[str]) -> List[GlobalBinding]:
-        """Identify symbols exported by >=2 binaries  --  candidates for cross-module state."""
         all_symbols: Dict[str, Dict[str, int]] = defaultdict(dict)
         for path in binaries:
             try:
-                # Collect exported symbol table entries
+                # 收集导出符号表项
                 syms = _r2_json('isj', path, timeout=30)
                 for s in syms:
                     name = s.get('name', '')
@@ -1508,12 +1334,11 @@ class CrossBinaryGlobalAnalyzer:
 
     def detect_concurrent_access(self, global_addr: int,
                                   binary_path: str = "") -> bool:
-        """Check for lock-prefixed instructions or thread-API calls near the access site."""
         if not binary_path:
             return False
         try:
             dis = _r2_text(f'pD 100 @ {global_addr}', binary_path, timeout=30)
-            # Two signals: lock-prefixed atomic operations, or thread-API imports nearby
+            # 两个信号: lock 前缀原子操作, 或附近线程 API 导入
             has_lock_prefix = bool(re.search(r'\block\b', dis, re.I))
             has_thread_api = bool(
                 re.search(r'CreateThread|pthread_create|_beginthread', dis, re.I))
@@ -1522,13 +1347,10 @@ class CrossBinaryGlobalAnalyzer:
             return False
 
     def assess_race_condition_risk(self, global_binding: GlobalBinding) -> float:
-        """Weighted risk: module count (60%) + access frequency (40%), clamped to [0,1]."""
         mod_score = min(1.0, len(global_binding.shared_modules) / 5.0)
         access_score = min(1.0, global_binding.access_count / 20.0)
         return round(mod_score * 0.6 + access_score * 0.4, 4)
 
-
-# --- FuzzyCryptoMatcher ---
 
 KNOWN_CRYPTO_CONSTANTS = {
     'AES': {
@@ -1563,7 +1385,6 @@ KNOWN_CRYPTO_CONSTANTS = {
 
 @dataclass
 class CryptoFingerprint:
-    """Per-algorithm fuzzy hash: algo name, constant type, 64-bit SimHash, variant list."""
     algorithm: str
     constant_type: str
     fuzzy_hash: bytes
@@ -1574,11 +1395,6 @@ class CryptoFingerprint:
 
 
 class FuzzyCryptoMatcher:
-    """
-    SimHash-based fuzzy matching against known S-box and IV constants.
-    Tolerates endianness swaps and minor byte-level variation, widening
-    crypto identification beyond exact-match signature scans.
-    """
 
     def __init__(self):
         self.fingerprints: List[CryptoFingerprint] = []
@@ -1589,7 +1405,6 @@ class FuzzyCryptoMatcher:
                     fuzzy_hash=self.compute_fuzzy_hash(data, ctype)))
 
     def compute_fuzzy_hash(self, data: bytes, constant_type: str = "") -> bytes:
-        """SimHash over chunked SHA-256: 64-bit weighted-bit-vector fingerprint."""
         if not data:
             return b'\x00' * 8
         vector = [0] * 64
@@ -1614,7 +1429,6 @@ class FuzzyCryptoMatcher:
         self.fingerprints.append(fingerprint)
 
     def match_constant(self, data: bytes) -> List[Tuple[str, float]]:
-        """Hamming-distance ranking against fingerprint database; returns top-10 (algorithm, similarity)."""
         if not data or not self.fingerprints:
             return []
         query_hash = self.compute_fuzzy_hash(data)
@@ -1622,13 +1436,13 @@ class FuzzyCryptoMatcher:
         matches = []
         for fp in self.fingerprints:
             fp_int = struct.unpack('<Q', fp.fuzzy_hash)[0]
-            # Normalized Hamming similarity: 1.0 - (popcount(xor) / 64)
+            # 归一化汉明相似度: 1.0 - (popcount(xor) / 64)
             xor = query_int ^ fp_int
             distance = xor.bit_count()
             similarity = 1.0 - (distance / 64.0)
             if similarity > 0.5:
                 matches.append((fp.algorithm, round(similarity, 4)))
-        # Secondary pass: exact byte-sequence containment (forward and byte-reversed)
+        # 二次扫描: 精确字节序列包含(正向和字节反转)
         for fp in self.fingerprints:
             for algo, consts in KNOWN_CRYPTO_CONSTANTS.items():
                 for ctype, ref_bytes in consts.items():
@@ -1638,16 +1452,15 @@ class FuzzyCryptoMatcher:
         return matches[:10]
 
     def detect_endianness_variation(self, data: bytes) -> str:
-        """Compare normal vs dword-swapped alignment against KNOWN_CRYPTO_CONSTANTS."""
         if len(data) < 4:
             return "unknown"
-        # Head-to-head: forward match vs dword-reversed match against reference constants
+        # 正向 vs dword 反转匹配参考常量
         normal_score = 0.0
         swapped_score = 0.0
         for algo, consts in KNOWN_CRYPTO_CONSTANTS.items():
             for ref in consts.values():
                 if len(ref) >= 4:
-                    # Align comparison window to the shorter of data vs reference
+                    # 对齐比较窗口到 data 与 reference 的较短者
                     chunk = data[:min(len(data), len(ref))]
                     if chunk == ref[:len(chunk)]:
                         normal_score = max(normal_score, 1.0)
@@ -1663,11 +1476,8 @@ class FuzzyCryptoMatcher:
         return "unknown"
 
 
-# --- SymbolicPointerTracker ---
-
 @dataclass
 class PointerInfo:
-    """Pointer metadata: address, target, modification flag, list of mutation sites."""
     address: int
     points_to: Optional[int]
     is_modified: bool = False
@@ -1675,11 +1485,6 @@ class PointerInfo:
 
 
 class SymbolicPointerTracker:
-    """
-    Tracks writable function pointers through their def-use chains.
-    Flags pointers reachable by store instructions  --  the prerequisite
-    for control-flow hijack via memory corruption.
-    """
 
     def __init__(self):
         self.pointer_graph: Dict[int, PointerInfo] = {}
@@ -1698,7 +1503,6 @@ class SymbolicPointerTracker:
             self.modified_pointers.add(ptr_addr)
 
     def get_pointer_chain(self, ptr_addr: int) -> List[int]:
-        """Traverse pointer->pointee edges until a cycle or terminal node is reached."""
         chain: List[int] = [ptr_addr]
         visited: Set[int] = {ptr_addr}
         cur = ptr_addr
@@ -1713,7 +1517,6 @@ class SymbolicPointerTracker:
         return chain
 
     def assess_hijack_risk(self, ptr_addr: int) -> float:
-        """Base 0.05 (unmodified) or 0.5 (modified), plus 0.1 per additional write site. Cap 1.0."""
         if ptr_addr not in self.pointer_graph:
             return 0.0
         info = self.pointer_graph[ptr_addr]
@@ -1722,11 +1525,8 @@ class SymbolicPointerTracker:
         return round(base + site_bonus, 4)
 
 
-# --- DebugInfoRepair ---
-
 @dataclass
 class DebugInfoFix:
-    """One inferred repair: original offset, guessed type/name, confidence score."""
     original_offset: int
     inferred_type: Optional[str]
     inferred_name: Optional[str]
@@ -1734,11 +1534,6 @@ class DebugInfoFix:
 
 
 class DebugInfoRepair:
-    """
-    Heuristic type and name inference from instruction patterns when
-    debug symbols are stripped or incomplete. Patches gaps in DWARF/PDB
-    data to improve decompilation output.
-    """
 
     TYPE_HINT_PATTERNS = [
         (re.compile(r'movsx[dz]\s+\w+,\s*\w+', re.I), 'int'),
@@ -1768,7 +1563,6 @@ class DebugInfoRepair:
 
     def infer_variable_type(self, var_addr: int,
                              context: str = "") -> Optional[str]:
-        """Map instruction mnemonics (movsx, cvtsi2sd, lea, …) to C type names."""
         if not context:
             return None
         for pat, tname in self.TYPE_HINT_PATTERNS:
@@ -1778,7 +1572,6 @@ class DebugInfoRepair:
 
     def infer_function_name(self, function_addr: int,
                              binary_path: str = "") -> Optional[str]:
-        """Generate a synthetic name from callee API set and nearby string constants."""
         if not binary_path:
             return None
         try:
@@ -1786,7 +1579,7 @@ class DebugInfoRepair:
             for pat, name in self.KNOWN_LIBRARY_SIGNATURES:
                 if pat.search(dis):
                     return f"likely_{name}_wrapper"
-            # Fallback: derive name from the first string reference near the function
+            # 回退: 从函数附近首个字符串引用推导名称
             strings = _r2_json(f'izzj @ {function_addr}', binary_path, timeout=10)
             if strings:
                 first_str = strings[0].get('string', '')
@@ -1799,7 +1592,6 @@ class DebugInfoRepair:
 
     def infer_struct_type(self, struct_addr: int,
                            binary_path: str = "") -> Optional[str]:
-        """Classify struct shape by offset distribution: vector-like, small aggregate, etc."""
         if not binary_path:
             return None
         try:
@@ -1807,7 +1599,7 @@ class DebugInfoRepair:
             offsets = sorted(set(
                 int(m.group(1), 0) for m in re.finditer(
                     r'\[.*\+(0x[0-9a-fA-F]+)\]', dis)))
-            # Known shapes: [0,8,16,24] -> 3-field vector; small structs -> member-count label
+            # 已知形状: [0,8,16,24] -> 三字段向量; 小结构 -> 成员数标签
             if offsets == [0, 8, 16, 24]:
                 return "vector_like_3field"
             if offsets and offsets[-1] <= 64:
@@ -1818,7 +1610,6 @@ class DebugInfoRepair:
 
     def repair_debug_info(self, debug_info: Dict[str, Any],
                            binary_path: str = "") -> Dict[str, Any]:
-        """Run all inference heuristics over a debug-info dict, filling null name/type fields."""
         repaired = dict(debug_info)
         functions = repaired.get('functions', {})
         for addr_str, info in list(functions.items()):
@@ -1838,11 +1629,8 @@ class DebugInfoRepair:
         return repaired
 
 
-# --- SymbolicSummaryCache ---
-
 @dataclass
 class FunctionSummary:
-    """Cached I/O contract: input constraints, output effects, side-effect annotations."""
     function_addr: int
     input_constraints: list = field(default_factory=list)
     output_effects: dict = field(default_factory=dict)
@@ -1850,11 +1638,6 @@ class FunctionSummary:
 
 
 class SymbolicSummaryCache:
-    """
-    Memoizes function I/O summaries for pure (side-effect-free) functions.
-    Reuses cached summaries at call sites instead of re-running symbolic
-    interpretation, amortizing analysis cost.
-    """
 
     def __init__(self):
         self.summary_cache: Dict[int, FunctionSummary] = {}
@@ -1862,18 +1645,17 @@ class SymbolicSummaryCache:
 
     def is_pure_function(self, function_addr: int,
                           binary_path: str = "") -> bool:
-        """Purity test: zero impure API calls AND zero global-memory writes."""
         if not binary_path:
-            return True  # Default: treat as pure when binary_path is unavailable
+            return True  # 无 binary_path 时默认视为纯函数
         try:
             dis = _r2_text(f'pD 100 @ {function_addr}', binary_path, timeout=30)
-            # Known impure APIs: memory, I/O, synchronization
+            # 已知非纯 API: 内存, I/O, 同步
             impure_apis = [
                 r'call.*(?:malloc|free|write|send|recv|open|close|printf|puts|scanf)',
                 r'call.*(?:EnterCriticalSection|LeaveCriticalSection)',
                 r'call.*(?:pthread_|CreateThread)',
             ]
-            # Direct store to absolute address or RIP-relative offset -> global write
+            # 直接写绝对地址或 RIP 相对偏移 -> 全局写
             global_write = re.search(
                 r'mov\s+(?:\[0x[0-9a-fA-F]+\]|\[rip\s*\+)', dis, re.I)
             for pat in impure_apis:
@@ -1887,13 +1669,12 @@ class SymbolicSummaryCache:
 
     def compute_summary(self, function_addr: int,
                          binary_path: str = "") -> Optional[FunctionSummary]:
-        """Derive read-before-write register set (inputs), written register set (outputs), and side effects."""
         if not binary_path:
             return None
         try:
             dis = _r2_text(f'pD 200 @ {function_addr}', binary_path, timeout=60)
             summary = FunctionSummary(function_addr=function_addr)
-            # Input classification: registers consumed before any definition in the function
+            # 输入分类: 函数中任何定义之前消费的寄存器
             regs_read = set()
             regs_written = set()
             for line in dis.split('\n'):
@@ -1911,7 +1692,7 @@ class SymbolicSummaryCache:
                             regs_written.add(g)
             summary.input_constraints = sorted(regs_read - {'rsp', 'esp', 'rbp', 'ebp'})
             summary.output_effects = {'modified_regs': sorted(regs_written)}
-            # Tag external calls as side-effecting for downstream purity checks
+            # 标记外部调用为有副作用, 供下游纯度检查
             if re.search(r'call.*(?:malloc|free|write|send)', dis, re.I):
                 summary.side_effects.append('external_call')
             return summary
@@ -1920,7 +1701,6 @@ class SymbolicSummaryCache:
 
     def get_cached_summary(self, function_addr: int,
                             context: Dict[str, Any] = None) -> Optional[FunctionSummary]:
-        """Retrieve cached summary; deep-copy when context specialization is requested."""
         summary = self.summary_cache.get(function_addr)
         if summary is None:
             return None
@@ -1940,22 +1720,14 @@ class SymbolicSummaryCache:
         self.summary_cache.pop(function_addr, None)
 
 
-# --- MultiTargetAnalysisDatabase ---
-
 @dataclass
 class BinaryTarget:
-    """One loaded binary: path, detected architecture, analysis result dict."""
     path: str
     architecture: str
     analysis_results: dict = field(default_factory=dict)
 
 
 class MultiTargetAnalysisDatabase:
-    """
-    Bulk-loads related binaries (executables + shared libraries), builds
-    cross-file symbol and type references, and enables global regex-driven
-    vulnerability search across the entire set.
-    """
 
     def __init__(self):
         self.targets: Dict[str, BinaryTarget] = {}
@@ -1973,7 +1745,6 @@ class MultiTargetAnalysisDatabase:
         return target
 
     def build_cross_references(self) -> None:
-        """Compute symbol overlap: for each name present in >=2 binaries, record all (src, dst) pairs."""
         sym_maps: Dict[str, Dict[str, int]] = {}
         for path, target in self.targets.items():
             try:
@@ -1982,7 +1753,7 @@ class MultiTargetAnalysisDatabase:
                                   for s in syms if s.get('name')}
             except Exception:
                 sym_maps[path] = {}
-        # Inverted index: symbol name -> list of binaries that export it
+        # 倒排索引: 符号名 -> 导出它的二进制列表
         all_names: Dict[str, List[str]] = defaultdict(list)
         for path, syms in sym_maps.items():
             for name in syms:
@@ -2001,14 +1772,13 @@ class MultiTargetAnalysisDatabase:
                         sym_maps[p1].get(name, 0))
 
     def find_type_relations(self, type_name: str) -> List[Tuple[str, str]]:
-        """Full-text search for a type name across string references and type databases of all targets."""
         results = []
         for path in self.targets:
             try:
                 dis = _r2_text(f'izz~{type_name}', path, timeout=30)
                 if dis.strip():
                     results.append((path, 'string_reference'))
-                # Secondary search: structured type database
+                # 辅助搜索: 结构化类型数据库
                 types = _r2_json('tj', path, timeout=10)
                 for t in types:
                     if type_name.lower() in t.get('type', '').lower():
@@ -2018,7 +1788,6 @@ class MultiTargetAnalysisDatabase:
         return results
 
     def search_vulnerability_globally(self, vuln_pattern: str) -> List[Tuple[str, int]]:
-        """Regex-grep across all targets' strings and import tables; returns (binary, address) hits."""
         findings = []
         for path in self.targets:
             try:
@@ -2028,7 +1797,7 @@ class MultiTargetAnalysisDatabase:
                     dis, re.I,
                 ):
                     findings.append((path, int(m.group(1), 16)))
-                # Import-table sweep for dangerous API names matching the pattern
+                # 导入表扫描匹配模式的危险 API 名
                 if re.match(r'^(strcpy|strcat|gets|sprintf|system|exec)', vuln_pattern, re.I):
                     imports = _r2_json('iij', path, timeout=15)
                     for imp in imports:
@@ -2041,24 +1810,16 @@ class MultiTargetAnalysisDatabase:
         return findings
 
 
-# --- SymbolicAntiAnalysisEngine ---
-
 @dataclass
 class AntiAnalysisBypass:
-    """One bypass record: detection address, bypass applied flag, symbolic constraint string."""
     detection_point: int
     bypassed: bool
     symbolic_constraint: Optional[str] = None
 
 
 class SymbolicAntiAnalysisEngine:
-    """
-    Scans for anti-VM and anti-debug signatures (byte-level and disassembly-level).
-    During symbolic execution, forces detection results to unconstrained
-    symbols, steering exploration toward bypass paths.
-    """
 
-    # Raw byte signatures: substring match on the binary blob
+    # 原始字节签名: 在二进制块上做子串匹配
     _BYTE_SIGNATURES = [
         (b'VMWare', 'vmware_backdoor'),
         (b'VBox', 'virtualbox'),
@@ -2072,13 +1833,13 @@ class SymbolicAntiAnalysisEngine:
         (b'cpuid', 'cpuid_check'),
         (b'rdtsc', 'timing_check'),
         (b'GetTickCount', 'tick_count'),
-        # x86 opcodes
-        (b'\xCC', 'int3_breakpoint'),       # int 3 opcode
+        # x86 操作码
+        (b'\xCC', 'int3_breakpoint'),       # int 3 指令
         (b'\xEC', 'vm_port_io'),             # in al, dx
         (b'\xED', 'vm_port_io'),             # in ax/eax, dx
     ]
 
-    # Disassembly-level regex signatures: matched against instruction text
+    # 反汇编级正则签名: 匹配指令文本
     _DISASM_SIGNATURES = [
         (re.compile(r'in\s+(?:eax|ax|al),', re.I), 'vm_port_io'),
         (re.compile(r'int\s+3\b', re.I), 'int3_breakpoint'),
@@ -2090,11 +1851,10 @@ class SymbolicAntiAnalysisEngine:
         self.bypasses: List[AntiAnalysisBypass] = []
 
     def find_detection_points(self, binary_path: str) -> List[int]:
-        """Two-phase scan: byte-level substring match, then regex over disassembly. Deduplicate <=16-byte clusters."""
         points: List[int] = []
         if not binary_path:
             return points
-        # Phase 1: raw byte substring scan over the entire binary blob
+        # 阶段1: 对整个二进制块做原始字节子串扫描
         try:
             with open(binary_path, 'rb') as f:
                 data = f.read()
@@ -2109,12 +1869,12 @@ class SymbolicAntiAnalysisEngine:
         except Exception as e:
             logger.debug(f"Byte-level detection point discovery failed: {e}")
 
-        # Phase 2: disassembly-level regex for instruction-sequence signatures
+        # 阶段2: 反汇编级正则匹配指令序列签名
         try:
             dis = _r2_text('pD 5000', binary_path, timeout=60)
             for pattern, _label in self._DISASM_SIGNATURES:
                 for m in pattern.finditer(dis):
-                    # Extract the hex address from the line preceding the match
+                    # 从匹配前的行提取十六进制地址
                     addr_match = re.search(
                         r'(?:^|\n)\s*(0x[0-9a-fA-F]+)', dis[
                             max(0, m.start() - 80):m.start() + 1])
@@ -2123,7 +1883,7 @@ class SymbolicAntiAnalysisEngine:
         except Exception as e:
             logger.debug(f"Disassembly-level detection failed: {e}")
 
-        # Merge clusters: addresses within 16-byte window collapse to the lowest
+        # 合并簇: 16 字节窗口内地址折叠到最低值
         points.sort()
         deduped: List[int] = []
         for p in points:
@@ -2133,12 +1893,11 @@ class SymbolicAntiAnalysisEngine:
         return deduped
 
     def detect_vm_check(self, addr: int, binary_path: str = "") -> bool:
-        """VM detection signature match: cpuid, I/O port access, known VM vendor strings."""
         if not binary_path:
             return False
         try:
             dis = _r2_text(f'pD 30 @ {addr}', binary_path, timeout=30)
-            # VM-detection primitives: cpuid opcode, I/O port probe, vendor-string scan
+            # VM 检测原语: cpuid 指令, I/O 端口探测, 厂商字符串扫描
             vm_hints = [
                 r'\bcpuid\b', r'\bin\s+(?:eax|al|ax)', r'\bout\s+(?:eax|al|ax)',
                 r'VMWare|VBox|QEMU|Xen',
@@ -2149,7 +1908,6 @@ class SymbolicAntiAnalysisEngine:
 
     def detect_debugger_check(self, addr: int,
                                binary_path: str = "") -> bool:
-        """Debugger-detection signature match: PEB access, int3, timing APIs."""
         if not binary_path:
             return False
         try:
@@ -2157,14 +1915,13 @@ class SymbolicAntiAnalysisEngine:
             dbg_hints = [
                 r'IsDebuggerPresent', r'NtQueryInformationProcess',
                 r'int\s*3', r'int\s*1', r'rdtsc', r'GetTickCount',
-                r'fs:\s*\[\s*0x30\s*\]',  # Windows PEB access via fs segment
+                r'fs:\s*\[\s*0x30\s*\]',  # 通过 fs 段访问 Windows PEB
             ]
             return any(re.search(h, dis, re.I) for h in dbg_hints)
         except Exception:
             return False
 
     def symbolic_bypass(self, detection_addr: int) -> Optional[str]:
-        """Emit assume(return_value == 0) constraint at the detection site, forcing the bypass branch."""
         bypass = AntiAnalysisBypass(
             detection_point=detection_addr,
             bypassed=True,
@@ -2175,36 +1932,27 @@ class SymbolicAntiAnalysisEngine:
 
     def execute_with_bypass(self, target_addr: int,
                              binary_path: str = "") -> bool:
-        """Run the binary with bypass constraints active. Non-crashing exit -> success."""
         if not binary_path:
-            return True  # No binary to execute; trivially bypassed
+            return True  # 无二进制可执行 -> 平凡旁路
         try:
-            # Execution check: bypass is symbolic in static context; runtime verification is optional
+            # 执行检查: 静态上下文中旁路为符号化; 运行时验证可选
             result = subprocess.run(
                 [binary_path], capture_output=True, timeout=5,
                 encoding='utf-8', errors='replace',
             )
-            return result.returncode in (0, 1)  # Exit 0 or 1 -> not rejected by anti-analysis
+            return result.returncode in (0, 1)  # 退出码 0 或 1 -> 未被反分析拒绝
         except subprocess.TimeoutExpired:
-            return True  # Hangs without exiting -> anti-analysis may be neutralized
+            return True  # 无退出挂起 -> 反分析可能已中和
         except Exception:
-            return True  # Assume bypassed in static-analysis mode
+            return True  # 静态分析模式下假定旁路
 
-
-# --- DelayedBindingResolver ---
 
 class DelayedBindingResolver:
-    """
-    Resolves dlopen/dlsym/GetProcAddress targets by extracting string
-    arguments from the instruction stream near each dynamic-load call site.
-    Fills call-graph edges that static linking leaves unresolved.
-    """
 
     def __init__(self):
         self.resolved_symbols: Dict[int, str] = {}
 
     def find_dlopen_calls(self, binary_path: str) -> List[int]:
-        """Scan the import table for dynamic-loading API entries; return their PLT/offset addresses."""
         sites: List[int] = []
         if not binary_path:
             return sites
@@ -2220,21 +1968,20 @@ class DelayedBindingResolver:
         return sites
 
     def resolve_delayed_symbols(self, binary_path: str = "") -> Dict[int, str]:
-        """Trace backward from each dynamic-load call to recover the string argument naming the target symbol."""
         resolved: Dict[int, str] = {}
         if not binary_path:
             return resolved
         try:
             sites = self.find_dlopen_calls(binary_path)
             for site in sites:
-                # Disassemble the instructions leading up to the call for a loaded string pointer
+                # 反汇编调用前的指令以查找加载的字符串指针
                 dis = _r2_text(f'pD 20 @ {site}', binary_path, timeout=30)
-                # RIP-relative LEA/MOV -> candidate string address
+                # RIP 相对 LEA/MOV -> 候选字符串地址
                 str_addr_match = re.search(
                     r'(?:lea|mov)\s+\w+,\s*\[?rip\s*\+\s*(0x[0-9a-fA-F]+)', dis, re.I)
                 if str_addr_match:
                     str_addr = int(str_addr_match.group(1), 16)
-                    # Dereference the resolved address via `ps` to read the string
+                    # 通过 ps 解引用地址读取字符串
                     s = _r2_text(f'ps @ {str_addr}', binary_path, timeout=10)
                     if s.strip():
                         resolved[site] = s.strip()
@@ -2243,8 +1990,6 @@ class DelayedBindingResolver:
             logger.debug(f"Symbol resolution failed: {e}")
         return resolved
 
-
-# --- EmbeddedVMDetector ---
 
 EMBEDDED_VM_SIGNATURES = {
     'lua': {
@@ -2256,7 +2001,7 @@ EMBEDDED_VM_SIGNATURES = {
         'header_len': 20,
     },
     'python_pyc': {
-        'magic': b'\x55\x0d\x0d\x0a',  # Python 3.x pyc magic
+        'magic': b'\x55\x0d\x0d\x0a',  # Python 3.x pyc magic 数
         'header_len': 16,
     },
     'python_pyc_v2': {
@@ -2264,7 +2009,7 @@ EMBEDDED_VM_SIGNATURES = {
         'header_len': 8,
     },
     'javascript': {
-        'magic': None,  # No static magic  --  detected via string-table heuristics
+        'magic': None,  # 无静态 magic -> 通过字符串表启发式检测
     },
     'luajit': {
         'magic': b'\x1bLJ',
@@ -2274,17 +2019,12 @@ EMBEDDED_VM_SIGNATURES = {
 
 
 class EmbeddedVMDetector:
-    """
-    Magic-number and string-heuristic detection of embedded interpreters
-    (Lua, Python, LuaJIT). Extracts bytecode blobs near detected signatures.
-    """
 
     def __init__(self):
         self.vm_type: Optional[str] = None
         self.bytecode: Optional[bytes] = None
 
     def detect_vm(self, binary_path: str) -> Optional[str]:
-        """Primary: magic-number scan. Secondary: API-name heuristic for Lua/Python embedding."""
         if not binary_path:
             return None
         try:
@@ -2295,7 +2035,7 @@ class EmbeddedVMDetector:
                 if magic and magic in data:
                     self.vm_type = vm_name
                     return vm_name
-            # Fallback: regex over raw bytes for Lua/Python API function names
+            # 回退: 对原始字节做正则匹配 Lua/Python API 函数名
             lua_funcs = b'luaL_|lua_newstate|lua_pcall|lua_push'
             py_funcs = b'Py_Initialize|PyRun_|PyEval_'
             if re.search(lua_funcs, data, re.I):
@@ -2309,7 +2049,6 @@ class EmbeddedVMDetector:
         return None
 
     def extract_bytecode(self, binary_path: str = "") -> Optional[bytes]:
-        """Carve up to 64 KB from the first magic-signature match or API-name hit."""
         if self.vm_type is None:
             self.detect_vm(binary_path)
         if not self.vm_type or not binary_path:
@@ -2323,11 +2062,11 @@ class EmbeddedVMDetector:
                     if magic:
                         idx = data.find(magic)
                         if idx != -1:
-                            # Carve 64 KB window starting from the magic offset
+                            # 从 magic 偏移开始截取 64KB 窗口
                             end = min(idx + 65536, len(data))
                             self.bytecode = data[idx:end]
                             return self.bytecode
-            # Generic fallback: 64 KB window around the first API-name substring hit
+            # 通用回退: 首个 API 名子串命中处周围 64KB 窗口
             if 'lua' in self.vm_type:
                 idx = data.find(b'luaL_')
                 if idx != -1:
@@ -2338,7 +2077,6 @@ class EmbeddedVMDetector:
         return None
 
     def analyze_bytecode(self) -> Dict[str, Any]:
-        """Compute entropy, detect opcode patterns, estimate compression; return metadata dict."""
         if not self.bytecode:
             return {}
         result: Dict[str, Any] = {
@@ -2346,7 +2084,7 @@ class EmbeddedVMDetector:
             'vm_type': self.vm_type,
         }
         try:
-            # Shannon entropy over byte distribution; >7.5 -> likely compressed/encrypted
+            # 字节分布的香农熵; >7.5 -> 可能压缩/加密
             freq = [0] * 256
             for b in self.bytecode:
                 freq[b] += 1
@@ -2362,7 +2100,7 @@ class EmbeddedVMDetector:
         except Exception:
             logger.debug("suppressed", exc_info=True)
         try:
-            # Crude opcode fingerprint: count 'function' stanzas (Lua) or LOAD_CONST (Python)
+            # 粗略操作码指纹: 统计 function 段(Lua) 或 LOAD_CONST(Python)
             if b'function' in self.bytecode:
                 result['lua_function_count'] = self.bytecode.count(b'function')
             if b'LOAD_CONST' in self.bytecode or b'\x64\x00' in self.bytecode:
@@ -2372,14 +2110,7 @@ class EmbeddedVMDetector:
         return result
 
 
-# --- StructuredPseudocodeGenerator ---
-
 class StructuredPseudocodeGenerator:
-    """
-    Transforms linear pseudocode into indented C-style control structures
-    (if/while/for/switch). Produces output suitable for both human review
-    and downstream ML consumption.
-    """
 
     _INDENT = 4
 
@@ -2392,8 +2123,6 @@ class StructuredPseudocodeGenerator:
             'return': r'return\s+([^;]+)',
             'goto': r'goto\s+(\w+)',
         }
-
-    # -- structure pass ------------------------------------------------
 
     def structure_pseudocode(self, flat_pseudocode: str) -> str:
         lines = flat_pseudocode.split('\n')
@@ -2466,8 +2195,6 @@ class StructuredPseudocodeGenerator:
         m = re.match(r'return\s+([^;]+)', line)
         return self._pad(f"return {m.group(1).strip()};", level) if m else self._pad('return;', level)
 
-    # -- scope analysis -------------------------------------------------
-
     def infer_variable_scope(self, pseudocode: str) -> Dict[str, List[str]]:
         scopes: Dict[str, List[str]] = {'global': [], 'local': [], 'parameter': []}
         m = re.search(r'(\w+)\s*\(([^)]*)\)', pseudocode)
@@ -2498,14 +2225,7 @@ class StructuredPseudocodeGenerator:
         return header + structured
 
 
-# --- CrossFunctionDataFlowCache ---
-
 class CrossFunctionDataFlowCache:
-    """
-    SQLite-backed cache of per-function I/O summaries. Stores input
-    constraints, output effects, side effects, and taint-flow edges.
-    Supports context-sensitive specialization on lookup.
-    """
 
     def __init__(self, cache_path: str = "data/dataflow_cache.db"):
         self.cache_path = cache_path
@@ -2648,14 +2368,7 @@ class CrossFunctionDataFlowCache:
             logger.debug("suppressed", exc_info=True)
 
 
-# --- DynamicBinaryTranslatorAccelerator ---
-
 class DynamicBinaryTranslatorAccelerator:
-    """
-    On-demand fragment execution via QEMU user-mode or DynamoRIO.
-    Captures register and memory state at runtime to fill gaps in
-    static analysis where constant propagation fails.
-    """
 
     def __init__(self):
         self.qemu_path: str = ""
@@ -2663,7 +2376,7 @@ class DynamicBinaryTranslatorAccelerator:
         self.execution_cache: Dict[str, Dict[str, Any]] = {}
         self.instrumentation_hooks: List[Callable] = []
 
-        # Auto-detect QEMU user-mode binary
+        # 自动检测 QEMU 用户模式二进制
         try:
             r = subprocess.run(['qemu-x86_64', '--version'],
                                capture_output=True, timeout=10)
@@ -2673,7 +2386,7 @@ class DynamicBinaryTranslatorAccelerator:
         except Exception:
             logger.info("QEMU not installed")
 
-        # Auto-detect DynamoRIO installation across common paths
+        # 自动检测 DynamoRIO 安装路径
         for d in ['/opt/dynamorio', '/usr/local/dynamorio',
                   'C:\\Program Files\\DynamoRIO']:
             if os.path.isdir(d):
@@ -2708,7 +2421,7 @@ class DynamicBinaryTranslatorAccelerator:
                 success=r.returncode == 0,
                 stdout=r.stdout, stderr=r.stderr,
             )
-            # Extract register assignments from QEMU strace output
+            # 从 QEMU strace 输出提取寄存器赋值
             regs = re.findall(r'R(\w+)\s*=\s*(0x[0-9a-fA-F]+)', r.stdout)
             for rn, rv in regs:
                 result['runtime_values'][f'reg_{rn}'] = int(rv, 16)
@@ -2758,14 +2471,7 @@ class DynamicBinaryTranslatorAccelerator:
         self.execution_cache[key] = result
 
 
-# --- BinaryFunctionInlineAnalyzer ---
-
 class BinaryFunctionInlineAnalyzer:
-    """
-    Prologue/epilogue pattern matching to detect compiler-inlined
-    function bodies. Marks inline sites in decompilation output so
-    downstream passes avoid re-analyzing duplicated logic.
-    """
 
     def __init__(self):
         self.inline_patterns: Dict[str, List[str]] = {}
@@ -2844,14 +2550,7 @@ class BinaryFunctionInlineAnalyzer:
         return recovered
 
 
-# --- BinaryFunctionBehaviorSignatureGenerator ---
-
 class BinaryFunctionBehaviorSignatureGenerator:
-    """
-    Derives SimHash-based semantic signatures from API-call and
-    control-flow feature vectors. Enables fuzzy function matching
-    across binary versions for vulnerability inheritance detection.
-    """
 
     def __init__(self):
         self.function_signatures: Dict[int, Dict[str, Any]] = {}
@@ -2910,20 +2609,13 @@ class BinaryFunctionBehaviorSignatureGenerator:
         return sig
 
 
-# --- DecompilerCodeMetricsEvaluator ---
-
 class DecompilerCodeMetricsEvaluator:
-    """
-    Cyclomatic, Halstead, and LOC metrics over decompiled pseudocode.
-    Flags functions exceeding complexity thresholds as high-risk.
-    """
 
     def __init__(self):
         self.metrics_results: Dict[int, Dict[str, Any]] = {}
         self.high_risk_functions: List[int] = []
 
     def calculate_cyclomatic_complexity(self, code: str) -> int:
-        """Count branching keywords + logical operators; start from 1 (single path)."""
         complexity = 1
         for kw in ['if', 'else if', 'while', 'for', 'switch', 'case', 'catch']:
             complexity += len(re.findall(rf'\b{kw}\b', code))
@@ -2989,10 +2681,7 @@ class DecompilerCodeMetricsEvaluator:
         return metrics
 
 
-# --- AutomaticUnpacker ---
-
 class AutomaticUnpacker:
-    """Detects known packer signatures (UPX, ASPack, Themida, VMProtect); delegates to native unpackers."""
 
     def __init__(self):
         self.packers: Dict[str, Dict[str, Any]] = {
@@ -3054,10 +2743,7 @@ class AutomaticUnpacker:
         return result
 
 
-# --- AntiAnalysisBypassEngine ---
-
 class AntiAnalysisBypassEngine:
-    """Detects anti-VM/anti-debug patterns; emits Frida hooks and LD_PRELOAD shim code for bypass."""
 
     def __init__(self):
         self.detection_patterns: List[Dict[str, Any]] = []

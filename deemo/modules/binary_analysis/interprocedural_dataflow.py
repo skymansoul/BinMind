@@ -44,7 +44,6 @@ class DataFlowDirection:  # ? Enum
 
 @dataclass
 class DataFlowFact:
-    """docstring"""
     var_name: Any = None
     taint_kind: Any = None
     location: Any = None
@@ -225,7 +224,6 @@ class SourceSinkDatabase:
 
 
 class CallGraph:
-    """docstring"""
 
     def __init__(self):
         self._edges: Dict[str, Set[str]] = defaultdict(set)
@@ -264,7 +262,6 @@ class CallGraph:
 
 
 class DataFlowAnalyzer:
-    """docstring"""
 
     def __init__(self, max_context_depth: int = 3):
         self.max_context_depth = max_context_depth
@@ -509,7 +506,6 @@ class DataFlowAnalyzer:
 
 
 class InterproceduralDataflow:
-    """docstring"""
 
     def __init__(self, max_context_depth: int = 3):
         self.analyzer = DataFlowAnalyzer(max_context_depth)
@@ -598,8 +594,6 @@ class InterproceduralDataflow:
             ]
         }
 
-
-# Analysis entry point
 
 def analyze_interprocedural_dataflow(
     call_edges: List[Tuple[str, str]],

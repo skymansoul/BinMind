@@ -13,7 +13,6 @@ import capstone.mips
 logger = logging.getLogger(__name__)
 
 class Architecture(Enum):
-    """targetarchitectureenum"""
     X86 = "x86"
     X86_64 = "x86_64"
     ARM = "arm"
@@ -577,7 +576,6 @@ class DeadCodeEliminationPass(IRAnalysisPass):
         return "DeadCodeEliminationPass"
 
 class IRTypeInferencePass(IRAnalysisPass):
-    """typeinferpass"""
 
     def run(self, function_ir: FunctionIR) -> FunctionIR:
         # runtypeinfer

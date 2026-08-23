@@ -6,7 +6,7 @@ from modules.analysis.static.binary_analysis.src.utils.errors import AnalysisErr
 
 
 class TestAnalysisCore:
-    """Core analysis functionality tests"""
+    """核心分析功能测试"""
 
     def test_import_utils(self):
         """Verify utility modules import correctly"""
@@ -79,7 +79,7 @@ class TestBinaryFormats:
 
 
 class TestSymbolicAnalysis:
-    """Symbolic analysis bridge tests (external deps)"""
+    """符号分析桥接测试 (外部依赖)"""
 
     def test_import_no_angr(self):
         """Verify symbolic_analysis imports angr installed"""

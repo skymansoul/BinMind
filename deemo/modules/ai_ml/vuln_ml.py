@@ -1,9 +1,3 @@
-"""
-漏洞机器学习 — 漏洞严重度预测。
-
-模型/规则混合预测 + 多子分集成融合 + 阈值校准 + 默认模型管理。
-"""
-
 from __future__ import annotations
 
 import json
@@ -18,7 +12,6 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# Severity labels
 # 内部标签使用大写，作为新接口预测结果的共同来源
 _LABELS_ = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 _LABEL_MAP_ = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
@@ -50,7 +43,6 @@ _SYNTHETIC_TRAINING_DATA: List[Dict[str, Any]] = [
      'severity': 'LOW'},
 ]
 
-# Base scores for vulnerability types (0-1 scale)
 _TYPE_SCORES_: Dict[str, float] = {
     'buffer_overflow': 0.8,
     'heap_overflow': 0.85,
@@ -201,12 +193,7 @@ class _FallbackModel:
 
 
 class VulnSeverityPredictor:
-    """Predicts vulnerability severity using a hybrid model/rules approach.
-
-    Combines heuristic rules with optional ML model for severity label
-    and score prediction. Supports ensemble blending across multiple
-    risk sub-dimensions.
-    """
+    """模型/规则混合预测严重度，支持多子分集成融合。"""
 
     def __init__(
         self,
@@ -247,13 +234,7 @@ class VulnSeverityPredictor:
         self,
         features: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Predict severity label and score for given vulnerability features.
-
-        兼容两种输入形态：
-        - 新接口：vuln_type / api_calls / mitigations 特征字典。
-        - 旧接口：basic_block_count / dangerous_functions / checksec 等
-          特征字典，返回 capitalize 形式的严重性标签。
-        """
+        """兼容新接口（vuln_type/api_calls/mitigations）与旧接口（legacy 特征字典）。"""
         if 'vuln_type' in features or 'api_calls' in features \
                 or 'mitigations' in features:
             if self._use_rules:
@@ -272,11 +253,7 @@ class VulnSeverityPredictor:
         self,
         features_list: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
-        """Predict severity for a batch of vulnerability records.
-
-        When an ML model is active, performs a single model inference pass
-        for efficiency. Otherwise delegates to per-item rules prediction.
-        """
+        """ML 模型可用时单次矩阵推理，否则逐条走规则路径。"""
         if not features_list:
             return []
 
@@ -340,11 +317,7 @@ class VulnSeverityPredictor:
         self,
         features: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Predict severity using ensemble blending of 3 sub-scores.
-
-        特征归一化后按 类型基准 + 危险函数 + 可达性 + 缓解缺口 累加评分，
-        阈值映射四级严重度。规则路径不依赖 ML 模型，结果可解释。
-        """
+        """类型基准+危险函数+可达性+缓解缺口累加评分，阈值映射四级严重度。"""
         features = self._normalize_features(features)
         vuln_type = features.get('vuln_type', 'default').lower().replace(' ', '_')
         api_calls = features.get('api_calls', [])
@@ -408,7 +381,6 @@ class VulnSeverityPredictor:
         self,
         features: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Predict severity using trained ML model."""
         if self._model is None:
             return self._predict_via_rules(features)
 
@@ -442,12 +414,7 @@ class VulnSeverityPredictor:
         self,
         features: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Return feature contributions for model-based prediction.
-
-        When a trained RandomForest is available, reports Gini-importance
-        per feature alongside the raw input values. This aids in
-        understanding which signals drive severity decisions.
-        """
+        """报告 RandomForest 的 Gini-importance 与原始输入值，辅助理解决策信号。"""
         result = self._predict_via_model(features) if self._model is not None \
             else self._predict_via_rules(features)
 
@@ -478,7 +445,6 @@ class VulnSeverityPredictor:
         return explain
 
     def _features_to_vector(self, features: Dict[str, Any]) -> List[float]:
-        """Convert feature dict to model input vector."""
         vec: List[float] = []
 
         vuln_type = features.get('vuln_type', 'default')
@@ -512,12 +478,7 @@ class VulnSeverityPredictor:
         self,
         features: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Heuristic exploit-probability estimation (EPSS-inspired).
-
-        Combines vuln-type base rates with exploit availability,
-        CVSS severity, and reachability signals into a rough
-        probability of exploitation within 30 days.
-        """
+        """EPSS启发式：组合漏洞类型基准率+可利用性+CVSS+可达性预估30天野外利用概率。"""
         vuln_type = features.get('vuln_type', 'default').lower()
         has_exploit = features.get('has_exploit', False)
         reachable_from_input = features.get('reachable_from_input', True)
@@ -585,7 +546,6 @@ class VulnSeverityPredictor:
         }
 
     def _score_to_label(self, score: float) -> str:
-        """Convert a numeric score to severity label."""
         thresholds = self._thresholds
         if score < thresholds['low_to_medium']:
             return SEVERITY_LEVELS[0]
@@ -601,7 +561,6 @@ class VulnSeverityPredictor:
         labeled_data: List[Dict[str, Any]],
         metric: str = "f1",
     ) -> Dict[str, float]:
-        """Grid-search threshold tuning using labeled data."""
         best_thresholds = dict(self._thresholds)
         best_score = -1.0
 
@@ -644,10 +603,7 @@ class VulnSeverityPredictor:
         y_pred: List[int],
         metric: str,
     ) -> float:
-        """Compute evaluation metric — supports accuracy, macro-F1, macro-precision, macro-recall.
-
-        多分类场景下，precision/recall 采用宏平均，与 F1 的计算方式保持一致。
-        """
+        """多分类宏平均：accuracy/precision/recall/f1，precision/recall 与 F1 口径一致。"""
         if not y_true:
             return 0.0
 
@@ -923,7 +879,6 @@ class VulnSeverityPredictor:
         X: List[List[float]],
         y: List[int],
     ) -> None:
-        """Train the ML model with features and labels."""
         try:
             from sklearn.ensemble import RandomForestClassifier
             from sklearn.preprocessing import StandardScaler
@@ -953,7 +908,6 @@ class VulnSeverityPredictor:
             self.scaler = None
 
     def save_model(self, filepath: str) -> None:
-        """Save trained model and scaler to file."""
         if self._model is None:
             logger.warning("No model to save")
             return
@@ -970,7 +924,6 @@ class VulnSeverityPredictor:
         logger.info(f"Model saved to {filepath}")
 
     def load_model(self, filepath: Optional[str] = None) -> bool:
-        """Load trained model from file."""
         filepath = filepath or self.model_path
         try:
             with open(filepath, 'rb') as f:
@@ -1023,13 +976,11 @@ def train_default_model(
 def create_vuln_severity_predictor(
     model_path: Optional[str] = None,
 ) -> VulnSeverityPredictor:
-    """Factory function for creating a predictor."""
     predictor = VulnSeverityPredictor(model_path=model_path, use_rules=True)
     return predictor
 
 
 def get_default_predictor() -> VulnSeverityPredictor:
-    """Get or create the default severity predictor singleton."""
     global _default_predictor
     if _default_predictor is None:
         _default_predictor = create_vuln_severity_predictor()

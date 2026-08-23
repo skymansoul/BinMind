@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CounterfactualResult:
-    """反事实解释的完整结果-对SearchResult的用户友好包装"""
     original_pred: float
     counterfactual_pred: float
     flip_achieved: bool
@@ -72,15 +71,6 @@ class CounterfactualResult:
 
 
 class CounterfactualExplainer:
-    """面向二进制漏洞GNN模型的反事实解释器。
-
-    使用场景:
-      - 理解为何某个函数被判定为有漏洞
-      - 生成最小程序变换方案使GNN预测翻转
-      - 验证模型是否学到了正确的漏洞模式（而非伪相关）
-
-    输出可直接映射到二进制修改建议: 删除某分支、重排某条指令。
-    """
 
     def __init__(self,
                  model_fn: Callable,
@@ -99,8 +89,7 @@ class CounterfactualExplainer:
                 adjacency: List[List[int]],
                 target_node: int,
                 node_types: Optional[List[str]] = None,
-                loop_edges: Optional[List[Tuple[int, int]]] = None) -> CounterfactualResult:
-        """为指定节点生成反事实解释。"""
+                 loop_edges: Optional[List[Tuple[int, int]]] = None) -> CounterfactualResult:
         self._constraints.load_from_cfg(adjacency, node_types, loop_edges)
 
         engine = CounterfactualSearchEngine(
@@ -118,8 +107,7 @@ class CounterfactualExplainer:
 
     def batch_explain(self,
                       graphs: List[Tuple[List[List[float]], List[List[int]], int]],
-                      node_types_list: Optional[List[List[str]]] = None) -> List[CounterfactualResult]:
-        """批量反事实解释（顺序执行）"""
+                       node_types_list: Optional[List[List[str]]] = None) -> List[CounterfactualResult]:
         results = []
         for idx, (feats, adj, target) in enumerate(graphs):
             ntypes = node_types_list[idx] if node_types_list else None

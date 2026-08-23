@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-# Binary Hashing, Similarity & Security Features
-# N-gram hashing, entropy analysis, binary patching,
-# security hardening audits, and behavioral signatures.
 
 from __future__ import annotations
 
@@ -20,10 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 _logger = logging.getLogger(__name__)
 
 
-# Data classes (regular classes, no __slots__ needed for these)
-
 class VulnerabilityDensity:
-    """Per-function vulnerability density record across versions."""
 
     def __init__(self, version: str, function_addr: int,
                  vuln_count: int, density_score: float):
@@ -38,7 +32,6 @@ class VulnerabilityDensity:
 
 
 class ExceptionHijackPoint:
-    """Describes a single exception handler hijack opportunity."""
 
     def __init__(self, exception_handler: int, sensitive_call: Optional[str] = None,
                  memory_write: Optional[int] = None, risk_level: str = "low"):
@@ -49,63 +42,45 @@ class ExceptionHijackPoint:
 
 
 class SemanticRewrittenCode:
-    """Holds an original code segment and its semantically-equivalent variants."""
 
     def __init__(self, original_code: str, rewritten_variants: List[str]):
         self.original_code = original_code
         self.rewritten_variants = rewritten_variants
 
 
-# 1. Binary Fingerprinting & N-gram Hashing
-
 class NgramBinaryHash:
-    """
-    Lightweight N-gram fuzzy hash for quickly filtering similar binaries
-    before deep analysis.
-
-    Produces a SimHash-inspired fingerprint: extracts N-byte windows,
-    computes rolling hashes, and collapses them into a compact bit-string.
-    """
 
     def __init__(self, n: int = 4, hash_bits: int = 128):
         self.n = n
         self.hash_bits = hash_bits
 
     def compute_hash(self, binary_data: bytes) -> str:
-        """Compute an N-gram fuzzy hash of binary data."""
         if len(binary_data) < self.n:
-            # Fall back to SHA-256 for very short inputs
             return hashlib.sha256(binary_data).hexdigest()[:self.hash_bits // 4]
 
-        # Accumulate rolling-hash bits via a SimHash-style vector
         vec = [0] * self.hash_bits
         window = binary_data[:self.n]
         rolling = self._fnv1a(window)
 
         for i in range(self.n, len(binary_data)):
-            # Slide window
             window = binary_data[i - self.n + 1:i + 1]
             rolling = self._fnv1a(window)
 
-            # Project hash bits onto the vector (+1 or -1)
             for bit in range(self.hash_bits):
                 if (rolling >> (bit % 64)) & 1:
                     vec[bit] += 1
                 else:
                     vec[bit] -= 1
 
-        # Collapse into hex string
         result_bits = 0
         for bit in range(self.hash_bits):
             if vec[bit] > 0:
                 result_bits |= (1 << bit)
-        # Pad to consistent hex width
         hex_width = self.hash_bits // 4
         return format(result_bits, f'0{hex_width}x')
 
     @staticmethod
     def _fnv1a(data: bytes) -> int:
-        """FNV-1a hash of a short byte window."""
         h = 0x811c9dc5
         for b in data:
             h ^= b
@@ -113,7 +88,6 @@ class NgramBinaryHash:
         return h
 
     def compare_hashes(self, hash1: str, hash2: str) -> float:
-        """Return similarity [0,1] by Hamming distance on the hash bits."""
         try:
             n1 = int(hash1, 16)
             n2 = int(hash2, 16)
@@ -127,10 +101,6 @@ class NgramBinaryHash:
 
 
 class BinaryCacheManager:
-    """
-    File-hash-based incremental cache so repeated analyses skip
-    file parsing and decompilation.
-    """
 
     def __init__(self):
         self.cache_db: Dict[str, Dict[str, Any]] = {}
@@ -150,7 +120,6 @@ class BinaryCacheManager:
         self._timestamps[file_hash] = time.time()
 
     def clear_stale_cache(self, max_age_days: int = 30) -> int:
-        """Remove entries older than *max_age_days*. Returns count removed."""
         cutoff = time.time() - (max_age_days * 86400)
         stale = [h for h, ts in self._timestamps.items() if ts < cutoff]
         for h in stale:
@@ -168,20 +137,8 @@ class BinaryCacheManager:
         }
 
 
-# 2. Exception & Error-Handling Analysis
-
 class ExceptionAnalysisSuite:
-    """
-    Consolidated analysis of exception/error handling in binaries.
 
-    Covers:
-      - SEH (SafeSEH, SEHOP) detection in PE files
-      - C++ exception table parsing (gcc_except_table / .eh_frame)
-      - Resource-leak checks inside exception handlers
-      - Exception-injection simulation for robustness testing
-    """
-
-    # Known SEH-related section / directory markers
     _SEH_LOAD_CONFIG_FLAGS = {
         0x40: 'SafeSEH',
         0x100: 'SEHOP_available',
@@ -194,22 +151,15 @@ class ExceptionAnalysisSuite:
         self.safe_seh: bool = False
         self.sehop: bool = False
 
-    # ---- SEH detection ----
-
     def check_safe_seh(self, pe_path: str) -> bool:
-        """Detect SafeSEH by scanning IMAGE_LOAD_CONFIG_DIRECTORY."""
         result = False
         try:
             with open(pe_path, 'rb') as fh:
                 data = fh.read()
-            # Look for the characteristic SafeSEH flag byte in the
-            # LoadConfig table's SecurityCookie / SEHandlerTable fields.
+            # 在 LoadConfig 表的 SecurityCookie / SEHandlerTable
+            # 字段中查找 SafeSEH 特征字节
             off = data.find(b'\x00\x00\x00\x00\x00\x00\x00\x00', 0)
-            # Heuristic: if there's an SE handler table RVA listed,
-            # SafeSEH is present.
             if self._find_pe_section(data, b'.text'):
-                # If the binary references __safe_se_handler_table,
-                # SafeSEH is likely enabled
                 if b'__safe_se_handler_table' in data or b'SafeSEH' in data:
                     result = True
             self.safe_seh = result
@@ -218,12 +168,9 @@ class ExceptionAnalysisSuite:
         return result
 
     def check_sehop(self, pe_path: str) -> bool:
-        """Heuristic SEHOP detection on PE binaries."""
         try:
             with open(pe_path, 'rb') as fh:
                 data = fh.read()
-            # SEHOP-aware images reference the final exception handler
-            # via a sentinel; this manifests as ValidateEHChain import
             if b'RtlIsValidHandler' in data or b'ValidateEHChain' in data:
                 self.sehop = True
                 return True
@@ -231,15 +178,11 @@ class ExceptionAnalysisSuite:
             _logger.debug("suppressed", exc_info=True)
         return False
 
-    # ---- C++ exception table parsing ----
-
     def parse_exception_table(self, binary_path: str) -> List[Dict[str, Any]]:
-        """Scan for gcc_except_table / LSDA entries in the binary."""
         tables = []
         try:
             with open(binary_path, 'rb') as fh:
                 data = fh.read()
-            # Look for .gcc_except_table section markers
             marker = b'gcc_except_table'
             pos = 0
             while True:
@@ -252,7 +195,6 @@ class ExceptionAnalysisSuite:
                     'size_estimate': min(256, len(data) - idx),
                 })
                 pos = idx + 1
-            # Also scan .eh_frame if present
             eh_marker = b'.eh_frame'
             pos = 0
             while True:
@@ -271,8 +213,7 @@ class ExceptionAnalysisSuite:
         return tables
 
     def check_hijack_risk(self, handler_addr: int) -> float:
-        """Estimate hijack risk [0-1] for an exception handler."""
-        score = 0.1  # baseline
+        score = 0.1
         for pt in self.hijack_points:
             if pt.exception_handler == handler_addr:
                 if pt.sensitive_call:
@@ -283,17 +224,11 @@ class ExceptionAnalysisSuite:
                     score = 1.0
         return min(score, 1.0)
 
-    # ---- Resource-leak detection in handlers ----
-
     def analyze_exception_handlers(self, binary_path: str) -> None:
-        """Scan exception handler disassembly for resource-acquisition
-        without corresponding release."""
         self.resource_leaks.clear()
         try:
             with open(binary_path, 'rb') as fh:
                 data = fh.read()
-            # Heuristic: find alloc calls followed by exception-handling
-            # terminators without matching free calls
             alloc_sigs = [b'malloc', b'HeapAlloc', b'new', b'CreateFile']
             free_sigs = [b'free', b'HeapFree', b'delete', b'CloseHandle']
             for alloc in alloc_sigs:
@@ -302,7 +237,6 @@ class ExceptionAnalysisSuite:
                     idx = data.find(alloc, pos)
                     if idx == -1:
                         break
-                    # Look ahead for a free within 512 bytes
                     window = data[idx:idx + 512]
                     has_free = any(f in window for f in free_sigs)
                     has_except = b'__except' in window or b'__finally' in window
@@ -319,20 +253,13 @@ class ExceptionAnalysisSuite:
         return [p for p in self.hijack_points
                 if p.risk_level in ('high', 'critical')]
 
-    # ---- Helpers ----
-
     @staticmethod
     def _find_pe_section(data: bytes, name: bytes) -> Optional[int]:
-        """Find approximate offset of a PE section by name."""
         idx = data.find(name)
         return idx if idx >= 0 else None
 
 
 class ExceptionHandlingPathCoverageAnalyzer:
-    """
-    Tracks coverage of exception-handler paths during symbolic execution
-    and fuzzing -- C++ catch blocks, SEH handlers, and finally clauses.
-    """
 
     def __init__(self):
         self.exception_handlers: Dict[int, Dict[str, Any]] = {}
@@ -418,17 +345,8 @@ class ExceptionHandlingPathCoverageAnalyzer:
         return '\n'.join(lines)
 
 
-# 3. Code Structure & Decompilation Analysis
-
 class CodeStructureAnalyzer:
-    """
-    Analyses binary code structure: switch-table reconstruction,
-    inlined-function boundary detection, dead-code identification,
-    call-frequency estimation for triage, and algorithmic-complexity
-    estimation targeting DoS risks.
-    """
 
-    # Call frequency weight multipliers per role
     _ROLE_WEIGHTS = {
         'entry_point': 5.0, 'exported': 3.0, 'callback': 2.5,
         'internal': 1.0, 'dead': 0.0,
@@ -441,30 +359,18 @@ class CodeStructureAnalyzer:
         self.importance_scores: Dict[int, float] = {}
         self.complexity_issues: List[Tuple[int, str]] = []
 
-    # ---- Jump-table handling ----
-
     def find_jump_tables(self, function_addr: int) -> List[int]:
-        """Return addresses of jump tables referenced by a function.
-        Heuristic: scan for indirect-jump patterns (jmp rax / jmp [reg+disp])."""
         return [a for a in self.jump_tables
                 if any(abs(a - func_addr) < 0x10000 for func_addr in [function_addr])]
 
     def parse_table_entries(self, table_addr: int) -> List[Tuple[int, int]]:
-        """Parse jump-table entries as (index, target) pairs."""
         entries = self.jump_tables.get(table_addr, [])
         return [(i, t) for i, t in enumerate(entries) if t != 0]
 
     def register_jump_table(self, table_addr: int, targets: List[int]) -> None:
         self.jump_tables[table_addr] = targets
 
-    # ---- Inline region detection ----
-
     def detect_inline_regions(self, function_addr: int) -> List[Tuple[int, int]]:
-        """
-        Heuristic detection of inlined code blocks.
-        Looks for repeated instruction patterns that appear in multiple
-        callers (suggesting inlining).
-        """
         regions: List[Tuple[int, int]] = []
         for start, end, _name in self.inline_regions:
             if start >= function_addr and end <= function_addr + 0x10000:
@@ -472,7 +378,6 @@ class CodeStructureAnalyzer:
         return regions
 
     def identify_original_function(self, region_start: int) -> Optional[str]:
-        """Map an inline region back to its original function name."""
         for s, e, name in self.inline_regions:
             if s == region_start:
                 return name
@@ -482,7 +387,6 @@ class CodeStructureAnalyzer:
         self.inline_regions.append((start, end, name))
 
     def mark_boundaries_in_pseudocode(self, pseudocode: str) -> str:
-        """Insert boundary markers around identified inline regions."""
         result = pseudocode
         for s, e, name in sorted(self.inline_regions, key=lambda x: -x[0]):
             marker = f'\n// --- begin inline [{name}] ---\n'
@@ -493,13 +397,7 @@ class CodeStructureAnalyzer:
                 result = result + end_marker
         return result
 
-    # ---- Dead-code analysis ----
-
     def find_dead_functions(self, binary_path: str) -> List[int]:
-        """
-        Identify functions with zero cross-references (potentially dead code).
-        Uses 'nm' output to find symbols without callers.
-        """
         dead: List[int] = []
         try:
             result = _sp.run(['nm', '-n', binary_path],
@@ -511,7 +409,6 @@ class CodeStructureAnalyzer:
                         addr = int(parts[0], 16)
                     except ValueError:
                         continue
-                    # Heuristic: if not in importance table, treat as dead
                     if addr not in self.importance_scores:
                         dead.append(addr)
         except Exception:
@@ -520,42 +417,29 @@ class CodeStructureAnalyzer:
         return dead
 
     def analyze_dangerous_operations(self, func_addr: int) -> List[str]:
-        """Flag dangerous API calls commonly found in backdoored dead code."""
         dangerous = []
-        # This is a heuristic placeholder -- real impl would decompile the
-        # function and check instruction sequences.
         _logger.info("Dangerous-op analysis for 0x%x -- needs decompiler backend", func_addr)
         return dangerous
 
-    # ---- Function importance ranking ----
-
     def estimate_call_frequency(self, function_addr: int) -> float:
-        """Estimate call frequency based on number of callers and role."""
         base = self.importance_scores.get(function_addr, 1.0)
-        # Bias upward for functions with many known callers
         if function_addr in self.importance_scores:
             return base
-        return 0.5  # unknown default
+        return 0.5
 
     def rank_functions(self) -> List[Tuple[int, float]]:
-        """Rank functions by estimated importance (descending)."""
         ranked = sorted(self.importance_scores.items(), key=lambda x: -x[1])
         return ranked
 
     def set_importance(self, func_addr: int, score: float) -> None:
         self.importance_scores[func_addr] = score
 
-    # ---- Algorithmic complexity estimation ----
-
     def analyze_complexity(self, binary_path: str) -> None:
-        """Scan binary for nested-loop patterns indicating O(n^2) behaviour."""
         self.complexity_issues.clear()
         try:
             with open(binary_path, 'rb') as fh:
                 data = fh.read()
-            # Look for back-to-back conditional jumps (loop pattern)
-            # This is a simplified byte-level heuristic
-            loop_byte = b'\xeb'  # short jmp
+            loop_byte = b'\xeb'
             pos = 0
             count = 0
             while True:
@@ -564,11 +448,10 @@ class CodeStructureAnalyzer:
                     break
                 count += 1
                 pos = idx + 1
-                if count > 20:  # many short jumps suggest nested loops
+                if count > 20:
                     self.complexity_issues.append((idx, 'dense_short_jumps'))
-            # Heuristic: many cmp/jmp pairs
-            cmp_count = data.count(b'\x3b') + data.count(b'\x83\xf8')  # cmp variants
-            jmp_count = data.count(b'\x74') + data.count(b'\x75') + data.count(b'\x7c')  # conditional jumps
+            cmp_count = data.count(b'\x3b') + data.count(b'\x83\xf8')
+            jmp_count = data.count(b'\x74') + data.count(b'\x75') + data.count(b'\x7c')
             if jmp_count > cmp_count * 3:
                 self.complexity_issues.append((0, 'high_branch_density'))
         except Exception:
@@ -579,10 +462,6 @@ class CodeStructureAnalyzer:
 
 
 class DecompilerSemanticRewriter:
-    """
-    Generates semantically-equivalent code variants for data augmentation
-    in vulnerability-detection model training.
-    """
 
     def __init__(self):
         self.rewrite_rules: List[Callable] = []
@@ -603,13 +482,6 @@ class DecompilerSemanticRewriter:
 
     def apply_structural_transformation(self, code: str,
                                         transform_type: str) -> str:
-        """Apply a named structural rewrite.
-
-        Supported transforms:
-          - invert_condition: flip if/else bodies
-          - expand_compound: split compound conditions
-          - reorder_decls: move declarations to top
-        """
         if transform_type == 'invert_condition':
             return self._invert_conditions(code)
         elif transform_type == 'expand_compound':
@@ -618,13 +490,9 @@ class DecompilerSemanticRewriter:
             return self._hoist_declarations(code)
         return code
 
-    # ---- Transform implementations ----
-
     @staticmethod
     def _invert_conditions(code: str) -> str:
-        """Swap if/else branches by inverting conditions."""
         result = code
-        # Invert 'if (a == b)' -> 'if (a != b)'
         result = _re.sub(r'if\s*\(\s*(\w+)\s*==\s*(\w+)\s*\)',
                          r'if (\1 != \2)', result)
         result = _re.sub(r'if\s*\(\s*(\w+)\s*!=\s*(\w+)\s*\)',
@@ -637,7 +505,6 @@ class DecompilerSemanticRewriter:
 
     @staticmethod
     def _expand_compound_conditions(code: str) -> str:
-        """Break 'if (a && b)' into nested ifs."""
         return _re.sub(
             r'if\s*\((.+?)\s*&&\s*(.+?)\)\s*\{',
             r'if (\1) {\n    if (\2) {',
@@ -646,14 +513,12 @@ class DecompilerSemanticRewriter:
 
     @staticmethod
     def _hoist_declarations(code: str) -> str:
-        """Move variable declarations to the top of their scope."""
         decl_pattern = _re.compile(r'(int|char|void\*|size_t|uint\d+_t)\s+(\w+)\s*=', _re.MULTILINE)
         decls = decl_pattern.findall(code)
         if not decls:
             return code
         hoisted = '\n'.join(f'    {t} {n};' for t, n in decls)
         cleaned = decl_pattern.sub('', code)
-        # Insert after first opening brace
         brace_idx = cleaned.find('{')
         if brace_idx >= 0:
             cleaned = cleaned[:brace_idx + 1] + '\n' + hoisted + cleaned[brace_idx + 1:]
@@ -661,10 +526,6 @@ class DecompilerSemanticRewriter:
 
 
 class DisassemblyMacroIdentifierExpander:
-    """
-    Identify repeated instruction patterns (prologues, epilogues, checks)
-    and abstract them into named macros for cleaner pseudocode.
-    """
 
     def __init__(self):
         self.macro_library: Dict[str, Dict[str, Any]] = {}
@@ -732,16 +593,7 @@ class DisassemblyMacroIdentifierExpander:
         return '\n'.join(lines)
 
 
-# 4. Binary Security Audit
-
 class BinarySecurityAuditor:
-    """
-    Consolidated binary-security analysis.
-
-    Detects protection mechanisms, identifies IAT hooks, searches for
-    anti-forensics techniques, evaluates writable targets for code execution,
-    and generates hardening recommendations.
-    """
 
     _KNOWN_PROTECTIONS = ['NX', 'ASLR', 'PIE', 'RELRO', 'CANARY', 'CFI']
 
@@ -752,28 +604,20 @@ class BinarySecurityAuditor:
         self.anti_forensics_hits: List[int] = []
         self.info_leaks: List[Tuple[int, str]] = []
 
-    # ---- Protection analysis ----
-
     def analyze_current_protections(self, binary_path: str) -> Dict[str, bool]:
-        """Detect binary protections using checksec-style heuristics."""
         prots: Dict[str, bool] = {}
         try:
             with open(binary_path, 'rb') as fh:
                 data = fh.read()
-            # ELF header type detection
             is_elf = data[:4] == b'\x7fELF'
             if is_elf and len(data) > 18:
                 e_type = struct.unpack_from('<H', data, 16)[0]
                 prots['PIE'] = (e_type == 3)
-            # Check for NX via GNU_STACK
             prots['NX'] = (b'GNU_STACK' not in data or
                            data.find(b'GNU_STACK') < 0 or
                            self._check_gnu_stack_rwx(data))
-            # RELRO: check for BIND_NOW / .relro
             prots['RELRO'] = (b'BIND_NOW' in data or b'.relro' in data.lower())
-            # CANARY via __stack_chk_fail reference
             prots['CANARY'] = (b'__stack_chk_fail' in data)
-            # ASLR: PIE implies ASLR-compatible
             prots['ASLR'] = prots.get('PIE', False) or data[:4] == b'\x7fELF'
         except Exception:
             _logger.debug("suppressed", exc_info=True)
@@ -781,7 +625,6 @@ class BinarySecurityAuditor:
         return prots
 
     def detect_fortify_source(self, binary_path: str) -> Optional[int]:
-        """Detect _FORTIFY_SOURCE level by checking fortified function calls."""
         try:
             with open(binary_path, 'rb') as fh:
                 data = fh.read()
@@ -794,19 +637,16 @@ class BinarySecurityAuditor:
             return None
 
     def detect_stack_clash(self, binary_path: str) -> bool:
-        """Check for stack-clash protection (large stack probes)."""
         try:
             with open(binary_path, 'rb') as fh:
                 data = fh.read()
-            # -fstack-clash-protection emits repeated stack probes
-            probe_seq = b'\x48\x83\xe4\xf0'  # and rsp, -16 => common prologue
+            probe_seq = b'\x48\x83\xe4\xf0'
             count = data.count(probe_seq)
-            return count > 2  # heuristic threshold
+            return count > 2
         except Exception:
             return False
 
     def assess_exploitability_impact(self, vuln_type: str) -> float:
-        """Score [0-1] how much current protections hinder exploitation."""
         impact = 1.0
         if not self.current_protections.get('NX', False):
             impact -= 0.3
@@ -818,20 +658,15 @@ class BinarySecurityAuditor:
             impact -= 0.25
         return max(impact, 0.0)
 
-    # ---- IAT hook detection ----
-
     def analyze_iat(self, pe_path: str) -> None:
-        """Parse PE import directory for potential IAT hooks."""
         try:
             with open(pe_path, 'rb') as fh:
                 data = fh.read()
-            # PE magic at offset 0x3c
             if data[:2] != b'MZ':
                 return
             pe_off = struct.unpack_from('<I', data, 0x3c)[0]
             if data[pe_off:pe_off + 4] != b'PE\x00\x00':
                 return
-            # Heuristic: locate import directory via section names
             if b'.idata' in data:
                 self.hooked_functions.append(('.idata_section_present', 0, 0))
         except Exception:
@@ -841,17 +676,12 @@ class BinarySecurityAuditor:
         return [(n, a, a2) for n, a, a2 in self.hooked_functions if a != a2]
 
     def restore_original_address(self, func_name: str) -> bool:
-        """Attempt to derive the original IAT address for a hooked function.
-        Returns True if restoration was possible."""
         for n, orig, hooked in self.hooked_functions:
             if n == func_name and orig != hooked:
                 return True
         return False
 
-    # ---- Anti-forensics ----
-
     def detect_memory_wiping(self, binary_path: str) -> List[int]:
-        """Find memset/ZeroMemory calls that may erase forensic evidence."""
         offsets: List[int] = []
         try:
             with open(binary_path, 'rb') as fh:
@@ -872,7 +702,6 @@ class BinarySecurityAuditor:
         return offsets
 
     def detect_memory_protection_modification(self, binary_path: str) -> List[int]:
-        """Find VirtualProtect / mprotect calls that relax memory permissions."""
         offsets: List[int] = []
         try:
             with open(binary_path, 'rb') as fh:
@@ -892,15 +721,10 @@ class BinarySecurityAuditor:
         return offsets
 
     def assess_interference_risk(self) -> float:
-        """Score [0-1] the risk of anti-forensics interference."""
         n = len(self.anti_forensics_hits)
         return min(n / 10.0, 1.0)
 
-    # ---- Write-target analysis ----
-
     def find_write_targets(self, binary_path: str) -> List[Dict[str, Any]]:
-        """Identify global function pointers (_dl_fini, __exit_funcs, etc.)
-        that could be overwritten for code execution."""
         targets: List[Dict[str, Any]] = []
         try:
             with open(binary_path, 'rb') as fh:
@@ -924,7 +748,6 @@ class BinarySecurityAuditor:
         return targets
 
     def assess_write_effectiveness(self, target_addr: int) -> float:
-        """Score [0-1] how effectively overwriting this target leads to code exec."""
         for t in self.write_targets:
             if t['offset'] == target_addr:
                 if 'fini' in t.get('symbol', '').lower():
@@ -932,8 +755,6 @@ class BinarySecurityAuditor:
                 if 'exit' in t.get('symbol', '').lower():
                     return 0.85
         return 0.2
-
-    # ---- Hardening advisor ----
 
     def generate_compiler_flags(self) -> List[str]:
         flags = []
@@ -955,24 +776,16 @@ class BinarySecurityAuditor:
 
     @staticmethod
     def _check_gnu_stack_rwx(data: bytes) -> bool:
-        """Return True if GNU_STACK segment is NOT executable."""
         idx = data.find(b'GNU_STACK')
         if idx < 0:
-            return True  # not found => assume NX
-        # Check flags 28 bytes into the Phdr entry
+            return True
         if idx + 32 < len(data):
             flags = struct.unpack_from('<I', data, idx + 28)[0]
-            return (flags & 1) == 0  # PF_X not set
+            return (flags & 1) == 0
         return True
 
 
-# 5. Memory & Forensics Analysis
-
 class MemoryForensicAnalyzer:
-    """
-    Parse PEB/TEB structures, analyse heap-state history, and reconstruct
-    stack-frame layouts from access patterns.
-    """
 
     def __init__(self):
         self.peb_info: Dict[str, Any] = {}
@@ -980,13 +793,8 @@ class MemoryForensicAnalyzer:
         self.heap_state_history: List[Dict[str, Any]] = []
         self.stack_layout: Dict[str, Tuple[int, int]] = {}
 
-    # ---- PEB / TEB ----
-
     def parse_peb(self, peb_addr: int) -> Dict[str, Any]:
-        """Parse Process Environment Block. Returns extracted fields."""
         info: Dict[str, Any] = {'address': hex(peb_addr), 'fields': {}}
-        # PEB fields (x64 offsets):
-        # +0x02 BeingDebugged, +0x10 ImageBaseAddress, +0x18 Ldr
         info['fields']['being_debugged'] = 0x02
         info['fields']['image_base'] = 0x10
         info['fields']['ldr'] = 0x18
@@ -995,9 +803,7 @@ class MemoryForensicAnalyzer:
         return info
 
     def parse_teb(self, teb_addr: int) -> Dict[str, Any]:
-        """Parse Thread Environment Block."""
         info: Dict[str, Any] = {'address': hex(teb_addr), 'fields': {}}
-        # TEB fields (x64): +0x00 NtTib, +0x30 PEB, +0x38 LastErrorValue
         info['fields']['peb'] = 0x30
         info['fields']['last_error'] = 0x38
         info['fields']['tid'] = 0x48
@@ -1011,8 +817,6 @@ class MemoryForensicAnalyzer:
         if from_peb:
             return [{'loader_entry': hex(from_peb), 'status': 'peb_ldr_available'}]
         return []
-
-    # ---- Heap visualisation ----
 
     def record_heap_state(self, arena_addr: int) -> None:
         entry = {
@@ -1037,17 +841,11 @@ class MemoryForensicAnalyzer:
                 bins.setdefault(f'tcache_{i}', []).append(tc)
         return bins
 
-    # ---- Stack reconstruction ----
-
     def analyze_stack_accesses(self, function_addr: int) -> None:
-        """Analyse stack-pointer-relative accesses to infer frame layout."""
-        # Real implementation would need disassembly; this provides
-        # a slot-based heuristic
         self.stack_layout[hex(function_addr)] = (-1, 0)
         _logger.debug("Stack access analysis at 0x%x", function_addr)
 
     def reconstruct_layout(self) -> Dict[str, Tuple[int, int]]:
-        """Return inferred (offset, size) for each local variable."""
         return dict(self.stack_layout)
 
     def generate_layout_summary(self) -> str:
@@ -1058,18 +856,13 @@ class MemoryForensicAnalyzer:
 
 
 class CrossProcessDataFlowTracker:
-    """
-    Extends taint analysis across process boundaries via shared memory
-    and pipe communication, producing a full data-flow graph.
-    """
 
     def __init__(self):
-        self.taint_graph: Dict[int, List[int]] = {}  # source -> [destinations]
+        self.taint_graph: Dict[int, List[int]] = {}
         self.pipe_flows: Dict[int, List[int]] = {}
         self.shm_flows: Dict[int, List[int]] = {}
 
     def track_shared_memory(self, shm_addr: int, processes: List[int]) -> None:
-        """Record that *shm_addr* is shared among *processes*."""
         self.shm_flows[shm_addr] = processes
         src = shm_addr
         for proc in processes:
@@ -1077,11 +870,9 @@ class CrossProcessDataFlowTracker:
             src = proc
 
     def track_pipe_communication(self, pipe_fd: int) -> None:
-        """Mark a pipe fd for inter-process data-flow tracking."""
         self.pipe_flows[pipe_fd] = []
 
     def get_full_data_flow(self) -> Dict[int, List[int]]:
-        """Merge shared-memory and pipe flows into a unified graph."""
         unified: Dict[int, List[int]] = {}
         unified.update(self.taint_graph)
         for fd, _ in self.pipe_flows.items():
@@ -1089,35 +880,21 @@ class CrossProcessDataFlowTracker:
         return unified
 
 
-# 6. Exploit Development Kit
-
 class ExploitDevelopmentKit:
-    """
-    Consolidated exploit-development utilities:
-
-      - ROP gadget discovery and chain compression
-      - Shellcode validation via QEMU user-mode emulation
-      - Minimal input generation for PoCs
-      - Binary patch generation from differential analysis
-    """
 
     def __init__(self):
-        self.gadget_database: Dict[str, List[int]] = {}  # pattern -> addrs
+        self.gadget_database: Dict[str, List[int]] = {}
         self.patch_templates: List[str] = []
         self._qemu_paths: Dict[str, str] = {
             'x86': 'qemu-i386', 'x86_64': 'qemu-x86_64',
             'arm': 'qemu-arm', 'arm64': 'qemu-aarch64',
         }
 
-    # ---- ROP ----
-
     def find_shared_gadgets(self, gadgets: List[int]) -> List[int]:
-        """Identify gadgets shared across multiple RO segments."""
         seen: Dict[int, int] = Counter(gadgets)
         return [g for g, cnt in seen.items() if cnt > 1]
 
     def compress_rop_chain(self, rop_chain: List[int]) -> List[int]:
-        """Remove adjacent duplicate gadget addresses."""
         if not rop_chain:
             return []
         compressed = [rop_chain[0]]
@@ -1128,18 +905,13 @@ class ExploitDevelopmentKit:
 
     def optimize_for_space(self, rop_chain: List[int],
                            max_length: int) -> Optional[List[int]]:
-        """Truncate ROP chain to fit within *max_length* gadgets."""
         compressed = self.compress_rop_chain(rop_chain)
         if len(compressed) <= max_length:
             return compressed
-        # Drop middle gadgets to meet size constraint
         keep = compressed[:max_length // 2] + compressed[-(max_length // 2):]
         return keep
 
-    # ---- Shellcode validation ----
-
     def validate_shellcode(self, shellcode: bytes, arch: str) -> Dict[str, Any]:
-        """Run shellcode under QEMU user mode and capture result."""
         qemu = self._qemu_paths.get(arch)
         if not qemu:
             return {'error': f'Unsupported architecture: {arch}'}
@@ -1166,24 +938,18 @@ class ExploitDevelopmentKit:
         return result
 
     def check_side_effects(self, shellcode: bytes, arch: str) -> List[str]:
-        """List observable side effects of shellcode execution."""
         side = []
         dangerous = [b'/bin/sh', b'/bin/bash', b'exec', b'system',
                      b'fork', b'kill', b'ptrace']
         for d in dangerous:
             if d in shellcode:
                 side.append(f'contains_{d.decode(errors="replace")}')
-        # Check for null-bytes (bad for string-based exploits)
         if b'\x00' in shellcode:
             side.append('contains_null_bytes')
         return side
 
-    # ---- Input minimisation ----
-
     def minimize_input(self, constraints: List[str]) -> bytes:
-        """Given SMT constraints, produce a minimal satisfying byte sequence."""
         result = bytearray()
-        # Simple constraint parsing: extract byte ranges
         for c in constraints:
             m = _re.search(r'byte_(\d+)\s*==\s*0x([0-9a-fA-F]+)', c)
             if m:
@@ -1195,17 +961,12 @@ class ExploitDevelopmentKit:
         return bytes(result)
 
     def simplify_bytes(self, input_bytes: bytes) -> bytes:
-        """Reduce redundant trailing bytes (common in overflow payloads)."""
         data = bytearray(input_bytes)
-        # Strip trailing repeated bytes
         while len(data) > 1 and data[-1] == data[-2]:
             data.pop()
         return bytes(data)
 
-    # ---- Binary patching ----
-
     def compare_binaries(self, old_path: str, new_path: str) -> List[Tuple[int, bytes, bytes]]:
-        """Byte-level diff between two binaries."""
         diffs: List[Tuple[int, bytes, bytes]] = []
         try:
             with open(old_path, 'rb') as f:
@@ -1225,8 +986,6 @@ class ExploitDevelopmentKit:
         return diffs
 
     def generate_hotpatch(self, diffs: List[Tuple[int, bytes, bytes]]) -> bytes:
-        """Produce a minimal binary patch blob from diffs.
-        Format: 4-byte count, then [offset:4][new_byte:1] per entry."""
         buf = bytearray()
         buf.extend(struct.pack('<I', len(diffs)))
         for off, _, new_val in diffs:
@@ -1235,7 +994,6 @@ class ExploitDevelopmentKit:
         return bytes(buf)
 
     def validate_patch(self, binary_path: str, patch: bytes) -> bool:
-        """Dry-run: check that all patch offsets are within the file."""
         try:
             with open(binary_path, 'rb') as fh:
                 file_sz = len(fh.read())
@@ -1249,21 +1007,13 @@ class ExploitDevelopmentKit:
             return False
 
 
-# 7. Dynamic Analysis Harness
-
 class DynamicAnalysisHarness:
-    """
-    Manages conditional breakpoints, execution snapshots (via rr),
-    GDB script generation, and syscall interception/fuzzing.
-    """
 
     def __init__(self):
         self.breakpoints: List[Dict[str, Any]] = []
         self.snapshot_path: Optional[str] = None
         self.gdb_commands: List[str] = []
         self.intercepted_calls: List[Dict[str, Any]] = []
-
-    # ---- Conditional breakpoints ----
 
     def set_breakpoint_on_register(self, reg_name: str, value: int) -> None:
         self.breakpoints.append({
@@ -1283,20 +1033,15 @@ class DynamicAnalysisHarness:
             'condition': None,
         })
 
-    # ---- Execution snapshots (rr) ----
-
     def record_execution(self, binary_path: str, input_data: bytes) -> str:
-        """Record execution with rr, return snapshot path."""
         import tempfile
         tmpdir = tempfile.mkdtemp(prefix='rr_')
         try:
-            # Write input to a file
             inp_path = os.path.join(tmpdir, 'input.bin')
             with open(inp_path, 'wb') as fh:
                 fh.write(input_data)
             _sp.run(['rr', 'record', binary_path, inp_path],
                     capture_output=True, timeout=60, cwd=tmpdir)
-            # Find the latest trace directory
             for item in sorted(os.listdir(tmpdir), reverse=True):
                 if item.startswith('rr-'):
                     self.snapshot_path = os.path.join(tmpdir, item)
@@ -1307,7 +1052,6 @@ class DynamicAnalysisHarness:
         return tmpdir
 
     def replay_execution(self, snapshot_path: str) -> bool:
-        """Replay a recorded rr snapshot."""
         try:
             result = _sp.run(['rr', 'replay', snapshot_path],
                              capture_output=True, timeout=60)
@@ -1316,7 +1060,6 @@ class DynamicAnalysisHarness:
             return False
 
     def extract_minimal_reproduction(self) -> Dict[str, Any]:
-        """Extract minimal reproduction data from snapshot."""
         if not self.snapshot_path:
             return {}
         return {
@@ -1325,10 +1068,7 @@ class DynamicAnalysisHarness:
             'breakpoints': len(self.breakpoints),
         }
 
-    # ---- GDB script generation ----
-
     def generate_gdb_script(self) -> str:
-        """Generate a GDB script covering all registered breakpoints."""
         lines = ['set pagination off', 'set confirm off', '']
         for bp in self.breakpoints:
             if bp['type'] == 'register':
@@ -1344,7 +1084,6 @@ class DynamicAnalysisHarness:
         return '\n'.join(lines)
 
     def collect_information(self, pid: int) -> Dict[str, str]:
-        """Run GDB info commands against a running process."""
         info: Dict[str, str] = {}
         cmds = [
             'info proc mappings', 'info registers', 'info frame',
@@ -1361,8 +1100,6 @@ class DynamicAnalysisHarness:
                 info[cmd.replace(' ', '_')] = ''
         return info
 
-    # ---- Syscall interception ----
-
     def intercept_syscall(self, syscall_num: int) -> None:
         self.intercepted_calls.append({
             'nr': syscall_num,
@@ -1371,7 +1108,6 @@ class DynamicAnalysisHarness:
         })
 
     def fuzz_parameters(self, params: List[int]) -> List[int]:
-        """Fuzz syscall parameters with edge cases."""
         import random
         fuzzed = []
         for p in params:
@@ -1387,7 +1123,6 @@ class DynamicAnalysisHarness:
         return fuzzed
 
     def test_robustness(self) -> Dict[str, Any]:
-        """Summarise robustness test results."""
         return {
             'intercepted_count': len(self.intercepted_calls),
             'unique_syscalls': len({c['nr'] for c in self.intercepted_calls}),
@@ -1395,37 +1130,25 @@ class DynamicAnalysisHarness:
 
     @staticmethod
     def _count_syscall(nr: int) -> int:
-        return 1  # placeholder for actual tracking
+        return 1
 
-
-# 8. Docker / Sandbox Management
 
 class DockerSandboxManager:
-    """
-    Generate minimal Docker images based on binary dependencies, and
-    manage multi-libc environments for exploit compatibility testing.
-    """
 
     def __init__(self):
         self.dependencies: List[str] = []
         self.libc_versions: List[str] = []
 
-    # ---- Dependency extraction ----
-
     def extract_dependencies(self, binary_path: str) -> List[str]:
-        """Parse ELF NEEDED entries or PE imports to find shared libraries."""
         deps: List[str] = []
         try:
             with open(binary_path, 'rb') as fh:
                 data = fh.read()
-            # ELF: look for .dynamic / NEEDED entries
             if data[:4] == b'\x7fELF':
-                # Scan for DT_NEEDED by looking for .so patterns
                 for m in _re.finditer(rb'([\w-]+\.so[\w.]*)', data):
                     dep = m.group(1).decode(errors='replace')
                     if dep not in deps:
                         deps.append(dep)
-            # PE: look for .dll patterns
             else:
                 for m in _re.finditer(rb'([\w-]+\.dll)', data, _re.IGNORECASE):
                     dep = m.group(1).decode(errors='replace')
@@ -1437,7 +1160,6 @@ class DockerSandboxManager:
         return deps
 
     def generate_dockerfile(self, base_image: str = 'ubuntu:20.04') -> str:
-        """Generate a minimal Dockerfile with detected dependencies."""
         lines = [
             f'FROM {base_image}',
             '',
@@ -1454,7 +1176,6 @@ class DockerSandboxManager:
             pkgs.add(pkg)
         for pkg in sorted(pkgs):
             lines.append(f'    {pkg} \\')
-        # Clean up trailing backslash
         last = lines[-1].rstrip(' \\')
         lines[-1] = last
         lines.extend([
@@ -1467,7 +1188,6 @@ class DockerSandboxManager:
         return '\n'.join(lines)
 
     def build_image(self, tag: str, dockerfile_dir: str = '.') -> bool:
-        """Build Docker image from generated Dockerfile."""
         try:
             result = _sp.run(['docker', 'build', '-t', tag, dockerfile_dir],
                              capture_output=True, text=True, timeout=300)
@@ -1476,12 +1196,8 @@ class DockerSandboxManager:
             _logger.error("Docker build failed: %s", e)
             return False
 
-    # ---- Multi-libc environment ----
-
     def setup_multi_libc_environment(self, versions: List[str]) -> bool:
-        """Configure multiple libc versions in a Docker sandbox."""
         self.libc_versions = versions
-        # Build Dockerfile with all requested libcs
         dockerfile = 'FROM ubuntu:20.04\n\n'
         for v in versions:
             dockerfile += f'# Libc version: {v}\n'
@@ -1501,7 +1217,6 @@ class DockerSandboxManager:
             return False
 
     def test_exploit_compatibility(self, exploit_script: str) -> Dict[str, bool]:
-        """Test an exploit script against each libc version."""
         results: Dict[str, bool] = {}
         for v in self.libc_versions:
             try:
@@ -1517,7 +1232,6 @@ class DockerSandboxManager:
 
 
 class ExploitReproduceEnvironmentGenerator:
-    """Generate Docker-based reproduction environments for exploits."""
 
     _DOCKER_TEMPLATE = '''FROM ubuntu:{ubuntu_version}
 
@@ -1588,10 +1302,7 @@ void free(void *ptr) {{
         return output_dir
 
 
-# 9. Platform-Specific Analysis
-
 class GoRustBinaryAnalyzer:
-    """Identify Go/Rust runtimes and generate language-specific analysis hints."""
 
     def __init__(self):
         self.language: Optional[str] = None
@@ -1653,7 +1364,6 @@ class GoRustBinaryAnalyzer:
 
 
 class MobilePlatformDeepAnalyzer:
-    """Analyse Android JNI functions and iOS ObjC class structures."""
 
     _DANGEROUS_PERMISSIONS = {
         'android.permission.WRITE_EXTERNAL_STORAGE',
@@ -1694,7 +1404,6 @@ class MobilePlatformDeepAnalyzer:
 
     def _extract_jni_functions(self, apk_path: str) -> List[Dict[str, Any]]:
         funcs: List[Dict[str, Any]] = []
-        # APK is a ZIP; look for .so files and parse their exports
         import zipfile
         try:
             with zipfile.ZipFile(apk_path, 'r') as zf:
@@ -1706,7 +1415,7 @@ class MobilePlatformDeepAnalyzer:
                             funcs.append({
                                 'name': fname,
                                 'module': name,
-                                'is_secure': False,  # default until audited
+                                'is_secure': False,
                             })
         except Exception:
             _logger.debug("suppressed", exc_info=True)
@@ -1718,7 +1427,6 @@ class MobilePlatformDeepAnalyzer:
         try:
             with zipfile.ZipFile(apk_path, 'r') as zf:
                 if 'AndroidManifest.xml' in zf.namelist():
-                    # Binary XML -- basic string extraction
                     data = zf.read('AndroidManifest.xml')
                     for m in _re.finditer(
                             rb'android\.permission\.[A-Z_]+', data):
@@ -1738,7 +1446,6 @@ class MobilePlatformDeepAnalyzer:
                     if name.endswith('.o') or ('.app/' in name and '.' not in name.split('/')[-1]):
                         try:
                             data = zf.read(name)
-                            # ObjC class references: _OBJC_CLASS_$_
                             for m in _re.finditer(rb'_OBJC_CLASS_\$_(.+)', data):
                                 cls_name = m.group(1).decode(errors='replace')
                                 classes.append({'name': cls_name, 'source': name})
@@ -1785,7 +1492,6 @@ class MobilePlatformDeepAnalyzer:
                         'severity': 'medium',
                     })
         elif self.platform == 'ios':
-            # Check for common iOS issues
             for cls in analysis_data.get('classes', []):
                 name = cls.get('name', '')
                 if 'UIWebView' in name and 'WKWebView' not in name:
@@ -1797,10 +1503,7 @@ class MobilePlatformDeepAnalyzer:
         return vulns
 
 
-# 10. Remaining Utility Classes (polished, stubs removed)
-
 class VulnerabilityHeatmapTracker:
-    """Track vulnerability density per function across software versions."""
 
     def __init__(self):
         self.version_data: Dict[str, Dict[int, VulnerabilityDensity]] = {}
@@ -1819,13 +1522,11 @@ class VulnerabilityHeatmapTracker:
         self.version_data[version] = vdata
 
     def calculate_density_scores(self) -> None:
-        """Compute density scores by aggregating vuln counts across versions."""
         func_totals: Dict[int, float] = defaultdict(float)
         version_count = max(len(self.version_data), 1)
         for v_data in self.version_data.values():
             for addr, density in v_data.items():
                 func_totals[addr] += density.vuln_count
-        # Normalise and build hot-functions list
         self.hot_functions.clear()
         for addr, total in func_totals.items():
             score = total / version_count
@@ -1836,7 +1537,6 @@ class VulnerabilityHeatmapTracker:
         return sorted(self.hot_functions, key=lambda x: -x[1])[:top_n]
 
     def generate_heatmap_data(self) -> Dict[str, Any]:
-        """Build heatmap-compatible data structure."""
         self.calculate_density_scores()
         heatmap: Dict[str, Any] = {
             'type': 'vulnerability_heatmap',
@@ -1856,7 +1556,6 @@ class VulnerabilityHeatmapTracker:
 
 
 class AutomatedPatchPrioritySorter:
-    """Prioritise vulnerabilities by severity, exploitability, and impact."""
 
     def __init__(self):
         self.vulnerabilities: List[Dict[str, Any]] = []
@@ -1928,7 +1627,6 @@ class AutomatedPatchPrioritySorter:
 
 
 class DynamicTaintTracker:
-    """Abstract backend for tracking taint from input sources to sinks."""
 
     def __init__(self):
         self.taint_sources: List[Dict[str, Any]] = []
@@ -1991,7 +1689,6 @@ Interceptor.attach(Module.findExportByName(null, "read"), {
 
 
 class SmartPatchSuggestionGenerator:
-    """Generate unified-diff patch suggestions for vulnerabilities."""
 
     def __init__(self):
         self.patch_suggestions: Dict[str, Dict[str, Any]] = {}
@@ -2055,7 +1752,6 @@ class SmartPatchSuggestionGenerator:
 
 
 class BinaryDiffAnalyzer:
-    """Function-level binary diffing with regression-vulnerability detection."""
 
     def __init__(self):
         self.version_a_functions: Dict[int, Dict[str, Any]] = {}
@@ -2078,7 +1774,7 @@ class BinaryDiffAnalyzer:
                         continue
                     functions[addr] = {
                         'name': parts[-1],
-                        'size': 0,  # unknown from nm alone
+                        'size': 0,
                         'address': addr,
                     }
         except Exception:
@@ -2111,12 +1807,10 @@ class BinaryDiffAnalyzer:
 
     def _calculate_similarity(self, func_a: Dict[str, Any],
                               func_b: Dict[str, Any]) -> float:
-        """Name-based + size heuristics for function similarity."""
         name_a = func_a.get('name', '')
         name_b = func_b.get('name', '')
         if name_a == name_b:
             return 0.95
-        # Jaccard on character bigrams
         bigrams_a = {name_a[i:i + 2] for i in range(len(name_a) - 1)}
         bigrams_b = {name_b[i:i + 2] for i in range(len(name_b) - 1)}
         union = len(bigrams_a | bigrams_b)
@@ -2148,7 +1842,6 @@ class BinaryDiffAnalyzer:
 
 
 class ReverseInteractiveShell:
-    """Prompt-based interactive reverse-engineering shell."""
 
     def __init__(self):
         self.binary_path: Optional[str] = None
@@ -2273,7 +1966,6 @@ class ReverseInteractiveShell:
 
 
 class CryptoConstantDetector:
-    """Scan binaries for cryptographic constants and weak algorithms."""
 
     def __init__(self):
         self.crypto_constants: Dict[str, bytes] = {
@@ -2319,8 +2011,6 @@ class CryptoConstantDetector:
 
     def _detect_ecb_usage(self, data: bytes) -> List[Dict[str, Any]]:
         ecb = []
-        # ECB leaves identical ciphertext blocks for identical plaintext.
-        # Scan for repeated 16-byte blocks in .rodata or .data segments.
         if len(data) < 32:
             return ecb
         blocks: Dict[bytes, List[int]] = {}
@@ -2363,7 +2053,6 @@ class CryptoConstantDetector:
 
 
 class CryptoImplementationComparator:
-    """Compare embedded crypto against known reference implementations."""
 
     def __init__(self):
         self.crypto_patterns: Dict[str, Dict[str, Any]] = {}
@@ -2451,7 +2140,6 @@ class CryptoImplementationComparator:
 
 
 class HardwareBreakpointWatchpointAnalyzer:
-    """Manage hardware breakpoints and memory watchpoints for debugging."""
 
     def __init__(self):
         self.breakpoints: Dict[int, Dict[str, Any]] = {}
@@ -2519,7 +2207,6 @@ class HardwareBreakpointWatchpointAnalyzer:
 
 
 class LoopBoundInferenceEngine:
-    """Infer loop iteration bounds from code patterns for symbolic pruning."""
 
     def __init__(self):
         self.loop_patterns: Dict[str, Dict[str, Any]] = {}
@@ -2609,7 +2296,6 @@ class LoopBoundInferenceEngine:
 
 
 class MultiArchitectureIROptimizer:
-    """Lift architecture-specific instructions to a common IR for analysis."""
 
     def __init__(self):
         self.architecture_handlers: Dict[str, Callable] = {}
@@ -2669,7 +2355,6 @@ class MultiArchitectureIROptimizer:
 
 
 class PeripheralRegisterAccessAnomalyDetector:
-    """Monitor peripheral register access sequences for anomalies."""
 
     def __init__(self):
         self.register_access_log: List[Dict[str, Any]] = []
@@ -2730,7 +2415,6 @@ class PeripheralRegisterAccessAnomalyDetector:
             if prev_addr in self.register_definitions:
                 valid_seq = self.register_definitions[prev_addr].get('valid_sequence', [])
                 cur_type = cur.get('access_type', '')
-                # Simplistic check
                 if valid_seq and cur_type not in valid_seq:
                     return False
         return True
@@ -2751,7 +2435,6 @@ class PeripheralRegisterAccessAnomalyDetector:
 
 
 class AnalysisDatabaseMaintenance:
-    """Periodic cleanup of analysis results, incremental encoding."""
 
     def __init__(self):
         self.db_path: str = ""
@@ -2761,7 +2444,6 @@ class AnalysisDatabaseMaintenance:
         self.db_path = path
 
     def cleanup_stale_results(self, max_age_days: int = 30) -> int:
-        """Remove analysis records older than *max_age_days* from SQLite DB."""
         cleaned = 0
         if not self.db_path or not os.path.exists(self.db_path):
             return cleaned
@@ -2782,7 +2464,6 @@ class AnalysisDatabaseMaintenance:
         return pickle.dumps(function_features)
 
     def incremental_encode(self, features: List[Dict[str, Any]]) -> bytes:
-        """Delta-encode a list of feature dicts relative to the first entry."""
         import pickle
         if not features:
             return b''
@@ -2802,52 +2483,37 @@ class AnalysisDatabaseMaintenance:
         return 0
 
 
-# Module exports
-
 __all__ = [
-    # Data objects
     'VulnerabilityDensity',
     'ExceptionHijackPoint',
     'SemanticRewrittenCode',
-    # Core utilities
     'NgramBinaryHash',
     'BinaryCacheManager',
     'AnalysisDatabaseMaintenance',
-    # Security analysis
     'BinarySecurityAuditor',
     'CryptoConstantDetector',
     'CryptoImplementationComparator',
-    # Exception analysis
     'ExceptionAnalysisSuite',
     'ExceptionHandlingPathCoverageAnalyzer',
-    # Code structure
     'CodeStructureAnalyzer',
     'DecompilerSemanticRewriter',
     'DisassemblyMacroIdentifierExpander',
-    # Memory & forensics
     'MemoryForensicAnalyzer',
     'CrossProcessDataFlowTracker',
-    # Exploit development
     'ExploitDevelopmentKit',
-    # Dynamic analysis
     'DynamicAnalysisHarness',
     'DynamicTaintTracker',
     'HardwareBreakpointWatchpointAnalyzer',
-    # Environment
     'DockerSandboxManager',
     'ExploitReproduceEnvironmentGenerator',
-    # Platform-specific
     'GoRustBinaryAnalyzer',
     'MobilePlatformDeepAnalyzer',
-    # Pipeline & triage
     'VulnerabilityHeatmapTracker',
     'AutomatedPatchPrioritySorter',
     'BinaryDiffAnalyzer',
     'SmartPatchSuggestionGenerator',
-    # Instruction analysis
     'LoopBoundInferenceEngine',
     'MultiArchitectureIROptimizer',
     'PeripheralRegisterAccessAnomalyDetector',
-    # Interactive
     'ReverseInteractiveShell',
 ]

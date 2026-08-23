@@ -1,4 +1,3 @@
-# Proxy → info_collection/interactive_shell.py. pathlib + runpy strategy.
 from pathlib import Path as _P
 import runpy as _rp
 _real = str(_P(__file__).parent.parent / 'info_collection' / 'interactive_shell.py')

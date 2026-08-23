@@ -1,16 +1,3 @@
-# structured_pseudocode.py: construct structured pseudocode
-# from decompiler engine flat output
-#
-# Raw decompiler output is lifted into a structured form:
-# identifies if/else chains, loop structures, switch cases,
-# exception handling blocks. Supports output in markdown, HTML,
-# plain text formatting, optional type annotations,
-# control-flow visualization hints.
-#
-# Decompiler output is flat C — structure is latent, not explicit.
-# Recovering it means re-deriving abstract syntax that the compiler
-# optimized away, via pattern recognition and parsing.
-
 import logging
 import re
 import textwrap
@@ -68,7 +55,7 @@ class VariableInfo:
 	"""变量信息"""
 	name: str
 	type_hint: str = "auto"
-	scope_start: int = -1  # line number
+	scope_start: int = -1
 	scope_end: int = -1
 	is_parameter: bool = False
 	is_local: bool = True
@@ -233,7 +220,7 @@ class StructuredPseudocodeGenerator:
 	# 函数签名提取
 
 	def _extract_function_signature(self, lines: List[str]) -> Dict[str, Any]:
-		# 提取 function 签名 info 伪代码 lines
+		# 提取函数签名
 		result: Dict[str, Any] = {
 			'name': '',
 			'return_type': 'void',
@@ -275,7 +262,7 @@ class StructuredPseudocodeGenerator:
 
 		in_body = False
 		open_braces = 0
-		scope_stack: List[int] = []  # line numbers scope openings
+		scope_stack: List[int] = []  # 作用域起始行号
 
 		for i, line in enumerate(lines):
 			# 追踪大括号
@@ -320,7 +307,7 @@ class StructuredPseudocodeGenerator:
 			# 粗略统计：token 出现次数（排除声明行本身）
 			vinfo.references = len(re.findall(
 				r'\b' + re.escape(vname) + r'\b', full_text
-			)) - 1  # -1 for declaration
+			)) - 1  # 减去声明行本身
 
 		return var_list, variables
 
@@ -695,7 +682,7 @@ class StructuredPseudocodeGenerator:
 
 	def _format_block_plain(self, block: CodeBlock,
 	                         indent: int, with_types: bool) -> List[str]:
-		"""递归格式化代码块 — plain text"""
+		"""递归格式化代码块"""
 		lines: List[str] = []
 		indent_str = " " * indent
 

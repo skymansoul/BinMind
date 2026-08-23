@@ -1,3 +1,6 @@
+# 提示词版本号，用于调用记录追溯
+PROMPT_VERSION = "1.0"
+
 DECOMP_ANALYSIS_TEMPLATE = """
 你是资深二进制安全研究员。分析以下反编译代码，识别安全漏洞。
 

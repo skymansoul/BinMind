@@ -6,9 +6,6 @@
 #   在循环所属函数范围内重建指针→分配映射 (避免CRT栈帧污染).
 #   迭代次数委托 LoopTripCounter 推导.
 #
-# 理论依据: 循环感知的符号执行; 循环摘要驱动的漏洞检测.
-#
-
 import re
 from typing import List, Optional, Tuple
 from .disasm_util import norm_reg, extract_func_name

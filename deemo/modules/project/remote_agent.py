@@ -83,6 +83,25 @@ class RemoteAgent:
         self._status = AgentStatus.DISCONNECTED
         if self._uds and _os.path.exists(self._uds): suppress(OSError)(_os.unlink(self._uds))
 
+    def close(self):
+        # disconnect 别名——兼容 exploit 链路的统一关闭语义
+        self.disconnect()
+
+    def send(self, data, method="exploit", to=DEFAULT_TO):
+        # 便捷发送: 裸字节走 send_task 封装为 JSON-RPC params
+        # payload 编码为 hex 字符串传输, 远端需以 method 解包
+        payload = data.hex() if isinstance(data, (bytes, bytearray)) else str(data)
+        return self.send_task(method, {"payload": payload}, to=to)
+
+    def recv(self, to=DEFAULT_TO):
+        # 便捷接收: 轮询 pending 队列取最新任务结果
+        with self._lock:
+            for tid, (ev, r) in list(self._pending.items()):
+                if ev.wait(0):
+                    _, result = self._pending.pop(tid, (None, None))
+                    return result.data if result and result.success else None
+        return None
+
     def send_task(self, method, params=None, to=DEFAULT_TO):
         with self._lock: self._ctr += 1; tid = f"t-{self._ctr}"
         req = {"jsonrpc": "2.0", "method": method, "params": params or {}, "id": tid}

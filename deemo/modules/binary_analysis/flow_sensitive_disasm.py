@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Any, Tuple
 
 logger = _logging.getLogger(__name__)
 
-# ---- capstone/unicorn optional ----
 _HAS_UC = False
 _HAS_CS = False
 try:

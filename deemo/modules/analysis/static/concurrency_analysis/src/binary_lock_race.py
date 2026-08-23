@@ -1,31 +1,6 @@
 # 原子指令模式锁识别 + lockset must-race 分类
-"""
-二进制级锁图数据竞争检测 - 无需符号/调试信息的锁函数识别 + 线程模块化分析。
-
-现有并发分析 (lock_graph.py, race_detector.py) 假设有源码或完整符号-
-对 stripped 二进制或固件无效。本模块直接在二进制 IR 层工作。
-
-算法分三阶段:
-  1. 锁函数识别: 通过原子指令模式 (cmpxchg/ldrex/strex + 循环) 定位锁函数,
-     无需符号表。交叉引用分析配对 lock/unlock
-  2. 锁图构建: 对每对 (lock_acq, lock_rel) 记录保护的内存区域,
-     用 lockset 分析检测共享变量访问
-  3. must-race 分类: 区分 must-race (必然发生) vs may-race (条件触发),
-      仅 must-race 上报-may-race 标记为 "unknown" 供动态验证
-
-为什么 must-race 分类比传统二值判定重要:
-  传统 lockset 分析报告所有不共享锁的并发访问为 "race"-大量假阳性。
-  must-race 需要额外证明: (a) 两个访问必然并发, (b) 无其他同步机制保护,
-  (c) 访问的地址范围确定重叠。过滤掉仅可能并发的假阳性。
-
-ref: RacerF - thread-modular abstract interpretation,
-     本项目取其 digest/must-race 区分思路但适配到二进制层
-ref: RAProducer - lock function identification in stripped binaries
-     via atomic instruction pattern + cross-reference pairing
-ref: Eraser - lockset 算法的原始论文
-ref: FastTrack - happens-before
-     与 lockset 的混合检测, 本项目的 must-race 分类借鉴其思路
-"""
+# 二进制级锁图数据竞争检测 - 无需符号/调试信息的锁函数识别 + 线程模块化分析.
+# 三阶段: 锁函数识别(原子指令模式) → 锁图构建(lockset分析) → must-race分类.
 
 from __future__ import annotations
 

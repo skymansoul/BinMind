@@ -1,14 +1,3 @@
-# -*- coding: utf-8 -*-
-"""用户代码范围判定 mixin.
-
-决策:
-  多个检测器共用同一套用户函数范围判定: set_user_func_ranges 记录
-  用户函数地址区间, _is_user_code 判定指令地址是否落在用户代码内.
-  CRT/库代码通过该判定排除, 避免库内危险调用污染检测结果.
-
-创建: 2024-03-12
-"""
-
 from typing import List, Tuple
 
 

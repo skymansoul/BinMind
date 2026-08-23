@@ -37,7 +37,7 @@ class ViewKind:
 
 @dataclass
 class ViewOutput:
-    """单个视图的GNN输出"""
+    # 单个视图的GNN输出
     view_name: str
     logits: np.ndarray             # (n_nodes, n_classes)
     probabilities: np.ndarray      # softmax(logits)
@@ -48,7 +48,7 @@ class ViewOutput:
 
 @dataclass
 class MultiViewFusion:
-    """自适应多视图融合结果"""
+    # 自适应多视图融合结果
     fused_logits: np.ndarray
     fused_probs: np.ndarray
     view_weights: Dict[str, float]
@@ -58,18 +58,9 @@ class MultiViewFusion:
 
 
 class AdaptiveMultiViewGNN:
-    """自适应多视图GNN-熵驱动的动态视图权重。
-
-    融合公式:
-      entropy_i = -sum(p_ij * log(p_ij))  // 视图i的预测熵
-      w_i = exp(-entropy_i / T) / sum_j(exp(-entropy_j / T))
-      fused = sum_i(w_i * logits_i)
-
-    温度调度:
-      T(t) = T_0 / (1 + log(1 + t))
-      早期T高，权重更均匀(探索各视图)
-      后期T低，sharp融合(确定性视图主导)
-    """
+    # 自适应多视图GNN-熵驱动的动态视图权重.
+    # 融合: w_i = softmax(-entropy_i / T), 低熵视图获更高权重.
+    # 温度调度: T(t) = T_0/(1+log(1+t)), 早期均匀探索后期sharp融合.
 
     def __init__(self,
                  n_classes: int = 2,
@@ -87,7 +78,6 @@ class AdaptiveMultiViewGNN:
                 view_fns: Dict[str, Callable],
                 view_data: Dict[str, Tuple[Any, Any]]
                 ) -> MultiViewFusion:
-        """多视图自适应前向传播。"""
         view_outputs = {}
         T = self._current_temperature()
         entropies = []
@@ -164,10 +154,7 @@ class AdaptiveMultiViewGNN:
     def _compute_consistency_loss(self,
                                    view_outputs: Dict[str, ViewOutput]
                                    ) -> float:
-        """视图间预测一致性-KL散度的均值。
-
-        低一致性，模型对不同视图的推理结果矛盾，应该降低融合置信度。
-        """
+        # 视图间预测一致性-KL散度均值; 低一致性应降低融合置信度.
         names = list(view_outputs.keys())
         if len(names) < 2:
             return 0.0
@@ -188,7 +175,7 @@ class AdaptiveMultiViewGNN:
     def compute_total_loss(self,
                            fusion: MultiViewFusion,
                            labels: np.ndarray) -> float:
-        """总损失 = 交叉熵 + 一致性正则"""
+        # 总损失 = 交叉熵 + 一致性正则
         eps = 1e-8
         probs_flat = fusion.fused_probs.flatten()
         if len(probs_flat) >= 2 and len(labels) > 0:

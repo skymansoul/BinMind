@@ -1,5 +1,5 @@
-"""基准测试结果缓存 — 持久化微基准测试结果，支持历史对比和趋势追踪"""
-# 设计: SQLite后端存储, 支持按模块/函数/版本查询和统计
+# 基准测试结果缓存 — SQLite持久化, 支持历史对比和趋势追踪
+# 设计: 按模块/函数/版本查询和统计
 
 from __future__ import annotations
 import os
@@ -48,21 +48,7 @@ class BenchmarkEntry:
 
 
 class BenchmarkCache:
-    """基准测试缓存数据库
-
-    Schema:
-      CREATE TABLE benchmarks (
-        id INTEGER PRIMARY KEY,
-        module TEXT, function TEXT, version_hash TEXT,
-        input_size INTEGER, iterations INTEGER,
-        mean_us REAL, median_us REAL, std_us REAL,
-        p95_us REAL, p99_us REAL, ops_per_sec REAL,
-        memory_kb REAL, metadata TEXT, timestamp REAL
-      )
-      CREATE INDEX idx_module_func ON benchmarks(module, function)
-      CREATE INDEX idx_version ON benchmarks(version_hash)
-      CREATE INDEX idx_timestamp ON benchmarks(timestamp)
-    """
+    # SQLite后端, Schema见_init_db
 
     # 默认缓存路径
     DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), '.benchmark_cache.db')
@@ -180,7 +166,6 @@ class BenchmarkCache:
 
     def get_latest(self, module: str, function: str,
                    version_hash: Optional[str] = None) -> Optional[BenchmarkEntry]:
-        """获取最新的基准测试结果"""
         if version_hash:
             rows = self.query(module=module, function=function,
                              version_hash=version_hash, limit=1)
@@ -190,7 +175,6 @@ class BenchmarkCache:
 
     def compare_versions(self, module: str, function: str,
                          version_a: str, version_b: str) -> Dict[str, Any]:
-        """比较两个版本的性能差异"""
         entries_a = self.query(module=module, function=function,
                                version_hash=version_a, limit=5)
         entries_b = self.query(module=module, function=function,
@@ -221,7 +205,6 @@ class BenchmarkCache:
 
     def get_trend(self, module: str, function: str,
                   days: int = 30) -> List[Dict[str, Any]]:
-        """获取性能趋势线 (按天聚合)"""
         since = time.time() - days * 86400
         entries = self.query(module=module, function=function, since=since, limit=1000)
 
@@ -248,7 +231,6 @@ class BenchmarkCache:
         return trend
 
     def get_stats(self, module: Optional[str] = None) -> Dict[str, Any]:
-        """获取缓存统计"""
         with self._get_conn() as conn:
             if module:
                 row = conn.execute(
@@ -270,7 +252,6 @@ class BenchmarkCache:
         }
 
     def cleanup(self, older_than_days: int = 90):
-        """清理旧数据"""
         cutoff = time.time() - older_than_days * 86400
         with self._lock:
             with self._get_conn() as conn:
@@ -296,7 +277,7 @@ class BenchmarkCache:
 # 性能计时器
 
 class BenchmarkTimer:
-    """带缓存记录的微基准计时器"""
+    # 带缓存记录的微基准计时器
 
     def __init__(self, module: str, cache: Optional[BenchmarkCache] = None,
                  version_hash: Optional[str] = None):
@@ -343,7 +324,6 @@ class BenchmarkTimer:
 
     def compare_with_baseline(self, func_name: str, func: Callable, *args,
                               **kwargs) -> Dict[str, Any]:
-        """与历史基线比较"""
         current = self.measure(func_name, func, *args, **kwargs)
         baseline = self.cache.get_latest(self.module, func_name)
 

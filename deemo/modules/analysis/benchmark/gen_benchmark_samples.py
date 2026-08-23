@@ -212,22 +212,6 @@ def _readme(cve: str, desc: str, alloc_sz: int, write_sz: int,
 3. The write size exceeds the allocation by `{overflow}` bytes
 4. No bounds check exists between allocation and write
 
-## Why This Is Effective for Static Analysis Evaluation
-1. **Data flow tracking required**: The write size comes from a variable,
-   not an immediate constant — testing value flow precision
-2. **Cross-function analysis**: In real CVEs, allocation and write are often
-   in different functions — testing inter-procedural analysis
-3. **Bounds check modeling**: The absence of bounds checks must be confirmed
-   before reporting — testing path-sensitive analysis
-4. **Allocator awareness**: The actual chunk size may differ from the request
-   size — testing heap allocator modeling
-
-# Expected Detection
-- **True Positive**: Detector should report heap overflow at `memcpy` call site
-- **No False Negative**: Even with optimizations (O2 inlines, Os shrinks)
-- **No False Positive on safe variants**: The `*_safe()` and `*_exact()` functions
-  should NOT trigger detection
-
 # Compilation
 ```bash
 make          # builds all optimization levels

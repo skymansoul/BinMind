@@ -35,11 +35,10 @@ def apply_enhancements_4(result, binary_path, binfo, kwargs, binary_hash=None):
         logger.debug('optional plugin not available')
 
     try:
-        # ProtocolStateMachineInferrer 已重构为 ProtocolStateMachine, 该增强当前跳过
         from modules.analysis.static.tools.protocol_state_inferrer import (
-            ProtocolStateMachineInferrer,
+            ProtocolStateInferrer,
         )
-        _proto_inferrer = ProtocolStateMachineInferrer()
+        _proto_inferrer = ProtocolStateInferrer()
         result['_protocol_state_inferrer'] = _proto_inferrer
         logger.debug('协议状态机推断器已就绪（SimHash 消息聚类）')
     except ImportError:

@@ -33,6 +33,8 @@ def run_feedback_loop(
     max_iterations: int = MAX_ITERATIONS,
     timeout: int = 30,
     sandbox: str = 'subprocess',
+    output_dir: str = '',
+    gate_timeout: float = 3600.0,
 ) -> Dict[str, Any]:
     """
     执行 exploit 反馈迭代环。
@@ -98,6 +100,48 @@ def run_feedback_loop(
             )
             _log.warning("Feedback loop aborted: repeated error '%s'", error_sig)
             break
+
+        # 人工复核门控: 每轮执行后、LLM 修正前插入
+        if output_dir and iteration < max_iterations:
+            from core.review_gate import gate_in_feedback_loop
+            gate_verdict = gate_in_feedback_loop(
+                output_dir, iteration, current_script, exec_result,
+                llm_feedback='', timeout=gate_timeout,
+            )
+            action = gate_verdict.get('action', 'skip')
+            round_record['gate_action'] = action
+
+            if action == 'reject':
+                result['root_cause'] = (
+                    f"Human review rejected at iteration {iteration}"
+                )
+                _log.info("Feedback loop aborted by human review (reject)")
+                break
+            elif action == 'modify':
+                human_instruction = gate_verdict.get('instruction', '')
+                llm_feedback = _llm_correct_script(
+                    current_script, exec_result, binfo, libc_info, checksec,
+                )
+                if human_instruction:
+                    llm_feedback = (
+                        f"[Human instruction]\n{human_instruction}\n\n"
+                        f"[LLM analysis]\n{llm_feedback}"
+                    )
+                round_record['llm_feedback'] = llm_feedback
+
+                if llm_feedback:
+                    corrected = _extract_script_from_llm_response(llm_feedback)
+                    if corrected and corrected != current_script:
+                        current_script = corrected
+                        continue
+                result['root_cause'] = (
+                    "LLM failed to produce a valid corrected script after modify"
+                )
+                break
+            elif action == 'accept':
+                _log.info("Human review accepted at iteration %d", iteration)
+            else:
+                _log.debug("Gate skipped at iteration %d", iteration)
 
         # 调用 LLM 修正
         if iteration < max_iterations:

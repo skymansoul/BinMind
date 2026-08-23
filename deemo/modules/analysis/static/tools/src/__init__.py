@@ -38,7 +38,7 @@ _CACHE: dict[str, Any] = {}
 
 
 def _load_module(name: str) -> Any:
-    """Import a submodule first access 缓存it"""
+    """首次访问时导入子模块并缓存"""
     if name not in _MODULE_MAP:
         raise AttributeError(f"module 'tools.src' has no attribute {name!r}")
     mod = __import__(

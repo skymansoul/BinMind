@@ -1,21 +1,5 @@
-# 堆分配约束简化器 (Heap Allocation Constraint Simplifier)
-#
-# 堆溢出误报的第二大来源: 不跟踪分配函数的实际参数约束.
-# 即使 size 来自外部输入, 若 malloc(size) 的 size 与 memcpy 的 len
-# 来自同一变量, 则溢出不可能发生 (分配大小 = 写入大小).
-#
-# 核心决策:
-#   1. allocation-site correlation: 追踪 malloc(N) 返回的指针
-#      被传给 memcpy(dst, src, M) 时, 检查 N 和 M 是否来自同一变量.
-#      若是 → 安全 (分配与写入等大). 若 N < M 且 N 为定值 → 危险.
-#   2. 对齐约束传播: x86-64 malloc 实际分配大小 ≥ 请求大小,
-#      且至少 16 字节对齐. 若请求 62 字节, 实际 chunk 为 64 字节.
-#      写入 62 字节不会溢出, 写入 65 字节才会.
-#      此约束可消除约 8-12% 的误报 (实测在 Juliet 测试集).
-#   3. 区间算术: 对每个变量的可能取值维护 [lo, hi] 区间.
-#      若 memcpy 的 len ∈ [0, 32] 且分配大小 ≥ 32 → 安全.
-#      区间用 widening 处理循环, 保证有限步收敛.
-#
+# 堆分配约束简化器
+# 追踪 malloc(N) 与 memcpy(dst, src, M) 的参数同源关系和对齐约束
 
 from typing import Dict, List, Optional, Tuple
 

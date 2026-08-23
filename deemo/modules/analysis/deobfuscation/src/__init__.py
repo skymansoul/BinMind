@@ -1,5 +1,4 @@
-# Deobfuscation module - lazy loading entry point
-# 策略: __getattr__ lazy loading chosen over eager __init__.py imports
+# 去混淆模块 - 懒加载入口
 # 因为本模块包含多个重型依赖(radare2/capstone),延迟加载可将CLI冷启动从2.3s降到0.4s
 # 且大多数用户每次只使用一个子功能,不需要一次性加载所有模块
 
@@ -7,12 +6,12 @@ import importlib
 from typing import Any
 
 _MODULE_MAP: dict[str, str] = {
-    # Core engine
+    # 核心引擎
     "FunctionDeobfuscator": ".core",
     "DeobfOrchestrator": ".core",
     "StringDecoder": ".core",
     "NLPStringClassifier": ".core",
-    # Sub-modules
+    # 子模块
     "Unpacker": ".unpack",
     "PyInstallerUnpacker": ".unpack",
     "VMIdentifier": ".vm",
@@ -33,7 +32,6 @@ _MODULE_MAP: dict[str, str] = {
     "validate_config": ".config",
 }
 
-# 之前依赖这个，先留着
 # from .legacy import compat_wrapper
 
 _CACHED: dict[str, Any] = {}

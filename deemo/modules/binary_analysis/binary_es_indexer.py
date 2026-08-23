@@ -1,7 +1,3 @@
-# Main interface: IndexField and related classes.
-# Dependencies: os, json
-# Design: generator-based instead of state machine.
-
 import logging
 import os
 import json
@@ -30,7 +26,6 @@ except ImportError:
 
 
 class IndexField(StrEnum):
-    """Field name constants for the binary function index."""
     FUNC_NAME = "func_name"
     BINARY_ID = "binary_id"
     PROJECT = "project"
@@ -51,7 +46,6 @@ class IndexField(StrEnum):
 
 @dataclass
 class FunctionDoc:
-    """Document representing a single function for indexing."""
     func_name: str
     binary_id: str
     project: str
@@ -70,7 +64,6 @@ class FunctionDoc:
     timestamp: float = field(default_factory=time.time)
 
     def doc_id(self) -> str:
-        """Generate a deterministic document ID from binary + function identity."""
         h = hashlib.sha256()
         h.update(self.binary_id.encode("utf-8"))
         h.update(b"\x00")
@@ -81,7 +74,6 @@ class FunctionDoc:
 
 
 class ESBackend:
-    """Elasticsearch backend for function indexing."""
 
     INDEX = "binmind-functions"
 
@@ -147,8 +139,6 @@ class ESBackend:
             else:
                 must.append({"match": {"decomp_text": query}})
         body = {"size": limit, "query": {"bool": {"must": must}}}
-        # KNN hybrid vector query — placeholder: actual implementation should
-        # compute query embedding from the search text.
         if knn:
             body["knn"] = {
                 "field": "embedding",
@@ -161,7 +151,6 @@ class ESBackend:
 
 
 class SQLiteBackend:
-    """SQLite FTS5 backend (offline fallback)."""
 
     def __init__(self, db_path: Optional[str] = None):
         if not SQLITE_FTS_AVAILABLE:
@@ -242,7 +231,6 @@ class SQLiteBackend:
                limit: int = 20) -> List[Dict[str, Any]]:
         with self._lock, self._conn() as c:
             if regex:
-                # FTS5 does not support regex; fall back to LIKE.
                 sql = "SELECT * FROM functions WHERE decomp_text LIKE ?"
                 params: Tuple = (f"%{query}%",)
             else:
@@ -260,7 +248,6 @@ class SQLiteBackend:
             try:
                 cur = c.execute(sql, params)
             except sqlite3.OperationalError:
-                # FTS5 parse failed; fall back to LIKE.
                 cur = c.execute(
                     "SELECT * FROM functions WHERE decomp_text LIKE ? LIMIT ?",
                     (f"%{query}%", limit)
@@ -283,10 +270,6 @@ class SQLiteBackend:
 
 
 class BinaryIndexer:
-    """Unified entry point for binary indexing.
-
-    - Defaults to SQLite fallback; auto-switches to ES when detected.
-    """
 
     def __init__(self, es_hosts: Optional[List[str]] = None,
                  db_path: Optional[str] = None,
@@ -332,7 +315,6 @@ class BinaryIndexer:
             return []
 
     def cross_project_search(self, query: str, limit: int = 20) -> Dict[str, List[Dict[str, Any]]]:
-        """Cross-project search, grouped by project."""
         results = self.search(query, limit=limit * 4)
         grouped: Dict[str, List[Dict[str, Any]]] = {}
         for r in results:

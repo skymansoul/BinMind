@@ -1,7 +1,3 @@
-"""
-Mach-O binary probing. Lightweight; full parsing requires macholib.
-"""
-
 import struct
 import os
 
@@ -21,7 +17,6 @@ def is_macho(path: str) -> bool:
 
 
 def macho_arch_name(path: str) -> str:
-    """Best-effort arch detection for Mach-O files."""
     try:
         with open(path, 'rb') as f:
             magic = struct.unpack('<I', f.read(4))[0]

@@ -1,25 +1,25 @@
-"""Symbolic link tracking TOCTOU race detection
+"""符号链接追踪与 TOCTOU 竞争检测。
 
-Watches symlink resolution chains across file operations. A symlink target
-shift two sequential ops same path signals a TOCTOU window
+监控跨文件操作的符号链接解析链。同一路径上两次顺序操作之间的
+符号链接目标偏移指示 TOCTOU 窗口。
 
-增强 — NTFS Junction 和 IO_REPARSE 检测：Windows 平台上区分符号链接、
-硬链接、目录挂载点 (junction) 和 IO_REPARSE 标记的链接
+增强 — NTFS Junction 和 IO_REPARSE 检测: Windows 平台上区分符号链接、
+硬链接、目录挂载点 (junction) 和 IO_REPARSE 标记的链接。
 
-增强 — 原子操作序列回放：将 {op, path, link_target} 三元组记录后
-在独立线程中回放，确认 TOCTOU 窗口是否可被实际利用
+增强 — 原子操作序列回放: 将 {op, path, link_target} 三元组记录后
+在独立线程中回放, 确认 TOCTOU 窗口是否可被实际利用。
 
-三轮增强 — 文件系统事件监控 (文件系统EventMonitor)：使用 os.scandir
-轮询包含被追踪链接的目录，通过 (path, inode, mtime) 三元组对比检测
-新建/删除/修改的符号链接。DirEntry 自带 stat 信息，避免额外系统调用
+三轮增强 — 文件系统事件监控 (FileSystemEventMonitor): 使用 os.scandir
+轮询包含被追踪链接的目录, 通过 (path, inode, mtime) 三元组对比检测
+新建/删除/修改的符号链接。DirEntry 自带 stat 信息, 避免额外系统调用。
 
-三轮增强 — 竞争窗口估算 (RaceWindowEstimator)：当 TOCTOU 被检出时
-计算 race_window_ms = |op2.timestamp - op1.timestamp|，并记录 symlink
-目标的 mtime 以评估实际可利用性
+三轮增强 — 竞争窗口估算 (RaceWindowEstimator): 当 TOCTOU 被检出时
+计算 race_window_ms = |op2.timestamp - op1.timestamp|, 并记录 symlink
+目标的 mtime 以评估实际可利用性。
 
-三轮增强 — 漏洞验证模板生成：generate_exploit_template 产出 bash
-symlink-swap 循环脚本骨架，包含可调 sleep 间隔，用于测试已检出的
-TOCTOU 窗口是否可在实际环境中触发
+三轮增强 — 漏洞验证模板生成: generate_exploit_template 产出 bash
+symlink-swap 循环脚本骨架, 包含可调 sleep 间隔, 用于测试已检出的
+TOCTOU 窗口是否可在实际环境中触发。
 """
 
 import os
@@ -44,7 +44,7 @@ class LinkType:
 
 @dataclass
 class LinkInfo:
-    """快照 a symlink a point time"""
+    """某时刻符号链接的快照"""
     path: str
     target: str
     link_type: str
@@ -56,7 +56,7 @@ class LinkInfo:
 
 @dataclass
 class TOCTOUVulnerability:
-    """Record a detected TOCTOU race window"""
+    """记录检测到的 TOCTOU 竞争窗口"""
     path: str
     operation_sequence: list
     risk_level: str
@@ -65,7 +65,7 @@ class TOCTOUVulnerability:
 
 
 class LinkTracker:
-    """解析 快照s symlink targets for later comparison
+    """解析并快照符号链接目标，供后续对比
 
     增强 — Windows Junction 检测：使用 os.path.realpath() 和 ctypes
     检测 NTFS reparse points。在非 Windows 平台上退化为标准 symlink 解析
@@ -91,7 +91,7 @@ class LinkTracker:
         return LinkType.SYMBOLIC
 
     def track_link(self, path: str) -> Optional[LinkInfo]:
-        """快照 current target a symlink. 返回 None for non-links"""
+        """快照当前符号链接的目标，非链接返回 None"""
         try:
             resolved = os.path.realpath(path)
             stat_info = os.lstat(path) if hasattr(os, 'lstat') else None
@@ -112,12 +112,12 @@ class LinkTracker:
         return None
 
     def get_link_info(self, path: str) -> Optional[LinkInfo]:
-        """Retrieve last 快照 for a path"""
+        """返回指定路径的最近快照"""
         return self._links.get(path)
 
     def resolve_path(self, path: str) -> str:
-        """Iteratively 解析 symlinks final concrete path using
-        os.path.realpath final step for junction resolution"""
+        """迭代解析符号链接到最终具体路径，
+        最后一步用 os.path.realpath 完成 junction 解析"""
         resolved = path
         max_iter = 32
         for _ in range(max_iter):
@@ -135,9 +135,8 @@ class LinkTracker:
 
 
 class TOCTOUDetector:
-    """检测 TOCTOU races comparing symlink 快照s across operation
-    pairs same path. A target change consecutive accesses
-    indicates a race window
+    """检测 TOCTOU 竞争，比较同一路径操作对之间的符号链接快照。
+    连续访问间的目标变更指示存在竞争窗口
 
     增强 — 原子回放验证：detect 后对每个候选漏洞执行回放
     在独立线程中模拟 check/use 序列，确认窗口的实际可利用性
@@ -149,7 +148,7 @@ class TOCTOUDetector:
         self._confirmed: Set[str] = set()
 
     def record_operation(self, operation: str, path: str):
-        """记录 an operation current symlink state"""
+        """记录一次操作及其当前符号链接状态"""
         self._operations.append({
             "operation": operation,
             "path": path,
@@ -158,7 +157,7 @@ class TOCTOUDetector:
         })
 
     def detect_vulnerabilities(self) -> List[TOCTOUVulnerability]:
-        """Scan recorded operations for adjacent-pair target mismatches"""
+        """扫描已记录的操作，查找相邻操作对间的目标不匹配"""
         vulnerabilities = []
         for i in range(len(self._operations) - 1):
             op1 = self._operations[i]
@@ -213,18 +212,18 @@ class TOCTOUDetector:
         return False
 
     def get_operations(self) -> List[Dict[str, Any]]:
-        """返回 full operation 记录"""
+        """返回完整的操作记录"""
         return self._operations
 
 
 class PathAnalyzer:
-    """Decomposes a 文件系统 path traversal steps, flagging '.' escapes
+    """将文件系统路径分解为遍历步骤，标记目录逃逸
 
-    增强 — Junction 混淆检测：Windows 上 junction 点跨越卷边界时
+    增强 — Junction 混淆检测: Windows 上 junction 点跨越卷边界时
     路径解析结果可能与预期不同。标记此类路径"""
 
     def analyze_path_traversal(self, path: str) -> Dict[str, Any]:
-        """Classify path component parent/current/component traversal"""
+        """将路径分类为父目录/当前目录/普通组件的遍历步骤"""
         parts = path.split(os.sep)
         traversal_steps = []
         current_path = ""
@@ -246,7 +245,7 @@ class PathAnalyzer:
         }
 
     def detect_junction_confusion(self, path: str) -> Dict[str, Any]:
-        """检测 path crosses NTFS junction / volume boundary
+        """检测路径是否跨越 NTFS junction 或卷边界
 
         在 Windows 上，os.path.realpath 会解析 junction 到真实路径
         如果 realpath 与 abspath 的驱动器/根不同，则是 junction 跨越"""
@@ -268,7 +267,7 @@ class PathAnalyzer:
 
 
 def detect_toctou_race(operations: List[Dict[str, str]]) -> List[TOCTOUVulnerability]:
-    """One-shot: feed operation sequence TOCTOU detector, 返回 findings"""
+    """一次性接口：将操作序列送入 TOCTOU 检测器，返回发现的漏洞"""
     detector = TOCTOUDetector()
     for op in operations:
         detector.record_operation(op["operation"], op["path"])
@@ -281,22 +280,22 @@ def detect_toctou_race(operations: List[Dict[str, str]]) -> List[TOCTOUVulnerabi
 # 三轮增强 — 文件系统事件监控 (FilesystemEventMonitor)
 # 使用 os.scandir 高效轮询目录，通过 (inode, mtime) 三元组对比检测链接变更
 # 权衡：轮询频率由 fs_poll_interval 控制 — 太短则 CPU 开销大，太长可能
-# 错过短时窗口。默认 2 秒是 empirical sweet spot
+# 错过短时窗口。默认 2 秒是经验最佳值
 
 # 文件系统快照条目类型: (inode: int, mtime: float)
 _FsSnapshotEntry = Tuple[int, float]
 
 
 class FilesystemEventMonitor:
-    """Poll directories containing tracked links N seconds using os.scandir
+    """轮询含被跟踪链接的目录, 使用 os.scandir 每 N 秒扫描一次
 
-    三轮增强 — os.scandir 返回的 DirEntry 自带 stat 信息（inode/mtime）
+    三轮增强 — os.scandir 返回的 DirEntry 自带 stat 信息 (inode/mtime)
     无需为每个条目额外调用 os.stat。对比两次快照间的 (path, inode, mtime)
     三元组差异即可检测新建、删除和修改的符号链接
 
     Attributes:
     fs_poll_interval: 轮询间隔（秒），默认 2.0
-    dir_快照: Dict[str, Dict[str, _Fs快照Entry]]
+    dir_snapshot: Dict[str, Dict[str, _FsSnapshotEntry]]
     目录路径 → {文件名: (inode, mtime)} 的最新快照
     """
 
@@ -449,7 +448,7 @@ class FilesystemEventMonitor:
 # 当 TOCTOU 被检出后，精确计算操作间的时间窗口并评估可利用性
 
 class RaceWindowEstimator:
-    """估算 TOCTOU race window size 漏洞利用ability
+    """估算 TOCTOU 竞争窗口大小及漏洞可利用性
 
     三轮增强 — 当相邻操作检测到 target/inode 变更时
     race_window_ms = |op2.timestamp - op1.timestamp|

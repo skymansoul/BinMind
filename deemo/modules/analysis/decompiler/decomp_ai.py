@@ -959,16 +959,11 @@ if seg:
         binary_info: Dict[str, Any],
         function_name: str = 'main'
     ) -> Dict[str, Any]:
-        """
-        调用 OpenAI API 分析反编译代码
-
+        """调用 AI API 分析反编译代码
 
         pseudocode: 反编译的伪代码
         binary_info: 二进制文件信息
         function_name: 函数名
-
-
-        分析结果
         """
         if not self.client:
             logger.warning("未配置 OpenAI 客户端，返回模拟分析结果")
@@ -1003,11 +998,12 @@ if seg:
             messages = [system_message] + self._get_recent_history() + [user_message]
 
             result_text = call_ai_with_retry(
-                self.client,
-                model=get_current_ai_model(),
-                messages=messages,
-                temperature=AI_TEMPERATURE_ANALYSIS,
-                max_tokens=AI_MAX_TOKENS_ANALYSIS
+                lambda: self.client.chat.completions.create(
+                    model=get_current_ai_model(),
+                    messages=messages,
+                    temperature=AI_TEMPERATURE_ANALYSIS,
+                    max_tokens=AI_MAX_TOKENS_ANALYSIS,
+                )
             )
 
             if result_text and logger.level <= logging.DEBUG:
@@ -1225,11 +1221,7 @@ if seg:
         binary_info: Dict[str, Any],
         function_name: str
     ) -> Dict[str, Any]:
-        """
-        模拟 分析（当没有 API 密钥时使用）
-
-
-        """
+        """模拟分析（当没有 API 密钥时使用）"""
         vulnerabilities = []
 
         dangerous_funcs = binary_info.get('imports', {}).get('dangerous_functions', [])
@@ -1397,11 +1389,12 @@ if seg:
                 logger.debug(f"[DEBUG] 追问提示词: {masked_question}")
 
             result_text = call_ai_with_retry(
-                self.client,
-                model=get_current_ai_model(),
-                messages=messages,
-                temperature=AI_TEMPERATURE_FOLLOW_UP,
-                max_tokens=AI_MAX_TOKENS_FOLLOW_UP
+                lambda: self.client.chat.completions.create(
+                    model=get_current_ai_model(),
+                    messages=messages,
+                    temperature=AI_TEMPERATURE_FOLLOW_UP,
+                    max_tokens=AI_MAX_TOKENS_FOLLOW_UP,
+                )
             )
 
             if result_text and logger.level <= logging.DEBUG:

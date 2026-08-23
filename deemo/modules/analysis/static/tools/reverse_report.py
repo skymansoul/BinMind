@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Primary interface: ReportSection, Report配置, ReportData, ReverseReportGenerator (4 classes)
-# Dependencies: os, json
-# Time O(n), space O(1)
+# 主接口: ReportSection, ReportConfig, ReportData, ReverseReportGenerator (4 个类)
+# 依赖: os, json
+# 时间 O(n), 空间 O(1)
 #
 # 2025 增强: 集成 LLM4Decompile + ReF Decompile 的 Relabeling 策略
 # LLM4Decompile v2 (https://github.com/albertan017/LLM4Decompile)

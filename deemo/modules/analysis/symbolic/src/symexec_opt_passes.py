@@ -70,24 +70,24 @@ try:
     import angr
     import claripy
     ANGR_AVAILABLE = True
-    logger.info("angr loaded")
+    logger.info("angr 已加载")
 except ImportError:
-    logger.warning("angr not installed. Install: pip install angr")
+    logger.warning("angr 未安装。安装: pip install angr")
 
 Z3_AVAILABLE = False
 try:
     import z3
     Z3_AVAILABLE = True
-    logger.info("Z3 solver loaded")
+    logger.info("Z3 求解器已加载")
 except ImportError:
-    logger.warning("Z3 not installed. Install: pip install z3-solver")
+    logger.warning("Z3 未安装。安装: pip install z3-solver")
 
 PSUTIL_AVAILABLE = False
 try:
     import psutil
     PSUTIL_AVAILABLE = True
 except ImportError:
-    logger.warning("psutil not installed. pip install psutil")
+    logger.warning("psutil 未安装。pip install psutil")
 
 
 class PruningStrategy(str, Enum):
@@ -109,18 +109,9 @@ class CachePolicy(str, Enum):
     HYBRID = 'hybrid'
 
 
-# Bloom prefilter: 256KiB (2M bits), 误报率 ~1% 100k entries 3 哈希
+# Bloom 预过滤器: 256KiB (2M bits), 误报率 ~1% 100k 条目 3 哈希
 # 快速判断 key 是否可能存在于磁盘缓存中，避免磁盘 IO 的 miss 开销
 _BLOOM_SIZE_BITS = 2_097_152  # 256 KiB
-
-# def _legacy_bloom_lookup(key, bitset, k=3):
-#     h = hashlib.md5(key.encode()).digest()
-#     for i in range(k):
-#         idx = int.from_bytes(h[i*2:i*2+2], 'big') % len(bitset)
-#         if not bitset[idx]:
-#             return False
-#     return True
-
 
 class _BloomPreFilter:
     def __init__(self):
@@ -471,7 +462,7 @@ class OptimizationPipeline:
         pass_results: List[PassResult] = []
         current_constraints = list(constraints)
 
-# Pass 1: Simplify
+        # Pass 1: Simplify (化简)
         if OptimizationPass.SIMPLIFY.value in self.enabled_passes:
             t0 = time.monotonic()
             current_constraints = self.simplifier.simplify(current_constraints)
@@ -487,7 +478,7 @@ class OptimizationPipeline:
             pass_results.append(pr)
             self._record_pass(OptimizationPass.SIMPLIFY.value, duration)
 
-        # --- Pass 2: CSE (included simplify, separate accounting) ---
+        # --- Pass 2: CSE (含 simplify, 独立计时) ---
         if OptimizationPass.CSE.value in self.enabled_passes:
             t0 = time.monotonic()
             # CSE 已嵌入 ConstraintSimplifier.simplify() 中
@@ -503,7 +494,7 @@ class OptimizationPipeline:
             pass_results.append(pr)
             self._record_pass(OptimizationPass.CSE.value, duration)
 
-# Pass 3: CacheLookup
+        # Pass 3: CacheLookup (缓存查找)
         cache_hit = False
         if OptimizationPass.CACHE_LOOKUP.value in self.enabled_passes:
             t0 = time.monotonic()
@@ -538,7 +529,7 @@ class OptimizationPipeline:
                 pass_results.append(pr)
                 self._record_pass(OptimizationPass.CACHE_LOOKUP.value, duration)
 
-# Pass 4: Solve
+        # Pass 4: Solve (求解)
         if OptimizationPass.SOLVE.value in self.enabled_passes:
             t0 = time.monotonic()
             result = self.parallel_solver._solve_with_cache(current_constraints)
@@ -1241,7 +1232,7 @@ class ConstraintSimplifier:
 
         c_strs = [str(c) for c in constraints]
 
-        # Phase 1: identify leaf-level S-expressions appearing >= 3 times
+        # 阶段 1: 识别出现 >= 3 次的叶级 S 表达式
         expr_counts: Counter = Counter()
         for s in c_strs:
             tokens = _re_mod.findall(r'\([^()]+\)', s)
@@ -1253,12 +1244,12 @@ class ConstraintSimplifier:
 
         self.simplify_stats['cse_eliminated'] += len(frequent)
 
-        # Phase 2: substitute frequent sub-expressions
-        # Z3 path — 使用 z3.substitute() for proper AST rewriting
+        # 阶段 2: 替换频繁子表达式
+        # Z3 路径 — 用 z3.substitute() 做 AST 级重写
         if Z3_AVAILABLE:
             return self._cse_substitute_z3(constraints, frequent)
 
-        # 回退 — string-level substitution for non-Z3 constraints
+        # 回退 — 非 Z3 约束做字符串级替换
         return self._cse_substitute_text(constraints, frequent)
 
     def _cse_substitute_z3(self, constraints: List[Any],
@@ -1272,8 +1263,8 @@ class ConstraintSimplifier:
         只处理 z3.BoolRef 约束, 非 Z3 对象原样透传。
         """
         optimized: List[Any] = []
-        # Build (str_repr -> z3_expr) mapping from the actual Z3 AST nodes
-        # correspond frequent string representations
+        # 从实际 Z3 AST 节点构建 (str_repr -> z3_expr) 映射
+        # 对应频繁子表达式的字符串表示
         str_to_z3expr: Dict[str, z3.ExprRef] = {}
         for c in constraints:
             if not isinstance(c, z3.BoolRef):
@@ -1281,7 +1272,7 @@ class ConstraintSimplifier:
             c_str = str(c)
             for freq_expr in frequent:
                 if freq_expr in c_str and freq_expr not in str_to_z3expr:
-                    # Walk Z3 AST 查找 sub-node matching string
+                    # 遍历 Z3 AST 查找匹配字符串的子节点
                     matched = self._find_z3_subexpr(c, freq_expr)
                     if matched is not None:
                         str_to_z3expr[freq_expr] = matched
@@ -1289,7 +1280,7 @@ class ConstraintSimplifier:
         if not str_to_z3expr:
             return list(constraints)
 
-        # 创建 fresh variables equality constraints
+        # 创建 fresh 变量等价约束
         fresh_vars: Dict[str, z3.BoolRef] = {}
         cse_counter = 0
         for freq_str, z3_expr in str_to_z3expr.items():
@@ -1298,7 +1289,7 @@ class ConstraintSimplifier:
             optimized.append(fresh == z3_expr)
             cse_counter += 1
 
-        # Substitute original constraints
+        # 替换原始约束
         for c in constraints:
             if isinstance(c, z3.BoolRef):
                 substituted = c
@@ -1309,8 +1300,8 @@ class ConstraintSimplifier:
                                 substituted, (z3_expr, fresh_vars[freq_str])
                             )
                         except Exception:
-                            # z3.substitute fail structurally
-                            # mismatched ASTs; keep original
+                        # z3.substitute 结构不匹配
+                        # AST 不匹配; 保留原约束
                             pass
                 optimized.append(substituted)
             else:
@@ -1359,8 +1350,8 @@ class ConstraintSimplifier:
         """
         import re as _re
         optimized: List[Any] = []
-        # 排序 length descending — replace longest sub-expressions first
-        # avoid partial-match clobbering shorter patterns
+        # 按长度降序排列 — 先替换最长子表达式
+        # 避免部分匹配覆盖较短模式
         sorted_freq = sorted(frequent, key=len, reverse=True)
         cse_labels: Dict[str, str] = {}
         for i, expr in enumerate(sorted_freq):
@@ -1371,7 +1362,7 @@ class ConstraintSimplifier:
             for expr in sorted_freq:
                 if expr in c_str:
                     c_str = c_str.replace(expr, cse_labels[expr])
-            # Preserve type possible, otherwise 返回 string
+            # 尽可能保留类型, 否则返回字符串
             if isinstance(c, str):
                 optimized.append(c_str)
             else:
@@ -1666,33 +1657,33 @@ class ParallelSolver:
 
 
 __all__ = [
-    # Constants
+    # 常量
     'ANGR_AVAILABLE',
     'Z3_AVAILABLE',
     'PSUTIL_AVAILABLE',
-    # Enums
+    # 枚举
     'PruningStrategy',
     'CachePolicy',
     'OptimizationPass',
-    # Data classes
+    # 数据类
     'ConstraintCacheEntry',
     'PathInfo',
     'OptimizationStats',
     'ConstraintFeatures',
     'PassResult',
-    # Cache
+    # 缓存
     'ConstraintSolverCache',
     'IncrementalSolverCache',
-    # Pruning
+    # 剪枝
     'PathPruner',
-    # Simplification
+    # 化简
     'ConstraintSimplifier',
-    # Solver
+    # 求解器
     'ParallelSolver',
     # 流水线
     'OptimizationPipeline',
-    # Budget
+    # 预算
     'SolverBudgetManager',
-    # Estimator
+    # 预估器
     'ConstraintComplexityEstimator',
 ]

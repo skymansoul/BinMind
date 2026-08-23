@@ -1,24 +1,6 @@
 # 初始创建: 从评分升级为路径敏感的UAF检测
 # 指针别名追踪: 在free后扫描函数内是否仍引用已释放指针
 
-"""路径敏感的 UAF 检测 - 从候选评分升级为基于指针别名的实际检测
-
-uaf_candidate_scorer.py 做三因素评分 - 这是预筛选, 不确认漏洞存在
-本模块在此之上做实际检测:
-  1. malloc/free 配对: 同函数内, 同寄存器/同指针
-  2. free 后扫描: 在该函数剩余指令中查找对该指针的引用
-  3. 路径条件: 区分 "free后必然use" (conf > 0.8) vs "仅特定分支use" (conf 0.5-0.7)
-  4. 指针逃逸: 若指针通过返回值/全局变量/参数传递→跨函数追踪
-
-与 uaf_candidate_scorer.py 的分工:
-  uaf_candidate_scorer: 预筛选→输出高风险候选 (分数 > 0.5)
-  uaf_detector: 对候选做精确的别名追踪→确认/否定/不确定
-
-理论依据:
-  UAFSan: 别名分析+路径条件→本方案简化为函数内扫描
-  CREDAL: 静态UAF检测的误报率控制→本方案采用三级置信度
-"""
-
 from __future__ import annotations
 
 import re

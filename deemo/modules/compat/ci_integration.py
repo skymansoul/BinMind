@@ -1,21 +1,16 @@
-# Proxy → project/ci_integration.py; complete compat surface.
 import os as _os, importlib.util as _iu
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'project', 'ci_integration.py')
 _s = _iu.spec_from_file_location('_ci_real', _r)
 _m = _iu.module_from_spec(_s)
 _s.loader.exec_module(_m)
 
-# Re-export all public symbols.
 for _k in dir(_m):
     if not _k.startswith('_') or _k in ('SEVERITY_ORDER',):
         globals()[_k] = getattr(_m, _k)
 
-# Correct CI_EXIT_CODE — upstream uses int; test expects dict.
 CI_EXIT_CODE = {0: 'SUCCESS', 1: 'MEDIUM', 2: 'HIGH', 3: 'CRITICAL'}
 
-# Construct CIIntegrator compat layer.
 _RCI = _m.CIIntegrator
-# Alias: run_ci_pipeline → run_pipeline.
 _RCI.run_ci_pipeline = _RCI.run_pipeline
 _orig_init = _RCI.__init__
 

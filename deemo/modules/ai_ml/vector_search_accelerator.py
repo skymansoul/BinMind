@@ -1,10 +1,3 @@
-"""
-Vector Search Accelerator - High-performance vector similarity search.
-
-Provides accelerated vector search with FAISS integration and
-dimensionality reduction for binary function similarity.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -20,7 +13,6 @@ _logger = logging.getLogger(__name__)
 
 @dataclass
 class FeatureVector:
-    """A feature vector with associated metadata."""
     vec_id: str
     label: str
     features: List[float]
@@ -43,7 +35,6 @@ class FeatureVector:
 
 
 class VectorSearchAccelerator:
-    """Accelerated vector similarity search with multiple backends."""
 
     def __init__(
         self,
@@ -78,7 +69,6 @@ class VectorSearchAccelerator:
         features: List[float],
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Add a vector to the index."""
         padded = self._pad_features(features)
         fv = FeatureVector(
             vec_id=vec_id,
@@ -148,14 +138,12 @@ class VectorSearchAccelerator:
         return len(ids_added)
 
     def _pad_features(self, features: List[float]) -> List[float]:
-        """Pad or truncate features to match configured dimensions."""
         if len(features) >= self.dimensions:
             return features[:self.dimensions]
         return features + [0.0] * (self.dimensions - len(features))
 
     @staticmethod
     def cosine_similarity(a: List[float], b: List[float]) -> float:
-        """Compute cosine similarity between two vectors."""
         if not a or not b:
             return 0.0
         vec_a = np.array(a, dtype=np.float32)
@@ -169,7 +157,6 @@ class VectorSearchAccelerator:
 
     @staticmethod
     def euclidean_distance(a: List[float], b: List[float]) -> float:
-        """Compute Euclidean distance between two vectors."""
         if not a or not b:
             return float('inf')
         vec_a = np.array(a, dtype=np.float32)
@@ -181,7 +168,6 @@ class VectorSearchAccelerator:
         query: List[float],
         top_k: int = 10,
     ) -> List[Tuple[FeatureVector, float]]:
-        """Search for nearest neighbors."""
         q = self._pad_features(query)
 
         if self._use_faiss and self._index is not None:
@@ -203,7 +189,6 @@ class VectorSearchAccelerator:
             except Exception as e:
                 _logger.warning(f"FAISS search failed: {e}")
 
-        # Brute-force cosine similarity 回退
         scores: List[Tuple[FeatureVector, float]] = []
         for vec_id, vec in self._vectors.items():
             sim = self.cosine_similarity(q, vec.features)
@@ -217,7 +202,6 @@ class VectorSearchAccelerator:
         label_filter: str,
         top_k: int = 10,
     ) -> List[Tuple[FeatureVector, float]]:
-        """Search with label filtering."""
         q = self._pad_features(query)
         scores: List[Tuple[FeatureVector, float]] = []
         for vec_id, vec in self._vectors.items():
@@ -228,7 +212,6 @@ class VectorSearchAccelerator:
         return scores[:top_k]
 
     def build_index(self, use_faiss: bool = True) -> None:
-        """Build or rebuild the search index."""
         if use_faiss and not self._use_faiss:
             try:
                 import faiss
@@ -249,7 +232,6 @@ class VectorSearchAccelerator:
             self._index = {'type': 'brute_force', 'size': len(self._vectors)}
 
     def remove_vector(self, vec_id: str) -> bool:
-        """Remove a vector by ID."""
         if vec_id in self._vectors:
             del self._vectors[vec_id]
             self._id_list.remove(vec_id)
@@ -259,7 +241,6 @@ class VectorSearchAccelerator:
         return False
 
     def get_vector(self, vec_id: str) -> Optional[FeatureVector]:
-        """Get a vector by ID."""
         return self._vectors.get(vec_id)
 
     def analyze(
@@ -269,7 +250,6 @@ class VectorSearchAccelerator:
         top_k: int = 10,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Analyze vectors and optionally search."""
         if vectors:
             for v in vectors:
                 self.add_vector(
@@ -403,7 +383,6 @@ class VectorSearchAccelerator:
         self,
         similarity_threshold: float = 0.7,
     ) -> List[List[str]]:
-        """Find clusters of similar vectors."""
         visited: set = set()
         clusters: List[List[str]] = []
 
@@ -430,7 +409,6 @@ class VectorSearchAccelerator:
         return clusters
 
     def clear(self) -> None:
-        """Clear all vectors and rebuild empty index."""
         self._vectors.clear()
         self._id_list.clear()
         self._invalidate_cache()
@@ -446,6 +424,5 @@ def search_similar_vectors(
     top_k: int = 10,
     **kwargs: Any,
 ) -> Dict[str, Any]:
-    """Convenience function for vector search."""
     accelerator = VectorSearchAccelerator(**kwargs)
     return accelerator.analyze(vectors=vectors, query=query, top_k=top_k)

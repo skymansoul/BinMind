@@ -1,4 +1,3 @@
-"""Binary format fuzzer."""
 from enum import Enum
 
 class FileFormatType(Enum):

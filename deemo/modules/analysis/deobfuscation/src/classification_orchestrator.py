@@ -1,20 +1,6 @@
 # 增加证据传播器与deobfuscate的联动，将跨函数常量
 #                    自动注册到分类器的校准数据中
 
-"""
-混淆感知反混淆编排器 - 桥接 混淆分类器 与 FunctionDeobfuscator
-
-将分类器的判定结果转化为反混淆pass的选择策略，避免对未混淆代码
-运行重量级恢复pass。同时利用 EvidencePropagator 的跨函数信息
-提升不透明谓词消除的准确率
-
-设计权衡:
-分类器有误判风险（假阴性：把混淆判成未混淆）。为安全起见
-即使分类器判定为"none"，仍运行轻量级dead-code elimina
-因为其副作用为零（只移除不可达代码）。重量级pass（CFF恢复、
-谓词消除）在分类器置信度<0.5时跳过
-"""
-
 from typing import Any, Dict, List, Optional, Tuple
 
 # 要求 FunctionDeobfuscator 已在环境中可用-此处为可选桥接
@@ -22,12 +8,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 class ClassificationAwareOrchestrator:
-    """将混淆分类结果映射为反混淆pass选择策略
-
-    与 FunctionDeobfuscator.去混淆() 的区别:
-    去混淆 按 level ("light"/"medium"/"aggress") 运行固定pass序列
-    本编排器根据分类结果动态选择pass-对每种混淆类型运行其针对性恢复
-    """
 
     def __init__(self) -> None:
         self._last_classification: Optional[List[Tuple[str, float]]] = None
@@ -39,12 +19,6 @@ class ClassificationAwareOrchestrator:
         instructions: List[Dict[str, Any]],
         rodata_bytes: Optional[bytes] = None,
     ) -> Dict[str, Any]:
-        """运行分类器并生成恢复计划。
-
-        返回 {'classification': [(type, confid), ...],
-        'recommended_passes': ['dead_code', 'cff', ...],
-        'skip_passes': ['opaque_pred', ...]}。
-        """
         result = classifier.classify(instructions, rodata_bytes)
         self._last_classification = result
 
@@ -100,14 +74,6 @@ class ClassificationAwareOrchestrator:
         evidence_propagator=None,
         known_constants: Optional[Dict[str, Tuple[Any, float]]] = None,
     ) -> Dict[str, Any]:
-        """基于分类结果的定向反混淆 - 替代固定 level 的策略。
-
-        deobfuscator 为 FunctionDeobfuscator 实例, instructions
-        为指令列表, entry 为入口地址; 其余参数可选: classifier
-        混淆分类器, rodata_bytes .rodata 段字节, evidence_propagator
-        证据传播器, known_constants {变量名: (值, 置信度)}。
-        返回格式与 FunctionDeobfuscator.deobfuscate() 兼容。
-        """
         current = list(instructions)
         stats: Dict[str, int] = {
             'original': len(instructions),

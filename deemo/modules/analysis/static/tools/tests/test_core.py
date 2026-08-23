@@ -1,4 +1,4 @@
-"""Tests for core 静态分析 algorithms"""
+"""静态分析核心算法测试。"""
 
 import pytest
 
@@ -6,7 +6,7 @@ import pytest
 # SemanticRoleLabeler Tests
 
 class TestSemanticRoleLabeler:
-    """Tests for SemanticRoleLabeler"""
+    """SemanticRoleLabeler 的测试"""
 
     @pytest.fixture
     def labeler(self):
@@ -37,7 +37,7 @@ class TestSemanticRoleLabeler:
 # SemanticDiffAnalyzer Tests
 
 class TestSemanticDiffAnalyzer:
-    """Tests for SemanticDiffAnalyzer"""
+    """SemanticDiffAnalyzer 的测试"""
 
     @pytest.fixture
     def diff_analyzer(self):
@@ -75,7 +75,7 @@ class TestSemanticDiffAnalyzer:
 # LLVMIRAnalyzer Tests
 
 class TestLLVMIRAnalyzer:
-    """Tests for LLVMIRAnalyzer"""
+    """LLVMIRAnalyzer 的测试"""
 
     @pytest.fixture
     def ir_analyzer(self):
@@ -124,7 +124,7 @@ class TestLLVMIRAnalyzer:
 # AbstractInterpreter Tests
 
 class TestAbstractInterpreter:
-    """Tests for AbstractInterpreter"""
+    """AbstractInterpreter 的测试"""
 
     @pytest.fixture
     def interpreter(self):
@@ -155,7 +155,7 @@ class TestAbstractInterpreter:
 # 系统调用分类器 Tests
 
 class TestSyscallClassifier:
-    """Tests for 系统调用分类器"""
+    """系统调用分类器的测试"""
 
     @pytest.fixture
     def classifier(self):
@@ -187,7 +187,7 @@ class TestSyscallClassifier:
 # Branch漏洞利用ability Tests
 
 class TestBranchExploitability:
-    """Tests for Branch漏洞利用ability"""
+    """Branch漏洞利用性的测试"""
 
     @pytest.fixture
     def exploiter(self):

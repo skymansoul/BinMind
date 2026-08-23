@@ -466,7 +466,7 @@ class BloomFilter:
 
     @staticmethod
     def _fnv1a(data: bytes) -> int:
-        """FNV-1a 64-bit hash"""
+        """FNV-1a 64 位哈希"""
         h = 0xcbf29ce484222325
         for b in data:
             h ^= b

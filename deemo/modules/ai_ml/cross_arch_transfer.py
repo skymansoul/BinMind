@@ -62,7 +62,6 @@ class ArchKind(Enum):
 
 @dataclass
 class ArchProfile:
-    """架构特征画像"""
     arch: ArchKind
     register_count: int
     instruction_alignment: int  # 字节对齐
@@ -124,14 +123,6 @@ def _xa_xavier(r: int, c: int) -> List[List[float]]:
 # 架构对齐投影器
 
 class CrossArchAligner:
-    """跨架构语义对齐器
-
-    实现 GBsim [Entropy 2025] 风格的跨架构投影:
-      给定两种架构A和B的嵌入空间, 学习一个线性投影P_{A->B}
-      使得 f_B ≈ P_{A->B} @ f_A 用于语义相同的函数
-
-    训练使用CLAP风格的对比损失, 正例=同一源代码在不同架构下的编译结果
-    """
 
     def __init__(self, embed_dim: int = 128):
         self.embed_dim = embed_dim
@@ -141,7 +132,6 @@ class CrossArchAligner:
 
     def project(self, embedding: List[float],
                 src_arch: ArchKind, dst_arch: ArchKind) -> List[float]:
-        """将源架构嵌入投影到目标架构空间"""
         if src_arch == dst_arch:
             return embedding[:]
 
@@ -160,13 +150,6 @@ class CrossArchAligner:
 
     def _heuristic_align(self, emb: List[float],
                          src: ArchProfile, dst: ArchProfile) -> List[float]:
-        """启发式对齐: 基于架构差异调整嵌入
-
-        不同架构编译同一代码的差异主要体现在:
-          - 寄存器数量 (影响指令序列长度)
-          - 指令宽度 (影响每条指令的表达能力)
-          - 调用约定 (影响函数序言/尾声)
-        """
         src_v = src.to_vector()
         dst_v = dst.to_vector()
 
@@ -190,12 +173,6 @@ class CrossArchAligner:
                         dst_embeddings: List[List[float]],
                         src_arch: ArchKind, dst_arch: ArchKind,
                         lr: float = 0.01, epochs: int = 100):
-        """训练跨架构投影矩阵 (使用正交Procrustes闭式解)
-
-        求解: min ||P @ X - Y||_F  s.t. P^T P ≈ I (近似正交约束)
-        Procrustes: P = V @ U^T 其中 U @ S @ V^T = SVD(Y^T @ X)
-        由于使用纯Python, 采用简化SGD替代SVD
-        """
         if len(src_embeddings) < 2:
             return
 
@@ -258,7 +235,6 @@ class CrossArchAligner:
 
     def compute_cross_arch_similarity(self, emb_a: List[float], arch_a: ArchKind,
                                        emb_b: List[float], arch_b: ArchKind) -> float:
-        """计算跨架构相似度"""
         if arch_a == arch_b:
             return _xa_vec_dot(emb_a, emb_b)
 
@@ -280,11 +256,6 @@ class CrossArchMatch:
 
 
 class CrossArchFunctionMatcher:
-    """跨架构函数匹配
-
-    给定一个源架构上的函数嵌入, 在目标架构的数据库中找到语义最相似的函数。
-    GBsim的两阶段搜索: (1)粗排用余弦相似度 (2)精排用局部结构对齐
-    """
 
     def __init__(self, aligner: CrossArchAligner = None):
         self.aligner = aligner or CrossArchAligner()
@@ -300,7 +271,6 @@ class CrossArchFunctionMatcher:
     def search(self, query_embedding: List[float],
                query_arch: ArchKind, target_arch: ArchKind,
                top_k: int = 10, threshold: float = 0.5) -> List[CrossArchMatch]:
-        """跨架构搜索"""
         if target_arch not in self.index:
             return []
 

@@ -4,16 +4,15 @@ from enum import Enum
 from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict
 
-"""Heap object reconstruction from raw memory dumps.
+"""从原始内存转储重建堆对象。
 
-Resolves object instances, field layouts, and inter-object reference graphs
-via DWARF/PDB type metadata applied to unstructured memory snapshots.
+通过 DWARF/PDB 类型元数据解析对象实例、字段布局和对象间引用图,
+应用于非结构化内存快照。
 
-Round 3: WYTIWYG (ASPLOS '24) iterative refinement stack variable recovery.
-Decomposes variable recovery into successive dynamic analysis passes —
-each pass identifies one category of stack variable (scalar, array, pointer,
-struct) and refines the prior pass's results. This avoids the undecidability
-trap of attempting all-at-once static recovery.
+Round 3: WYTIWYG (ASPLOS '24) 迭代式栈变量恢复。
+将变量恢复分解为连续的动态分析 pass — 每个 pass 识别一类栈变量
+(标量、数组、指针、结构体) 并细化前序 pass 的结果。
+避免了一次性静态恢复的不可判定性陷阱。
 """
 
 logger = logging.getLogger(__name__)

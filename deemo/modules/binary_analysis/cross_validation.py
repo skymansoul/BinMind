@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""Static/dynamic cross-validation module."""
-
 import logging
 import os
 import re
@@ -31,7 +29,6 @@ class CrossValidationResult:
 
 
 class SyscallPredictor:
-    """Predict syscalls from static analysis of disassembly."""
 
     _SYSCALL_PATTERNS = [
         (r'\bexecve\b|\bexecl\b|\bsystem\b', 'exec'),
@@ -47,7 +44,6 @@ class SyscallPredictor:
         self._binary_path = binary_path
 
     def predict(self) -> Set[str]:
-        """Predict syscall set via r2 disassembly matching."""
         predicted = set()
         try:
             r = subprocess.run(
@@ -65,13 +61,11 @@ class SyscallPredictor:
 
 
 class DynamicObserver:
-    """Dynamic execution observer -- records actual syscalls via strace."""
 
     def __init__(self, binary_path: str):
         self._binary_path = binary_path
 
     def observe(self, timeout: int = 10) -> Set[str]:
-        """Observe actual syscalls -- strace -f to trace all child processes."""
         observed = set()
         try:
             r = subprocess.run(
@@ -102,7 +96,6 @@ class DynamicObserver:
 
 
 class CrossValidator:
-    """Core cross-validator -- compares static predictions vs dynamic observations."""
 
     def __init__(self, binary_path: str):
         self._binary_path = os.path.abspath(binary_path)
@@ -110,7 +103,6 @@ class CrossValidator:
         self._observer = DynamicObserver(binary_path)
 
     def run(self) -> CrossValidationResult:
-        """Execute cross-validation and return comparison results."""
         predicted = self._predictor.predict()
         observed = self._observer.observe()
 
@@ -146,5 +138,4 @@ class CrossValidator:
 
 
 def create_cross_validator(binary_path: str) -> CrossValidator:
-    """Create a cross-validator instance."""
     return CrossValidator(binary_path)

@@ -1,5 +1,3 @@
-"""Verify binary conformance to a security contract (DLLs, exports, flags, sections)."""
-
 import struct
 import os
 import json
@@ -12,25 +10,21 @@ name = "BinaryContractVerifier"
 logger = logging.getLogger(__name__)
 
 
-# contract field names -------------------------------------------------
 CONTRACT_KEYS = frozenset({
-    'imported_dlls',       # set of required DLL names
-    'forbidden_dlls',      # disallowed DLLs
-    'required_exports',    # set of export names
-    'section_permissions', # {name: 'r'|'rw'|'rx'|'rwx'}
-    'expected_aslr',       # bool
-    'expected_dep',        # bool
-    'expected_signing',    # bool
-    'minimum_image_base',  # int
-    'maximum_image_base',  # int
-    'forbidden_imports',   # specific API functions that must not be imported
+    'imported_dlls',
+    'forbidden_dlls',
+    'required_exports',
+    'section_permissions',
+    'expected_aslr',
+    'expected_dep',
+    'expected_signing',
+    'minimum_image_base',
+    'maximum_image_base',
+    'forbidden_imports',
 })
 
 
-# PE parser ------------------------------------------------------------
-
 def _read_pe_header(data):
-    """Minimal PE header reader—returns dict of key fields or empty on failure."""
     if data[:2] != b'MZ':
         return {}
     pe_off = struct.unpack_from('<I', data, 0x3C)[0]
@@ -44,15 +38,13 @@ def _read_pe_header(data):
 
     info = {'machine': machine, 'num_sections': num_sec}
 
-    # Parse characteristics via optional header
     if opt_hdr_sz >= 68:
         dll_chars = struct.unpack_from('<H', data, opt_off + 66)[0]
-        info['aslr'] = bool(dll_chars & 0x40)       # IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE
-        info['dep'] = bool(dll_chars & 0x100)        # IMAGE_DLLCHARACTERISTICS_NX_COMPAT
+        info['aslr'] = bool(dll_chars & 0x40)
+        info['dep'] = bool(dll_chars & 0x100)
         info['no_seh'] = bool(dll_chars & 0x400)
         info['high_entropy_aslr'] = bool(dll_chars & 0x20)
 
-    # Data directories for import/export
     magic = struct.unpack_from('<H', data, opt_off)[0]
     pe32plus = (magic == 0x20B)
     num_rva_sizes = struct.unpack_from('<I', data, opt_off + (108 if pe32plus else 92))[0]
@@ -65,7 +57,6 @@ def _read_pe_header(data):
         export_rva = struct.unpack_from('<I', data, dir_base + 0)[0]
         info['export_rva'] = export_rva
 
-    # Sections
     sec_base = opt_off + opt_hdr_sz if opt_hdr_sz else coff + 20
     sections = {}
     sec_hdr_sz = 40
@@ -84,7 +75,6 @@ def _read_pe_header(data):
         sections[name] = {'perms': perms, 'vsize': v_size, 'vaddr': v_addr}
     info['sections'] = sections
 
-    # Imported DLLs via import directory traversal
     import_dlls = set()
     import_funcs = set()
     imp_rva = info.get('import_rva', 0)
@@ -93,7 +83,6 @@ def _read_pe_header(data):
     info['imported_dlls'] = import_dlls
     info['imported_functions'] = import_funcs
 
-    # Exports
     export_names = set()
     exp_rva = info.get('export_rva', 0)
     if exp_rva:
@@ -104,9 +93,7 @@ def _read_pe_header(data):
 
 
 def _rva_to_offset(rva, sections, sec_base):
-    """Convert an RVA to a file offset using section headers."""
     sec_list = list(sections.items())
-    # sections dict maps name -> {vaddr, vsize}
     for idx, (name, sec) in enumerate(sec_list):
         vaddr = sec.get('vaddr', 0)
         vsize = sec.get('vsize', 0)
@@ -116,18 +103,15 @@ def _rva_to_offset(rva, sections, sec_base):
 
 
 def _walk_imports(data, import_rva, sec_base, sections, dlls, funcs):
-    """Parse the import directory table."""
     offset = _rva_to_offset(import_rva, sections, sec_base)
     if offset is None:
         return
-    # each IMAGE_IMPORT_DESCRIPTOR = 20 bytes
     idx = 0
     while True:
         desc_off = offset + idx * 20
         if desc_off + 20 > len(data):
             break
         name_rva = struct.unpack_from('<I', data, desc_off + 12)[0]
-        # IAT RVA
         iat_rva = struct.unpack_from('<I', data, desc_off + 0)[0]
         if name_rva == 0 and iat_rva == 0:
             break
@@ -137,18 +121,17 @@ def _walk_imports(data, import_rva, sec_base, sections, dlls, funcs):
                 end = data.find(b'\x00', name_off)
                 dll_name = data[name_off:end].decode('ascii', errors='replace').lower()
                 dlls.add(dll_name)
-        # read function names/thunks
         if iat_rva:
             thunk_off = _rva_to_offset(iat_rva, sections, sec_base)
             if thunk_off:
                 for ti in range(64):
-                    to = thunk_off + ti * 8  # 64-bit thunks
+                    to = thunk_off + ti * 8
                     if to + 8 > len(data):
                         break
                     hint_name_rva = struct.unpack_from('<Q', data, to)[0]
                     if hint_name_rva == 0:
                         break
-                    if not (hint_name_rva & 0x8000000000000000):  # not ordinal
+                    if not (hint_name_rva & 0x8000000000000000):
                         fn_off = _rva_to_offset(hint_name_rva & 0x7FFFFFFF, sections, sec_base)
                         if fn_off:
                             fn_name = data[fn_off + 2:data.find(b'\x00', fn_off + 2)]
@@ -159,7 +142,6 @@ def _walk_imports(data, import_rva, sec_base, sections, dlls, funcs):
 
 
 def _walk_exports(data, export_rva, sec_base, sections, names_set):
-    """Parse the export directory."""
     offset = _rva_to_offset(export_rva, sections, sec_base)
     if offset is None or offset + 40 > len(data):
         return
@@ -181,7 +163,6 @@ def _walk_exports(data, export_rva, sec_base, sections, names_set):
             names_set.add(name)
 
 
-# verification ---------------------------------------------------------
 
 # z3 合约验证辅助结构 -----------------------------------------------------
 # 清理脚本替换模块时丢失了 analyze/get_metadata 及合约验证实现，
@@ -234,7 +215,6 @@ class VerificationResult:
 
 
 class BinaryContractVerifier:
-    """Check binary features against a declared security contract."""
 
     def __init__(self, contract=None):
         self._contract = contract or {}
@@ -406,7 +386,6 @@ class BinaryContractVerifier:
         return True, None
 
     def verify(self, binary):
-        """Return list of contract violations."""
         if isinstance(binary, bytes):
             data = binary
         elif isinstance(binary, str) and os.path.isfile(binary):
@@ -421,7 +400,6 @@ class BinaryContractVerifier:
 
         violations = []
 
-        # imported DLLs
         req_dlls = {d.lower() for d in self._contract.get('imported_dlls', [])}
         actual_dlls = {d.lower() for d in info.get('imported_dlls', set())}
         missing_dlls = req_dlls - actual_dlls
@@ -431,7 +409,6 @@ class BinaryContractVerifier:
                 'message': f'Required DLL not imported: {dll}'
             })
 
-        # forbidden DLLs
         forbidden_dlls = {d.lower() for d in self._contract.get('forbidden_dlls', [])}
         offending_dlls = actual_dlls & forbidden_dlls
         for dll in offending_dlls:
@@ -440,7 +417,6 @@ class BinaryContractVerifier:
                 'message': f'Forbidden DLL imported: {dll}'
             })
 
-        # required exports
         req_exports = set(self._contract.get('required_exports', []))
         actual_exports = info.get('exports', set())
         missing_exports = req_exports - actual_exports
@@ -450,7 +426,6 @@ class BinaryContractVerifier:
                 'message': f'Required export missing: {exp}'
             })
 
-        # forbidden imports (specific functions)
         forbidden_funcs = {f.lower() for f in self._contract.get('forbidden_imports', [])}
         actual_funcs = {f.lower() for f in info.get('imported_functions', set())}
         offending_funcs = actual_funcs & forbidden_funcs
@@ -460,7 +435,6 @@ class BinaryContractVerifier:
                 'message': f'Forbidden API imported: {func}'
             })
 
-        # section permissions
         expected_sec = self._contract.get('section_permissions', {})
         actual_sec = info.get('sections', {})
         for sec_name, req_perms in expected_sec.items():
@@ -479,7 +453,6 @@ class BinaryContractVerifier:
                         'message': f'Section {sec_name}: expected {req_perms}, got {actual_perms}'
                     })
 
-        # ASLR
         if 'expected_aslr' in self._contract:
             expected = self._contract['expected_aslr']
             actual = info.get('aslr', False)
@@ -489,7 +462,6 @@ class BinaryContractVerifier:
                     'message': f'ASLR: expected {expected}, got {actual}'
                 })
 
-        # DEP/NX
         if 'expected_dep' in self._contract:
             expected = self._contract['expected_dep']
             actual = info.get('dep', False)
@@ -499,11 +471,8 @@ class BinaryContractVerifier:
                     'message': f'DEP/NX: expected {expected}, got {actual}'
                 })
 
-        # image base range
-        img_base_field = ('opt_header' not in info)  # simplified
+        img_base_field = ('opt_header' not in info)
         if 'minimum_image_base' in self._contract or 'maximum_image_base' in self._contract:
-            # Rough check: PE image base is at opt_off+24
-            # Not fully parsed in our minimal header; skip with note
             pass
 
         return violations

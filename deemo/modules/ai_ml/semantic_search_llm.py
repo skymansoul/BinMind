@@ -1,10 +1,3 @@
-"""
-LLM 语义搜索 - 函数摘要与语义相似度检索。
-
-输入函数名与伪代码，生成摘要并向量化；查询时按余弦相似度检索。
-向量索引使用 numpy 回退，FAISS 可用时自动加速。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -94,7 +87,7 @@ class SummaryGenerator:
 
 
 class VectorIndex:
-    """Vector index with FAISS acceleration and numpy fallback."""
+    """向量索引 — FAISS 加速, numpy 回退。"""
 
     def __init__(self, dimension: int = 64):
         self.dimension = dimension
@@ -145,7 +138,7 @@ class VectorIndex:
 
 
 class SemanticSearcher:
-    """Semantic searcher with LLM integration and model loading."""
+    """语义搜索器 — LLM 集成与模型加载。"""
 
     def __init__(self, dimension: int = 64):
         self.dimension = dimension

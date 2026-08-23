@@ -1,6 +1,5 @@
 # 跨函数UAF检测增强 - 追踪指针通过函数调用逃逸后在调用者中的使用
 # uaf_detector.py 仅做函数内扫描; 本模块补充跨函数场景
-# 方法论依据: UAFSan - 别名分析+跨函数liveness
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

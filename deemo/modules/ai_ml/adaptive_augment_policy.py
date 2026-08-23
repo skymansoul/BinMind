@@ -34,13 +34,8 @@ logger = logging.getLogger(__name__)
 # 策略训练器
 
 class PolicyTrainer:
-    """双目标RL训练: 对比损失最小化 + 语义保持正则。
-
-    训练信号:
-      1. Contrastive reward: 正样本对相似度、负样本对相似度
-      2. Semantic preservation: 增强后嵌入与原嵌入的余弦相似度
-      3. Diversity bonus: 两视图增强参数方差（鼓励探索但不过度）
-    """
+    # 双目标RL训练: 对比损失最小化 + 语义保持正则.
+    # 训练信号: 对比奖励(正负样本对相似度) + 语义保持(增强前后嵌入余弦相似度) + 多样性奖励(两视图增强参数方差).
 
     def __init__(self,
                  encoder_fn: Callable,
@@ -172,12 +167,9 @@ class PolicyTrainer:
 # 便捷入口
 
 class AdaptiveAugmentPolicy:
-    """拓扑感知自适应增强策略的便捷入口。
-
-    两种模式:
-      在线模式: get_augment_probs() 直接使用策略网络
-      蒸馏模式: distill_and_use_lookup() 后使用O(1)查找表
-    """
+    # 拓扑感知自适应增强策略的便捷入口.
+    # 在线模式: get_augment_probs() 直接使用策略网络.
+    # 蒸馏模式: distill_and_use_lookup() 后使用O(1)查找表.
 
     def __init__(self, use_distilled: bool = False):
         self._policy = AugmentPolicyNetwork()

@@ -1,7 +1,4 @@
-# Use-After-Free 检测器 v6 - PDL-UAF
-# v6: PDL-UAF (Path-Dominance Lifespan) - 分支范围路径互斥判定
-#   + 过程间free摘要 + cleanup-pattern误报抑制 + pre_analyze提取到独立模块.
-# v4: 路径敏感free-use验证 + 全局变量重赋值检测 + realloc生命周期.
+# UAF 检测器 - PDL-UAF: 分支范围路径互斥判定 + 过程间free摘要 + cleanup-pattern抑制
 
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple

@@ -1,9 +1,3 @@
-"""
-令牌消耗追踪 — LLM令牌使用追踪与预算。
-
-按模块/操作追踪令牌消耗 + 日预算 + 成本估算 + 用量分析。
-"""
-
 from __future__ import annotations
 
 import logging
@@ -45,7 +39,6 @@ _MODEL_TOKENIZATION_FACTORS: Dict[str, float] = {
 
 
 class TokenUsage:
-    """Record of a single token consumption event."""
 
     __slots__ = (
         'module', 'operation', 'prompt_tokens', 'completion_tokens',
@@ -88,7 +81,6 @@ class TokenUsage:
 
 
 class TokenConsumptionTracker:
-    """Tracks and budgets token consumption across modules."""
 
     def __init__(
         self,
@@ -114,7 +106,6 @@ class TokenConsumptionTracker:
         completion_tokens: int,
         model: str = "default",
     ) -> TokenUsage:
-        """Record a token usage event."""
         prompt_price, completion_price = _MODEL_PRICING_MAP.get(
             model, _MODEL_PRICING_MAP['default']
         )
@@ -149,11 +140,7 @@ class TokenConsumptionTracker:
         estimated_completion_tokens: int = 0,
         model: str = "default",
     ) -> Dict[str, Any]:
-        """前瞻性设计：预留预算预检接口，避免事后补救。
-
-        Estimates whether a planned call fits within the remaining daily budget.
-        Returns a recommendation dict so callers can gate expensive operations.
-        """
+        """预留预算预检接口，避免事后补救。"""
         prompt_price, completion_price = _MODEL_PRICING_MAP.get(
             model, _MODEL_PRICING_MAP['default']
         )
@@ -191,7 +178,6 @@ class TokenConsumptionTracker:
         }
 
     def get_module_stats(self) -> Dict[str, Dict[str, Any]]:
-        """Get per-module usage statistics."""
         stats: Dict[str, Dict[str, Any]] = {}
         for module, usages in self._by_module.items():
             tokens = sum(u.total_tokens for u in usages)
@@ -206,7 +192,6 @@ class TokenConsumptionTracker:
         return stats
 
     def get_operation_stats(self) -> Dict[str, Dict[str, Any]]:
-        """Get per-operation usage statistics — 操作级热点分析。"""
         stats: Dict[str, Dict[str, Any]] = {}
         for operation, usages in self._by_operation.items():
             tokens = sum(u.total_tokens for u in usages)
@@ -225,7 +210,6 @@ class TokenConsumptionTracker:
         return stats
 
     def get_model_stats(self) -> Dict[str, Dict[str, Any]]:
-        """Get per-model usage statistics."""
         stats: Dict[str, Dict[str, Any]] = {}
         for model, usages in self._by_model.items():
             tokens = sum(u.total_tokens for u in usages)
@@ -238,7 +222,6 @@ class TokenConsumptionTracker:
         return stats
 
     def get_top_consumers(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Get top consumers by total cost."""
         stats = self.get_module_stats()
         sorted_items = sorted(
             stats.items(),
@@ -251,7 +234,6 @@ class TokenConsumptionTracker:
         ]
 
     def check_budget(self) -> Dict[str, Any]:
-        """Check budget status for the current day."""
         now = time.time()
         today_usages = [
             u for u in self._usages
@@ -274,11 +256,7 @@ class TokenConsumptionTracker:
         }
 
     def estimate_tokens(self, text: str, model: str = "default") -> int:
-        """Estimate token count for a text.
-
-        Uses heuristics: Chinese characters / 1.5, English words * 1.3.
-        模型感知修正：不同 tokenizer 对中英文切分粒度不一，乘以校调系数逼近真实值。
-        """
+        """模型感知修正：不同 tokenizer 对中英文切分粒度不一，乘以校调系数逼近真实值。"""
         if not text:
             return 0
 
@@ -301,7 +279,6 @@ class TokenConsumptionTracker:
         usages: Optional[List[Dict[str, Any]]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Analyze tracked consumption and return summary."""
         if usages:
             for u in usages:
                 self.record_usage(
@@ -333,7 +310,6 @@ class TokenConsumptionTracker:
         }
 
     def save(self, filepath: str) -> None:
-        """Save usage records to JSON."""
         import json
         import os
         os.makedirs(os.path.dirname(filepath) or '.', exist_ok=True)
@@ -346,7 +322,6 @@ class TokenConsumptionTracker:
             json.dump(data, f, indent=2)
 
     def load(self, filepath: str) -> None:
-        """Load usage records from JSON."""
         import json
         with open(filepath, 'r') as f:
             data = json.load(f)
@@ -384,7 +359,6 @@ def track_token_consumption(
     usages: Optional[List[Dict[str, Any]]] = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
-    """Convenience function for one-shot token consumption tracking."""
     budget_daily = kwargs.pop('budget_daily', 10.0)
     tracker = TokenConsumptionTracker(budget_daily=budget_daily, **kwargs)
     return tracker.analyze(usages=usages)

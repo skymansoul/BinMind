@@ -16,7 +16,6 @@ class FunctionComment:
     risk_tags: List = field(default_factory=list); risk_score: float = 0.0
 
 class FunctionCommentGenerator:
-    # (regex, tag, severity_weight) - severity guides downstream triage priority
     PATTERNS = [
         (r'\b(?:system|execve|popen|CreateProcess)\s*\(', 'process execution', 0.95),
         (r'\b(?:mprotect|VirtualProtect)\s*\(', 'memory protection change', 0.85),

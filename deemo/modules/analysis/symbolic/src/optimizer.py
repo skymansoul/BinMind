@@ -1,27 +1,16 @@
 #!/usr/bin/env python3
+"""符号执行优化 — 路径剪枝、状态合并、循环展开、函数摘要
+
+组合优于继承: PathOptimizer 组合 ConstraintSolver 与
+SymbolicExecutor 协作者, 基类不耦合
+ConstraintSimplifier 是独立的表达式级优化工具
+(冗余约束消除、常量折叠)
+
+相同 PC 的状态合并需要兼容约束 (并集),
+约束矛盾时跳过合并, 保留各自状态
+符号循环计数展开: 构造 BOUND 份循环体副本,
+为剩余迭代添加 fresh 符号变量 (可靠的过近似)
 """
-Symbolic 优化 — path pruning, state merging, loop unrolling, summaries
-
-Architecture:
-- Composition over inheritance: Path优化器 a ConstraintSolver
-SymbolicExecutor collaborators, base classes
-- ConstraintSimplifier a separate utility for expression-level
-优化s (redundant constraints, constant folding)
-
-Edge cases:
-- State merging same PC: requires compatible constraints (union)
-constraints contradictory, 合并 skipped states kept
-- Loop unrolling symbolic trip count: 构造 a BOUND copies
-loop body, adds a fresh symbolic variable for remaining
-iterations (sound over-approximation)
-
-Time complexity:
-- prune_infeasible_paths(): O(N * solver_time) N=states
-- merge_states(): O(N^2) naive implementation; O(N * 记录 N) using
-PC-based 哈希
-- simplify_constraints(): O(|constraints| * ||) linear scan + dedup
-"""
-# from collections import OrderedDict  # python3.7+不需要了
 from __future__ import annotations
 
 import logging
@@ -30,33 +19,22 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 _log = logging.getLogger(__name__)
 
 
-# ConstraintSimplifier
+# ConstraintSimplifier (约束化简器)
 
 class ConstraintSimplifier:
-    """
-    Simplifies constraint sets eliminating redundancies folding constants
+    """化简约束集, 消除冗余并折叠常量
 
-    Operations:
-    1. Duplicate elimination: identical constraints removed
-    2. Contradiction detection: var==a var==b a!=b -> UNSAT
-    3. Constant folding: evaluate concrete sub-expressions
-    4. Tautology removal: constraints always true (x==x)
+    去重: 相同约束移除
+    矛盾检测: var==a, var==b, a!=b -> UNSAT
+    常量折叠: 求值具体子表达式
+    恒等消除: 永真约束 (x==x) 移除
 
-    Time: O(N) for N constraints dict-based dedup
-    Space: O(N) for result list
-
-    策略: apply simplification before solver invocation because
-    Z3's internal simplifier is general-purpose, doesn't exploit
-    domain knowledge of path constraints (mostly equality/
-    inequality comparisons on individual variables)
+    在调用求解器前执行化简, Z3 内置化简器是通用目的的,
+    无法利用路径约束的领域知识 (主要是对单个变量的等式/不等式比较)
     """
 
     def simplify(self, constraints: List[Any]) -> List[Any]:
-        """
-        Simplify a list constraints. 返回 a (possibly shorter) list
-
-        Time: O(N) single pass dedup. Space: O(N)
-        """
+        """化简约束列表, 返回可能更短的列表"""
         if not constraints:
             return []
 
@@ -67,39 +45,33 @@ class ConstraintSimplifier:
         for c in constraints:
             key = self._constraint_key(c)
             if key in seen:
-                continue  # Duplicate
+                continue  # 重复约束
             seen.add(key)
 
-            # 检查 for contradictory equality constraints
+            # 检查矛盾等式约束
             if isinstance(c, dict) and c.get("type") == "eq":
                 var = c.get("var", "")
                 val = c.get("value", 0)
                 if var in eq_map and eq_map[var] != val:
-                    # Contradiction found — 返回 a minimal UNSAT marker
-                    _log.debug("Constraint contradiction: %s=%d vs %s=%d", var, eq_map[var], var, val)
+                    # 发现矛盾 — 返回最小 UNSAT 标记
+                    _log.debug("约束矛盾: %s=%d vs %s=%d", var, eq_map[var], var, val)
                     return [{"type": "eq", "var": "__unsat__", "value": 0}]
                 eq_map[var] = val
 
-            # Skip tautologies: var == var
+            # 跳过恒等式: var == var
             if isinstance(c, dict) and c.get("type") == "eq":
                 if c.get("var") == str(c.get("value")):
-                    continue  # Tautology, skip
+                    continue  # 恒等式, 跳过
 
             result.append(c)
 
         return result
 
     def eliminate_redundant(self, constraints: List[Any]) -> List[Any]:
-        """
-        Remove constraints logically implied others
+        """移除被其他约束逻辑蕴含的约束
 
-        For, a structural 检查: x>5 x>3
-        x>3 implied x>5 dropped
-
-        Time: O(N^2) for pairwise comparison. Space: O(N)
-
-        Trade-off: O(N^2) but N typically small (<100 per path)
-        For larger sets, consider using Z3's reduce or a proper SMT solver
+        结构化检查: x>5 蕴含 x>3, 所以 x>3 被丢弃
+        N 通常较小 (<100 每条路径), 更大集合可考虑用 Z3 reduce
         """
         if len(constraints) <= 1:
             return list(constraints)
@@ -121,10 +93,10 @@ class ConstraintSimplifier:
                     j += 1
                     continue
                 if self._implies(ci, cj):
-                    # cj implied ci, remove cj
+                    # cj 被 ci 蕴含, 移除 cj
                     result.pop(j)
                     if j < i:
-                        i -= 1  # Adjust index removal
+                        i -= 1  # 因移除调整索引
                     continue
                 j += 1
             i += 1
@@ -132,11 +104,9 @@ class ConstraintSimplifier:
         return result
 
     def _implies(self, stronger: Dict, weaker: Dict) -> bool:
-        """检查 'stronger' constraint logically implies 'weaker'
+        """检查 stronger 约束是否逻辑蕴含 weaker
 
-        Currently 检查 simple cases:
-        - x>5 implies x>3 (same var, same type, stronger value)
-        - x==5 implies x!=3
+        简单情形: x>5 蕴含 x>3 (相同变量, 相同类型, 更强的值); x==5 蕴含 x!=3
         """
         if stronger.get("type") != weaker.get("type"):
             return False
@@ -146,9 +116,9 @@ class ConstraintSimplifier:
         wv = weaker.get("value", 0)
         typ = stronger.get("type")
         if typ == "gt":
-            return sv >= wv  # x > 5 implies x > 3
+            return sv >= wv  # x > 5 蕴含 x > 3
         if typ == "lt":
-            return sv <= wv  # x < 3 implies x < 5
+            return sv <= wv  # x < 3 蕴含 x < 5
         if typ == "ge":
             return sv >= wv
         if typ == "le":
@@ -156,33 +126,26 @@ class ConstraintSimplifier:
         return False
 
     def _constraint_key(self, c: Any) -> str:
-        """构造 a stable key for deduplication. O(1)"""
+        """构造用于去重的稳定键"""
         if isinstance(c, dict):
             items = sorted(c.items())
             return str(items)
         return repr(c)
 
 
-# Path优化器
+# PathOptimizer (路径优化器)
 
 class PathOptimizer:
-    """
-    优化 符号执行 pruning, merging, summarizing
+    """优化符号执行: 剪枝、合并、摘要
 
-    Components:
-    1. Path pruning: remove infeasible states (constraints UNSAT)
-    2. State merging: combine states same PC
-    3. Loop unrolling: bounded symbolic unrolling
-    4. Function summaries: pre-computed input/输出 constraints
+    路径剪枝: 移除不可满足状态 (约束 UNSAT)
+    状态合并: 合并相同 PC 的状态
+    循环展开: 有界符号展开
+    函数摘要: 预计算的输入/输出约束
 
-    策略: Pruning before merging — pruning eliminates
-    dead states cheaply, reducing N for expensive O(N^2) merging.
-    Merging at join points is most impactful for code with lots of control
-    flow convergence (if-else chains, switch statements)
-
-    Trade-off: Merging loses path sensitivity (forget branch
-    came), but acceptable for analysis dramatically
-    reduces state explosion
+    先剪枝再合并 — 剪枝以低成本消除死状态, 减少 O(N^2) 合并的 N
+    汇聚点合并对大量控制流汇合 (if-else 链、switch) 的代码最有效
+    合并丢失路径敏感性 (忘记分支来源), 但大幅减少状态爆炸
     """
 
     def __init__(
@@ -205,17 +168,11 @@ class PathOptimizer:
         }
 
     def prune_infeasible_paths(self, states: List[Any]) -> List[Any]:
-        """
-        Remove paths unsatisfiable constraints
+        """移除约束不可满足的路径
 
-        对每个 state, simplifies constraints 检查 satisfiability
-        Infeasible states dropped counted
-
-        Time: O(N * solver_time). Space: O(N) for result
-        solver None, skips pruning 返回 states
-
-        # NOTE: solver errs side SAT (default for timeouts)
-        # infeasible paths survive — conservative for pruning
+        对每个状态, 化简约束并检查可满足性, 不可满足状态被丢弃并计数
+        solver 为 None 时跳过剪枝, 返回原始状态
+        求解器出错时偏向 SAT (超时默认), 不可满足路径保留 — 剪枝策略偏保守
         """
         if not self.pruning_enabled or self._solver is None:
             return states
@@ -227,7 +184,7 @@ class PathOptimizer:
             if not simplified:
                 survivors.append(state)
                 continue
-            # 检查 for UNSAT marker simplifier
+            # 检查化简器返回的 UNSAT 标记
             if any(isinstance(c, dict) and c.get("var") == "__unsat__" for c in simplified):
                 self._stats["pruned"] += 1
                 continue
@@ -237,31 +194,24 @@ class PathOptimizer:
                 else:
                     self._stats["pruned"] += 1
             except Exception:
-                # Solver error — keep state (conservative)
+                # 求解器出错 — 保留状态 (保守策略)
                 survivors.append(state)
 
         return survivors
 
     def merge_states(self, states: List[Any]) -> List[Any]:
-        """
-        合并 states same PC compatible constraints
+        """合并相同 PC 且约束兼容的状态
 
-        States grouped PC. group, attempt 合并
-        pairs compatible constraint sets (union doesn't 创建 UNSAT)
-
-        Time: O(N * 记录 N) for sorting PC, O(K^2) per group K
-        group size. Groups typically small (<5)
-
-        Trade-off: Merging reduces state count but loses path-sensitivity
-        Good for: switch/-else convergence. Bad for: divergent paths
-        tracked separately
+        按 PC 分组, 每组尝试合并约束集兼容的状态对 (并集不产生 UNSAT)
+        组通常很小 (<5)
+        合并减少状态数但丢失路径敏感性, 适用于 switch/if-else 汇聚
         """
         if not self.merging_enabled or len(states) < 2:
             return states
 
         from collections import defaultdict
 
-        # Group PC
+        # 按 PC 分组
         groups: Dict[int, List[Any]] = defaultdict(list)
         for s in states:
             pc = getattr(s, 'pc', 0)
@@ -272,7 +222,7 @@ class PathOptimizer:
             if len(group) == 1:
                 result.extend(group)
             elif self._solver is None:
-                result.append(group[0])  # solver — pick first
+                result.append(group[0])  # 无 solver — 取第一个
                 self._stats["merged"] += len(group) - 1
             else:
                 merged, unmerged = self._merge_group(group)
@@ -283,13 +233,10 @@ class PathOptimizer:
         return result
 
     def _merge_group(self, group: List[Any]) -> Tuple[List[Any], List[Any]]:
-        """
-        Attempt 合并 states a group
+        """尝试合并组内状态
 
-        Greedy algorithm: 启动 first state, try 合并
-        subsequent state. 合并 fails, state stays unmerged
-
-        Time: O(K^2 * solver_time) worst case. Space: O(K)
+        贪心算法: 从第一个状态开始, 尝试合并后续状态
+        合并失败的状态保留为未合并
         """
         if len(group) <= 1:
             return ([], group)
@@ -313,17 +260,10 @@ class PathOptimizer:
         return (merged_states, unmerged)
 
     def _try_merge_pair(self, s1: Any, s2: Any) -> Optional[Any]:
-        """
-        Try 合并 two states one
+        """尝试合并两个状态为一个
 
-        Merging possible iff:
-        1. states same PC (caller 确保)
-        2. union constraints satisfiable
-        3. 寄存器 values merged via ITE (--else)
-
-        success, 返回 merged state; failure, 返回 None
-
-        Time: O(solver_time) for satisfiability 检查
+        合并条件: 相同 PC (调用方保证), 约束并集可满足, 寄存器值通过 ITE 合并
+        成功返回合并状态; 失败返回 None
         """
         c1 = getattr(s1, 'path_constraints', [])
         c2 = getattr(s2, 'path_constraints', [])
@@ -336,8 +276,8 @@ class PathOptimizer:
         if self._solver and not self._solver.is_satisfiable(combined_constraints):
             return None
 
-        # 合并: for, union constraints pick s1's state
-        # (full ITE-based 寄存器 merging complex)
+        # 合并: 取并集约束, 以 s1 的状态为基础
+        # (完整 ITE 寄存器合并较复杂)
         merged = s1.fork(getattr(s1, 'state_id', 0) + 100000) if hasattr(s1, 'fork') else s1
         if hasattr(merged, 'path_constraints'):
             merged.path_constraints = combined_constraints
@@ -345,37 +285,28 @@ class PathOptimizer:
 
     def unroll_loop(
         self,
-        loop_body: List[Any],  # List IR instructions
-        trip_count_expr: Any,   # Symbolic expression for loop count
+        loop_body: List[Any],  # IR 指令列表
+        trip_count_expr: Any,   # 循环次数的符号表达式
         initial_state: Any,
         ir_fetcher: Any,
     ) -> List[Any]:
-        """
-        Bounded loop unrolling symbolic trip count
+        """符号循环计数的有界展开
 
-        Strategy:
-        1. Unroll up loop_unroll_bound times (concrete copies)
-        2. bound, add a fresh symbolic variable for remaining iters
-        3. a sound over-approximation: cover bounded executions
-        exactly model rest symbolically
-
-        Time: O(bound * |loop_body| * instruction_time)
-        Space: O(bound * state_size)
-
-        Corner case: trip_count concrete < bound, unroll
-        exactly times don't add symbolic tail
+        展开至多 loop_unroll_bound 次 (具体副本), 超出边界后为剩余迭代添加 fresh 符号变量
+        可靠过近似: 精确覆盖有界执行, 其余符号化建模
+        循环次数为具体值且 < bound 时, 精确展开, 不添加符号尾部
         """
         results: List[Any] = []
         current_state = initial_state
 
-        # Heuristic: try concrete trip count
+        # 启发式: 尝试具体循环次数
         concrete_trip = None
         if hasattr(trip_count_expr, 'is_symbolic') and not trip_count_expr.is_symbolic:
             concrete_trip = trip_count_expr.value
         elif isinstance(trip_count_expr, int):
             concrete_trip = trip_count_expr
 
-        # For symbolic or unknown trip count, 使用 bound
+        # 符号或未知循环计数, 使用 bound
         if concrete_trip is None:
             unroll_count = self.loop_unroll_bound
             add_symbolic_tail = True
@@ -393,7 +324,7 @@ class PathOptimizer:
             results.append(current_state)
 
         if add_symbolic_tail:
-            # Add a symbolic tail state
+            # 添加符号尾部状态
             if hasattr(current_state, 'fork'):
                 tail = current_state.fork(current_state.state_id + 1000)
                 if hasattr(tail, 'path_constraints'):
@@ -406,26 +337,22 @@ class PathOptimizer:
         return results
 
     def register_summary(self, func_name: str, summary: Any) -> None:
-        """
-        寄存器 a pre-computed function summary
+        """注册预计算的函数摘要
 
-        Summary 格式化: {"inputs": [.], "输出": [.], "constraints": [.]
-        "side_effects": ["写入",.], "may_return": bool}
-
-        Time: O(1). Space: O(1) per summary
+        摘要格式: {"inputs": [...], "outputs": [...], "constraints": [...],
+        "side_effects": ["write", ...], "may_return": bool}
         """
         self._summaries[func_name] = summary
 
     def has_summary(self, func_name: str) -> bool:
-        """检查 a summary for func_name. O(1)"""
+        """检查是否已有 func_name 的摘要"""
         return func_name in self._summaries
 
     def get_summary(self, func_name: str) -> Optional[Any]:
-        """
-        Retrieve a function summary. 返回 None found. O(1)
+        """获取函数摘要, 未找到返回 None
 
-        使用摘要可以避免进入库函数内部，大幅减少状态空间
-        // 比如memcpy/memset/strlen这种常用的，预定义好摘要后能省大量时间
+        使用摘要可避免进入库函数内部, 大幅减少状态空间
+        memcpy/memset/strlen 等常用函数预定义摘要后能省大量时间
         """
         summary = self._summaries.get(func_name)
         if summary:
@@ -433,46 +360,38 @@ class PathOptimizer:
         return summary
 
     def apply_summary(self, state: Any, func_name: str, args: List[Any]) -> Optional[Any]:
-        """
-        Apply a function summary a state — skip function body
-        directly 更新 state per summary
+        """对状态应用函数摘要 — 跳过函数体, 按摘要直接更新状态
 
-        Time: O(|summary.constraints|). Space: O(state + summary size)
-
-        // 策略: Function summaries trade precision for speed
-        // For security analysis, we want precise modeling of dangerous
-        // functions (memcpy, system) and coarse models for utility sets —
-        // a tiered approach gives us best ROI
+        函数摘要以精度换速度: 危险函数 (memcpy, system) 需精确建模,
+        工具函数可用粗粒度模型 — 分层策略获得最佳 ROI
         """
         summary = self.get_summary(func_name)
         if summary is None:
             return None
 
-        # Apply 输出 constraints
+        # 应用输出约束
         if hasattr(state, 'path_constraints'):
             for c in summary.get("constraints", []):
                 state.path_constraints.append(c)
 
-        # Apply 寄存器/memory modifications summary
+        # 按摘要应用寄存器/内存修改
         for reg_name, val in summary.get("outputs", {}).items():
             if hasattr(state, 'registers'):
                 state.registers[reg_name] = val
 
-        state.pc = getattr(state, 'pc', 0) + 4  # Advance past call
+        state.pc = getattr(state, 'pc', 0) + 4  # 跳过 call 指令
         return state
 
     def get_stats(self) -> Dict[str, int]:
         return dict(self._stats)
 
 
-# Dead code — 留着备用，后面可能用
+# 备用: 状态指纹计算
 
 def _compute_StateFingerprint(state: Any) -> int:
-    """
-    计算 a deterministic hash for state comparison
-    Used for state deduplication but currently wired
+    """计算状态比较的确定性哈希, 用于状态去重 (当前未接入)
 
-    这个是基于PC+寄存器快照的哈希，merge前先检查是否完全一样可以跳过
+    基于 PC + 寄存器快照的哈希, merge 前先检查是否完全一样可跳过
     """
     h = 0
     h ^= hash(getattr(state, 'pc', 0))

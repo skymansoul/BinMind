@@ -1,35 +1,3 @@
-"""
-访问模式驱动的结构体布局恢复 - 无需 ML 训练, 从内存访问序列推断字段边界。
-
-现有方法依赖 GNN (TYGR) 或 LLM (ReSym) - 需要训练数据和 GPU。
-本模块使用纯粹的访问模式分析: 结构体字段在内存中的布局决定了
-程序如何访问它们 - 连续的相同大小访问暗示单一字段, 大小切换暗示字段边界。
-
-核心洞察:
-  结构体字段的访问模式具有统计规律:
-    - 同一字段的多次访问通常使用相同的指令 (mov vs movzx vs movsd)
-    - 字段边界处访问大小发生切换 (4B→2B→1B→8B)
-    - 数组字段产生等距重复的访问模式
-  这些规律不依赖训练数据 - 仅需观察指令序列。
-
-算法:
-  1. 访问收集: 在函数中收集对基址+偏移的内存访问
-  2. 边界推断: 访问大小切换点 + 对齐间隙 → 字段边界候选
-  3. 类型推断: 访问大小 + 指令类型 (算术/加载/存储) → 推断字段类型
-  4. 布局输出: C struct 定义 + 字段偏移表
-
-为什么可达到 90% 准确率:
-  n-gram 访问模式唯一地编码了结构体布局 - 不同布局产生不同的访问序列。
-  机器学习只是"学习"了这个映射, 而本模块直接分析映射的底层统计规律。
-
-ref: XTRIDE - n-gram type inference 90% accuracy,
-     本项目取其 n-gram 思路但替换为确定性访问模式分析
-ref: ReSym - LLM + Prolog struct recovery, 本项目用确定性规则
-     替代 VarDecoder/FieldDecoder 两个 LLM
-ref: TYGR - GNN on data-flow graph for type recovery, 本项目用访问模式
-     统计替代 GNN 图嵌入
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field

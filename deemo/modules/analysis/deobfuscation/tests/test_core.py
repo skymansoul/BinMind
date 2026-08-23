@@ -1,14 +1,11 @@
 # 去混淆核心算法测试
-"""FunctionDeobfuscator、Deobf调度器、StringDecoder、NLP字符串分类器测试"""
 
 import base64
 import binascii
 import pytest
 
-# FunctionDeobfuscator tests
 
 class TestDeadCodeElimination:
-    """死代码消除测试"""
 
     def test_eliminate_unused_assignment(self) -> None:
         instructions = [
@@ -18,7 +15,7 @@ class TestDeadCodeElimination:
             {"addr": 0x1003, "mnemonic": "ret", "operands": ""},
         ]
 
-        # Verify r1 defined but used downstream
+        # 验证 r1 已定义但下游未使用
         uses: set = set()
         for insn in reversed(instructions):
             operands = insn.get("operands", "")
@@ -30,7 +27,7 @@ class TestDeadCodeElimination:
                 if parts[0].strip() in uses:
                     uses.remove(parts[0].strip())
 
-        assert "r1" not in uses, "r1 should not be in the live set"
+        assert "r1" not in uses, "r1 不应在活跃集合中"
 
     def test_nop_elimination(self) -> None:
         instructions = [
@@ -47,7 +44,6 @@ class TestDeadCodeElimination:
 
 
 class TestConstantPropagation:
-    """常量传播折叠测试"""
 
     def test_mov_immediate_tracked(self) -> None:
         lattice: dict = {}
@@ -92,7 +88,6 @@ class TestConstantPropagation:
 
 
 class TestOpaquePredicateElimination:
-    """不透明谓词检测测试"""
 
     def test_xor_jz_always_true(self) -> None:
         insns = [
@@ -109,7 +104,6 @@ class TestOpaquePredicateElimination:
 
 
 class TestCFFRecovery:
-    """OLLVM 控制流平坦化恢复测试"""
 
     def test_find_dispatcher_block(self) -> None:
         instructions = [
@@ -125,21 +119,19 @@ class TestCFFRecovery:
 
 
 class TestDeobfuscatePipeline:
-    """去混淆完整流水线测试"""
 
     def test_deobfuscate_light_level(self) -> None:
         instructions = [
             {"addr": 0x1000, "mnemonic": "mov", "operands": "eax, 1"},
             {"addr": 0x1001, "mnemonic": "ret", "operands": ""},
         ]
-        # Light mode: verify reachable code survives
+        # 轻量模式: 验证可达代码存活
         assert len(instructions) == 2
 
 
-# Deobf调度器测试
+# Deobf 调度器测试
 
 class TestDeobfOrchestrator:
-    """调度器策略选择测试"""
 
     def test_probe_returns_indicators(self) -> None:
         indicators = {
@@ -182,10 +174,9 @@ class TestDeobfOrchestrator:
         assert "status" in result
 
 
-# StringDecoder测试
+# StringDecoder 测试
 
 class TestStringDecoder:
-    """字符串解码测试"""
 
     def test_decode_base64_valid(self) -> None:
         encoded = "SGVsbG8gV29ybGQ="
@@ -207,7 +198,7 @@ class TestStringDecoder:
         key = 0x42
         plaintext = b"SECRET"
         ciphertext = bytes(b ^ key for b in plaintext)
-        # 解码 same key
+        # 解码使用相同密钥
         recovered = bytes(b ^ key for b in ciphertext)
         assert recovered == plaintext
 
@@ -216,7 +207,7 @@ class TestStringDecoder:
         for key in range(256):
             encrypted = bytes(b ^ key for b in data)
             decrypted = bytes(b ^ key for b in encrypted)
-            assert decrypted == data, f"XOR key {key} failed"
+            assert decrypted == data, f"XOR 密钥 {key} 失败"
 
     def test_decode_confidence_range(self) -> None:
         score = 0.75
@@ -245,10 +236,9 @@ class TestStringDecoder:
         assert rot13(rot13("Hello")) == "Hello"
 
 
-# NLP字符串分类器测试
+# NLP 字符串分类器测试
 
 class TestNLPClassifier:
-    """字符串分类测试"""
 
     def test_classify_url_true(self) -> None:
         import re

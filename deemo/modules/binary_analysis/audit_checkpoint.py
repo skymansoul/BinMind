@@ -286,7 +286,7 @@ class AuditCheckpointService:
 
 
 def create_audit_checkpoint(data: Dict[str, Any]) -> Dict[str, Any]:
-    """convenience entry point"""
+    """便捷入口"""
     service = AuditCheckpointService()
     service.start()
     try:

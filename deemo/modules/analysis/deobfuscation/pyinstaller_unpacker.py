@@ -1,5 +1,3 @@
-"""从 PyInstaller 打包的可执行文件中提取 Python 字节码 (CArchive + PYZ)"""
-
 import io
 import logging
 import os
@@ -187,7 +185,6 @@ class PyInstallerUnpacker:
         self._tmpdir: Optional[str] = None; self._header_offset: int = 0
 
     def detect_packer(self, file_path: str) -> PackerType:
-        """检测可执行文件的打包器类型。"""
         try:
             with open(file_path, 'rb') as fh:
                 data = fh.read(4096)
@@ -204,7 +201,6 @@ class PyInstallerUnpacker:
         return PackerType.NONE
 
     def _find_embedded_pyc(self, data: bytes) -> List[PycFile]:
-        """在字节流中搜索 Python 字节码魔数，提取嵌入的 pyc 片段。"""
         found = []
         for pyver, magic_bytes in PYTHON_MAGIC_NUMBERS.items():
             idx = data.find(magic_bytes)
@@ -221,7 +217,6 @@ class PyInstallerUnpacker:
         return found
 
     def generate_report(self, result: UnpackResult) -> str:
-        """生成解包结果报告文本。"""
         packer_name = {
             PackerType.PYINSTALLER: 'PyInstaller',
             PackerType.NUITKA: 'Nuitka',
@@ -237,7 +232,6 @@ class PyInstallerUnpacker:
         return "\n".join(lines)
 
     def save_result(self, result: UnpackResult, name: str = "unpack_result") -> str:
-        """将结果保存为 JSON 文件，返回路径。"""
         import json
         if not self._tmpdir:
             self._tmpdir = tempfile.mkdtemp(prefix="pyi_unpack_")
@@ -264,7 +258,6 @@ class PyInstallerUnpacker:
     # 主 CArchive 解析后继续向后扫描额外的 MAGIC 标记
 
     def _find_all_carchive_headers(self, data: bytes) -> List[Tuple[int, CArchiveHeader]]:
-        """扫描所有 CArchive MAGIC 位置，返回多个 header"""
         headers = []
         idx = 0
         while True:

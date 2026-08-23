@@ -1,13 +1,12 @@
-"""Hierarchical resource controller for 符号执行
+"""符号执行的分层资源控制器。
 
-Multi-level resource constraints (module/function/path)
-automatic enforcement timeout, memory, path-count limits
+多层资源约束 (模块/函数/路径), 自动执行超时、内存、路径数限制。
 
-2025 升级: LLM 驱动的 IR 优化代价模型
-参考: "LIFT: LLM-Driven IR 优化 for 符号执行"
-核心方法: 使用符号代价模型识别高开销 IR 语句，优先将资源
-分配给这些语句的符号执行。在有限时间/内存约束下，最大化
-代码覆盖率, 将资源视作投资组合，按语句的"求解器负担"分配
+2025 升级: LLM 驱动的 IR 优化代价模型。
+参考: "LIFT: LLM-Driven IR Optimization for Symbolic Execution"。
+核心方法: 使用符号代价模型识别高开销 IR 语句, 优先将资源
+分配给这些语句的符号执行。在有限时间/内存约束下, 最大化
+代码覆盖率, 将资源视作投资组合, 按语句的"求解器负担"分配。
 """
 
 import json
@@ -64,7 +63,7 @@ class ExecutionResult:
 
 
 class ResourceRule:
-    """Single resource allocation rule, 匹配 names via compiled regex"""
+    """单条资源分配规则, 通过编译后的正则匹配名称"""
 
     def __init__(self, rule_type: ResourceLimitType, name_pattern: str,
                  limits: ResourceLimits, priority: int = 0) -> None:

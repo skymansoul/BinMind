@@ -1,4 +1,3 @@
-"""Binary lifecycle: file hashing, version tracking by hash, JSON metadata store."""
 import hashlib
 import json
 import os
@@ -42,7 +41,7 @@ class BinarySignature:
     def __init__(self, path="", hash="", md5="", sha256="", file_size=0, architecture="", **kwargs):
         # **kwargs 吸收历史调用方的多余参数，避免构造期异常
         self.path = path
-        self.hash = hash            # sha256
+        self.hash = hash
         self.sha1 = ""
         self.md5 = md5
         self.sha256 = sha256 or hash
@@ -182,7 +181,6 @@ def format_lifecycle_report(report, history=None):
 
 
 class BinaryLifecycleManager:
-    """Tracks binary files by content hash, stores versioned metadata in JSON."""
 
     _CHUNK = 65536
 
@@ -196,8 +194,6 @@ class BinaryLifecycleManager:
         self.binary_index: Dict[str, BinarySignature] = {}
         self._records: Dict[str, list] = {}
         self._load_index()
-
-    # -- hashing --------------------------------------------------
 
     @classmethod
     def compute_hashes(cls, filepath: str) -> Tuple[str, str, str]:
@@ -216,8 +212,6 @@ class BinaryLifecycleManager:
         except OSError as e:
             logger.warning("hash read error: %s", e)
         return sha256.hexdigest(), sha1.hexdigest(), md5.hexdigest()
-
-    # -- registration ---------------------------------------------
 
     def _compute_signature(self, filepath: str) -> BinarySignature:
         """计算文件签名：sha256 + sha1 + md5 + 文件大小。"""
@@ -265,8 +259,6 @@ class BinaryLifecycleManager:
             sig.stage = stage
             self._append_history(binary_hash, {"stage": stage.value, "timestamp": _time.time()})
 
-    # -- analysis records -----------------------------------------
-
     def _generate_record_id(self, sig, version: str) -> str:
         """按签名与版本生成 16 位记录 ID。"""
         raw = f"{getattr(sig, 'sha256', '')}{version}{_time.time()}"
@@ -297,8 +289,6 @@ class BinaryLifecycleManager:
     def load_records(self, binary_hash: str) -> list:
         """按哈希加载分析记录，无记录返回空列表。"""
         return self._records.get(binary_hash, [])
-
-    # -- trend & alert --------------------------------------------
 
     def _analyze_trend_direction(self, values: list) -> Tuple[str, float]:
         """按首尾值判断趋势方向，返回 (方向, 百分比)。"""
@@ -393,8 +383,6 @@ class BinaryLifecycleManager:
 
     generate_recommendations = _generate_recommendations
 
-    # -- report ---------------------------------------------------
-
     def generate_report(self, binary_hash: str) -> LifecycleReport:
         """生成生命周期报告；无记录时返回空报告并标记无分析记录。"""
         records = self.load_records(binary_hash)
@@ -461,8 +449,6 @@ class BinaryLifecycleManager:
         except OSError:
             return False
 
-    # -- version comparison ---------------------------------------
-
     def compare_versions(self, hash1: str, hash2: str) -> dict:
         sig1, sig2 = self.binaries.get(hash1), self.binaries.get(hash2)
         if not sig1 or not sig2:
@@ -472,8 +458,6 @@ class BinaryLifecycleManager:
             "removed": list(set(sig1.tags) - set(sig2.tags)),
             "changed": ["size"] if sig1.size != sig2.size else [],
         }
-
-    # -- history --------------------------------------------------
 
     def get_history(self, binary_path: str) -> list:
         if os.path.isfile(binary_path):
@@ -487,8 +471,6 @@ class BinaryLifecycleManager:
 
     def _append_history(self, key: str, entry: dict):
         self._history.setdefault(key, []).append(entry)
-
-    # -- persistence ----------------------------------------------
 
     def _load_index(self):
         if os.path.isfile(self._index_path):

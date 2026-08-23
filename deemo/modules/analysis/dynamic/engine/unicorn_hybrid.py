@@ -87,10 +87,10 @@ except ImportError:
     logger.debug("unicorn 未安装，动态模拟路径不可用")
 
 
-# Dataclass type definitions — unified result schema for hybrid analysis
+# 数据类定义 — 混合分析的统一结果模式
 
 class MemoryPerm(Enum):
-    """Memory protection flags mirroring Unicorn UC_PROT_* constants"""
+    """内存保护标志, 对应 Unicorn UC_PROT_* 常量。"""
     NONE = 0
     READ = 1
     WRITE = 2
@@ -100,10 +100,10 @@ class MemoryPerm(Enum):
 
 @dataclass
 class MemoryRegion:
-    """Describes a mapped memory segment 仿真 address space
+    """描述仿真地址空间中的已映射内存段。
 
-    Fields intentionally nullable — partial binary lift often lacks full
-    section metadata, perms/size inferred map time
+    字段刻意可为 None — 部分二进制提取常缺少完整节元数据,
+    权限/大小在映射时推断。
     """
     name: str
     base: int
@@ -130,9 +130,9 @@ class MemoryRegion:
 
 @dataclass
 class ExecutionResult:
-    """Post-仿真 快照: 寄存器 state, memory deltas, exit reason
+    """仿真后快照: 寄存器状态、内存差异、退出原因。
 
-    每条指令的地址记录用于从错误回溯到源码的映射——路径追踪必需的元数据
+    每条指令的地址记录用于从错误回溯到源码的映射 — 路径追踪必需的元数据。
     """
     exit_code: int
     exit_reason: str
@@ -150,10 +150,10 @@ class ExecutionResult:
 
 @dataclass
 class HybridAnalysisResult:
-    """Aggregate 输出 a complete hybrid (static + dynamic) analysis pass
+    """混合 (静态 + 动态) 分析的聚合输出。
 
-    将 Capstone 反汇编和 Unicorn 模拟的结果合并到单一视图中
-    path_coverage 记录每个基本块被探索的次数，用于识别热点路径
+    将 Capstone 反汇编和 Unicorn 模拟的结果合并到单一视图中;
+    path_coverage 记录每个基本块被探索的次数, 用于识别热点路径。
     """
     success: bool
     architecture: str
@@ -168,17 +168,17 @@ class HybridAnalysisResult:
     speculative_paths_explored: int = 0
 
 
-# Block缓存— LRU eviction for translated code blocks
+# Block 缓存 — 译码块的 LRU 驱逐
 #
-# 设计意图：
+# 设计意图:
 #   二进制翻译是混合分析的主要瓶颈。同一基本块在多次模拟运行中被重复
-# 反汇编和映射。Block缓存用 OrderedDict 实现 LRU 驱逐——基于纯 Python
-# 数据结构，避免引入额外的 C 扩展依赖。最坏情况下的驱逐复杂度 O(1)
-# 命中查找 O(1)。512 的容量上限在 128MB VPS 上经过实测，不会触发 OS 交换
+# 反汇编和映射。Block 缓存用 OrderedDict 实现 LRU 驱逐 — 基于纯 Python
+# 数据结构, 避免引入额外的 C 扩展依赖。最坏情况下的驱逐复杂度 O(1),
+# 命中查找 O(1)。512 的容量上限在 128MB VPS 上经过实测, 不会触发 OS 交换
 #
-# 驱逐策略：
-#   LRU (Least Recently Used) — 适合模拟场景，因为循环热点自然表现出
-#   时间局部性。FIFO 在循环场景中表现差（驱逐正在使用的块）；LFU 维护成本
+# 驱逐策略:
+#   LRU (最近最少使用) — 适合模拟场景, 因为循环热点自然表现出
+#   时间局部性。FIFO 在循环场景中表现差 (驱逐正在使用的块); LFU 维护成本
 # 过高且缓存污染风险大。LRU 在指令缓存行为和实现复杂度的权衡中最优
 
 class BlockCache:
@@ -262,9 +262,9 @@ class BlockCache:
             self._evictions = 0
 
 
-# Speculative indirect-branch resolution
+# 投机间接跳转解析
 #
-# 设计意图：
+# 设计意图:
 # 间接跳转（jmp rax, call [rdi+8]）在静态反汇编中无法解析目标
 # 在动态模拟中若寄存器值来自尚未具体化的输入也会失解析
 #   投机执行将当前 CPU 状态分叉，并行的在多个候选目标上继续模拟——
@@ -295,8 +295,8 @@ _JUMP_REGS_32 = {"eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp", "eip"}
 
 
 def _is_indirect_jump(mnemonic: str, op_str: str) -> bool:
-    """Heuristic: a jmp/call indirect operand string mentions a 寄存器
-    or a memory de引用 pattern `[.*]`"""
+    """启发式: jmp/call 的间接操作数字符串包含寄存器
+    或内存解引用模式 `[.*]`。"""
     if mnemonic.lower() not in _INDIRECT_JUMP_MNEMONICS:
         return False
     lower_op = op_str.lower()
@@ -315,9 +315,9 @@ def _generate_speculative_targets(
     known_code_ranges: List[Tuple[int, int]],
     callgraph_edges: Optional[Dict[int, List[int]]],
 ) -> List[int]:
-    """构造 up K candidate targets for an indirect branch
+    """构造间接跳转的 K 个候选目标。
 
-    优先级排序：
+    优先级排序:
     0. 如果寄存器值已具体化且指向映射区域 → 直接返回（不投机）
     1. 函数指针表：当前寄存器值附近的指针宽度对齐地址
     2. 代码段中的已知函数入口
@@ -326,7 +326,7 @@ def _generate_speculative_targets(
     candidates: List[int] = []
     seen: Set[int] = set()
 
-    # Priority 0: 寄存器 concretized
+    # 优先级 0: 寄存器已具体化
     op_str = getattr(current_cs_insn, "op_str", "")
     for reg_name in _JUMP_REGS_64 | _JUMP_REGS_32:
         if reg_name in op_str.lower() and reg_name in current_regs:
@@ -336,7 +336,7 @@ def _generate_speculative_targets(
                     if seg_start <= concrete < seg_end:
                         return [concrete]
 
-    # Priority 1: nearby 指针-aligned targets 寄存器 value
+    # 优先级 1: 寄存器值附近的指针对齐目标
     ptr_size = 8 if "64" in (getattr(current_cs_insn, "_arch", "") or "x64") else 4
     for reg_name in _JUMP_REGS_64 | _JUMP_REGS_32:
         if reg_name in op_str.lower() and reg_name in current_regs:
@@ -353,9 +353,9 @@ def _generate_speculative_targets(
                 if len(candidates) >= _SPECULATIVE_TOP_K:
                     return candidates[: _SPECULATIVE_TOP_K]
 
-    # Priority 2: code-section 入口
+    # 优先级 2: 代码段入口
     for seg_start, seg_end in known_code_ranges:
-        # Align instruction boundary (heuristic: 16-byte 对齐 for x86/x64)
+        # 指令边界对齐 (启发式: x86/x64 按 16 字节对齐)
         entry = (seg_start + 0xF) & ~0xF
         while entry < seg_end and len(candidates) < _SPECULATIVE_TOP_K:
             if entry not in seen:

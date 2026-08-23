@@ -1,10 +1,3 @@
-"""
-语义漏洞搜索 - TF-IDF 向量化 + 关键词匹配 + 漏洞模式标注。
-
-索引构建、保存/加载、查询与高亮均在本模块内闭环，
-不依赖外部模型或网络服务。
-"""
-
 from __future__ import annotations
 
 import json

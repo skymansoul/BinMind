@@ -1,4 +1,4 @@
-"""Tests for tools CLI 入口"""
+"""工具 CLI 入口测试。"""
 
 import sys
 import pytest
@@ -29,7 +29,7 @@ class TestCliHelp:
 
 
 class TestSubcommands:
-    """Test subcommands 寄存器ed"""
+    """测试注册的子命令"""
 
     def test_subcommands_registered(self, cli_main):
         """Verify 5 subcommands exist 解析器"""

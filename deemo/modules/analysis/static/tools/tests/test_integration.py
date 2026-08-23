@@ -1,4 +1,4 @@
-"""Integration tests for end--end 静态分析 workflows"""
+"""静态分析工作流端到端集成测试。"""
 
 import tempfile
 import os
@@ -7,7 +7,7 @@ import pytest
 
 
 class TestEndToEndStaticScan:
-    """Test full static scan workflow: 配置 -> analyzer -> scan"""
+    """测试完整静态扫描流程: 配置 -> 分析器 -> 扫描"""
 
     def test_end_to_end_static_scan(self):
         """加载 配置, 创建 analyzer, 运行 a scan end--end"""

@@ -1,4 +1,3 @@
-# Proxy → vuln_detection/yara_auto_gen.py. SourceFileLoader direct strategy.
 from importlib.machinery import SourceFileLoader as _SFL
 import os as _os
 _r = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'vuln_detection', 'yara_auto_gen.py')

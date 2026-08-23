@@ -67,14 +67,14 @@ class ValidationReport:
 
 class DecompilerValidator:
     """
-    Decompiler output validator.
+    反编译器输出验证器。
 
-    Core functions:
-    1. validate_syntax -- check if decompiled code passes syntax analysis
-    2. compare_cfg -- compare original CFG with decompiled CFG
-    3. validate_types -- type consistency check
-    4. semantic_equivalence_score -- semantic equivalence scoring
-    5. generate_validation_report -- comprehensive validation report
+    核心功能：
+    1. validate_syntax -- 检查反编译代码是否通过语法分析
+    2. compare_cfg -- 比较原始 CFG 与反编译 CFG
+    3. validate_types -- 类型一致性检查
+    4. semantic_equivalence_score -- 语义等价性评分
+    5. generate_validation_report -- 综合验证报告
     """
 
     WEIGHTS = {

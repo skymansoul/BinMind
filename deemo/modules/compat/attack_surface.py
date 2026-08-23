@@ -1,4 +1,3 @@
-# Proxy → vuln_detection/attack_surface.py. Field aliases, enum patches, localization shims.
 import importlib.util as _iu
 import os as _os
 
@@ -13,7 +12,6 @@ _RT = _real_mod.AttackSurfaceType
 _RL = _real_mod.RiskLevel
 _RP = _real_mod.AttackSurfacePoint
 
-# Property aliases — map test-facing names to internal attributes.
 _RR.analysis_success = property(lambda s: s.ok, lambda s, v: setattr(s, 'ok', v))
 _RR.surface_points = property(lambda s: s.points, lambda s, v: setattr(s, 'points', v))
 _RR.error_message = property(lambda s: s.err, lambda s, v: setattr(s, 'err', v))
@@ -24,12 +22,10 @@ _RR.binary_path = property(lambda s: s.path, lambda s, v: setattr(s, 'path', v))
 _RP.surface_type = property(lambda s: s.type, lambda s, v: setattr(s, 'type', v))
 _RP.risk_score = property(lambda s: s.score, lambda s, v: setattr(s, 'score', v))
 
-# Enum member aliases — expose abbreviated keys.
 _RT.FILE_OPERATION = _RT.FILE
 _RT.NETWORK_INTERFACE = _RT.NET
 _RT.RPC_INTERFACE = _RT.RPC
 
-# Intercept analyze() to rewrite error strings with localized equivalents.
 _orig_analyze = _RM.analyze
 def _wrapped_analyze(self):
     rpt = _orig_analyze(self)
@@ -38,7 +34,6 @@ def _wrapped_analyze(self):
     return rpt
 _RM.analyze = _wrapped_analyze
 
-# Intercept generate_report() to localize section headers and labels.
 _orig_gen = _RM.gen_report
 def _wrapped_gen(self, fmt=None, out=None):
     c = _orig_gen(self, out=out)

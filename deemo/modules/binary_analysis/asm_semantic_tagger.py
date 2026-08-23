@@ -91,14 +91,14 @@ class NGramExtractor:
 
 
 class SimpleAsmBert:
-    """简化汇编classification器 —— based on词频+label命中"""
+    """简化汇编分类器: 基于词频+标签命中"""
 
     def __init__(self):
         self._tok = InstructionTokenizer()
         self._ng = NGramExtractor()
 
     def predict(self, insns):
-        """predictionbasic block语义label"""
+        """预测基本块语义标签"""
         if insns is None:
             return BlockTag.UNKNOWN, 0.0, 'empty'
 
@@ -231,7 +231,7 @@ class FunctionSummarizer:
 
 
 def summarize_function(bin_path, func):
-    """convenience entry point"""
+    """便捷入口"""
     s = FunctionSummarizer()
     fs = s.summarize(bin_path, func)
     out_blocks = []

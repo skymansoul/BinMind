@@ -1,4 +1,4 @@
-# Lazy import pattern: 延迟加载避免循环依赖与启动开销
+# 懒加载模式: 延迟加载避免循环依赖与启动开销
 
 _MODULES = {
     "helpers": None,

@@ -8,7 +8,7 @@ from modules.analysis.static.binary_analysis.src.utils.errors import AnalysisErr
 
 
 class TestAtomicWrite:
-    """Atomic file writing for safe 持久化"""
+    """安全持久化的原子文件写入"""
 
     def test_basic_write(self):
         """写入 a file atomically"""
@@ -79,7 +79,7 @@ class TestRetry:
 
 
 class TestDig:
-    """Nested dict access 辅助"""
+    """嵌套字典访问辅助函数"""
 
     def test_simple_access(self):
         """Access nested dict value"""

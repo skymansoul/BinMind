@@ -35,7 +35,6 @@ def _file_sha256(zf: _zipfile.ZipFile, name: str) -> str:
 
 
 def _list_dex_classes(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
-    """启发式: 从 DEX 文件中提取类名字符串"""
     try: raw = zf.read(dex_name)
     except (KeyError, _zipfile.BadZipFile): return set()
     classes = set()
@@ -49,7 +48,6 @@ def _list_dex_classes(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
 # 重建 DEX 时会改变字符串的顺序、对齐和填充
 
 def _list_dex_strings(zf: _zipfile.ZipFile, dex_name: str) -> Set[str]:
-    """提取 DEX 文件中所有非空字符串。扫描 MUTF-8 编码的字符串表"""
     try: raw = zf.read(dex_name)
     except (KeyError, _zipfile.BadZipFile): return set()
     strings = set()
@@ -94,7 +92,6 @@ _DT_STRTAB = 5
 _DT_STRSZ = 10
 
 def _elf_dynsym_exports(elf_data: bytes) -> Set[str]:
-    """从 ELF dynamic 段中定位 dynsym/dynstr 并提取导出符号名"""
     exports: Set[str] = set()
     if elf_data[:4] != _ELF_MAGIC or len(elf_data) < 64:
         return exports
@@ -177,7 +174,6 @@ def _compare_native_libs(z_orig: _zipfile.ZipFile, z_rep: _zipfile.ZipFile) -> O
 
 
 def _parse_cert(zf: _zipfile.ZipFile) -> Optional[Dict[str, str]]:
-    """提取 META-INF 中的首个 RSA/DSA 证书指纹"""
     for name in zf.namelist():
         if name.startswith(_META_DIR):
             _, ext = _os.path.splitext(name)
@@ -189,7 +185,6 @@ def _parse_cert(zf: _zipfile.ZipFile) -> Optional[Dict[str, str]]:
 
 
 def _parse_manifest_meta(zf: _zipfile.ZipFile) -> Dict[str, str]:
-    """返回 AndroidManifest.xml 的关键属性 (对二进制 XML 做字符串扫描)"""
     meta: Dict[str, str] = {}
     try: raw = zf.read(_ANDROIDMANIFEST)
     except (KeyError, _zipfile.BadZipFile): return meta
@@ -284,7 +279,6 @@ class RepackConfig:
 
 
 class RepackDetector:
-    """比较原始 APK 与疑似重打包 APK"""
 
     def __init__(self, config: Optional[RepackConfig] = None):
         self.config = config or RepackConfig()
@@ -428,7 +422,6 @@ class RepackDetector:
             signing_scheme=signing_info)
 
     def detect_single(self, binary: str) -> bool:
-        """单参数检查: 返回 True 表示 APK 显示重打包迹象 (META-INF 条目过多)"""
         try:
             with _zipfile.ZipFile(binary) as zf:
                 meta_count = sum(1 for n in zf.namelist() if n.startswith(_META_DIR))

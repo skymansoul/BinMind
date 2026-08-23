@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-08-22T01:57:08.934821",
+  "generator": "BinMind deemo - real LLM (ollama qwen2.5:0.5b)",
+  "llm_config": {
+    "provider": "ollama",
+    "model": "qwen2.5:0.5b",
+    "base_url": "http://localhost:11434/v1",
+    "simulation": false
+  },
+  "samples": [
+    {
+      "sample_id": "01_stack_overflow",
+      "sample_name": "Stack Overflow",
+      "binary_path": "samples/teaching/01_stack_overflow/01_stack_overflow.exe",
+      "source_path": "samples/teaching/01_stack_overflow/vuln.c",
+      "sha256": "2765ef23e9d77c1f73280a3dde1385432b2a6bbef769576ace5db208305a2a7f",
+      "arch": "x86-64",
+      "bits": 64,
+      "format": "PE",
+      "vuln_type_expected": "stack_buffer_overflow",
+      "reproduce_cmd_ai": "python main.py analyze samples/teaching/01_stack_overflow/01_stack_overflow.exe --ai-analysis --max-funcs 50",
+      "reproduce_cmd_report": "python main.py --reverse-report --binary samples/teaching/01_stack_overflow/01_stack_overflow.exe",
+      "env_vars": "AI_PROVIDER=ollama AI_MODEL=qwen2.5:0.5b",
+      "analysis_result": {
+        "functions_analyzed": 50,
+        "vulnerabilities_found": 323,
+        "duration_sec": 128.0,
+        "simulation": false,
+        "tier_distribution": {
+          "lead": 323
+        },
+        "review_status": "pending",
+        "llm_calls_total": 50,
+        "llm_calls_ok": 50,
+        "llm_json_parse_failures": 3
+      },
+      "ai_analysis_report_md": "results/01_stack_overflow_20260822_015049.md",
+      "ai_analysis_report_json": "results/01_stack_overflow_20260822_015049.json",
+      "reverse_report_md": "reports/reverse_report_unknown_20260822_015058.md",
+      "llm_call_log": "logs/llm_calls.jsonl",
+      "poc_path": null,
+      "poc_status": "not_generated",
+      "manual_review_status": "pending",
+      "notes": "0.5b model too small for stable JSON output; 3/50 LLM responses had JSON parse errors. All 323 findings from rule engine with LLM supplement. simulation=false confirmed."
+    },
+    {
+      "sample_id": "02_format_string",
+      "sample_name": "Format String",
+      "binary_path": "samples/teaching/02_format_string/02_format_string.exe",
+      "source_path": "samples/teaching/02_format_string/vuln.c",
+      "sha256": "346889575f4e3776b33090bffd92c7f2c205d915000b4299891a6bcb585652fe",
+      "arch": "x86-64",
+      "bits": 64,
+      "format": "PE",
+      "vuln_type_expected": "format_string",
+      "reproduce_cmd_ai": "python main.py analyze samples/teaching/02_format_string/02_format_string.exe --ai-analysis --max-funcs 50",
+      "reproduce_cmd_report": "python main.py --reverse-report --binary samples/teaching/02_format_string/02_format_string.exe",
+      "env_vars": "AI_PROVIDER=ollama AI_MODEL=qwen2.5:0.5b",
+      "analysis_result": {
+        "functions_analyzed": 50,
+        "vulnerabilities_found": 282,
+        "duration_sec": 148.5,
+        "simulation": false,
+        "tier_distribution": {
+          "lead": 282
+        },
+        "review_status": "pending",
+        "llm_calls_total": 50,
+        "llm_calls_ok": 50,
+        "llm_json_parse_failures": 3
+      },
+      "ai_analysis_report_md": "results/02_format_string_20260822_015333.md",
+      "ai_analysis_report_json": "results/02_format_string_20260822_015333.json",
+      "reverse_report_md": "reports/reverse_report_unknown_20260822_015339.md",
+      "llm_call_log": "logs/llm_calls.jsonl",
+      "poc_path": null,
+      "poc_status": "not_generated",
+      "manual_review_status": "pending",
+      "notes": "0.5b model detected format string bugs in 53 findings. simulation=false confirmed. LLM JSON parse errors on 3/50 functions."
+    }
+  ],
+  "environment": {
+    "python_version": "3.12.13",
+    "platform": "Windows",
+    "ollama_version": "installed",
+    "unicorn_version": "2.1.4",
+    "openai_sdk_version": "3.3.1",
+    "angr_available": true,
+    "z3_available": true
+  },
+  "pwn39_note": "pwn39 sample not present in project directory; skipped as per instructions.",
+  "limitations": [
+    "qwen2.5:0.5b is a very small model; JSON output stability is limited (3/50 parse failures per sample)",
+    "gpt-oss:120b requires 53GB RAM (only 38.4GB available); cannot use larger model",
+    "qwen2.5:7b download timed out; network speed insufficient",
+    "All findings classified as tier=lead (clue level) due to low LLM confidence and rule-based detection",
+    "tier=candidate/verified requires higher quality LLM output or manual confirmation"
+  ]
+}

@@ -17,9 +17,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument('--test', action='store_true',
                    help='run test suite (equivalent to python -m tests.run_tests --all)')
     p.add_argument('--ai-analysis', dest='ai_analysis', action='store_true',
-                   help='enable LLM-assisted vulnerability analysis')
+                   help='enable LLM-assisted vulnerability analysis (default: on)')
+    p.add_argument('--no-ai', dest='ai_analysis', action='store_false',
+                   help='disable LLM-assisted vulnerability analysis')
+    p.set_defaults(ai_analysis=True)
     p.add_argument('--reverse-report', dest='reverse_report', action='store_true',
                    help='generate reverse engineering report (requires prior analysis)')
+    p.add_argument('--binary', dest='binary', default=None,
+                   help='binary path for --reverse-report')
 
     sub = p.add_subparsers(dest='command', help='subcommands')
 
@@ -53,7 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument('-v', '--verbose', action='store_true',
                     help='debug logging')
     ap.add_argument('--ai-analysis', dest='ai_analysis', action='store_true',
-                    help='enable LLM-assisted vulnerability analysis')
+                    help='enable LLM-assisted vulnerability analysis (default: on)')
+    ap.add_argument('--no-ai', dest='ai_analysis', action='store_false',
+                    help='disable LLM-assisted vulnerability analysis')
+    ap.set_defaults(ai_analysis=True)
 
     # batch
     bp = sub.add_parser('batch', help='analyze multiple binaries')
@@ -104,6 +112,17 @@ def build_parser() -> argparse.ArgumentParser:
     fp.add_argument('--iterations', type=int, default=3, help='max iteration rounds')
     fp.add_argument('--timeout', type=int, default=30, help='per-execution timeout seconds')
 
+    # review — 人工复核闭环
+    rp = sub.add_parser('review', help='human review of pending findings')
+    rp.add_argument('-o', '--output', default='./results',
+                    help='output directory containing review_queue.json')
+    rp.add_argument('--list', action='store_true',
+                    help='list all pending review records')
+    rp.add_argument('--verdict', choices=['confirmed', 'false_positive', 'pending'],
+                    help='set human verdict for a record')
+    rp.add_argument('--index', type=int, default=-1,
+                    help='record index to update (0-based)')
+
     return p
 
 
@@ -137,7 +156,7 @@ def cmd_analyze(args):
         fuzz=args.fuzz,
         no_crypto=args.no_crypto,
         output_dir=args.output,
-        ai_analysis=getattr(args, 'ai_analysis', False),
+        ai_analysis=getattr(args, 'ai_analysis', True),
     )
 
     if 'error' in result:
@@ -154,6 +173,33 @@ def cmd_analyze(args):
     print(f"  Report (md)        : {reports.get('markdown', 'n/a')}")
     print(f"  Report (json)      : {reports.get('json', 'n/a')}")
     print()
+
+    # 人工复核入队: 有漏洞发现时写入 review_queue.json, 不阻断 analyze 流程
+    if result.get('total_vulns', 0) > 0:
+        from core.review_gate import add_review_record
+        output_dir = args.output
+        vuln_list = result.get('all_vulns', [])
+        if vuln_list:
+            for vuln in vuln_list:
+                add_review_record(
+                    output_dir,
+                    sample_name=os.path.basename(binary),
+                    vuln_desc=vuln.get('type', 'unknown'),
+                    evidence_addr=vuln.get('address', 'n/a'),
+                    current_status='pending',
+                )
+            print(f"  Review queue  : {len(vuln_list)} record(s) pending")
+        else:
+            # all_vulns 不可用时创建一条汇总记录
+            add_review_record(
+                output_dir,
+                sample_name=os.path.basename(binary),
+                vuln_desc=f'{result.get("total_vulns", 0)} finding(s) pending review',
+                evidence_addr=reports.get('markdown', 'n/a'),
+                current_status='pending',
+            )
+            print(f"  Review queue  : 1 summary record pending")
+        print(f"  Use 'python main.py review --list' to review")
 
     return 0
 
@@ -187,7 +233,7 @@ def cmd_batch(args):
                 crash=None, functions=None, max_funcs=20,
                 include_lib=False, parallel=False, symbolic=False,
                 fuzz=False, no_crypto=False, decompiler='auto', hooks=None,
-                verbose=False, ai_analysis=False))
+                verbose=False, ai_analysis=True))
         except Exception as e:
             print(f"  failed: {e}", file=sys.stderr)
     return 0
@@ -334,6 +380,147 @@ def cmd_debug(args):
     return 0
 
 
+def _infer_vuln_type_for_feedback(binary):
+    """从历史分析结果或文件名推断漏洞类型, 归一化为探测类别。"""
+    raw = ''
+    # 优先查询历史分析结果
+    try:
+        from core.vuln_db import search_similar
+        findings = search_similar(binary_path=binary, limit=5)
+        for f in findings:
+            vt = (f.get('vuln_type') or '').lower()
+            if vt:
+                raw = vt
+                break
+    except Exception:
+        pass
+    # 退回文件名推断
+    if not raw:
+        try:
+            from core.sample_manager_types import infer_vuln_type
+            raw = (infer_vuln_type(binary) or '').lower()
+        except Exception:
+            pass
+    # 归一化到探测类别
+    t = raw
+    if 'stack' in t or 'bof' in t or 'buffer' in t or 'rop' in t or 'code-reuse' in t:
+        return 'stack-overflow'
+    if 'format' in t or 'fmt' in t or 'fsb' in t:
+        return 'format-string'
+    if 'heap' in t or 'uaf' in t or 'use-after' in t or 'double' in t:
+        return 'heap-corruption'
+    return ''
+
+
+def _generate_initial_exploit_script(binary, binfo):
+    """根据二进制信息与推断的漏洞类型生成初始探测脚本。
+
+    脚本仅探测崩溃行为, 不伪造偏移或地址, 供反馈环迭代修正。
+    """
+    from core.exploit_gen import _pwntools_arch
+
+    arch = binfo.get('arch', 'unknown') if binfo else 'unknown'
+    bits = binfo.get('bits', 64) if binfo else 64
+    fmt = binfo.get('format', 'ELF') if binfo else 'ELF'
+    pwntools_arch = _pwntools_arch(arch, bits)
+    os_name = {'ELF': 'linux', 'PE': 'windows', 'Mach-O': 'macos'}.get(fmt, 'linux')
+    vuln_type = _infer_vuln_type_for_feedback(binary)
+
+    L = [
+        '#!/usr/bin/env python3',
+        f'# 初始探测脚本 — 推断漏洞类型: {vuln_type or "未知"}',
+        f'# 目标: {arch} / {bits}-bit / {fmt}',
+        'from pwn import *',
+        'import sys',
+        '',
+        f"context.arch = '{pwntools_arch}'",
+        f"context.os = '{os_name}'",
+        "context.log_level = 'debug'",
+        '',
+        f'BINARY = {binary!r}',
+        '',
+        '',
+        'def probe():',
+    ]
+
+    # 按漏洞类型选择探测载荷
+    if vuln_type == 'stack-overflow':
+        L += [
+            '    # 栈溢出探测: 递增长度 padding 定位崩溃边界',
+            '    for size in (32, 64, 128, 256, 512, 1024, 2048):',
+            '        try:',
+            '            p = process(BINARY)',
+            "            p.sendline(b'A' * size)",
+            '            resp = p.recvall(timeout=2)',
+            '            print(f"[*] size={size} exit={p.poll()} resp={resp!r}")',
+            '            p.close()',
+            '        except Exception as e:',
+            '            print(f"[!] size={size} exception: {e}")',
+        ]
+    elif vuln_type == 'format-string':
+        L += [
+            '    # 格式化字符串探测: 发送格式说明符泄露栈数据',
+            "    for payload in (b'%p.' * 8, b'%x.' * 8, b'AAAA%p%p%p%p'):",
+            '        try:',
+            '            p = process(BINARY)',
+            '            p.sendline(payload)',
+            '            resp = p.recvall(timeout=2)',
+            '            print(f"[*] payload={payload!r} resp={resp!r}")',
+            '            p.close()',
+            '        except Exception as e:',
+            '            print(f"[!] exception: {e}")',
+        ]
+    elif vuln_type == 'heap-corruption':
+        L += [
+            '    # 堆破坏探测: 分配-释放-重用序列触发 UAF/double-free',
+            '    try:',
+            '        p = process(BINARY)',
+            '        for _ in range(4):',
+            "            p.sendline(b'M' * 64)",
+            "        p.sendline(b'')",
+            '        for _ in range(4):',
+            "            p.sendline(b'U' * 64)",
+            '        resp = p.recvall(timeout=2)',
+            '        print(f"[*] exit={p.poll()} resp={resp!r}")',
+            '        p.close()',
+            '    except Exception as e:',
+            '        print(f"[!] exception: {e}")',
+        ]
+    else:
+        L += [
+            '    # 通用探测: 发送超长输入触发崩溃并打印输出',
+            '    try:',
+            '        p = process(BINARY)',
+            "        p.sendline(b'A' * 1024)",
+            '        resp = p.recvall(timeout=2)',
+            '        print(f"[*] exit={p.poll()} stdout={resp!r}")',
+            '        p.close()',
+            '    except Exception as e:',
+            '        print(f"[!] exception: {e}")',
+        ]
+
+    # 崩溃信息收集: 读取 dmesg 尾部提取寄存器状态
+    L += [
+        '    # 崩溃信息收集: 读取 dmesg 尾部提取寄存器状态',
+        '    try:',
+        '        import subprocess',
+        "        r = subprocess.run(['dmesg'], capture_output=True, text=True, timeout=5)",
+        "        tail = r.stdout.strip().splitlines()[-10:]",
+        '        if tail:',
+        "            print('[*] recent dmesg:')",
+        '            for line in tail:',
+        "                print(f'    {line}')",
+        '    except Exception:',
+        '        pass',
+        '',
+        '',
+        "if __name__ == '__main__':",
+        '    probe()',
+    ]
+
+    return '\n'.join(L)
+
+
 def cmd_feedback(args):
     """运行 exploit 反馈迭代: 分析 -> 生成/装载初始脚本 -> 执行 -> LLM 修正重试。
 
@@ -356,9 +543,9 @@ def cmd_feedback(args):
         print(f"warn: 读取二进制信息失败, 反馈环继续: {e}", file=sys.stderr)
 
     if not initial_script:
-        # 无初始脚本时用崩溃路径生成草稿(若提供), 否则说明需要手动指定
-        print("info: 未提供 --script, 反馈环将以空载荷开始(实际执行即可见失败反馈)")
-        initial_script = "#!/usr/bin/env python3\nfrom pwn import *\n"
+        vuln_type = _infer_vuln_type_for_feedback(binary)
+        print(f"info: 未提供 --script, 生成初始探测脚本 (推断类型: {vuln_type or '未知'})")
+        initial_script = _generate_initial_exploit_script(binary, binfo)
 
     print(f"\n  Feedback loop — {binary}")
     print(f"  iterations : {args.iterations} (max), timeout={args.timeout}s")
@@ -371,6 +558,53 @@ def cmd_feedback(args):
     print(f"  iterations  : {result['iterations']}")
     print(f"  root cause  : {result['root_cause'] or 'n/a'}")
     return 0 if result['success'] else 1
+
+
+def cmd_review(args):
+    """人工复核闭环: 列出待复核记录, 允许人工输入结论并更新。
+
+    复核后结果写入 review_queue.json, 后续报告生成流程可读取该文件
+    实现迭代闭环; --list 仅展示, --verdict 配合 --index 更新记录。
+    """
+    from core.review_gate import read_review_queue, update_review_record
+
+    output_dir = args.output
+    queue = read_review_queue(output_dir)
+
+    if not queue:
+        print("  (no review records found)")
+        return 0
+
+    if args.list or not args.verdict:
+        print(f"  Review queue ({len(queue)} records):\n")
+        for i, rec in enumerate(queue):
+            status_mark = {'pending': '[ ]', 'reviewed': '[x]'}.get(
+                rec.get('status', 'pending'), '[?]')
+            verdict = rec.get('human_verdict', '') or 'n/a'
+            print(f"  {i}: {status_mark} {rec.get('sample_name', '?')}")
+            print(f"     vuln     : {rec.get('vuln_desc', 'n/a')}")
+            print(f"     evidence : {rec.get('evidence_addr', 'n/a')}")
+            print(f"     verdict  : {verdict}")
+            print(f"     time     : {rec.get('timestamp', 'n/a')}")
+            print()
+        if not args.verdict:
+            return 0
+
+    if args.verdict:
+        if args.index < 0 or args.index >= len(queue):
+            print(f"error: invalid index {args.index}, range 0-{len(queue)-1}", file=sys.stderr)
+            return 1
+        ok = update_review_record(output_dir, args.index, args.verdict)
+        if ok:
+            rec = queue[args.index]
+            print(f"  Updated record {args.index}: {rec.get('sample_name', '?')}")
+            print(f"  verdict  : {args.verdict}")
+            print(f"  复核结果已写入, 后续报告生成将读取此结论")
+        else:
+            print(f"error: failed to update record {args.index}", file=sys.stderr)
+            return 1
+
+    return 0
 
 
 def cmd_version():
@@ -412,7 +646,17 @@ def cmd_reverse_report(args):
     binary_path = getattr(args, 'binary', None) or ''
 
     report_data = ReportData()
-    report_data.binary_info = {'binary_path': binary_path or 'unknown'}
+
+    # 获取完整二进制信息, 失败时回退到最小结构
+    try:
+        from core.binary_info import get_binary_info
+        report_data.binary_info = get_binary_info(binary_path)
+    except Exception:
+        report_data.binary_info = {'binary_path': binary_path or 'unknown'}
+
+    # 传递反编译证据与崩溃日志, 供 LLM 研判
+    decomp_evidence = []
+    crash_log_text = None
 
     # 尝试从 DB 读取真实漏洞列表
     if binary_path and os.path.isfile(DB_PATH):
@@ -421,13 +665,43 @@ def cmd_reverse_report(args):
         rows = conn.execute(
             "SELECT * FROM findings WHERE binary_path=? ORDER BY id DESC LIMIT 50",
             (binary_path,)).fetchall()
-        conn.close()
         vulns = [{k: r[k] for k in r.keys()} for r in rows]
         for v in vulns:
             v.setdefault('type', v.get('vuln_type', '?'))
         report_data.vulnerability_list = vulns
 
-    gen.set_report_data(report_data)
+        # 从 DB 读取反编译结果作为证据
+        try:
+            drows = conn.execute(
+                "SELECT function_name, pseudocode, address FROM decompilation "
+                "WHERE binary_path=? ORDER BY id DESC LIMIT 20",
+                (binary_path,)).fetchall()
+            decomp_evidence = [{k: r[k] for k in r.keys()} for r in drows]
+        except Exception:
+            pass
+        conn.close()
+
+    # 从结果目录读取崩溃日志原文
+    if binary_path:
+        stem = os.path.splitext(os.path.basename(binary_path))[0]
+        for ext in ('.crash', '.log', '.txt'):
+            candidate = os.path.join(RESULTS_DIR, stem + '_crash' + ext)
+            if os.path.isfile(candidate):
+                try:
+                    with open(candidate, 'r', encoding='utf-8', errors='replace') as f:
+                        crash_log_text = f.read()
+                except Exception:
+                    pass
+                break
+
+    report_data.decompilation_evidence = decomp_evidence
+    report_data.crash_log = crash_log_text
+
+    # simulation 由 LLM 配置状态决定
+    from modules.llm_client import is_ai_configured
+    simulation = not is_ai_configured()
+
+    gen.set_report_data(report_data, simulation=simulation)
     output = gen.save_report()
 
     if output:
@@ -471,6 +745,8 @@ def main() -> int:
         return cmd_replay(args)
     elif args.command == 'feedback':
         return cmd_feedback(args)
+    elif args.command == 'review':
+        return cmd_review(args)
     elif args.command == 'debug':
         return cmd_debug(args)
     elif args.command == 'version':

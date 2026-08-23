@@ -39,7 +39,7 @@ except ImportError:
     pass
 
 
-# Abstract domain lattice — sign analysis
+# 抽象域格 — 符号分析
 
 
 class AbstractDomainLattice:
@@ -145,7 +145,7 @@ class AbstractDomainLattice:
         return AbstractDomainLattice.TOP
 
 
-# Symbolic state merging
+# 符号状态合并
 
 
 @dataclass
@@ -306,7 +306,7 @@ class ShadowStackSimulator:
         return 0.0
 
 
-# Path reachability
+# 路径可达性
 
 
 class PathReachabilityQuery:
@@ -789,7 +789,7 @@ class CoverageGuidedSymbolicScheduler:
             'coverage_distribution': dict(self.coverage_map)}
 
 
-# Unicorn block缓存
+# Unicorn 块缓存
 
 
 class UnicornBlockCache:
@@ -863,7 +863,7 @@ class UnicornBlockCache:
         return len(self._cache)
 
 
-# Unicorn hybrid execution
+# Unicorn 混合执行
 
 
 class UnicornHybridSymbolicExecutor:

@@ -1,4 +1,3 @@
-# Proxy → binary_analysis/diff_analysis.py. __import__ chaining strategy.
 import os as _os, sys as _sys
 _d = _os.path.dirname(_os.path.dirname(__file__))
 _sys.path.insert(0, _os.path.join(_d, 'binary_analysis'))

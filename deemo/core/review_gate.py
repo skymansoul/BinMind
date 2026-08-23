@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -19,6 +20,9 @@ _DEFAULT_GATE_FILENAME = "review_gate.toml"
 
 # 人工等待超时 (秒); 非交互模式自动跳过
 _DEFAULT_TIMEOUT = 3600
+
+# 复核队列文件名, 与 gate 文件同目录
+_REVIEW_QUEUE_FILENAME = "review_queue.json"
 
 
 class GateStatus(Enum):
@@ -95,13 +99,22 @@ def read_gate(output_dir: str, timeout: float = _DEFAULT_TIMEOUT) -> Dict[str, A
     """
     读取门控状态。
 
-    文件不存在返回 {status: skip, reason: no_gate_file}, 调用方全自动继续;
-    pending 未超时返回 pending (调用方等待重试), 超时返回 skip。
+    文件不存在时写入 pending 状态的复核记录并返回 pending,
+    调用方可据此暂停等待人工决策; 超时仍为 pending 则自动跳过。
     返回 {status, instruction, reason}。
     """
     path = _gate_path(output_dir)
     if not os.path.isfile(path):
-        return {"status": "skip", "reason": "no_gate_file", "instruction": ""}
+        # 不自动跳过, 写入一条 pending 复核记录供人工处理
+        add_review_record(
+            output_dir,
+            sample_name=os.path.basename(output_dir),
+            vuln_desc="gate file missing, awaiting human review",
+            evidence_addr=output_dir,
+            current_status="pending",
+        )
+        _log.info("Gate file absent, review record created: %s", output_dir)
+        return {"status": "pending", "reason": "no_gate_file_pending", "instruction": ""}
 
     # 读取 TOML, 不引入 tomli 依赖, 用简单行解析
     status = "pending"
@@ -159,6 +172,76 @@ def clear_gate(output_dir: str) -> None:
             _log.debug("Gate file cleared: %s", path)
         except OSError as e:
             _log.warning("Failed to clear gate file: %s", e)
+
+
+def _queue_path(output_dir: str) -> str:
+    return os.path.join(output_dir, _REVIEW_QUEUE_FILENAME)
+
+
+def read_review_queue(output_dir: str) -> list:
+    """读取复核队列, 文件不存在时返回空列表。"""
+    path = _queue_path(output_dir)
+    if not os.path.isfile(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+        return []
+    except (OSError, json.JSONDecodeError) as e:
+        _log.warning("Review queue read error: %s", e)
+        return []
+
+
+def write_review_queue(output_dir: str, queue: list) -> str:
+    """将复核队列持久化到 JSON 文件, 返回文件路径。"""
+    os.makedirs(output_dir, exist_ok=True)
+    path = _queue_path(output_dir)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(queue, f, ensure_ascii=False, indent=2)
+    return path
+
+
+def add_review_record(
+    output_dir: str,
+    sample_name: str,
+    vuln_desc: str,
+    evidence_addr: str,
+    current_status: str = "pending",
+) -> str:
+    """向复核队列追加一条记录, 返回队列文件路径。
+
+    字段: 样本名/漏洞描述/证据地址/当前状态/人工结论/时间戳。
+    """
+    queue = read_review_queue(output_dir)
+    record = {
+        "sample_name": sample_name,
+        "vuln_desc": vuln_desc,
+        "evidence_addr": evidence_addr,
+        "status": current_status,
+        "human_verdict": "",
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    queue.append(record)
+    return write_review_queue(output_dir, queue)
+
+
+def update_review_record(
+    output_dir: str,
+    index: int,
+    human_verdict: str,
+    status: str = "reviewed",
+) -> bool:
+    """更新指定索引的复核记录, 返回是否成功。"""
+    queue = read_review_queue(output_dir)
+    if index < 0 or index >= len(queue):
+        return False
+    queue[index]["human_verdict"] = human_verdict
+    queue[index]["status"] = status
+    queue[index]["timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    write_review_queue(output_dir, queue)
+    return True
 
 
 def gate_in_feedback_loop(

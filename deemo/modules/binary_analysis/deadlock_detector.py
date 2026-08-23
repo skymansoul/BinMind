@@ -87,7 +87,6 @@ class DeadlockAnalysisResult:
 
 
 class DeadlockDetector:
-    """Lock dependency graph + cycle detection."""
 
     LOCK_PATS = (
         (r'\b(pthread_mutex_lock)\s*\(\s*[&]?(\w+)',   LockType.MUTEX, LockOperation.ACQ),

@@ -1,6 +1,5 @@
 # coding: utf-8
-"""
-Buffer Underflow 检测 — CWE-124 (Buffer Underwrite), 对称于 heap overflow.
+"""Buffer Underflow 检测 — CWE-124 (Buffer Underwrite), 对称于 heap overflow.
 L1: 负偏移访问检测 L2: 指针算术溯源 L3: 前邻 chunk 影响分析.
 """
 

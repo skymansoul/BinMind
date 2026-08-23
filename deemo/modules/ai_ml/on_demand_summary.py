@@ -18,8 +18,6 @@ from pathlib import Path as _Path
 __dbg = _logging.getLogger(__name__)
 
 
-# Enums
-
 class SummaryLevel(Enum):
     MINIMAL = "minimal"
     STANDARD = "standard"
@@ -37,11 +35,8 @@ class SummaryType(Enum):
     CUSTOM = "custom"
 
 
-# Data classes
-
 @dataclass
 class SymbolicSummary:
-    """A cached symbolic execution summary."""
     summary_id: str = ""
     target_type: SummaryType = SummaryType.FUNCTION
     target_name: str = ""
@@ -149,7 +144,6 @@ class SymbolicSummary:
 
 @dataclass
 class RequestContext:
-    """Context for a summary generation request."""
     target_name: str = ""
     target_address: int = 0
     target_type: SummaryType = SummaryType.FUNCTION
@@ -163,13 +157,10 @@ class RequestContext:
     extra_params: Dict[str, Any] = field(default_factory=dict)
 
 
-# Summary Cache (LRU)
+# 摘要缓存 (LRU + TTL)
 
 class SummaryCache:
-    """LRU cache for symbolic summaries with TTL-based expiration.
-
-    新增：自适应TTL延长 — 频繁访问的条目自动续期，减少热数据再生开销.
-    """
+    """符号执行摘要的 LRU 缓存，带 TTL 过期和自适应续期。"""
 
     __slots__ = ('m_cache', 'm_max_size', 'm_hits', 'm_misses',
                  'm_evictions', 'm_lock', 'm_adaptive_ttl_ratio')
@@ -197,7 +188,7 @@ class SummaryCache:
                 self.m_misses += 1
                 return None
 
-            # Move to end (most recently used)
+            # 移到末尾 (最近使用)
             self.m_cache.move_to_end(key)
             # 自适应TTL: 热点条目自动续期 (但不是无限延长 — 仅延长一个比例)
             extension = int(summary.ttl_seconds * self.m_adaptive_ttl_ratio)
@@ -286,10 +277,10 @@ class _PendingCoalesced:
                 __dbg.warning("Pending callback raised: %s", exc)
 
 
-# Symbolic Executor Proxy
+# 符号执行代理
 
 class SymbolicExecutorProxy:
-    """Abstract proxy for a symbolic execution engine (e.g., angr, KLEE)."""
+    """符号执行引擎的抽象代理。"""
 
     def generate_summary(self, ctx: RequestContext) -> Optional[SymbolicSummary]:
         raise NotImplementedError
@@ -299,7 +290,7 @@ class SymbolicExecutorProxy:
 
 
 class MockSymbolicExecutor(SymbolicExecutorProxy):
-    """Mock symbolic executor for testing/demo purposes."""
+    """测试/演示用的模拟符号执行器。"""
 
     __slots__ = ('m_delay_factor',)
 
@@ -319,7 +310,7 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
             level=ctx.level,
         )
 
-        # 构造 模拟 content
+        # 构造模拟内容
         if ctx.target_type == SummaryType.FUNCTION:
             summary.content = self._generate_function_summary(ctx)
         elif ctx.target_type == SummaryType.BASIC_BLOCK:
@@ -329,19 +320,19 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
         else:
             summary.content = f"Summary for {ctx.target_name} @ {ctx.target_address:#x}"
 
-        # Mock preconditions
+        # 模拟前置条件
         summary.preconditions = [
             f"arg0 is a valid pointer to {_rnd.randint(16, 256)}-byte buffer",
             f"arg1 >= 0 and arg1 <= {_rnd.randint(64, 1024)}",
         ]
 
-        # Mock postconditions
+        # 模拟后置条件
         summary.postconditions = [
             "Returns 0 on success, -1 on failure",
             "errno set on failure",
         ]
 
-        # Mock side effects
+        # 模拟副作用
         if ctx.include_side_effects:
             summary.side_effects = [
                 "Writes to memory pointed by arg0",
@@ -418,14 +409,10 @@ class MockSymbolicExecutor(SymbolicExecutorProxy):
         return True
 
 
-# On-Demand Summary 构造器
+# 按需摘要生成器
 
 class OnDemandSummaryGenerator:
-    """Generates symbolic summaries on demand with caching and async options.
-
-    generate_async 内建请求合并: 同一pending key只跑一次symbolic执行，
-    所有等待者共享结果 (避免N个调用者触发N次angr/KLEE运行).
-    """
+    """按需生成符号执行摘要，带缓存和异步请求合并。"""
 
     __slots__ = ('m_executor', 'm_cache', 'm_pending', 'm_lock',
                  'm_stats', 'm_default_ttl', 'm_coalesce_map',
@@ -448,10 +435,9 @@ class OnDemandSummaryGenerator:
         return _hashlib.sha256(raw.encode()).hexdigest()[:16]
 
     def generate(self, ctx: RequestContext) -> Optional[SymbolicSummary]:
-        """Generate or retrieve from cache a symbolic summary."""
         cache_key = self._cache_key(ctx)
 
-        # Check cache
+        # 检查缓存
         if not ctx.force_refresh:
             cached = self.m_cache.get(cache_key)
             if cached is not None:
@@ -460,7 +446,7 @@ class OnDemandSummaryGenerator:
 
         self.m_stats["cache_misses"] += 1
 
-        # 构造 fresh summary
+        # 构造新摘要
         try:
             summary = self.m_executor.generate_summary(ctx)
             if summary:
@@ -480,14 +466,9 @@ class OnDemandSummaryGenerator:
 
     def generate_async(self, ctx: RequestContext,
                        callback: Optional[Callable[[SymbolicSummary], None]] = None):
-        """Generate a summary asynchronously in a background thread.
-
-        关键优化: 如果同一cache_key已有一个pending生成任务，不启动新线程，
-        而是将callback挂到已有任务的回调链上 — 等它完成后统一通知.
-        """
         cache_key = self._cache_key(ctx)
 
-        # Check cache first (synchronous is fine — cache access is fast)
+        # 先检查缓存（同步即可，缓存访问很快）
         if not ctx.force_refresh:
             cached = self.m_cache.get(cache_key)
             if cached is not None:
@@ -545,7 +526,6 @@ class OnDemandSummaryGenerator:
                     target_type: SummaryType = SummaryType.FUNCTION,
                     level: SummaryLevel = SummaryLevel.STANDARD,
                     force_refresh: bool = False) -> Optional[SymbolicSummary]:
-        """Convenience method with individual parameters."""
         ctx = RequestContext(
             target_name=target_name,
             target_address=target_address,
@@ -649,14 +629,10 @@ class OnDemandSummaryGenerator:
         return imported
 
 
-# Summary Incremental Updater
+# 摘要增量更新器
 
 class SummaryIncrementalUpdater:
-    """Incrementally updates cached summaries when code changes.
-
-    Tracks dependencies and invalidates summaries that are affected
-    by code modifications.
-    """
+    """代码变更时增量更新缓存摘要 -- 追踪依赖关系并失效受影响的摘要。"""
 
     __slots__ = ('m_dep_graph', 'm_generator', 'm_change_log')
 
@@ -677,7 +653,6 @@ class SummaryIncrementalUpdater:
     def on_code_change(self, changed_target: str,
                        change_type: str = "modified",
                        change_details: str = ""):
-        """Handle a code change by invalidating affected summaries."""
         self.m_change_log.append({
             "timestamp": _time.time(),
             "target": changed_target,
@@ -685,10 +660,10 @@ class SummaryIncrementalUpdater:
             "details": change_details,
         })
 
-        # Invalidate the changed target
+        # 失效变更目标本身
         self.m_generator.invalidate(changed_target)
 
-        # Find and invalidate dependents
+        # 查找并失效依赖项
         affected: Set[str] = {changed_target}
         queue = [changed_target]
 
@@ -719,7 +694,7 @@ class SummaryIncrementalUpdater:
         return self.m_change_log[-limit:]
 
 
-# Convenience
+# 工厂函数
 
 def generate_summary(target_name: str, target_address: int = 0,
                      target_type: SummaryType = SummaryType.FUNCTION,

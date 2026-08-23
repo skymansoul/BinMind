@@ -110,7 +110,6 @@ class GCounter:
 
 
 class LWWSet:
-    """Last-Writer-Wins set"""
 
     def __init__(self):
         self._items: Dict[Any, Tuple[int, str]] = {}
@@ -139,7 +138,6 @@ class LWWSet:
 
 
 class CRDTVulnDB:
-    """based on CRDT 的漏洞database"""
 
     def __init__(self,
                  node_id: Optional[str] = None,

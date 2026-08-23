@@ -151,7 +151,7 @@ class AdaptiveScheduler:
 
         # 检查模糊测试可用性
         try:
-            from plugins.fuzz_harness import generate_harness
+            from plugins.fuzz_harness import generate_libfuzzer_harness
             # 仅检查模块可导入，不实际运行
         except ImportError:
             eligible = [m for m in eligible if m != AnalysisMethod.FUZZING]

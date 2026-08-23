@@ -1,6 +1,5 @@
-# Binary function 嵌入 via triplet loss : joint CFG + opcode features.
-# semi-hard negative mining added for 训练 stability.
-# CLAP‑style cross‑modal projection heads + momentum 优化器 + early stopping.
+# 二进制函数嵌入 — triplet loss + CFG/操作码联合特征
+# semi-hard negative mining + 跨模态投影头 + 动量优化器 + 早停
 import math as _math, json as _json, logging as _logging, hashlib as _hashlib
 from collections import Counter as _Counter, defaultdict as _defaultdict
 from dataclasses import dataclass, field
@@ -32,18 +31,18 @@ class EmbeddingResult:
 class BinaryEmbeddingTrainer(BaseAnalyzer):
     kDim = 128; kMargin = 0.5; kLR = 0.01
     # 跨模态融合 — 结构特征和操作码特征各自的投影权重
-    kFusionAlpha = 0.55  # struct projection weight; >0.5 favours CFG topology
+    kFusionAlpha = 0.55  # 结构投影权重; >0.5偏向CFG拓扑
 
     def __init__(self):
         super().__init__()
         self.__emb = {}; self.__cache = {}; self.__triplets = []
         self.__dim = self.kDim; self.__margin = self.kMargin; self.__lr = self.kLR
         # 动量优化器状态 — 为每个嵌入向量维护历史梯度方向
-        self.__momentum = {}; self.__beta = 0.9  # momentum decay factor
-        self.__grad_clip = 5.0  # 梯度裁剪阈值，防止三元组损失梯度爆炸
+        self.__momentum = {}; self.__beta = 0.9
+        self.__grad_clip = 5.0  # 梯度裁剪阈值防梯度爆炸
         self.__fusion_alpha = self.kFusionAlpha
 
-# 特征提取（不变）
+# 特征提取
     def extract_features(self, functions, dim=128):
         if functions is None: return {}
         self.__dim = dim; out = {}
@@ -85,15 +84,14 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         while len(out) < vdim: out.append(0.0)
         return out[:vdim]
 
-# 跨模态投影：结构通路 vs. 操作码通路
-    # 思路来自 CLAP — 不同模态各自编码后在对比空间对齐，
-    # 而非简单拼接。此处将结构向量和 ngram 分别投影为 d 维后再做凸组合。
+# 跨模态投影: 结构通路 vs. 操作码通路
+    # CLAP思路: 不同模态各自编码后在对比空间对齐, 而非简单拼接
 
     def _project_structural(self, feat):
-        """将 CFG 结构特征投影到嵌入空间。用确定性哈希扩展 + L2 归一化。"""
+        # 确定性哈希扩展 + L2归一化
         sv = feat.struct_vec; base_dim = len(sv)
         if base_dim == 0: return [0.0] * self.__dim
-        # 确定性伪随机扩展 — 避免训练时引入额外可学习参数，保证可复现
+        # 确定性伪随机扩展 — 避免训练时引入额外可学习参数
         extended = []
         seed_bytes = _hashlib.blake2b(
             feat.hash_val.encode(), digest_size=32
@@ -104,18 +102,18 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
             noise = (seed_bytes[idx % 32] / 255.0 - 0.5) * 0.1  # 微小扰动防退化
             extended.append(val + noise)
             idx += 1
-        # L2 归一化
+        # L2归一化
         norm_val = _math.sqrt(sum(v * v for v in extended))
         if norm_val > 1e-8:
             extended = [v / norm_val for v in extended]
         return extended
 
     def _project_opcode(self, feat):
-        """将 ngram 操作码特征投影到嵌入空间。ngram 频率字典 -> 加权向量。"""
+        # ngram频率字典 -> 加权向量
         ngram_dict = feat.ngram
         if not ngram_dict:
             return [0.0] * self.__dim
-        # 用 ngram 的 哈希 确定性地生成向量分量
+        # 用ngram哈希确定性生成向量分量
         projected = [0.0] * self.__dim
         ng_items = list(ngram_dict.items())
         ni = 0
@@ -125,14 +123,14 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
             for dk in range(self.__dim):
                 projected[dk] += (h[dk] / 255.0 - 0.5) * freq * 2.0
             ni += 1
-        # L2 归一化
+        # L2归一化
         norm_val = _math.sqrt(sum(v * v for v in projected))
         if norm_val > 1e-8:
             projected = [v / norm_val for v in projected]
         return projected
 
     def _fuse_modalities(self, struct_proj, opcode_proj):
-        """凸组合融合 — α 偏向结构，1-α 偏向操作码。"""
+        # 凸组合融合: α偏向结构, 1-α偏向操作码
         alpha = self.__fusion_alpha
         fused = [0.0] * self.__dim
         dj = 0
@@ -145,7 +143,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         return fused
 
     def _cross_modal_embedding(self, fmap):
-        """为所有函数生成跨模态嵌入 — 替代纯随机初始化。"""
+        # 为所有函数生成跨模态嵌入替代纯随机初始化
         cross_emb = {}
         for fname, feat in fmap.items():
             struct_p = self._project_structural(feat)
@@ -156,12 +154,8 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
 # 训练主循环
     def train(self, functions, labels=None, margin=0.5, iterations=200, learning_rate=0.01,
               early_stop_patience=30, momentum=0.9):
-        """训练嵌入。
-
-        新增参数:
-          early_stop_patience: 连续无改善轮数后提前终止（0 禁用）
-          momentum: 动量系数（0 退化为普通 SGD）
-        """
+        # early_stop_patience: 连续无改善轮数后提前终止(0禁用)
+        # momentum: 动量系数(0退化为普通SGD)
         if functions is None: return EmbeddingResult()
         self.__dim = 128; self.__margin = margin
         self.__lr = learning_rate; self.__beta = float(momentum)
@@ -170,7 +164,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         names = list(fmap.keys())
         triplets = self._gen_triplets(fmap, labels)
 
-# 跨模态初始化：替代纯随机，让初始嵌入携带结构/操作码先验
+# 跨模态初始化: 替代纯随机, 让初始嵌入携带结构/操作码先验
         cross_init = self._cross_modal_embedding(fmap)
         emb = {}
         for n in names:
@@ -178,7 +172,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
                 emb[n] = list(cross_init[n])
             else:
                 emb[n] = self._rand_vec(n)
-        # 回流至成员缓存，供外部查询
+        # 回流至成员缓存供外部查询
         self.__emb = dict(emb)
 
         # 动量缓冲区
@@ -211,7 +205,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
                               2 * (pv[dk] - av[dk]) / dap_s)
                         gp = 2 * (av[dk] - pv[dk]) / dap_s
                         gn = 2 * (nv[dk] - av[dk]) / dan_s
-                        # per-component 裁剪
+                        # 逐分量裁剪
                         ga = max(-self.__grad_clip, min(self.__grad_clip, ga))
                         gp = max(-self.__grad_clip, min(self.__grad_clip, gp))
                         gn = max(-self.__grad_clip, min(self.__grad_clip, gn))
@@ -220,7 +214,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
                         grads[t.negative][dk] += gn
                 t_idx += 1
 
-# 动量 SGD 更新
+# 动量SGD更新
             n_trip = max(1, len(triplets))
             for name, vec in emb.items():
                 upd = grads[name]
@@ -231,11 +225,11 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
                         self.__beta * self.__momentum[name][dk] +
                         (1.0 - self.__beta) * scaled_grad
                     )
-                    # Nag‑style 前瞻更新
+                    # Nag风格前瞻更新
                     vec[dk] -= learning_rate * (
                         self.__beta * self.__momentum[name][dk] + scaled_grad
                     )
-                # L2 归一化到单位超球面
+                # L2归一化到单位超球面
                 norm_val = _math.sqrt(sum(v * v for v in vec))
                 if norm_val > 1e-8:
                     scale = 1.0 / norm_val
@@ -274,7 +268,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
             stopped_early=(converged_epoch < iterations),
         )
 
-# 三元组生成（不变）
+# 三元组生成
     def _gen_triplets(self, fmap, labels):
         if fmap is None: return []
         names = list(fmap.keys()); n = len(names)
@@ -320,7 +314,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         return out
 
     def _rand_vec(self, name):
-        """生成确定性随机单位向量 — 用于回退初始化。"""
+        # 确定性随机单位向量, 用于回退初始化
         seed = _hashlib.sha256(name.encode()).digest()
         vec = [(seed[dj % len(seed)] / 255.0) * 2.0 - 1.0 for dj in range(self.__dim)]
         norm_val = _math.sqrt(sum(v * v for v in vec))
@@ -361,7 +355,7 @@ class BinaryEmbeddingTrainer(BaseAnalyzer):
         dap = self._euclidean(anchor, positive); dan = self._euclidean(anchor, negative)
         return max(0.0, dap - dan + margin)
 
-# 持久化与查询（不变）
+# 持久化与查询
     def save(self, filepath):
         if filepath is None: return False
         try:

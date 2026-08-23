@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-# Heuristic function naming from decompiled code — identifies common patterns and assigns
-# descriptive names based on API calls, string references, structural signatures,
-# n‑gram similarity propagation, and entropy‑aware 栈‑string 检测.
-# N‑gram similarity‑based name propagation (CLAP‑style contrastive matching),
-# Shannon熵栈字符串评分, 多证据贝叶斯融合置信度.
+# 启发式函数命名 — API调用/字符串引用/结构特征/n-gram相似度传播/熵感知栈字符串检测
+# 多证据贝叶斯融合置信度
 
 import logging as _logging
 import re as _re
@@ -21,7 +18,7 @@ _NGRAM_SEEDS = (1931, 2137, 31337)
 _NGRAM_N = 3
 _SIMILARITY_PROPAGATE_THRESHOLD = 0.65  # Jaccard ≥ 此值则传播名称
 
-# Pattern database: (regex, name_框架, confidence)
+# API模式库: (regex, name_框架, confidence)
 _API_PATTERNS = [
     (_re.compile(r'\b(malloc|calloc|realloc|free)\s*\('), "memory_{}", 0.85),
     (_re.compile(r'\b(fopen|fclose|fread|fwrite|fprintf|fscanf)\s*\('), "file_{}", 0.85),
@@ -50,7 +47,7 @@ _STRUCTURAL_PATTERNS = [
     (_re.compile(r'(?:base64|hex|hexlify|unhexlify|encode|decode)\s*\('), "codec_{}", 0.70),
 ]
 
-# Anti-pattern words for filtering bad names
+# 过滤词 — 排除无意义函数名
 _FILTER_WORDS = {
     'sub_', 'unknown_', 'unnamed_', 'dummy_', 'nullsub_',
 }
@@ -75,10 +72,9 @@ _OPCODE_NORMALIZE = dict(
 
 
 def _tokenize_for_ngrams(code_snippet):
-    """伪 C 分解为标准化 token 流 — 剥离字面量噪音，归一化标识符。"""
     if code_snippet is None:
         return []
-    # 剥离注释与字符串常量中可变部分
+    # 剥离注释与字符串常量
     stripped = _re.sub(
         r'//.*?$|/\*.*?\*/', ' ',
         code_snippet, flags=_re.DOTALL | _re.MULTILINE)
@@ -94,11 +90,7 @@ def _tokenize_for_ngrams(code_snippet):
 
 
 def _ngram_fingerprint(token_seq, n=_NGRAM_N):
-    """多项式滚动哈希 n‑gram 指纹 — O(n) 单趟，三重桶降低假阳性。
-
-    CLAP 核心思想：将函数体表示为向量哈希集合，
-    通过 Jaccard 相似度检索历史中已命名的相近函数。
-    """
+    # 多项式滚动哈希n-gram指纹，三重桶降低假阳性
     if len(token_seq) < n:
         return frozenset()
     sketch = set()
@@ -129,7 +121,6 @@ def _ngram_fingerprint(token_seq, n=_NGRAM_N):
 
 
 def _similarity_jaccard(fp_a, fp_b):
-    """两个 MinHash 草图间的 Jaccard 相似度估计。"""
     if fp_a is None or fp_b is None:
         return 0.0
     la, lb = len(fp_a), len(fp_b)
@@ -140,9 +131,8 @@ def _similarity_jaccard(fp_a, fp_b):
     return inter_size / union_size if union_size > 0 else 0.0
 
 
-# Shannon 熵驱动栈字符串检测 — 区分布局常量与真实混淆字符串
+# Shannon熵驱动栈字符串检测 — 区分布局常量与真实混淆字符串
 def _compute_byte_entropy(byte_vals):
-    """对单字节序列计算 Shannon 熵。混淆字符串通常 ≥ 3.5 bits，全零布局 < 1.0。"""
     if byte_vals is None or len(byte_vals) == 0:
         return 0.0, 0.0
     freq = _Counter(byte_vals)
@@ -165,7 +155,6 @@ def _compute_byte_entropy(byte_vals):
 
 
 def _extract_stack_byte_values(code):
-    """扫描伪 C 中栈偏移赋值的立即数，仅提取 [0,255] 范围的字节值。"""
     if code is None:
         return []
     imm_re = _re.compile(
@@ -183,10 +172,6 @@ def _extract_stack_byte_values(code):
 
 
 def _detect_stack_string(code):
-    """熵增强栈字符串检测 — 回归布尔兼容旧接口，内部使用熵评分。
-
-    纯常量初始化表（熵<1.5）不再误报为混淆字符串。
-    """
     if code is None:
         return False
 
@@ -225,7 +210,6 @@ def _detect_stack_string(code):
 
 
 def _detect_stack_string_confidence(code):
-    """返回 (is_obfuscated: bool, confidence: float) 用于证据融合。"""
     if code is None:
         return False, 0.0
 
@@ -264,7 +248,6 @@ def _detect_stack_string_confidence(code):
 
 
 def _extract_api_name(code, patterns):
-    """Extract the most likely API group from a decompiled code snippet."""
     if code is None or len(code) == 0:
         return None, 0.0
     best_match = None
@@ -276,7 +259,7 @@ def _extract_api_name(code, patterns):
         if m:
             api = m.group(1) if m.lastindex and m.lastindex >= 1 else m.group(0)
             conf = base_conf
-            # Bonus for multiple matches
+            # 多次匹配加分
             all_matches = pat.findall(code)
             if len(all_matches) > 1:
                 conf = min(conf + 0.05, 0.98)
@@ -288,11 +271,6 @@ def _extract_api_name(code, patterns):
 
 
 def _extract_string_hints(strings):
-    """推断字符串引用的功能意图 — 返回 [(name, conf), ...] 或 None。
-
-    多证据融合时需要 top‑N 而非单一最佳值，
-    因此返回列表而非 (best_name, best_conf) 元组。
-    """
     if strings is None or len(strings) == 0:
         return None
 
@@ -331,22 +309,21 @@ def _extract_string_hints(strings):
 
 
 def _infer_indirect_call_target(code, imports):
-    """Attempt to resolve indirect call targets (vtable / callback patterns)."""
     if code is None or imports is None:
         return None, 0.0
 
-    # Look for offset-from-base call patterns
+    # 基址偏移调用模式 — vtable分发
     offset_pattern = _re.compile(r'call\s+.*\[.*\+\s*(0x[0-9a-fA-F]+|\d+)\]')
     matches = offset_pattern.findall(code)
     if len(matches) >= 2:
         return "vtable_dispatch", 0.55
 
-    # Look for function pointer patterns
+    # 函数指针模式 — 回调分发
     fp_pattern = _re.compile(r'\(\*\w+\)\s*\(')
     if fp_pattern.search(code):
         return "callback_dispatcher", 0.50
 
-    # Compare against import table for wrapper 检测
+    # 比对导入表 — wrapper检测
     i = 0
     while i < len(imports):
         imp = imports[i]
@@ -358,17 +335,11 @@ def _infer_indirect_call_target(code, imports):
 
 # 多证据贝叶斯融合
 def _bayesian_fuse(candidates):
-    """将候选 (name, confidence, source) 列表融合为加权共识。
-
-    BLens 风格多模态融合：每个 evidence source 看作独立观测，
-    使用 Dempster-Shafer 简化的加权置信度合并：
-        fused_conf = 1 - prod_i (1 - w_i * conf_i)
-    其中 w_i 是 source 先验可靠度。
-    """
+    # Dempster-Shafer简化加权置信度合并: fused_conf = 1 - prod_i(1 - w_i*conf_i)
     if candidates is None or len(candidates) == 0:
         return None, 0.0
 
-    # source prior weights — API 匹配 > 字符串 > 结构 > 栈检测 > 间接调用
+    # source先验权重: API > 字符串 > 结构 > 栈检测 > 间接调用
     _SOURCE_WEIGHTS = {
         'api_pattern': 0.90,
         'string_inference': 0.65,
@@ -417,8 +388,6 @@ def _bayesian_fuse(candidates):
 
 
 class FunctionNamer:
-    """Heuristic binary function renamer using API usage, strings, structural cues,
-    n‑gram similarity propagation, and entropy‑aware stack‑string detection."""
 
     __slots__ = ('m_history', 'm_min_conf', '_fingerprint_cache')
 
@@ -429,18 +398,13 @@ class FunctionNamer:
 
 # N‑gram 相似度名称传播 — CLAP 风格跨函数对比
     def _propagate_name_by_similarity(self, code, addr=None):
-        """在历史命名中检索最相似函数，若 Jaccard ≥ 阈值则传播其名称。
-
-        核心洞见（来自 CLAP 跨模态对比）：函数体 token‑n‑gram 集合
-        如果与已命名函数高度重叠，其语义标签大概率可迁移。
-        """
         if code is None or len(self.m_history) == 0:
             return None, 0.0
 
         query_tokens = _tokenize_for_ngrams(code)
         query_fp = _ngram_fingerprint(query_tokens)
 
-        # 可选：缓存查询指纹
+        # 缓存查询指纹
         if addr is not None:
             self._fingerprint_cache[addr] = query_fp
 
@@ -458,7 +422,7 @@ class FunctionNamer:
                 hi += 1
                 continue
 
-            # 从缓存或重新计算指纹
+            # 缓存命中或重新计算指纹
             hist_fp = self._fingerprint_cache.get(hist_addr)
             if hist_fp is None:
                 hist_code = hist_result.get('_code_snapshot')
@@ -486,7 +450,6 @@ class FunctionNamer:
         return None, 0.0
 
     def name_function_fn(self, decompiled_code, strings=None, imports=None, addr=None):
-        """Propose a descriptive name for a decompiled function."""
         if decompiled_code is None or len(decompiled_code.strip()) == 0:
             return {'name': 'empty_function', 'confidence': 0.3,
                     'reason': 'empty body', 'method': 'default'}
@@ -498,7 +461,7 @@ class FunctionNamer:
 # 多证据收集阶段（不提前返回）
         evidence_candidates = []
 
-        # 1. API-based naming
+        # 1. API调用命名
         api_match, api_conf = _extract_api_name(code, _API_PATTERNS)
         if api_match is not None:
             template, api, base_conf = api_match
@@ -510,13 +473,12 @@ class FunctionNamer:
                 str_bonus = 0.0
             api_final_conf = min(api_conf + str_bonus, 0.98)
             evidence_candidates.append((api_name, api_final_conf, 'api_pattern'))
-            # 强 API 证据：早退仍可行（兼容性），但也收集完后续合并
-            # 保留旧版行为：高置信度 API 匹配直接返回
+            # 高置信度API匹配直接返回
             if api_final_conf >= 0.85:
                 return {'name': api_name, 'confidence': api_final_conf,
                         'reason': f"API pattern: {api}", 'method': 'api_pattern'}
 
-        # 2. String-based 推理 (multi-hint)
+        # 2. 字符串推理(多线索)
         str_hints_list = _extract_string_hints(str_list)
         if str_hints_list is not None:
             shi = 0
@@ -527,31 +489,31 @@ class FunctionNamer:
                         (sh_name, sh_conf, 'string_inference'))
                 shi += 1
 
-        # 3. Structural pattern matching
+        # 3. 结构模式匹配
         structural, struct_conf = _extract_api_name(code, _STRUCTURAL_PATTERNS)
         if structural is not None:
             s_template, s_matched, s_base_conf = structural
             s_name = s_template.format(s_matched) if '{}' in s_template else s_template
             evidence_candidates.append((s_name, struct_conf, 'structural_pattern'))
 
-        # 4. Stack string 检测 (entropy-enhanced)
+        # 4. 栈字符串检测(熵增强)
         is_obfuscated, obf_conf = _detect_stack_string_confidence(code)
         if is_obfuscated and obf_conf >= 0.35:
             evidence_candidates.append(
                 ('obfuscated_string_builder', obf_conf, 'stack_string'))
 
-        # 5. Indirect call target 推理
+        # 5. 间接调用目标推理
         indirect, ind_conf = _infer_indirect_call_target(code, imp_list)
         if indirect is not None and ind_conf >= 0.40:
             evidence_candidates.append((indirect, ind_conf, 'indirect_call'))
 
-        # 6. N-gram similarity propagation (CLAP-style)
+        # 6. n-gram相似度传播
         propagated_name, prop_conf = self._propagate_name_by_similarity(code, addr)
         if propagated_name is not None and prop_conf >= 0.35:
             evidence_candidates.append(
                 (propagated_name, prop_conf, 'ngram_propagate'))
 
-        # 7. Complexity/size 回退 evidence
+        # 7. 复杂度/大小回退证据
         bb_count = code.count('goto') + code.count('if (')
         if bb_count >= 10:
             evidence_candidates.append(
@@ -570,7 +532,7 @@ class FunctionNamer:
             fused_name, fused_conf = fused_result
             name_valid = not any(fused_name.startswith(w) for w in _FILTER_WORDS)
             if name_valid and fused_conf >= self.m_min_conf:
-                # 存储代码快照以便后续相似度传播
+                # 存代码快照供后续相似度传播
                 if addr is not None:
                     self.m_history[addr] = {
                         'name': fused_name,
@@ -605,7 +567,6 @@ class FunctionNamer:
                 'method': 'fallback'}
 
     def batch_name_fn(self, functions, min_confidence=None):
-        """Name multiple functions, returning a dict mapping addr -> name dict."""
         threshold = min_confidence if min_confidence is not None else self.m_min_conf
         results = {}
         fi = 0
@@ -619,14 +580,13 @@ class FunctionNamer:
                 addr=addr)
             if result['confidence'] >= threshold:
                 results[addr] = result
-                # history 已由 name_function_fn 写入（含代码快照）
+                # history已由name_function_fn写入
                 if addr not in self.m_history:
                     self.m_history[addr] = result
             fi += 1
         return results
 
     def get_history_fn(self):
-        """返回历史记录（不含内部代码快照的浅拷贝）。"""
         clean = {}
         hi_key, hi_val = None, None
         hi_iter = iter(self.m_history.items())
@@ -698,7 +658,6 @@ class NamingResult:
 
 
 class HeuristicFunctionNamer:
-    """基于 API 调用与字符串引用的启发式命名器。"""
 
     # API 调用 → (名称前缀, 类别)
     api_patterns: Dict[str, tuple] = {
@@ -769,7 +728,6 @@ class HeuristicFunctionNamer:
         return None
 
     def predict_name(self, signature: FunctionSignature) -> FunctionNamePrediction:
-        """启发式命名：优先 API 信号，其次字符串信号，最后结构回退。"""
         api_result = self._analyze_api_calls(signature)
         if api_result:
             return FunctionNamePrediction(
@@ -800,7 +758,6 @@ class HeuristicFunctionNamer:
 
 
 class FunctionSignatureExtractor:
-    """从反编译伪代码提取函数签名。"""
 
     def extract(self, code: str, address: int = 0) -> FunctionSignature:
         api_calls = _re.findall(r'\b(\w+)\s*\(', code)
@@ -816,7 +773,6 @@ class FunctionSignatureExtractor:
 
 
 class AIFunctionNamer:
-    """AI 函数命名器-启发式底座 + 结果缓存。"""
 
     def __init__(self):
         self.heuristic_namer = HeuristicFunctionNamer()
@@ -843,7 +799,6 @@ class AIFunctionNamer:
 
     def generate_naming_report(self, result: NamingResult,
                                fmt: str = 'markdown') -> str:
-        """生成人类可读的命名分析报告。"""
         lines = ['# 函数命名分析报告', '']
         stats = result.statistics or {}
         lines.append(f"- 函数总数: {stats.get('total_functions', len(result.predictions))}")
@@ -861,6 +816,5 @@ class AIFunctionNamer:
 
 
 def predict_function_names(functions: List[Dict[str, Any]]) -> NamingResult:
-    """便捷入口：对函数描述列表批量命名。"""
     namer = AIFunctionNamer()
     return namer.predict_names(functions)

@@ -66,23 +66,19 @@ def generate_all(compile: bool = True):
         src_name = f"{dirname}_intof.c"
         target_name = f"{dirname}_intof"
 
-        # Write source
         src_path = sample_dir / src_name
         src_path.write_text(
             _c_source(cve, desc, pattern, safe_name), encoding="utf-8")
 
-    # Write Makefile
         mf_path = sample_dir / "Makefile"
         mf_path.write_text(
             _makefile(cve, target_name, src_name), encoding="utf-8")
 
-    # Write README
         readme = sample_dir / "README.md"
         readme.write_text(f"# {cve} - Integer Overflow Benchmark\n"
                           f"- Pattern: {pattern}\n- Description: {desc}\n",
                           encoding="utf-8")
 
-    # Compile
         compiled = {}
         if compile:
             for opt in ("O0", "O2", "Os"):

@@ -12,8 +12,8 @@
 # 非条件寄存器中"（假阳性）。当前的启发式偏保守-宁可多报
 # 排除编译器插入的栈检查（__chkstk）和 CFI 指令
 #
-"Towards Verified Constant-Time Implementa";
-# Jasmin language semantics - 常量时间作为类型系统属性
+# "Towards Verified Constant-Time Implementations" — 常量时间验证
+# Jasmin 语言语义 - 常量时间作为类型系统属性
 
 import logging
 from typing import Dict, List, Set, Tuple

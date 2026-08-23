@@ -29,7 +29,6 @@ class DBResult:
 
 
 class DatabaseExtensionAnalyzer:
-    """Database extension binary vulnerability analyzer."""
 
     PG_TAINT_SOURCES = [
         "SPI_getvalue", "SPI_getbinval", "SPI_getarg", "SPI_gettypeid",
@@ -65,7 +64,6 @@ class DatabaseExtensionAnalyzer:
         self._imports: List[str] = []
 
     def _load_analysis_data(self):
-        """Load disassembly, imports, and strings."""
         try:
             r = subprocess.run(
                 ['r2', '-q', '-c', 'aaaa; pD $SS @ $S; q', self.binary_path],
@@ -133,7 +131,6 @@ class DatabaseExtensionAnalyzer:
         return sources
 
     def _find_dangerous_sinks(self) -> Dict[str, List[int]]:
-        """Discover all dangerous sinks."""
         sinks: Dict[str, List[int]] = {}
         for sink in self.DANGEROUS_SINKS:
             matches = list(re.finditer(

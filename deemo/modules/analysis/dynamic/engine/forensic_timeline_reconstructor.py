@@ -468,7 +468,7 @@ class TimelineExporter:
 
 
 class ForensicTimelineReconstructor(BaseAnalyzer):
-    """Forensic timeline reconstruction analyzer"""
+    """取证时间线重建分析器"""
 
     def __init__(self):
         super().__init__()

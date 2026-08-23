@@ -58,10 +58,7 @@ class SMTEquivalenceProver:
         return z3.BitVec(name, bits)
 
     def prove(self, a: FunctionSemantics, b: FunctionSemantics,
-              input_range: Optional[Dict[str, int]] = None) -> EquivalenceProof:
-        """
-        Prove: within the input range, for all valid inputs, a and b behave equivalently.
-        """
+               input_range: Optional[Dict[str, int]] = None) -> EquivalenceProof:
         start = time.time()
         if not Z3_AVAILABLE:
             return EquivalenceProof(

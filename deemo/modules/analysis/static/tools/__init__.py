@@ -1,5 +1,5 @@
-# analysis/static/tools/ -- 静态分析工具集入口：懒加载子模块与结构化 src/ 子包
-# Flat namespace 模块由 modules/__init__.py _FlatFinder 解析；
+# analysis/static/tools/ -- 静态分析工具集入口: 懒加载子模块与结构化 src/ 子包
+# Flat namespace 模块由 modules/__init__.py 的 _FlatFinder 解析;
 # 此 __init__.py 使 tools 成为可被子包导入的正规 package
 # 并提供 modules.analysis.static.tools import X 的直接属性访问
 

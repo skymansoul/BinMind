@@ -120,7 +120,7 @@ class Config:
             return
 
         if config_path is None:
-            # Try default location
+            # 尝试默认位置
             this_dir = Path(__file__).resolve().parent
             candidates = [
                 this_dir / _DEFAULT_CONFIG_REL,
@@ -160,7 +160,7 @@ class Config:
             config_path_str = key[5:].lower()  # 去掉 SYMB_ 前缀
             config_keys = config_path_str.split("_")
 
-            # Type coercion
+            # 类型强制转换
             coerced = self._coerce_value(value)
 
             # 贪心下钻: 连续段匹配已有嵌套字典时进入,
@@ -221,7 +221,7 @@ class Config:
             else:
                 base[key] = value
 
-# Accessors
+# 访问器
 
     def get(self, key_path: str, default: Any = None) -> Any:
         """按点分隔键路径取配置值, 如 get("engine.max_states") -> 1024。"""
@@ -265,8 +265,8 @@ def load_config(config_path: Optional[str] = None) -> Config:
     config_path 为 None 时使用默认值; 返回合并了默认值、文件
     与环境变量覆盖的 Config 实例。
 
-    // 单例模式在这里不合适——测试和CLI需要不同的config实例
-    // 每次调用返回新的Config对象，避免状态污染
+    # 单例模式在此不合适——测试和 CLI 需要不同的 config 实例
+    # 每次调用返回新的 Config 对象，避免状态污染
     """
     return Config(config_path)
 
@@ -284,7 +284,7 @@ def validate_config_schema(config_dict: Dict[str, Any]) -> List[str]:
     for section in required_sections:
         if section not in config_dict:
             errors.append(f"Missing config section: {section}")
-    # Engine 检查
+    # engine 配置检查
     engine = config_dict.get("engine", {})
     if engine.get("max_states", 0) <= 0:
         errors.append("engine.max_states must be > 0")

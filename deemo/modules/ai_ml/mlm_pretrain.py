@@ -17,7 +17,7 @@ from collections import defaultdict as _defaultdict
 __dbg = _logging.getLogger(__name__)
 
 
-# Enums
+# 枚举定义
 
 class MaskType(Enum):
     INSTRUCTION = "instruction"
@@ -43,11 +43,11 @@ class MLMTaskType(Enum):
     MIXED = "mixed"
 
 
-# Data classes
+# 数据类
 
 @dataclass
 class Token:
-    """A token in the vocabulary."""
+
     value: str = ""
     token_type: str = ""
     position: int = 0
@@ -74,7 +74,7 @@ class Token:
 
 @dataclass
 class MLMTrainingExample:
-    """A single masked training example."""
+
     tokens: List[int] = field(default_factory=list)
     masked_tokens: List[int] = field(default_factory=list)
     mask_positions: List[int] = field(default_factory=list)
@@ -86,7 +86,7 @@ class MLMTrainingExample:
 
 @dataclass
 class MLMTrainingConfig:
-    """Configuration for MLM training."""
+
     batch_size: int = 32
     learning_rate: float = 1e-4
     warmup_steps: int = 1000
@@ -118,7 +118,7 @@ class MLMTrainingConfig:
 
 @dataclass
 class MLMModelConfig:
-    """Configuration for the MLM model architecture."""
+
     vocab_size: int = 50000
     hidden_size: int = 768
     num_hidden_layers: int = 12
@@ -137,10 +137,10 @@ class MLMModelConfig:
     unk_token_id: int = 4
 
 
-# Vocabulary
+# 词汇表
 
 class Vocabulary:
-    """Token vocabulary with special token handling."""
+
 
     __slots__ = ('m_token_to_id', 'm_id_to_token', 'm_frequencies',
                  'm_special_tokens')
@@ -218,7 +218,7 @@ class Vocabulary:
         return tokens
 
     def build_from_corpus(self, corpus: List[List[str]], max_vocab_size: int = 50000):
-        """Build vocabulary from a tokenized corpus."""
+
         freq: Dict[str, int] = _defaultdict(int)
         ci = 0
         while ci < len(corpus):
@@ -238,7 +238,7 @@ class Vocabulary:
             si += 1
 
     def build_from_bytes(self, byte_corpus: List[bytes], max_vocab_size: int = 50000):
-        """Build vocabulary from byte-level data."""
+
         corpus: List[List[str]] = []
         bi = 0
         while bi < len(byte_corpus):
@@ -254,7 +254,7 @@ class Vocabulary:
 
     def build_from_instructions(self, instruction_corpus: List[List[str]],
                                 max_vocab_size: int = 50000):
-        """Build vocabulary from assembly instruction sequences."""
+
         corpus: List[List[str]] = []
         ii = 0
         while ii < len(instruction_corpus):
@@ -297,10 +297,10 @@ class Vocabulary:
         return vocab
 
 
-# MLM Dataset
+# MLM 数据集
 
 class MLMDataset:
-    """Dataset for MLM pretraining with configurable masking."""
+
 
     __slots__ = ('m_sequences', 'm_vocab', 'm_config', 'm_mask_type',
                  'm_cache', 'm_examples')
@@ -351,7 +351,7 @@ class MLMDataset:
         return tokens
 
     def _mask_tokens(self, token_ids: List[int]) -> MLMTrainingExample:
-        """Apply masking to a token sequence."""
+
         seq_len = min(len(token_ids), self.m_config.max_sequence_length)
         ids = token_ids[:seq_len]
 
@@ -465,10 +465,10 @@ class MLMDataset:
         self.m_cache.clear()
 
 
-# MLM Trainer
+# MLM 训练器
 
 class MLMTrainer:
-    """Abstract MLM trainer."""
+
 
     def train(self, dataset: MLMDataset, config: MLMTrainingConfig) -> Dict[str, Any]:
         raise NotImplementedError
@@ -483,14 +483,10 @@ class MLMTrainer:
         raise NotImplementedError
 
 
-# Simple MLM Trainer (self-contained, no deep learning framework dependency)
+# 简易 MLM 训练器（自包含，无深度学习框架依赖）
 
 class SimpleMLMTrainer(MLMTrainer):
-    """Simple MLM trainer using heuristic/statistical approach without deep learning.
 
-    Learns token co-occurrence statistics and builds a probability-based
-    prediction model for masked token inference.
-    """
 
     __slots__ = ('m_cooccurrence', 'm_token_probs', 'm_model_config',
                  'm_training_stats', 'm_vocab', 'm_train_config',
@@ -553,7 +549,7 @@ class SimpleMLMTrainer(MLMTrainer):
 
             epoch += 1
 
-        # Build token probability distribution
+        # 构建令牌概率分布
         total_cooc = 0
         token_keys = list(self.m_cooccurrence.keys())
         tki = 0
@@ -580,7 +576,7 @@ class SimpleMLMTrainer(MLMTrainer):
 
     def predict_masked(self, masked_sequence: List[int],
                        mask_position: int) -> List[Tuple[int, float]]:
-        """Predict the most likely token at a masked position."""
+
         scores: Dict[int, float] = _defaultdict(float)
         context_start = max(0, mask_position - 5)
         context_end = min(len(masked_sequence), mask_position + 6)
@@ -673,10 +669,10 @@ class SimpleMLMTrainer(MLMTrainer):
         return predictions
 
 
-# MLM Pretrain Analyzer (BaseAnalyzer interface)
+# MLM 预训练分析器（BaseAnalyzer 接口）
 
 class MLMPretrainAnalyzer:
-    """High-level analyzer for MLM pretraining on binary/code data."""
+
 
     __slots__ = ('m_vocab', 'm_dataset', 'm_trainer', 'm_results')
 
@@ -808,7 +804,7 @@ class MLMPretrainAnalyzer:
         self.m_results = {}
 
 
-# Convenience
+# 便捷函数
 
 def create_mlm_pretrainer(vocab_size=10000, hidden_size=256) -> MLMPretrainAnalyzer:
     return MLMPretrainAnalyzer()

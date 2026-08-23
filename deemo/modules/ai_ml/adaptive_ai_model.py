@@ -643,14 +643,8 @@ class EpsilonGreedyModelSelector(ModelSelector):
 
 
 class AdaptiveModelSelector:
-    """
-    Adaptive model selection orchestrator.
-    Weights cost, historical performance, and task features jointly.
-    Supports dynamic selector strategy switching at runtime.
-
-    新增 'epsilon_greedy' 策略；所有策略共享 CLAP 对比嵌入空间下的
-    对齐评分基础；模型增删时同步刷新嵌入缓存。
-    """
+    # 新增 'epsilon_greedy' 策略；所有策略共享 CLAP 对比嵌入空间下的
+    # 对齐评分基础；模型增删时同步刷新嵌入缓存。
     def __init__(self):
         self.m_models = []
         self.m_selectors = {}
@@ -768,7 +762,7 @@ class AdaptiveModelSelector:
 
 
 class CostManager:
-    """Per-session API cost ledger — daily budget cap, per-model breakdown, sliding-window history."""
+    # 会话级 API 成本台账-日预算上限、按模型分项、滑动窗口历史.
     def __init__(self, daily_budget=100.0):
         self.m_daily_budget = daily_budget
         self.m_today_cost = 0.0

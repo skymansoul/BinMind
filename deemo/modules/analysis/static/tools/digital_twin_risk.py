@@ -1,8 +1,8 @@
-"""Digital twin risk assessment engine, attack-path simulation scoring
+"""数字孪生风险评估引擎, 攻击路径模拟评分。
 
-2025 增强: 贝叶斯风险传播, 将风险从暴露节点沿攻击图传播到内部节点
-使用条件概率建模：P(compromise[target] | compromise[source]) = f(vulns, auth, 加密)
-贝叶斯网络推断（精确，因攻击图为 DAG）取代原有的简单 BFS 评分
+2025 增强: 贝叶斯风险传播, 将风险从暴露节点沿攻击图传播到内部节点。
+使用条件概率建模: P(compromise[target] | compromise[source]) = f(vulns, auth, 加密)。
+贝叶斯网络推断 (精确, 因攻击图为 DAG) 取代原有的简单 BFS 评分。
 """
 
 import itertools, logging, math as _math, os as _os
@@ -324,7 +324,7 @@ class DigitalTwinRiskAnalyzer:
                     if k in ("source","target","protocol","auth_required","encrypted")}))
 
 def _debug_print(*args, **kwargs):  # 调试残余, 未删除
-    """Print debug info env var set. currently"""
+    """环境变量设置时打印调试信息"""
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)
 

@@ -1,12 +1,3 @@
-"""
-Anti-VM detection bypass module.
-
-Detects hypervisor environments (VMware, VirtualBox, QEMU, Hyper-V, Xen)
-via DMI product strings, MAC address prefixes, PCI vendor IDs, and CPUID
-hypervisor-present bit.  Generates bypass configuration snippets appropriate
-to each detected technique.
-"""
-
 from typing import Dict, List, Set, Any
 
 import ctypes
@@ -67,15 +58,9 @@ _VM_DRIVER_NAMES = {
 }
 
 
-# SMBIOS 表转储解析 - 参考 Linux kernel 驱动s/firmware/dmi_scan.c
-# 读取 /sys/firmware/dmi/tables/ 下的原始 SMBIOS 表（DMI type 0,1,2,3）
-# 匹配制造商特征字节串。这比简单的 sysfs 属性读取更底层
-# 能检测到被 sysfs 过滤但原始表中仍存在 VM 特征的情况
-
 _DMI_TYPE_NAMES = {0: "BIOS", 1: "System", 2: "Baseboard", 3: "Chassis"}
 
 def _read_smbios_raw() -> bytes:
-    """读取原始 SMBIOS 表（DMI 入口点 + 结构表）"""
     paths = [
         "/sys/firmware/dmi/tables/DMI",
         "/sys/firmware/dmi/tables/smbios_entry_point",
@@ -90,12 +75,9 @@ def _read_smbios_raw() -> bytes:
 
 
 def _parse_smbios_vendor(raw: bytes) -> Dict[str, str]:
-    """从原始 SMBIOS 表中提取制造商字符串"""
     hits: Dict[str, str] = {}
     if len(raw) < 32:
         return hits
-    # SMBIOS 结构直接从 entry point 后的偏移开始
-    # 启发式扫描：搜索已知 VM 标记字节串
     for hv, markers in _ACPI_VM_MARKERS.items():
         for marker in markers:
             if marker in raw:
@@ -196,12 +178,7 @@ def _check_loaded_drivers() -> Set[str]:
     return detected
 
 
-# PCI 总线设备枚举 - 比 lspci -n 更底层，直接读取
-# /sys/bus/pci/devices/*/vendor + /sys/bus/pci/devices/*/device
-# 避免依赖外部命令，且能检测到 lspci 过滤的隐藏设备
-
 def _enumerate_pci_devices_sysfs() -> Set[int]:
-    """直接从 /sys/bus/pci/devices 读取 PCI 厂商 ID"""
     ids: Set[int] = set()
     pci_root = "/sys/bus/pci/devices"
     if not os.path.isdir(pci_root):
@@ -220,7 +197,6 @@ def _enumerate_pci_devices_sysfs() -> Set[int]:
 
 
 def _read_dmi_sysfs() -> str:
-    """读取 DMI product name via /sys/class/dmi/id"""
     paths = [
         "/sys/class/dmi/id/product_name",
         "/sys/class/dmi/id/sys_vendor",
@@ -239,7 +215,6 @@ def _read_dmi_sysfs() -> str:
 
 
 def _enumerate_mac_prefixes() -> Set[str]:
-    """返回 first three octets non-loopback MAC found"""
     node = uuid.getnode()
     mac = node & 0xFFFFFFFFFFFF
     if mac == 0 or mac == 0x010000000000:
@@ -249,7 +224,6 @@ def _enumerate_mac_prefixes() -> Set[str]:
 
 
 def _check_cpuid_hypervisor() -> bool:
-    """Issue CPUID leaf 0x40000000; non-zero ecx => 虚拟机监控器 present"""
     try:
         if platform.machine() not in ("x86_64", "AMD64", "i686", "i386"):
             return False
@@ -257,10 +231,13 @@ def _check_cpuid_hypervisor() -> bool:
             return "hypervisor" in fh.read().lower()
     except Exception:
         return False
+        with open("/proc/cpuinfo") as fh:
+            return "hypervisor" in fh.read().lower()
+    except Exception:
+        return False
 
 
 def _lspci_vendor_ids() -> Set[int]:
-    """解析 lspci -n 输出 for VM vendor IDs"""
     ids: Set[int] = set()
     try:
         out = sp.check_output(["lspci", "-n"], stderr=sp.DEVNULL, timeout=3)
@@ -343,8 +320,6 @@ class BypassConfig:
 
 
 class BypassSolution:
-    """单个反虚拟机技术的绕过方案。"""
-
     def __init__(self, technique=None, solved_values=None, script="",
                  script_type="", hypervisor="", **kwargs):
         self.technique = technique
@@ -373,7 +348,6 @@ class BypassSolution:
 
 
 class AntiVMTechnique:
-    """反虚拟机技术描述。保留类别常量，实例字段承载单条检测结果。"""
     DMI = "dmi"; MAC = "mac"; PCI = "pci"; CPUID = "cpuid"
     REGISTRY = "registry"; PROCESS = "process"; DEV_NODE = "dev_node"
     TIMING = "timing"; ACPI = "acpi"; DRIVER = "driver"
@@ -402,7 +376,6 @@ class AntiVMTechnique:
 
 
 class AntiVMBypassAnalyzer:
-    """入口: 分析 a binary's VM-detection posture"""
 
     def __init__(self, config=None, **kwargs):
         self.config = config if config is not None else BypassConfig()

@@ -1,12 +1,8 @@
-# 配置测试 for 去混淆 module
-"""配置加载与校验测试"""
-
 import os
 import tempfile
 import pytest
 
 class TestConfigLoading:
-    """配置加载测试"""
 
     def test_load_defaults(self) -> None:
         defaults = {
@@ -25,7 +21,7 @@ class TestConfigLoading:
 
     def test_env_override_nested(self) -> None:
         config = {"analysis": {"timeout": 30}}
-        # Simulate DEOBF_ANALYSIS_TIMEOUT=60 override
+        # 模拟 DEOBF_ANALYSIS_TIMEOUT=60 覆盖
         config["analysis"]["timeout"] = 60
         assert config["analysis"]["timeout"] == 60
 
@@ -64,13 +60,12 @@ class TestConfigLoading:
         config = {"paths": {"data_dir": "data"}, "logging": {"level": "INFO"}}
         paths = config["paths"]
         assert "data_dir" in paths
-        # output_dir optional, default
+        # output_dir 可选, 默认
         paths.setdefault("output_dir", "output")
         assert paths["output_dir"] == "output"
 
 
 class TestYamlLoading:
-    """YAML 文件加载测试（无 PyYAML 时回退）"""
 
     def test_yaml_load_or_fallback(self) -> None:
         try:
@@ -101,7 +96,6 @@ class TestYamlLoading:
 
 
 class TestEnvVarSubstitution:
-    """YAML 值中的 ${VAR} 环境变量替换"""
 
     def test_substitution_basic(self) -> None:
         import re
@@ -121,7 +115,6 @@ class TestEnvVarSubstitution:
 
 
 class TestConfigEdgeCases:
-    """边界情况处理"""
 
     def test_empty_config(self) -> None:
         config: dict = {}

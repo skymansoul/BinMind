@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Interval-domain abstract interpretation for 符号执行
+"""区间域抽象解释用于符号执行
 
-Widening/narrowing operators loop-bound inference counter
-state-space explosion large-binary 符号执行
+加宽/收窄算子与循环界推断, 对抗大二进制符号执行的状态空间爆炸
 """
 
 import json
@@ -17,9 +16,9 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 __log = logging.getLogger(__name__)
 
 # 形式化验证框架 - 抽象域可证明正确性
-# Verbeek et al.: “Formally Verified Binary-Level 指针 Analysis”
-# 核心思想：定义抽象域需满足的 proof obligations（Galois 连接条件）
-# 任何满足这些 obligation 的域实例化都是可靠的 - 允许精度可调而正确性不变
+# Verbeek et al.: "二进制级指针分析的形式化验证"
+# 核心思想：定义抽象域需满足的证明义务（Galois 连接条件）
+# 任何满足这些义务的域实例化都是可靠的 - 允许精度可调而正确性不变
 
 
 class ProofObligation(Enum):

@@ -12,7 +12,7 @@ from collections import defaultdict as _defaultdict
 _dbg = _logging.getLogger(__name__)
 
 
-# Risk-weighted operation patterns
+# 风险加权操作模式
 _RISK_PATTERNS = [
     (_re.compile(r'\b(memcpy|memmove|strcpy|strcat|sprintf|gets|scanf)\s*\('), 0.8, "unbounded_copy"),
     (_re.compile(r'\b(malloc|calloc|realloc|new\s)\s*[\[(]'), 0.3, "allocation"),
@@ -55,12 +55,7 @@ _CHAIN_PATTERNS = [
 
 
 def _sigmoid_decay(distance, midpoint=_SIGMOID_MIDPOINT, steepness=_SIGMOID_STEEPNESS):
-    """sigmoid距离衰减：尾部风险不应被线性稀释。
-
-    线性模型假设每步距离等权重衰减，但实证上taint-to-sink距离
-    对可利用性的影响呈S形-短距离内缓慢衰减（保持高风险），
-    中段急剧下降（临界区域），远距离趋近于零。
-    """
+    # sigmoid距离衰减: taint-to-sink距离对可利用性影响呈S形
     if distance <= 0:
         return 1.0
     exponent = (distance - midpoint) / steepness
@@ -70,7 +65,6 @@ def _sigmoid_decay(distance, midpoint=_SIGMOID_MIDPOINT, steepness=_SIGMOID_STEE
 
 
 class PathNode:
-    """Single basic block (or group) in an execution path."""
 
     __slots__ = ('m_addr', 'm_code', 'm_score', 'm_taint_sources', 'm_loop_depth',
                  'm_ops', 'm_op_names')
@@ -85,7 +79,6 @@ class PathNode:
         self.m_op_names = set()  # 操作名集合，供邻接匹配和多样性计算
 
     def compute_risk_pn(self):
-        """Score this node by matching against risk patterns."""
         if not self.m_code:
             self.m_score = 0.0
             self.m_op_names = set()
@@ -105,18 +98,17 @@ class PathNode:
                 op_names.add(name)
             pi += 1
 
-        # Loop depth penalty: deeper loops get higher score (more likely exploitable path)
+        # 循环深度惩罚: 深层循环评分更高
         loop_mult = 1.0 + self.m_loop_depth * 0.15
         score *= loop_mult
 
-        # Cap
+        # 分数上限
         self.m_score = min(score, 10.0)
         self.m_ops = ops
         self.m_op_names = op_names
 
 
 class ExecutionPath:
-    """Ordered sequence of PathNodes forming an execution path."""
 
     __slots__ = ('m_nodes', 'm_total_score', 'm_length', 'm_has_taint',
                  'm_dominator_score', 'm_adjacency_bonus', 'm_diversity_penalty',
@@ -134,7 +126,6 @@ class ExecutionPath:
         self.m_final_score = 0.0
 
     def compute_score_ep(self):
-        """Aggregate node scores into path-level metrics."""
         if not self.m_nodes:
             self.m_final_score = 0.0
             return
@@ -155,7 +146,7 @@ class ExecutionPath:
 
         self.m_total_score = total
         self.m_has_taint = has_taint_source
-        # Dominator score: max single-node risk * (1 + average)
+        # 支配分: 最高单节点风险 × (1 + 均值)
         avg = total / max(len(self.m_nodes), 1)
         self.m_dominator_score = max_node * (1.0 + avg * 0.5)
 
@@ -167,7 +158,6 @@ class ExecutionPath:
         self.m_final_score = self.m_dominator_score * max(penalty_factor, 0.35)
 
     def get_risk_summary_ep(self):
-        """Return human-readable risk summary."""
         if not self.m_nodes:
             return {'risk': 'none', 'score': 0.0, 'nodes': 0}
         # 使用最终分判定风险级别
@@ -189,10 +179,7 @@ class ExecutionPath:
                 'diversity_penalty': self.m_diversity_penalty}
 
     def collect_op_signature_ep(self):
-        """收集路径级操作签名-所有节点的操作名并集。
-
-        用于Jaccard相似度计算和邻接链检测。
-        """
+        # 收集路径级操作签名, 用于Jaccard相似度和邻接链检测
         all_ops = set()
         for node in self.m_nodes:
             all_ops.update(node.m_op_names)
@@ -200,10 +187,7 @@ class ExecutionPath:
 
 
 def _jaccard_similarity(set_a, set_b):
-    """Jaccard系数：|A ∩ B| / |A ∪ B|。
-
-    空集对空集定义为0-两条无操作路径不应视为相似。
-    """
+    # 空集对空集定义为0
     if not set_a and not set_b:
         return 0.0
     union_size = len(set_a | set_b)
@@ -213,15 +197,7 @@ def _jaccard_similarity(set_a, set_b):
 
 
 class PathPrioritizer:
-    """智能驱动执行路径优先级排序引擎。
-
-    轻量启发式(无需ML模型)排序路径:
-    1. Per-node risk scoring via pattern matching on decompiled code.
-    2. Taint-source proximity (user-controlled data reaching risky ops).
-    3. Path length normalization to avoid bias toward long paths.
-    4. Adjacency chain bonus - compound risk from coupled ops (v2).
-    5. Diversity-aware ranking - Jaccard penalty on operation overlap (v2).
-    """
+    # 轻量启发式排序路径: 节点风险评分 + taint源接近度 + 路径长度归一化 + 邻接链加成 + 多样性重排序
 
     __slots__ = ('m_taint_sources', 'm_sinks', 'm_taint_distance_max',
                  'm_adjacency_window', 'm_diversity_strength')
@@ -234,7 +210,6 @@ class PathPrioritizer:
         self.m_diversity_strength = _DIVERSITY_PENALTY_STRENGTH
 
     def set_taint_config_pp(self, sources, sinks):
-        """Configure taint sources and sinks for proximity scoring."""
         if sources:
             si = 0
             while si < len(sources):
@@ -247,7 +222,6 @@ class PathPrioritizer:
                 si += 1
 
     def build_path_pp(self, nodes_data):
-        """Construct an ExecutionPath from node data."""
         nodes = []
         ni = 0
         while ni < len(nodes_data):
@@ -261,10 +235,7 @@ class PathPrioritizer:
         return path
 
     def prioritize_paths_pp(self, paths):
-        """Rank execution paths by risk score, highest first.
-
-        增强特性：操作邻接检测、 taint距离sigmoid衰减、 多样性重排序。
-        """
+        # 邻接检测 + taint标注 + 多样性重排序
         built = []
         pi = 0
         while pi < len(paths):
@@ -283,19 +254,11 @@ class PathPrioritizer:
         return ranked
 
     def _compute_adjacency_bonus_pp(self, path):
-        """检测路径内危险操作的邻接耦合。
-
-        遍历节点序列，在窗口内查找匹配的已知危险链。
-        匹配成功时，加成与两节点的风险分乘积成正比-
-        两个高分节点相邻比孤立的节点对更具威胁。
-
-        对比学习视角（CLAP-inspired）：操作共现构成了路径的"跨模态"特征，
-        单操作评分（pattern模态）+ 操作对评分（邻接模态），联合风险表征。
-        """
+        # 窗口内检测已知危险操作链, 加成与两节点风险分乘积成正比
         if path is None or not path.m_nodes or len(path.m_nodes) < 2:
             return
 
-        # 先让各节点计算自身风险，填充op_names
+        # 各节点先计算自身风险并填充op_names
         node_count = len(path.m_nodes)
         ni = 0
         while ni < node_count:
@@ -304,7 +267,6 @@ class PathPrioritizer:
 
         adjacency_total = 0.0
         applied_pairs = set()  # 防止同一节点对重复加成
-
         for window_start in range(node_count - 1):
             window_end = min(window_start + self.m_adjacency_window, node_count)
             for j in range(window_start + 1, window_end):
@@ -316,17 +278,17 @@ class PathPrioritizer:
                 if not ops_a or not ops_b:
                     continue
 
-                # 检查已知危险链
+                # 已知危险链匹配
                 for chain_ops, multiplier in _CHAIN_PATTERNS:
                     pair_key = (window_start, j, frozenset(chain_ops))
                     if pair_key in applied_pairs:
                         continue
-                    # 链匹配：窗口内存在chain_ops中的两个操作
+                    # 链匹配: 窗口内存在chain_ops中的两个操作
                     if (chain_ops & ops_a) and (chain_ops & ops_b) and (chain_ops & ops_a) != (chain_ops & ops_b):
-                        # 两个节点各贡献chain中的一个操作，构成跨节点链
+                        # 两个节点各贡献chain中的一个操作
                         pair_score = (node_a.m_score + node_b.m_score) * 0.5
                         bonus = pair_score * (multiplier - 1.0)
-                        # 距离折扣：窗口内越近越危险
+                        # 距离折扣: 窗口内越近越危险
                         distance_discount = 1.0 / (1.0 + 0.3 * (j - window_start - 1))
                         adjacency_total += bonus * distance_discount
                         applied_pairs.add(pair_key)
@@ -334,7 +296,7 @@ class PathPrioritizer:
                                     chain_ops & ops_a, chain_ops & ops_b,
                                     j - window_start, bonus * distance_discount)
 
-        # 同节点内多操作耦合：单节点含有互补操作对时也加分
+        # 同节点内多操作耦合: 单节点含互补操作对时也加分
         for ni in range(node_count):
             node_ops = path.m_nodes[ni].m_op_names
             if len(node_ops) < 2:
@@ -349,18 +311,17 @@ class PathPrioritizer:
         path.m_adjacency_bonus = min(adjacency_total, _ADJACENCY_MULTIPLIER_CAP)
 
     def _annotate_taint_pp(self, path):
-        """Walk path nodes and mark taint-source proximity with sigmoid decay."""
         if path is None or not path.m_nodes:
             return
 
-        # Forward scan: mark taint introduction points
+        # 前向扫描: 标记taint引入点
         active_taint = []
         ni = 0
         while ni < len(path.m_nodes):
             node = path.m_nodes[ni]
             code_lower = node.m_code.lower()
 
-            # Check if node introduces taint
+            # 检查节点是否引入taint
             si = 0
             src_list = list(self.m_taint_sources)
             while si < len(src_list):
@@ -369,7 +330,7 @@ class PathPrioritizer:
                     active_taint.append((src_list[si], ni))
                 si += 1
 
-            # Check taint-to-sink proximity - sigmoid衰减替代线性
+            # taint-to-sink接近度: sigmoid衰减替代线性
             si = 0
             sink_list = list(self.m_sinks)
             while si < len(sink_list):
@@ -379,7 +340,7 @@ class PathPrioritizer:
                         taint_src, taint_pos = active_taint[ti]
                         distance = ni - taint_pos
                         if distance <= self.m_taint_distance_max:
-                            # sigmoid衰减：短距离保持高分，中段急剧下降
+                            # sigmoid衰减: 短距离保持高分, 中段急剧下降
                             decay = _sigmoid_decay(distance,
                                                    midpoint=self.m_taint_distance_max * 0.4,
                                                    steepness=_SIGMOID_STEEPNESS)
@@ -391,16 +352,7 @@ class PathPrioritizer:
         path.compute_score_ep()
 
     def _diversity_rerank(self, paths):
-        """多样性重排序：贪心选取，Jaccard相似度惩罚冗余路径。
-
-        策略逻辑：fuzzer的资源有限。两条操作签名高度重叠的路径
-        大概率触发相同漏洞-保留一条即可，将算力分配给不同路径。
-        这与CLAP的对比学习目标一致：最大化不同类样本的间距。
-
-        算法：贪心 + 滚动相似度惩罚。每轮选取（支配分 × 多样性折扣）最高的路径，
-        已选路径的操作集构成"已覆盖"集合，后续路径与该集合的Jaccard相似度
-        转为惩罚系数。
-        """
+        # 贪心选取 + 滚动Jaccard相似度惩罚, 优先选操作签名差异大的路径
         if not paths:
             return []
 
@@ -451,7 +403,6 @@ class PathPrioritizer:
         return ranked
 
     def get_top_paths_pp(self, paths, top_n=10):
-        """Convenience: return top-N riskiest paths with summaries."""
         ranked = self.prioritize_paths_pp(paths)
         top_n = min(top_n, len(ranked))
         results = []
@@ -496,7 +447,6 @@ class PathPriority(_Enum):
 
 @_dc
 class SymbolicPath:
-    """符号执行路径的轻量描述 — 供优先级排序使用。"""
     path_id: str = ""
     constraints: _List[str] = _field(default_factory=list)
     instructions: _List[str] = _field(default_factory=list)
@@ -510,7 +460,6 @@ class SymbolicPath:
 
 @_dc
 class PathAnalysis:
-    """单条路径的排序结果。"""
     path_id: str = ""
     priority_score: float = 0.0
     priority_level: PathPriority = PathPriority.LOW
@@ -519,7 +468,6 @@ class PathAnalysis:
 
 @_dc
 class PrioritizationResult:
-    """整批路径的排序结果与汇总。"""
     paths: _List[PathAnalysis] = _field(default_factory=list)
     total_paths: int = 0
     prioritized_paths: int = 0
@@ -543,7 +491,7 @@ _PATH_FEATURE_WEIGHTS = {
 
 
 def _score_symbolic_path(path: SymbolicPath) -> float:
-    """计算单条路径的优先级得分, 取值 [0, 0.98]。"""
+    # 路径优先级得分 [0, 0.98]
     score = 0.0
     score += min(max(path.depth, 0) * 0.01, 0.30)
     score += max(0.0, min(path.coverage_ratio, 1.0)) * 0.30
@@ -565,13 +513,7 @@ def _priority_level(score: float) -> PathPriority:
 
 
 class AIPathPrioritizer:
-    """AI 辅助路径优先级排序器。
-
-    支持三种策略:
-      heuristic — 基于危险函数/特征/深度的静态打分;
-      llm      — 预留 LLM 评估接口, 未接入时退化为 heuristic;
-      hybrid   — 启发式为主, 可叠加人工修正 (update_path_priority)。
-    """
+    # 三策略: heuristic(静态打分) / llm(预留) / hybrid(启发式+人工修正)
 
     def __init__(self, strategy: str = "hybrid"):
         self.strategy = strategy
@@ -579,10 +521,6 @@ class AIPathPrioritizer:
 
     def prioritize(self, paths: _List[SymbolicPath],
                    top_k: _Optional[int] = None) -> PrioritizationResult:
-        """对路径列表打分排序, 返回排序结果。
-
-        top_k 限定时仅保留得分最高的前 k 条。
-        """
         scored: _List[PathAnalysis] = []
         for p in paths:
             score = _score_symbolic_path(p)
@@ -607,15 +545,10 @@ class AIPathPrioritizer:
         )
 
     def get_path_analysis(self, path_id: str) -> _Optional[PathAnalysis]:
-        """取回最近一次排序中某路径的分析结果。"""
         return self._analyses.get(path_id)
 
     def update_path_priority(self, path_id: str, score: float,
                              reason: str = "") -> PathAnalysis:
-        """人工覆盖路径优先级评分。
-
-        用于 LLM 评审或人工研判后修正自动打分。
-        """
         analysis = self._analyses.get(path_id)
         if analysis is None:
             analysis = PathAnalysis(path_id=path_id)
@@ -652,7 +585,6 @@ class AIPathPrioritizer:
 
 def prioritize_paths(paths: _List[_Any], strategy: str = "heuristic",
                      top_k: _Optional[int] = None) -> PrioritizationResult:
-    """便捷函数: 接受 SymbolicPath 或 dict 形式的路径列表并排序。"""
     normalized: _List[SymbolicPath] = []
     for item in paths:
         if isinstance(item, SymbolicPath):
@@ -679,7 +611,6 @@ def prioritize_paths(paths: _List[_Any], strategy: str = "heuristic",
 
 
 def format_prioritization_report(result: PrioritizationResult) -> str:
-    """将排序结果格式化为可读报告。"""
     summary = result.summary or {}
     lines = [
         "路径优先级分析报告",

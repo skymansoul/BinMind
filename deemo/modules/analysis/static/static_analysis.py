@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 静态数据流分析模块
 

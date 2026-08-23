@@ -42,7 +42,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MultiModalEmbedding:
-    """多模态嵌入-每个模态独立嵌入 + 共享/特异性维度分离"""
     func_id: str
     cfg_embedding: np.ndarray        # CFG结构嵌入 (dim,)
     instr_embedding: np.ndarray      # 指令序列嵌入 (dim,)
@@ -62,7 +61,6 @@ class MultiModalEmbedding:
 
 @dataclass
 class ConsistencyMetrics:
-    """跨模态一致性度量"""
     pairwise_cosine: Dict[Tuple[int, int], float]  # (i,j)模态间cosine
     overall_consistency: float                      # 平均一致性
     max_conflict_score: float                       # 最大冲突分数
@@ -70,19 +68,6 @@ class ConsistencyMetrics:
 
 
 class CrossModalConsistency:
-    """跨模态一致性正则化训练器。
-
-    核心公式:
-      L = L_task + λ·L_consistency
-      其中:
-        L_consistency = mean(1 - cosine(emb_i[:K], emb_j[:K]))
-                       for all pairs (i, j) of modalities
-      前K维为共享语义子空间，剩余维度为模态特异性维度。
-
-    自适应λ调度:
-      λ(t) = λ_0 · exp(-decay_rate · t)
-      早期高λ强制对齐，后期低λ允许模态特异性。
-    """
 
     def __init__(self,
                  shared_dim: int = 32,
@@ -100,7 +85,6 @@ class CrossModalConsistency:
     def compute_consistency_loss(self,
                                   modality_embs: List[np.ndarray]
                                   ) -> Tuple[float, ConsistencyMetrics]:
-        """计算跨模态一致性损失和度量。"""
         n_mods = len(modality_embs)
         if n_mods < 2:
             return 0.0, ConsistencyMetrics(
@@ -144,7 +128,6 @@ class CrossModalConsistency:
                         modality_embs: List[np.ndarray],
                         enforce_consistency: bool = True
                         ) -> np.ndarray:
-        """融合多模态嵌入-共享子空间取均值，特异性维度拼接。"""
         n_mods = len(modality_embs)
         if n_mods == 0:
             return np.zeros(self.total_dim)
@@ -186,14 +169,6 @@ class CrossModalConsistency:
 # 模态冲突检测
 
 class ModalityConflictDetector:
-    """检测跨模态不一致的样本-诊断数据质量或分析工具问题。
-
-    高冲突样本的可能原因:
-      - 混淆代码: CFG结构被刻意扭曲，但指令序列语义正常
-      - 编译器激进优化: 循环展开/内联改变了CFG拓扑但语义不变
-      - 反汇编错误: 一个模态的分析结果因工具bug而不准确
-      - 多架构混合: 不同ISA的指令嵌入映射到同一空间时的畸变
-    """
 
     def __init__(self, consistency_checker: CrossModalConsistency,
                  conflict_threshold: float = 0.3):
@@ -203,7 +178,6 @@ class ModalityConflictDetector:
     def detect_conflicts(self,
                          embeddings: List[MultiModalEmbedding]
                          ) -> List[Tuple[str, float, List[str]]]:
-        """批量检测模态冲突样本。"""
         conflicts = []
         for emb in embeddings:
             mod_embs = emb.get_modality_embs()
@@ -223,8 +197,7 @@ class ModalityConflictDetector:
 
     def conflict_report(self,
                         embeddings: List[MultiModalEmbedding]
-                        ) -> Dict[str, Any]:
-        """生成模态冲突报告"""
+                         ) -> Dict[str, Any]:
         conflicts = self.detect_conflicts(embeddings)
         n_total = len(embeddings)
         n_conflict = len(conflicts)

@@ -9,6 +9,8 @@ import time
 from typing import Dict, Optional
 
 from config import AI_PROVIDER, OPENAI_API_KEY, ANTHROPIC_API_KEY, LLM_ENDPOINTS
+# 委托 modules.llm_client 统一分发, 不在本层维护 provider 调用逻辑
+from modules.llm_client import call_llm_simple, call_llm, is_ai_configured, PROMPT_VERSION
 
 __log = logging.getLogger(__name__)
 
@@ -31,6 +33,7 @@ def _record_llm_call(provider: str, system: str, user: str,
         'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
         'provider': provider,
         'model': model,
+        'prompt_version': PROMPT_VERSION,
         'input_head': (user or '')[:200],
         'output_head': (output or '')[:200],
         'duration_sec': round(duration, 3) if duration is not None else None,
@@ -53,6 +56,8 @@ def _provider_configured(provider: str) -> bool:
         return bool(OPENAI_API_KEY)
     if provider == 'anthropic':
         return bool(ANTHROPIC_API_KEY)
+    if provider == 'deepseek':
+        return bool(os.environ.get('CUSTOM_API_KEY') or OPENAI_API_KEY)
     return bool(LLM_ENDPOINTS.get(provider))
 
 
@@ -167,6 +172,7 @@ def query_llm(system: str, user: str, model: str = None,
     Provider 取自 LLM_PROVIDER 环境变量 (缺省回退 config.AI_PROVIDER)。
     未配置凭据时记录一次跳过事件并返回空串, 不抛异常。
     claude 通道经 ClaudeBackend 处理, 异常不回抛。
+    其余通道统一委托 modules.llm_client.call_llm_simple。
     """
     provider = _effective_provider()
 
@@ -182,22 +188,17 @@ def query_llm(system: str, user: str, model: str = None,
 
     t0 = time.time()
     try:
-        if provider == 'openai':
-            result = _openai_chat(system, user, model, temperature, max_tokens)
-        elif provider == 'anthropic':
-            result = _anthropic_chat(system, user, model, temperature, max_tokens)
-        elif provider == 'ollama':
-            result = _ollama_chat(system, user, model, temperature, max_tokens)
-        elif provider == 'llamacpp':
-            result = _llamacpp_chat(system, user, model, temperature, max_tokens)
-        elif provider == 'custom':
-            result = _custom_chat(system, user, model, temperature, max_tokens)
-        else:
-            raise ValueError(f"Unknown AI provider: {provider}")
+        result = call_llm_simple(
+            prompt=user, system_prompt=system, model=model,
+            temperature=temperature, max_tokens=max_tokens,
+            use_cache=False)
+        text = result.get('text', '')
+        if result.get('simulation'):
+            raise RuntimeError(result.get('error', 'simulation mode'))
         _record_llm_call(provider, system, user, model=model,
-                         output=result, duration=time.time() - t0,
+                         output=text, duration=time.time() - t0,
                          status='ok')
-        return result
+        return text
     except Exception as err:
         _record_llm_call(provider, system, user, model=model,
                          duration=time.time() - t0, error=str(err),

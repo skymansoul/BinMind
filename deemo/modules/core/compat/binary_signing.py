@@ -70,7 +70,7 @@ def extract_pe_certificate(pe_data: bytes) -> dict | None:
 
 
 def _rva_to_file_offset(pe_data: bytes, pe_off: int, rva: int) -> int | None:
-    # Internal: PE RVA to file offset via section header traversal.
+    # PE RVA 到文件偏移的转换
     num_sections = _struct.unpack_from('<H', pe_data, pe_off + 6)[0]
     opt_hdr_size = _struct.unpack_from('<H', pe_data, pe_off + 20)[0]
     sec_hdr_off = pe_off + 24 + opt_hdr_size

@@ -95,9 +95,6 @@ def mask_sensitive_data(text: str) -> str:
 
 
 class SensitiveFilter(logging.Filter):
-    """
-    日志过滤器，自动脱敏敏感信息
-    """
 
     def filter(self, record):
         if isinstance(record.msg, str):
@@ -119,9 +116,6 @@ def _is_enabled(key: str, default: str = 'false') -> bool:
 
 
 class Config:
-    """
-    项目配置管理类
-    """
 
     # --- 分布式执行配置 ---
     # 远程基线 worker.py 从 config 导入这些符号；本地恢复后按同一接口提供。
@@ -140,7 +134,7 @@ class Config:
 
     # AI 服务配置请直接在这里填写，不再通过环境变量读取。
     # 可选值: openai / azure / ollama / llamacpp / custom / deepseek
-    AI_PROVIDER = os.environ.get('AI_PROVIDER', AI_PROVIDER_OPENAI)
+    AI_PROVIDER = os.environ.get('AI_PROVIDER', AI_PROVIDER_OLLAMA)
     # 统一模型名称入口，覆盖各 provider 默认模型
     AI_MODEL = os.environ.get('AI_MODEL', '')
     # Ollama 兼容端点（含 /v1 路径），供 OpenAI SDK 直接调用
@@ -162,7 +156,7 @@ class Config:
 
     # Ollama
     OLLAMA_HOST = 'http://localhost:11434'
-    OLLAMA_MODEL = 'llama2'
+    OLLAMA_MODEL = 'qwen2.5:7b'
 
     # llama.cpp
     LLAMACPP_HOST = 'http://localhost:8080'
@@ -239,11 +233,6 @@ def check_openai_api_key() -> bool:
 
 
 def get_openai_client():
-    """
-    获取 AI 客户端实例，支持多种 AI 提供商
-
-        OpenAI 兼容的客户端实例，如果未配置则返回 None
-    """
     provider = Config.AI_PROVIDER
     logger.info(f"正在初始化 AI 客户端，提供商: {provider}")
 
@@ -275,9 +264,6 @@ def get_openai_client():
 
 
 def _create_openai_client():
-    """
-    创建标准 OpenAI 客户端
-    """
     if not check_openai_api_key():
         logger.warning("Config.OPENAI_API_KEY 未配置，将使用启发式分析模式")
         return None
@@ -300,9 +286,6 @@ def _create_openai_client():
 
 
 def _create_azure_client():
-    """
-    创建 Azure OpenAI 客户端
-    """
     if not Config.AZURE_API_KEY:
         logger.warning("Config.AZURE_API_KEY 未配置")
         return None
@@ -326,9 +309,6 @@ def _create_azure_client():
 
 
 def _create_ollama_client():
-    """
-    创建 Ollama 本地模型客户端（OpenAI 兼容端点）
-    """
     from openai import OpenAI
 
     ollama_base = Config.OLLAMA_BASE_URL or f"{Config.OLLAMA_HOST}/v1"
@@ -343,9 +323,6 @@ def _create_ollama_client():
 
 
 def _create_llamacpp_client():
-    """
-    创建 llama.cpp 本地模型客户端
-    """
     from openai import OpenAI
 
     llamacpp_base = f"{Config.LLAMACPP_HOST}/v1"
@@ -360,9 +337,6 @@ def _create_llamacpp_client():
 
 
 def _create_custom_client():
-    """
-    创建自定义 API 客户端
-    """
     if not Config.CUSTOM_BASE_URL:
         logger.warning("CUSTOM_BASE_URL 未配置")
         return None
@@ -387,9 +361,6 @@ def _create_custom_client():
 
 
 def _create_deepseek_client():
-    """
-    创建 DeepSeek API 客户端（OpenAI 兼容接口）
-    """
     from openai import OpenAI
 
     api_key = os.environ.get('CUSTOM_API_KEY', '') or os.environ.get('OPENAI_API_KEY', '')
@@ -427,9 +398,6 @@ def get_current_ai_model() -> str:
 
 
 def ensure_directories():
-    """
-    确保所需目录存在
-    """
     dirs_to_create = {
         Config.LOGS_DIR,
         Config.REPORTS_DIR,
@@ -641,7 +609,7 @@ RESULTS_DIR = os.environ.get('RESULTS_DIR', './reports')
 ensure_dirs = ensure_directories
 
 # AI 提供商常量 — 模块级别名
-AI_PROVIDER = os.environ.get('AI_PROVIDER', AI_PROVIDER_OPENAI)
+AI_PROVIDER = os.environ.get('AI_PROVIDER', AI_PROVIDER_OLLAMA)
 
 # Config 类属性的模块级别名 — core/decompiler.py, core/pipeline.py 等直接导入
 # 注：Config 类的同名属性可在运行时通过 os.environ 动态覆盖，此处为模块级默认值

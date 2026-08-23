@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# ISA plugin framework. CPU backends, peripheral registry
-# Execution engine: Unicorn. Plugins discovered via 寄存器(registry)
+# ISA 插件框架. CPU 后端, 外设注册表
+# 执行引擎: Unicorn. 插件通过注册表 (registry) 发现
 #
 # 2025 升级: 增加 SPI/I2C/Timer 外设仿真器,
 # 嵌入式固件分析中，这些外设的 MMIO 访问是常见的交互点

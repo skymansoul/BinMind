@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""循环累加溢出 finding 构建辅助.
-
-决策:
-  从 loop_write_accumulator 抽取, 保持主文件
-  两类 finding: off-by-one (循环上界==分配大小) 与 累加溢出
-  (单迭代写量 × 迭代次数 > 分配大小). finding 携带 alloc_request
-  供后续 allocator 层精确判定.
-
-创建: 2024-02-26
-"""
+# 循环累加溢出 finding 构建辅助
 
 
 def build_offbyone(accum, alloc, alloc_size, total_write):

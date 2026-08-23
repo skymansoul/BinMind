@@ -96,10 +96,10 @@ _SYNC_PRIMITIVE_MAP: Dict[str, SyncPrimitive] = {
     'AcquireSRWLockShared':    SyncPrimitive('AcquireSRWLockShared',    SyncType.RWLOCK_RDLOCK),
     'ReleaseSRWLockExclusive': SyncPrimitive('ReleaseSRWLockExclusive', SyncType.MUTEX_UNLOCK),
     'ReleaseSRWLockShared':    SyncPrimitive('ReleaseSRWLockShared',    SyncType.RWLOCK_UNLOCK),
-# Windows thread lifecycle
+    # Windows 线程生命周期
     'CreateThread':  SyncPrimitive('CreateThread',  SyncType.THREAD_CREATE),
     '_beginthreadex': SyncPrimitive('_beginthreadex', SyncType.THREAD_CREATE),
-# Darwin (macOS/iOS)
+    # Darwin (macOS/iOS)
     'os_unfair_lock_lock':   SyncPrimitive('os_unfair_lock_lock',   SyncType.MUTEX_LOCK),
     'os_unfair_lock_unlock': SyncPrimitive('os_unfair_lock_unlock', SyncType.MUTEX_UNLOCK),
     'dispatch_semaphore_wait':    SyncPrimitive('dispatch_semaphore_wait',    SyncType.SEMAPHORE_WAIT),

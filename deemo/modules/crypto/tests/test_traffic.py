@@ -1,5 +1,3 @@
-"""Tests for crypto_traffic_decrypt — TLS parsing, key extraction, decryption fallback."""
-
 import os
 import sys
 import struct
@@ -17,24 +15,18 @@ from src.crypto_traffic_decrypt import (
 
 
 def _make_tls_client_hello():
-    """Build a minimal TLS 1.2 ClientHello record."""
-    # TLS record header: content_type=22 (handshake), version=0x0303 (TLS 1.2)
     record = struct.pack(">BHH", 22, 0x0303, 0)
 
-    # Handshake header: type=1 (client_hello), length placeholder
     handshake = struct.pack(">B", 1) + b"\x00" + struct.pack(">H", 0)
 
-    # ClientHello body
     client_version = struct.pack(">H", 0x0303)
     random_bytes = b"\x00" * 32
-    session_id = b"\x00"  # zero-length session ID
-    # cipher suites: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (0xC02F)
+    session_id = b"\x00"
     cipher_suites = struct.pack(">H", 2) + struct.pack(">H", 0xC02F)
-    compression = b"\x01\x00"  # 1 method: null
+    compression = b"\x01\x00"
 
     body = client_version + random_bytes + session_id + cipher_suites + compression
 
-    # Fix up lengths
     total = len(handshake) + len(body)
     record = struct.pack(">BHH", 22, 0x0303, total) + handshake + body
     return record
@@ -77,7 +69,6 @@ class TestKeyExtractor(unittest.TestCase):
         self.extractor = KeyExtractor()
 
     def test_string_pattern_extraction(self):
-        # Pattern requires key= or KEY= immediately followed by = or :
         data = b'key="ABCDEFGHIJKLMNOPQRSTUVWXYZ012345"'
         keys = self.extractor.extract(data)
         self.assertGreater(len(keys), 0)
@@ -87,11 +78,9 @@ class TestKeyExtractor(unittest.TestCase):
         self.assertEqual(len(keys), 0)
 
     def test_key_minimum_length(self):
-        """Keys shorter than 16 bytes must be filtered out."""
         data = b'key = "short"'
         keys = self.extractor.extract(data)
-        self.assertEqual(len(keys), 0,
-                         "Keys < 16 bytes should be filtered")
+        self.assertEqual(len(keys), 0)
 
 
 class TestTrafficDecryptor(unittest.TestCase):
@@ -110,11 +99,9 @@ class TestTrafficDecryptor(unittest.TestCase):
         self.assertIn("too short", result.error)
 
     def test_xor_fallback(self):
-        """With no crypto lib installed, XOR fallback should still succeed."""
-        data = b"hello world!!!"  # 16 bytes
-        key = b"A" * 16  # exactly 16 bytes
+        data = b"hello world!!!"
+        key = b"A" * 16
         result = self.decryptor.decrypt(data, key)
-        # XOR fallback always works
         self.assertTrue(result.success)
 
     def test_keymaterial_input(self):

@@ -645,10 +645,10 @@ class TaskScheduler:
     # 计算 5 元组堆键；否则使用传统 3 元组
     # task_id 始终在最后，便于 rebalance 中按 entry[-1] 提取
     def _heap_key(self, task: SymbolicTask) -> Tuple:
-        """计算 堆 ordering key for a task
+        """计算任务的堆排序键
 
-        如果 deadline-aware 模式开启且有 deadline_ts，按 deadline slack 排序；
-        否则回退到传统的 (-priority, created_at, task_id)
+        deadline-aware 模式且有 deadline_ts 时按 deadline slack 排序;
+        否则回退到传统键 (-priority, created_at, task_id)
         """
         if self.enable_deadline_dispatch and task.deadline_ts > 0:
             return self._deadline_dispatcher.heap_key(task)

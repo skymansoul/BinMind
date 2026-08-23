@@ -1,5 +1,3 @@
-# Proxy → info_collection/info_leak_analyzer.py. Upstream has encoding issues; replaced here.
-# Standalone reimplementation — correct dataclass/enum structure for test compatibility.
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from enum import StrEnum

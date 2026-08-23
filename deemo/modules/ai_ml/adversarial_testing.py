@@ -72,13 +72,7 @@ def _at_vec_diff(a: List[float], b: List[float]) -> float:
 # 对抗攻击
 
 class AdversarialTester:
-    """对抗鲁棒性测试器
-
-    支持多种攻击方法, 每种方法针对不同的脆弱性维度:
-      - 特征空间对抗 (FGSM/PGD)
-      - 图结构对抗 (Edge Flip / GragPoison)
-      - 数据投毒 (Label Flip)
-    """
+    # 对抗鲁棒性测试器; 支持特征空间(FGSM/PGD)、图结构(EdgeFlip/GragPoison)、数据投毒(LabelFlip)等攻击维度.
 
     def __init__(self, epsilon: float = 0.1, pgd_steps: int = 5,
                  pgd_step_size: float = 0.02):
@@ -91,8 +85,8 @@ class AdversarialTester:
                adjacency: Optional[List[List[int]]] = None,
                method: AttackMethod = AttackMethod.FGSM,
                n_samples: int = 50,
-               target_class: int = 1) -> List[AdversarialSample]:
-        """执行对抗攻击"""
+                target_class: int = 1) -> List[AdversarialSample]:
+        # 执行对抗攻击
         N = len(X)
         test_indices = random.sample(range(N), min(n_samples, N))
 
@@ -113,10 +107,7 @@ class AdversarialTester:
         return results
 
     def _attack_fgsm(self, idx, X, predict_fn, adjacency, target):
-        """FGSM: x_adv = x - ε * sign(∇_x L)
-
-        使用数值梯度近似 (前后差分)
-        """
+        # FGSM: x_adv = x - ε * sign(∇_x L); 使用前后差分数值梯度近似
         x = X[idx][:]
         if not x:
             return AdversarialSample(original_idx=idx)
@@ -156,7 +147,7 @@ class AdversarialTester:
         )
 
     def _attack_pgd(self, idx, X, predict_fn, adjacency, target):
-        """PGD: 多步FGSM, 每步投影到ε球内"""
+        # PGD: 多步FGSM, 每步投影到ε球内
         x_orig = X[idx][:]
         if not x_orig:
             return AdversarialSample(original_idx=idx)
@@ -202,7 +193,7 @@ class AdversarialTester:
         )
 
     def _attack_feature_noise(self, idx, X, predict_fn, adjacency, target):
-        """加高斯噪声"""
+        # 加高斯噪声
         x = X[idx][:]
         orig_pred = predict_fn([x])[0]
         D = len(x)
@@ -226,7 +217,7 @@ class AdversarialTester:
         )
 
     def _attack_edge_flip(self, idx, X, predict_fn, adjacency, target):
-        """图结构攻击: 翻转边"""
+        # 图结构攻击: 翻转边
         if adjacency is None:
             return self._attack_feature_noise(idx, X, predict_fn, adjacency, target)
 
@@ -281,15 +272,7 @@ class AdversarialTester:
         )
 
     def _attack_gragpoison(self, idx, X, predict_fn, adjacency, target):
-        """GragPoison 关系注入攻击近似
-
-        原始GragPoison攻击GraphRAG的三策略:
-          1. relation_injection: 注入虚假关系
-          2. relation_enhancement: 增强已有关系的权重
-          3. narrative_generation: 生成误导性文本
-
-        本实现近似relation_injection: 注入虚假邻域特征
-        """
+        # GragPoison关系注入近似-注入虚假邻域特征模拟relation_injection
         x = X[idx][:]
         orig_pred = predict_fn([x])[0]
         D = len(x)
@@ -321,7 +304,7 @@ class AdversarialTester:
                         adjacency=None,
                         methods=None,
                         n_samples=50) -> List[RobustnessReport]:
-        """全维度鲁棒性测试"""
+        # 全维度鲁棒性测试
         if methods is None:
             methods = [AttackMethod.FGSM, AttackMethod.FEATURE_NOISE,
                        AttackMethod.EDGE_FLIP]

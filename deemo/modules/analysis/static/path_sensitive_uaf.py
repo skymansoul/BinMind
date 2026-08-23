@@ -9,13 +9,6 @@
 #   可行路径上. 若free和use被互斥的分支条件分隔,
 # 则该UAF不可达 - 过滤此告警.
 #
-# 理论依据:
-#   UAFx: 跨入口UAF检测, 使用路径敏感分析
-#     排除不可达的free-use对, FP减少41%.
-#   "Dangling Pointer Tracking for UAF":
-#     分支条件追踪提升UAF检测精度.
-#
-
 from typing import Dict, List, Optional, Set, Tuple
 
 from .path_condition import PathConstraint, CondOp, JCC_TO_COND, PathConditionTracker

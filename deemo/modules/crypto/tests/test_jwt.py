@@ -1,5 +1,3 @@
-"""Tests for jwt_analyzer — token detection and vulnerability scanning."""
-
 import os
 import sys
 import json
@@ -13,7 +11,6 @@ from src.jwt_analyzer import JWTAnalyzer, JWTResult, analyze_jwt
 
 
 def _make_jwt(header: dict, payload: dict, secret: bytes = b"secret") -> str:
-    """Build a valid HS256-signed JWT for testing."""
     h = base64.urlsafe_b64encode(json.dumps(header).encode()).rstrip(b"=").decode()
     p = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
     import hmac, hashlib
@@ -59,12 +56,11 @@ class TestJWTAnalyzer(unittest.TestCase):
     def test_expired_token(self):
         token = _make_jwt(
             {"alg": "HS256"},
-            {"sub": "user", "exp": 1}  # 1970 — definitely expired
+            {"sub": "user", "exp": 1}
         )
         result = self._write_and_scan(token)
         self.assertTrue(
-            any(t.is_expired for t in result.tokens),
-            "Expired token should be flagged"
+            any(t.is_expired for t in result.tokens)
         )
 
     def test_no_tokens(self):
@@ -102,7 +98,7 @@ class TestJWTAnalyzer(unittest.TestCase):
         )
 
     def test_corrupt_header(self):
-        token = "!!!!!.aaaa.bbbb"  # completely invalid base64
+        token = "!!!!!.aaaa.bbbb"
         result = self._write_and_scan(token)
         self.assertTrue(
             all(not t.decodable for t in result.tokens)

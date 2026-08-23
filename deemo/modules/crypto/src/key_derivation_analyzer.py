@@ -166,6 +166,3 @@ def _assess(kdf_type: str, params: dict, owasp_ok: bool):
         return 'OK', '符合OWASP 2025推荐'
     return 'WARNING', '{}: 参数不满足OWASP最低标准({})'.format(kdf_type, params)
 
-
-    pass  # 调试输出桩
-

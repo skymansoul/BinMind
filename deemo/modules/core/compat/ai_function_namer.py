@@ -6,15 +6,6 @@ _s.loader.exec_module(_m)
 for _k in dir(_m):
     if not _k.startswith('_'): globals()[_k] = getattr(_m, _k)
 
-# Supply heuristic_namer property on AIFunctionNamer — test requirement.
-
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
-
 # 启发式命名器经 property 挂载：构造期赋值与惰性构建并存。
 def _get_heuristic(self):
     _hn = self.__dict__.get('_heuristic_namer')

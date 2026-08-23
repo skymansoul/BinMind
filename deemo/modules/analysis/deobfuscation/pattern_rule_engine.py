@@ -84,7 +84,6 @@ def _builtin_rules() -> List[Rule]:
                 RulePattern('regex', r'(?:jmp|call)\s+(?:qword\s+)?\[r\w+\s*[\+\-]', 'any'),
                 RulePattern('regex', r'mov\s+r\w+,\s*\[r\w+\s*\*\s*[0-9]', 'any')],
             condition={'type': 'proximity', 'value': 256, 'min_hits': 2}),
-        # 新增: ELF 结构异常检测
         Rule(name='elf_anomalies', description='ELF structure anomalies: stripped, corrupted, modified',
             patterns=[
                 RulePattern('elf_section', '.gnu_debuglink', 'any'),
@@ -92,7 +91,6 @@ def _builtin_rules() -> List[Rule]:
                 RulePattern('elf_phdr', 'GNU_STACK', 'any'),
                 RulePattern('elf_phdr', 'GNU_RELRO', 'any')],
             condition={'type': 'min_matches', 'value': 1}),
-        # 新增: ELF 注入检测 - PT_NOTE → PT_LOAD 转换是 virus 感染特征
         Rule(name='elf_infection', description='ELF infection: PT_NOTE->PT_LOAD, segment padding code',
             patterns=[
                 RulePattern('elf_phdr', 'PT_NOTE', 'any'),
@@ -138,7 +136,6 @@ def _parse_pe_imports(data: bytes) -> List[str]:
 # ELF ABI: e_shoff / e_shnum / e_phoff / e_phnum
 
 def _parse_elf_sections(data: bytes) -> List[str]:
-    """解析 ELF section header，返回 section 名称列表"""
     names: List[str] = []
     if data[:4] != _ELF_MAGIC:
         return names
@@ -175,7 +172,6 @@ def _parse_elf_sections(data: bytes) -> List[str]:
 
 
 def _parse_elf_phdrs(data: bytes) -> List[str]:
-    """解析 ELF program header，返回 segment type 名称列表"""
     types: List[str] = []
     if data[:4] != _ELF_MAGIC:
         return types
@@ -202,7 +198,6 @@ def _parse_elf_phdrs(data: bytes) -> List[str]:
 
 
 def _find_elf_segment_gaps(data: bytes) -> List[Tuple[int, int]]:
-    """检测 ELF LOAD 段之间的空隙-这是代码注入的常见位置"""
     gaps: List[Tuple[int, int]] = []
     if data[:4] != _ELF_MAGIC or data[4] not in (1, 2):
         return gaps
@@ -381,7 +376,6 @@ def _match_pattern(data: bytes, pattern: RulePattern, imports: List[str],
 # 规则引擎
 
 class RuleEngine:
-    """类 YARA 规则引擎, 支持 ELF 结构分析"""
 
     def __init__(self):
         self.rules: List[Rule] = []

@@ -1,20 +1,5 @@
-"""
-DDSSC误报过滤器 (DDSSC False Positive Filter) - Stage 6/7/8.
-
-核心决策:
-  在HeapFPFilter的三阶段(Stage1-3)和PathSensitiveVRA(Stage4)、
-  HeapStructInference(Stage5)之后, 追加三层DDSSC过滤:
-    Stage 6: 区间推理终判 - 利用符号传播后的精确区间
-    Stage 7: 符号尺寸关联 - malloc(N) vs memcpy(M) 的等价性
-    Stage 8: 按需SMT求解 - 路径可行性验证
-
-  被过滤的告警标注fp_stage和判定依据, 便于审计和消融实验.
-  保留原有Stage1-5完全不变, 仅在管线末尾追加.
-
-铁律: 不删除已有过滤阶段, 只追加新阶段.
-
-创建: 2024-03-31
-"""
+# DDSSC误报过滤器 - Stage 6/7/8
+# Stage6 区间推理终判 / Stage7 符号尺寸关联 / Stage8 按需SMT
 
 from typing import Dict, List, Optional
 from .ddssc_coordinator import DDSSCCoordinator, DDSSCResult

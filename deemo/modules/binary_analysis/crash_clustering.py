@@ -24,7 +24,6 @@ class CrashSeverity(str, Enum):
 
     @property
     def weight(self):
-        """Numeric weight for severity comparison."""
         return _SEVERITY_WEIGHT.get(self.value, 1)
 
 
@@ -49,7 +48,6 @@ class Cluster:
 
 
 class StackHashGenerator:
-    """Generates crash hash signatures for fast deduplication."""
 
     @staticmethod
     def generate_hash(call_stack: List[str]) -> str:
@@ -73,7 +71,6 @@ class StackHashGenerator:
 
 
 class CrashClusterer:
-    """Core clustering engine."""
 
     def __init__(self, method=None):
         self.method = method if method is not None else ClusterMethod.COMBINED
@@ -171,7 +168,6 @@ class CrashClusterer:
 
 
 class ClusterAnalyzer:
-    """Analyzer wrapper that chains clustering, dedup, and reporting."""
 
     def __init__(self):
         self.clusterer = CrashClusterer()
@@ -225,7 +221,6 @@ class ClusterAnalyzer:
 
 def create_crash_info(crash_id: str, crash_address: int,
                       call_stack: List[str]) -> CrashInfo:
-    """Convenience factory function."""
     return CrashInfo(
         crash_id=crash_id,
         crash_address=crash_address,
@@ -235,7 +230,6 @@ def create_crash_info(crash_id: str, crash_address: int,
 
 
 def cluster_crashes(crashes: List[CrashInfo]) -> List[Cluster]:
-    """Convenience entry point for external scripts."""
     clusterer = CrashClusterer()
     for crash in crashes:
         clusterer.add_crash(crash)

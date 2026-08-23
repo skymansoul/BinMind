@@ -16,10 +16,6 @@
 #   - free(rcx->field): 释放参数结构体字段 - mov rax,[rcx+offset]; call free
 # callee 内部调用其他 free-like 函数: 递归摘要 (1层)
 #
-# 理论依据:
-#   二进制级过程间分析, 以函数摘要传播 free 参数
-#
-
 import re
 from typing import Dict, List, Optional, Set, Tuple
 

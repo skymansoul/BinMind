@@ -1,14 +1,11 @@
-# Integration tests for 去混淆 module
-"""End-to-end integration tests for 去混淆 流水线"""
+# 去混淆模块集成测试
 
 import pytest
 
 class TestDeobfuscationPipeline:
-    """Full 去混淆 流水线 integration"""
 
     def test_probe_classify_deobfuscate_flow(self) -> None:
-        """Verify probe -> classify -> 去混淆 flow produces results"""
-        # Simulate probe step
+        # 模拟探测步骤
         indicators = {
             "avg_entropy": 4.5,
             "max_entropy": 6.2,
@@ -16,16 +13,16 @@ class TestDeobfuscationPipeline:
             "size": 8192,
             "indicators": [],
         }
-        assert indicators["avg_entropy"] < 7.0  # packed
+        assert indicators["avg_entropy"] < 7.0  # 已加壳
 
-        # Simulate classify step
+        # 模拟分类步骤
         if indicators["avg_entropy"] > 7.0:
             classification = "PACKED"
         else:
             classification = "UNKNOWN"
         assert classification == "UNKNOWN"
 
-        # Simulate strategy selection
+        # 模拟策略选择
         strategies = {
             "UNKNOWN": ["dead_code", "constants"],
             "PACKED": ["unpack", "dead_code", "constants"],
@@ -33,7 +30,7 @@ class TestDeobfuscationPipeline:
         strategy = strategies[classification]
         assert "dead_code" in strategy
 
-        # Verify full result shape
+        # 验证完整结果结构
         result = {
             "classification": classification,
             "strategy": strategy,
@@ -43,7 +40,6 @@ class TestDeobfuscationPipeline:
         assert result["status"] == "orchestrated"
 
     def test_deobfuscation_applies_passes(self) -> None:
-        """去混淆 apply passes 追踪 stats"""
         instructions = [
             {"addr": 0x1000, "mnemonic": "mov", "operands": "eax, 1"},
             {"addr": 0x1001, "mnemonic": "nop", "operands": ""},
@@ -51,7 +47,7 @@ class TestDeobfuscationPipeline:
             {"addr": 0x1003, "mnemonic": "ret", "operands": ""},
         ]
 
-        # Simulate dead code elimination
+        # 模拟死代码消除
         reachable = {i["addr"]: i for i in instructions}
         assert 0x1000 in reachable
         assert 0x1003 in reachable
@@ -64,7 +60,6 @@ class TestDeobfuscationPipeline:
         assert stats["final"] > 0
 
     def test_classification_with_entropy_threshold(self) -> None:
-        """High entropy trigger PACKED 分类"""
         high_entropy = {"avg_entropy": 7.5, "indicators": ["high_entropy"]}
         low_entropy = {"avg_entropy": 3.2, "indicators": []}
 
@@ -83,17 +78,15 @@ class TestDeobfuscationPipeline:
 
 
 class TestDecodePipeline:
-    """字符串解码 流水线 integration"""
 
     def test_decode_batch_flow(self) -> None:
-        """Batch 解码 process multiple strings"""
         strings = [
             "SGVsbG8gV29ybGQ=",  # Base64 "Hello World"
             "48656c6c6f",         # Hex "Hello"
             "Uryyb",              # ROT13 "Hello"
         ]
 
-        # Simulate batch 解码
+        # 模拟批量解码
         results = {}
         for s in strings:
             results[s] = (s, "placeholder", 0.5)
@@ -103,7 +96,6 @@ class TestDecodePipeline:
             assert s in results
 
     def test_string_classification_pipeline(self) -> None:
-        """String 分类 identify types"""
         test_cases = [
             ("https://example.com", "url"),
             ("192.168.1.1", "ip_address"),
@@ -123,10 +115,8 @@ class TestDecodePipeline:
 
 
 class TestUnpackDetection:
-    """脱壳 detection integration"""
 
     def test_packer_detection_sections(self) -> None:
-        """Section name detection 查找 加壳器s"""
         PACKER_SECTIONS = [".UPX0", ".UPX1", ".aspack", ".MPRESS1"]
         section_list = [".text", ".UPX0", ".data", ".UPX1"]
 
@@ -136,14 +126,13 @@ class TestUnpackDetection:
         assert ".UPX1" in found
 
     def test_entropy_based_packing_detection(self) -> None:
-        """High entropy sections indicate packing"""
         import math
         from collections import Counter
 
-        # Low entropy (normal code)
+        # 低熵 (正常代码)
         normal_data = b"The quick brown fox jumps over the lazy dog" * 10
 
-        # High entropy (encrypted/packed)
+        # 高熵 (加密/加壳)
         import os
         high_entropy_data = os.urandom(256)
 
@@ -154,15 +143,13 @@ class TestUnpackDetection:
                 (c / n) * math.log2(c / n) for c in counter.values() if c > 0
             )
             if label == "packed":
-                assert entropy > 6.5, f"Packed data entropy too low: {entropy}"
-            # Normal data vary
+                assert entropy > 6.5, f"加壳数据熵过低: {entropy}"
+            # 正常数据有变化
 
 
 class TestVMDetection:
-    """VM detection integration"""
 
     def test_vm_string_detection(self) -> None:
-        """VM-specific strings detectable"""
         vm_strings = {
             "VMProtect": ["VMProtect", ".vmp0", ".vmp1"],
             "Themida": ["Themida", ".themida", "WinLicense"],
@@ -185,17 +172,14 @@ class TestVMDetection:
 
 
 class TestErrorHandling:
-    """Error recovery graceful degradation tests"""
 
     def test_invalid_file_handling(self) -> None:
-        """Invalid file path caught"""
         filepath = "/nonexistent/file_12345.bin"
         import os
         exists = os.path.isfile(filepath)
         assert not exists
 
     def test_empty_file_handling(self) -> None:
-        """Empty file 崩溃分析"""
         data = b""
         if len(data) == 0:
             entropy = 0.0
@@ -204,10 +188,9 @@ class TestErrorHandling:
         assert len(sections) == 0
 
     def test_unicode_decode_errors(self) -> None:
-        """Non-UTF8 data handled errors='replace'"""
         data = b"\xff\xfe\x00\x01Hello\x80\x90"
         try:
             decoded = data.decode("utf-8", errors="replace")
             assert "Hello" in decoded
         except UnicodeDecodeError:
-            pytest.fail("Should use errors='replace' to handle bad bytes")
+            pytest.fail("应使用 errors='replace' 处理坏字节")

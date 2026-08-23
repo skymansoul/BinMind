@@ -1,15 +1,4 @@
-#!/usr/bin/env python3
-"""
-WebAssembly 二进制分析器
-
-对 WASM 模块进行结构化分析：
-- 模块/函数/表/内存/全局变量解析
-- 导入/导出段分析
-- 控制流平坦化检测（WASM 特有模式）
-- 基于 的跨领域分析框架
-
-WASM 格式参考：https://WebAssembly.github.io/spec/core/binary/
-"""
+# WebAssembly 二进制分析器: 模块/函数/表/内存/全局变量解析, 安全评估.
 
 import logging
 import os
@@ -24,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class WASMSectionID(IntEnum):
-    """WASM Section IDs (LEB128 encoded)"""
     CUSTOM = 0
     TYPE = 1
     IMPORT = 2

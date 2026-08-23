@@ -1,4 +1,4 @@
-# Public interface: ChangeType SemanticChangeCategory enums plus SemanticDiffAnalyzer
+# 公共接口: ChangeType, SemanticChangeCategory 枚举, 以及 SemanticDiffAnalyzer
 #
 # 2025 升级: 融合 BINSEC 关系符号执行 的侧信道检测思想,
 # 对安全关键函数（crypto、auth）的比较增加"常量时间"维度：
@@ -151,8 +151,7 @@ class SemanticDiffResult:
         }
 
 # 侧信道检测
-# Bardin et al., "BINSEC: Adapting 符号执行 for
-# Binary-Level Security"
+# Bardin et al., "BINSEC: 面向二进制级安全的符号执行适配"
 # 关系符号执行检测：若版本 A→B 的修改在 crypto/auth 函数中引入了
 # 数据依赖分支（即分支条件取决于密钥/密码的中间值），则存在侧信道风险
 # 简化实现通过指令序列分析检测此模式，无需完整的符号执行

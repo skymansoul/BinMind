@@ -9,10 +9,6 @@
 #   窄化后的区间. 合并时不再用join, 而是记录路径谓词并在危险点
 #   前检查谓词可满足性.
 #
-# 理论依据:
-#   路径敏感分析降低二进制静态审计误报; 分支条件驱动的区间窄化.
-#
-
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple

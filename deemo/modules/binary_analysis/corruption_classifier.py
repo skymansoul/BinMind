@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class CorruptionType(str, Enum):
-    """Memory corruption type enumeration."""
     STACK_BUFFER_OVERFLOW = "stack_buffer_overflow"
     HEAP_BUFFER_OVERFLOW = "heap_buffer_overflow"
     USE_AFTER_FREE = "use_after_free"
@@ -33,7 +32,6 @@ CorruptionType.ALL = list(CorruptionType)
 
 @dataclass
 class CorruptionClassification:
-    """Storage for single vulnerability classification info."""
     corruption_type: CorruptionType = CorruptionType.UNKNOWN
     confidence: float = 0.0
     evidence: List[str] = field(default_factory=list)
@@ -43,7 +41,6 @@ class CorruptionClassification:
 
 @dataclass
 class CrashContext:
-    """Crash analysis context data."""
     crash_address: Optional[int] = None
     crash_type: Optional[str] = None
     registers: Dict[str, str] = field(default_factory=dict)
@@ -55,11 +52,6 @@ class CrashContext:
 
 
 class CorruptionClassifier:
-    """
-    Memory corruption classifier.
-
-    Rule-engine based classification with AI-assisted analysis.
-    """
 
     CLASSIFICATION_RULES = {
         CorruptionType.DOUBLE_FREE: [
@@ -145,9 +137,6 @@ class CorruptionClassifier:
         logger.info("Corruption classifier initialized")
 
     def classify(self, crash_context: CrashContext, vulnerability_info: Optional[Dict[str, Any]] = None) -> CorruptionClassification:
-        """
-        Execute memory corruption type classification.
-        """
         logger.info("Starting corruption classification...")
 
         evidence = []
@@ -191,7 +180,6 @@ class CorruptionClassifier:
         return result
 
     def _build_crash_text(self, crash_context: CrashContext) -> str:
-        """Build crash context text for pattern matching."""
         parts = []
 
         if crash_context.crash_type:
@@ -260,7 +248,6 @@ class CorruptionClassifier:
         return scores
 
     def _apply_exception_analysis(self, crash_context: CrashContext, scores: Dict, evidence: List[str]) -> Dict:
-        """Analyze based on exception type."""
         crash_type = (crash_context.crash_type or '').lower()
 
         if 'sigsegv' in crash_type or 'segmentation fault' in crash_type:
@@ -301,7 +288,6 @@ class CorruptionClassifier:
         return scores
 
     def _get_type_description(self, corruption_type: CorruptionType) -> str:
-        """Get human-readable description for corruption type."""
         descriptions = {
             CorruptionType.HEAP_BUFFER_OVERFLOW: "Heap buffer overflow: writing beyond buffer boundary on heap, may corrupt heap structures or adjacent memory",
             CorruptionType.USE_AFTER_FREE: "Use after free: accessing memory region after it has been freed",
@@ -322,9 +308,6 @@ class CorruptionClassifier:
         return descriptions.get(corruption_type, "Unknown")
 
     def batch_classify(self, crash_contexts: List[CrashContext], vulnerability_infos: Optional[List[Dict[str, Any]]] = None) -> List[CorruptionClassification]:
-        """
-        Batch classify memory corruption types.
-        """
         results = []
         for i, context in enumerate(crash_contexts):
             vuln_info = vulnerability_infos[i] if vulnerability_infos and i < len(vulnerability_infos) else None
@@ -333,14 +316,8 @@ class CorruptionClassifier:
         return results
 
     def get_cwe_for_type(self, corruption_type: CorruptionType) -> Optional[str]:
-        """
-        Get CWE identifier for a given corruption type.
-        """
         return self.CWE_MAPPING.get(corruption_type)
 
 
 def get_corruption_classifier() -> CorruptionClassifier:
-    """
-    Factory function to obtain a CorruptionClassifier instance.
-    """
     return CorruptionClassifier()

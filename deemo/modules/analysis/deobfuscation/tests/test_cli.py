@@ -1,11 +1,7 @@
-# CLI tests for 去混淆 module
-"""去混淆 CLI 入口测试"""
-
 import pytest
 import sys
 
 class TestCLI:
-    """去混淆 CLI 测试"""
 
     def test_help_runs(self) -> None:
         try:
@@ -61,7 +57,6 @@ class TestCLI:
 
 
 class TestSubcommandArgs:
-    """各子命令参数解析测试"""
 
     def test_deobfuscate_args(self) -> None:
         import argparse

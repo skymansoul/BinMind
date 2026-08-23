@@ -1,5 +1,3 @@
-"""Unit tests for signature_tampering_detector: status classification, reputation check, PE parser."""
-
 import os
 import sys
 import unittest
@@ -96,21 +94,17 @@ class TestPEParser(unittest.TestCase):
 
     def test_invalid_pe(self):
         parser = PESignatureParser()
-        # Non-MZ header — must not parse as PE
         result = parser.parse(b'\x00' * 128)
         self.assertIsNone(result)
 
     def test_minimal_pe_no_signature(self):
-        """Minimal x64 PE with no security directory — verify the parser does not crash."""
         parser = PESignatureParser()
         mz = b'MZ\x00\x00' + b'\x00' * 56
         mz = bytearray(mz)
         mz[0x3C:0x40] = struct.pack('<I', 0x40)
         pe_sig = b'PE\x00\x00'
-        # x64 PE: SizeOfOptionalHeader=112. Data directories (16×8=128 bytes) follow the optional header.
         opt_hdr_sz = 112
         coff = struct.pack('<HHIIIHH', 0x8664, 0, 0, 0, 0, opt_hdr_sz, 0)
-        # Allocate space for optional header + data directories
         opt_header = b'\x00' * (opt_hdr_sz + 128)
         pe_data = bytes(mz) + pe_sig + coff + opt_header
         result = parser.parse(pe_data)

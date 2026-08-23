@@ -1,0 +1,72 @@
+{
+  "sample_info": {
+    "name": "01_stack_overflow",
+    "source_file": "vuln.c",
+    "binary_path": "samples/teaching/01_stack_overflow/01_stack_overflow.exe",
+    "format": "PE",
+    "arch": "x86-64",
+    "bits": 64,
+    "vulnerability_type": "stack-overflow (gets)",
+    "protections": {
+      "NX": "disabled",
+      "PIE": "disabled",
+      "Canary": "disabled"
+    },
+    "description": "经典栈溢出教学样本; gets(buf) 无边界检查, 输入超过 64 字节覆盖返回地址"
+  },
+  "reproduce_command": {
+    "compile": "gcc -fno-stack-protector -no-pie -o 01_stack_overflow.exe vuln.c",
+    "run_pipeline": "python binmind.py -b samples/teaching/01_stack_overflow/01_stack_overflow.exe",
+    "trigger": "echo 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' | ./01_stack_overflow.exe"
+  },
+  "detection_results": {
+    "result_file": "results/01_stack_overflow_20260822_015049.json",
+    "analysis_timestamp": "2026-08-22T01:50:49.773865",
+    "total_vulnerabilities": 323,
+    "severity_breakdown": {
+      "high": 171,
+      "medium": 98,
+      "low": 54
+    },
+    "key_findings": [
+      {
+        "function": "sym.vuln",
+        "type": "Format String Bugs",
+        "severity": "High",
+        "cwe": [
+          {"cwe_id": 8, "cwe_description": "Buffer Overflow"},
+          {"cwe_id": 16, "cwe_description": "Format String Bug"}
+        ],
+        "description": "The function sym.vuln is vulnerable to format string bugs due to the way it calls the str.Enter_input: function. The caller of this function, var_40h, has a fixed size for its return address (0x140005050), and the length of the string being entered into the input field is unknown. This allows an attacker to overwrite the format string with their own code, potentially leading to arbitrary code execution."
+      },
+      {
+        "function": "sym.gets",
+        "type": "format string bugs",
+        "severity": "High",
+        "cwe": 231,
+        "description": "The function sym.gets is vulnerable to format string bugs because it directly calls the C function msvcrt.dll_gets which can overflow if the input string length exceeds the maximum allowed size."
+      },
+      {
+        "function": "sym.__tmainCRTStartup",
+        "type": "Stack Overflow",
+        "severity": "High",
+        "cwe": 10,
+        "description": "The function __tmainCRTStartup is vulnerable to stack overflow due to the way it handles null pointers."
+      }
+    ]
+  },
+  "llm_conclusion": {
+    "report_file": "reports/reverse_report_unknown_20260822_015058.md",
+    "risk_level": "moderate",
+    "vulnerability_count_in_report": 0,
+    "protection_status": "NX disabled; PIE/ASLR disabled",
+    "remediation_recommendations": [
+      "Replace unsafe functions (strcpy, strcat) with bounded variants (strncpy, snprintf). Add input length validation.",
+      "Eliminate user-controlled format strings. Use parameterised formatting exclusively.",
+      "Zero pointers immediately after free. Adopt a consistent ownership model."
+    ],
+    "code_fix_reference": "strncpy(dest, src, sizeof(dest) - 1); dest[sizeof(dest) - 1] = '\\0';",
+    "note": "逆向报告显示 0 个结构化漏洞, 因报告生成阶段未传入完整 decomp_results; 实际检测 JSON 中检出 323 条 finding"
+  },
+  "human_review_status": "pending"
+}

@@ -146,12 +146,9 @@ def _register_binary_layers(
 
     # 编译器产物归一化器
     try:
-        # CompilerArtifactNormalizer 已重构为 normalize_cfg 函数 API, 该增强当前跳过
-        from modules.core.compat.compiler_artifact_normalizer import (
-            CompilerArtifactNormalizer,
-        )
-        result['_compiler_normalizer'] = CompilerArtifactNormalizer()
-        logger.debug('CompilerArtifactNormalizer activated')
+        from modules.core.compat.compiler_artifact_normalizer import normalize_cfg
+        result['_compiler_normalizer'] = normalize_cfg
+        logger.debug('compiler artifact normalizer activated')
     except ImportError:
         logger.debug('optional plugin not available')
 

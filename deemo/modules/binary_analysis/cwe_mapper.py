@@ -40,7 +40,6 @@ class CWEMapper:
         self._load_mappings()
 
     def _load_mappings(self):
-        """Load CWE mapping data."""
         files_to_try = [
             self.mapping_file,
             self._default_mapping_file,
@@ -65,7 +64,6 @@ class CWEMapper:
             self._load_default_mappings()
 
     def _parse_mappings(self, data: Dict[str, Any]):
-        """Parse mapping data."""
         for vuln_type, cwe_list in data.get('mappings', {}).items():
             self.mappings[vuln_type] = []
             for cwe_data in cwe_list:
@@ -82,7 +80,6 @@ class CWEMapper:
                 self.cwe_details[cwe_data.get('cwe_id', '')] = mapping
 
     def _load_default_mappings(self):
-        """Load built-in default mappings."""
         default_mappings = {
             'stack_overflow': [
                 {
@@ -309,7 +306,6 @@ class CWEMapper:
         self._parse_mappings({'mappings': default_mappings})
 
     def get_cwe_for_vulnerability(self, vuln_type: str) -> List[CWEClassification]:
-        """Get CWE classifications for a vulnerability type."""
         vuln_type_lower = vuln_type.lower().strip()
 
         if vuln_type_lower in self.mappings:
@@ -327,7 +323,6 @@ class CWEMapper:
         return self._fuzzy_match(vuln_type_lower)
 
     def _fuzzy_match(self, vuln_type: str) -> List[CWEClassification]:
-        """Fuzzy match vulnerability types."""
         results = []
         matched_types = set()
 
@@ -391,16 +386,13 @@ class CWEMapper:
         return results[:5]
 
     def get_top_cwe(self, vuln_type: str) -> Optional[CWEClassification]:
-        """Get the top matching CWE for a vulnerability type."""
         results = self.get_cwe_for_vulnerability(vuln_type)
         return results[0] if results else None
 
     def get_cwe_details(self, cwe_id: str) -> Optional[CWEMapping]:
-        """Get detailed info for a specific CWE."""
         return self.cwe_details.get(cwe_id)
 
     def classify_vulnerabilities(self, vulnerabilities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Add CWE classification to a list of vulnerabilities."""
         classified = []
 
         for vuln in vulnerabilities:
@@ -431,18 +423,15 @@ class CWEMapper:
         return classified
 
     def get_all_vulnerability_types(self) -> List[str]:
-        """Get all known vulnerability types."""
         return list(self.mappings.keys())
 
     def get_all_cwe_ids(self) -> List[str]:
-        """Get all known CWE IDs."""
         return list(self.cwe_details.keys())
 
     def add_custom_mapping(self, vuln_type: str, cwe_id: str, cwe_name: str,
                             description: str = '', severity: str = 'Medium',
                             keywords: List[str] = None, suggestions: List[str] = None,
                             references: List[str] = None):
-        """Add a custom CWE mapping."""
         if vuln_type not in self.mappings:
             self.mappings[vuln_type] = []
 
@@ -461,7 +450,6 @@ class CWEMapper:
         logger.info(f"Custom CWE mapping added: {vuln_type} -> {cwe_id}")
 
     def save_mappings(self, output_path: str = None):
-        """Save mappings to file."""
         if not output_path:
             output_path = self.mapping_file
 
@@ -488,5 +476,4 @@ class CWEMapper:
             logger.error(f"Failed to save CWE mappings: {e}")
 
     def get_cwe_url(self, cwe_id: str) -> str:
-        """Get the MITRE reference URL for a CWE."""
         return f"https://cwe.mitre.org/data/definitions/{cwe_id.split('-')[1]}.html"

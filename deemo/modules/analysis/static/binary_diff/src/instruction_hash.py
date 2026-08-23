@@ -11,8 +11,6 @@
 # 三元组 (op_type, operand_types, flags_effect) 的 SHA256 前 32-bit 作为指令哈希
 # 冲突概率 < 2^-32，对实际二进制文件中的指令数量而言足够
 #
-# - BinSub 的语义哈希使用操作码和操作数大小
-# 本项目在此基础上增加了 flags_effect 维度和立即数粒度折叠
 
 import hashlib
 import re

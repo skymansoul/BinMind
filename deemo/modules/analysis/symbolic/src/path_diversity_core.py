@@ -1,36 +1,36 @@
-"""抗路径爆炸的核心路径多样性分析引擎。
+"""抗路径爆炸的核心路径多样性分析引擎
 
 通过选择彼此差异最大的路径抑制路径爆炸: 在结构、语义、约束
-与覆盖率特征维度上计算两两相似度, 按相似度阈值把路径聚类,
+与覆盖率特征维度上计算两两相似度，按相似度阈值把路径聚类，
 再从各簇选代表以最大化探索多样性。
 
-核心实现从 path_diversity.py 拆出, 包含真实库代码: 特征提取、
+核心实现从 path_diversity.py 拆出，包含真实库代码: 特征提取、
 SimHash、ANN 索引、多样性预算、路径热力图、流式监控、快照
 diff、相似度计算、多样性追踪与多样性感知的路径选择。
 
 增强:
-- LSH (Locality-Sensitive Hashing) 加速相似度搜索: 随机超平面
-  投影把路径特征向量映射到汉明空间, 近似 KNN 查询复杂度从
-  O(n²·d) 降至 O(k·d·log n); SimHash 指纹用于快速去重 —
-  两路径 SimHash 差异大则无需精确相似度计算
-- WEIGHTED_SAMPLE 策略: 按簇大小反比抽样, 小簇代表被选中的
-  概率更高, 防止少数大簇垄断探索预算
-- 近似最近邻索引 (ANN via Random Projection Forest): ann_forest
-  由多棵随机投影树组成, 每棵在随机超平面上递归分割特征空间;
-  构建 O(n·log n), 查询 O(log n), 替代 O(n²) 两两比较
-- 多样性预算管理 (DiversityBudget): 总路径预算按
-  cluster_quota = max_paths / num_clusters 均分; 簇超配额时
-  逐出与 centroid_simhash 汉明距离最大的路径 (最不具代表性),
-  保留核心多样性
-- 簇可视化导出 (export_cluster_visualization): 当前簇状态导出
-  为 JSON, 含 cluster_id、centroid_features 与 member_count
-- StreamingDiversityMonitor: 基于回调的监控器, 按可配置间隔
-  发射 (timestamp, diversity_score, exploration_velocity,
-  cluster_count) 元组, 用于实时仪表板集成
-- PathHeatmap: 按 (depth_bucket, constraint_count_bucket) 维护
-  已探索路径的 2D 直方图, 识别冷点做针对性重探索
-- SnapshotDiff: 比较两个 PathDiversityTracker 快照, 计算新簇
-  形成、簇合并、路径在簇间移动与多样性评分增量
+LSH (Locality-Sensitive Hashing) 加速相似度搜索: 随机超平面
+投影把路径特征向量映射到汉明空间，近似 KNN 查询复杂度从
+O(n²·d) 降至 O(k·d·log n); SimHash 指纹用于快速去重——
+两路径 SimHash 差异大则无需精确相似度计算
+WEIGHTED_SAMPLE 策略: 按簇大小反比抽样，小簇代表被选中的
+概率更高，防止少数大簇垄断探索预算
+近似最近邻索引 (ANN via Random Projection Forest): ann_forest
+由多棵随机投影树组成，每棵在随机超平面上递归分割特征空间;
+构建 O(n·log n)，查询 O(log n)，替代 O(n²) 两两比较
+多样性预算管理 (DiversityBudget): 总路径预算按
+cluster_quota = max_paths / num_clusters 均分; 簇超配额时
+逐出与 centroid_simhash 汉明距离最大的路径（最不具代表性），
+保留核心多样性
+簇可视化导出 (export_cluster_visualization): 当前簇状态导出
+为 JSON，含 cluster_id、centroid_features 与 member_count
+StreamingDiversityMonitor: 基于回调的监控器，按可配置间隔
+发射 (timestamp, diversity_score, exploration_velocity,
+cluster_count) 元组，用于实时仪表板集成
+PathHeatmap: 按 (depth_bucket, constraint_count_bucket) 维护
+已探索路径的 2D 直方图，识别冷点做针对性重探索
+SnapshotDiff: 比较两个 PathDiversityTracker 快照，计算新簇
+形成、簇合并、路径在簇间移动与多样性评分增量
 """
 
 import logging
@@ -45,17 +45,12 @@ from enum import Enum
 from typing import Dict, Any, List, Optional, Set, Tuple, Callable
 from dataclasses import dataclass, field
 from collections import defaultdict
-from collections import OrderedDict  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
-_LEGACY_MODE = False
-
-
-
 
 class DiversityStrategy(Enum):
-    """挑选下一条多样路径的选择策略。"""
+    """挑选下一条多样路径的选择策略"""
     RANDOM = "random"
     ROUND_ROBIN = "round_robin"
     SIMILARITY_BASED = "similarity_based"
@@ -65,7 +60,7 @@ class DiversityStrategy(Enum):
 
 
 class PathFeatureType(Enum):
-    """路径相似度的度量维度。"""
+    """路径相似度的度量维度"""
     STRUCTURAL = "structural"
     SEMANTIC = "semantic"
     CONSTRAINTS = "constraints"
@@ -250,18 +245,7 @@ class _RandomProjectionTree:
         return max(0.0, min(1.0, dot / denom))
 
 
-# def _legacy_pairwise_search(features, target_id, threshold=0.7):
-#     results = []
-#     for pid, feat in features.items():
-#         if pid == target_id:
-#             continue
-#         sim = _cosine_similarity(target, feat)
-#         if sim >= threshold:
-#             results.append((pid, sim))
-#     return sorted(results, key=lambda x: -x[1])[:10]
-
-
-# ANNIndex — 随机投影森林，替代 O(n²) pairwise 相似度搜索
+# ANNIndex——随机投影森林，替代 O(n²) pairwise 相似度搜索
 # ann_forest 包含多棵 _RandomProjectionTree
 # 查询时汇总所有树的候选并按余弦相似度合并排序
 class ANNIndex:
@@ -902,11 +886,11 @@ class SnapshotDiff:
         old_cluster_ids = set(old_clusters.keys())
         new_cluster_ids = set(new_clusters.keys())
 
-# 新建 / 删除的簇
+        # 新建/删除的簇
         result.new_clusters = sorted(new_cluster_ids - old_cluster_ids)
         result.removed_clusters = sorted(old_cluster_ids - new_cluster_ids)
 
-# 构建 path→集群 映射
+        # 构建 path→集群映射
         old_path_to_cluster: Dict[str, str] = {}
         for cid, members in old_clusters.items():
             for pid in members:
@@ -920,11 +904,11 @@ class SnapshotDiff:
         old_paths = set(old_path_to_cluster.keys())
         new_paths = set(new_path_to_cluster.keys())
 
-# 新增 / 删除的路径
+        # 新增/删除的路径
         result.new_paths = sorted(new_paths - old_paths)
         result.removed_paths = sorted(old_paths - new_paths)
 
-# 移动路径（在两个快照中都存在但簇归属改变）
+        # 移动路径（在两个快照中都存在但簇归属改变）
         common_paths = old_paths & new_paths
         for pid in sorted(common_paths):
             old_cid = old_path_to_cluster.get(pid, "")
@@ -936,19 +920,17 @@ class SnapshotDiff:
                     "new_cluster": new_cid,
                 })
 
-# 合并检测
-        # 如果旧快照中的 N 个簇（N > 1）的所有成员都出现在新快照的同一个簇中
-        # 则认为发生了合并
+        # 合并检测
+        # 旧快照中的多个簇在新快照中合并为一个
         merged = self._detect_merges(old_clusters, new_clusters)
         result.merged_clusters = merged
 
-# 分裂检测
-        # 如果旧快照中的一个簇的成员分散到新快照的多个簇中（每个目标簇都包含
-        # 该旧簇的部分成员），则认为发生了分裂
+        # 分裂检测
+        # 旧快照中的一个簇在新快照中分裂为多个
         split = self._detect_splits(old_clusters, new_clusters)
         result.split_clusters = split
 
-# 数量变化
+        # 数量变化
         old_metrics = snapshot_old.get("metrics")
         new_metrics = snapshot_new.get("metrics")
 
@@ -1534,9 +1516,8 @@ class PathDiversityTracker:
         """捕获当前 tracker 状态, 供 SnapshotDiff 比较。"""
         return SnapshotDiff.capture(self)
 
-    # export_cluster_visualization — 导出簇状态 JSON 用于外部可视化
     def export_cluster_visualization(self, output_path: Optional[str] = None) -> Dict[str, Any]:
-        """导出簇状态 JSON, 供外部可视化工具使用。
+        """导出簇状态 JSON，供外部可视化工具使用
 
         返回含 cluster_id、centroid_features、member_count 的字典;
         提供 output_path 时写入 JSON 磁盘。每个簇的

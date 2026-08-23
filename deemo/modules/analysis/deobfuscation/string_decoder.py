@@ -28,7 +28,6 @@ class DecodeMethod(Enum):
 
 @dataclass
 class StringAnalysis:
-    """字符串分析结果容器"""
     original: str
     decoded_text: Optional[str] = None
     decoding_method: Optional[str] = None
@@ -50,12 +49,6 @@ class StringAnalysis:
 
 
 class StringDecoder:
-    """
-    二进制字符串自动解码器
-
-    扫描二进制中的字符串，自动检测并解码简单编码的字符串，
-    恢复明文，帮助发现隐藏的配置、域名、命令等
-    """
 
     _MULTI_XOR_KEYS = [
         b"\x55", b"\xaa", b"\x13\x37", b"\xde\xad", b"\xbe\xef",
@@ -84,7 +77,6 @@ class StringDecoder:
                 self.enable_lang_detect = False
 
     def _calculate_entropy(self, s):
-        """计算字符串的 Shannon 熵"""
         if s is None or s == "":
             return 0.0
 
@@ -107,7 +99,6 @@ class StringDecoder:
         return entropy
 
     def _is_human_readable(self, s):
-        """检查字符串是否人类可读"""
         if s is None or s == "":
             return False
 
@@ -137,9 +128,6 @@ class StringDecoder:
         return True
 
     def _try_zlib(self, s):
-        """尝试 zlib 解压。恶意软件常将配置或 payload 以 zlib 压缩后
-        以 base64 或 hex 编码存储。检测 zlib magic bytes 后解压
-        """
         results = []
         if s is None or len(s) < 12:
             return results
@@ -166,7 +154,6 @@ class StringDecoder:
         return results
 
     def _try_base64(self, s):
-        """尝试 Base64 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -202,7 +189,6 @@ class StringDecoder:
         return results
 
     def _try_hex(self, s):
-        """尝试 Hex 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -252,10 +238,6 @@ class StringDecoder:
         return results
 
     def _try_sliding_xor(self, s):
-        """滑动窗口 XOR 密钥恢复。对于长度 > 32 的密文，使用重合指数
-        (index coincidence) 估算密钥长度，然后用频率分析恢复密钥
-        相比单字节固定密钥枚举更适用于商业加壳器（通常使用 2-16 字节密钥）
-        """
         results = []
         if s is None or len(s) < 32:
             return results
@@ -312,7 +294,6 @@ class StringDecoder:
         return results
 
     def _try_xor(self, s):
-        """尝试常见密钥 XOR 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -342,7 +323,6 @@ class StringDecoder:
         return results
 
     def _try_rot13(self, s):
-        """尝试 ROT13 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -370,7 +350,6 @@ class StringDecoder:
         return results
 
     def _try_url_decode(self, s):
-        """尝试 URL 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -402,7 +381,6 @@ class StringDecoder:
         return results
 
     def _try_unicode_escape(self, s):
-        """尝试 Unicode 转义解码"""
         results = []
         if s is None or s == "":
             return results
@@ -422,7 +400,6 @@ class StringDecoder:
         return results
 
     def _try_quoted_printable(self, s):
-        """尝试 quoted-printable 解码"""
         results = []
         if s is None or s == "":
             return results
@@ -443,7 +420,6 @@ class StringDecoder:
         return results
 
     def _try_layered(self, s):
-        """尝试分层解码链。在初始解码结果上递归最多一层"""
         results = []
         if s is None or len(s) < 8:
             return results
@@ -466,7 +442,6 @@ class StringDecoder:
         return results
 
     def _evaluate_decode_result(self, decoded_str):
-        """评估解码结果的质量"""
         score = 0.0
 
         if decoded_str is None or decoded_str == "":
@@ -544,7 +519,6 @@ class StringDecoder:
         return min(max(score, 0.0), 1.0)
 
     def _looks_like_encoded(self, s):
-        """检查字符串是否疑似编码"""
         if s is None or s == "":
             return False
 
@@ -581,7 +555,6 @@ class StringDecoder:
         return False
 
     def _looks_like_rot13(self, s):
-        """检查字符串是否疑似 ROT13"""
         if s is None or s == "":
             return False
 
@@ -636,7 +609,6 @@ class StringDecoder:
         return False
 
     def analyze_string(self, s):
-        """分析单个字符串解码器"""
         if s is None:
             return StringAnalysis(original=s)
 
@@ -686,7 +658,6 @@ class StringDecoder:
         return analysis
 
     def analyze_strings(self, strings):
-        """分析字符串列表"""
         results = []
         if strings is None:
             return results
@@ -699,7 +670,6 @@ class StringDecoder:
         return results
 
     def find_suspicious_patterns(self, strings):
-        """在字符串列表中查找可疑模式"""
         suspicious = []
         if strings is None:
             return suspicious
@@ -730,7 +700,6 @@ class StringDecoder:
         return suspicious
 
     def decode_all(self, strings):
-        """完整解码分析字符串列表"""
         if strings is None:
             logger.warning("strings is None")
             return {
@@ -782,7 +751,6 @@ class StringDecoder:
         return results
 
     def decode_and_enrich(self, binary_info):
-        """解码字符串并丰富二进制信息字典"""
         if binary_info is None:
             logger.warning("binary_info is None")
             return {}

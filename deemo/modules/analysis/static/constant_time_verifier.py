@@ -1,29 +1,5 @@
-#!/usr/bin/env python3
 # 补全 secret-indexed 加载 在 x86 SIB 寻址下的检测（base+index*scale）
 # 加入循环边界的 secret 依赖检测（回边计数的污点传播）
-"""
-二进制层面的常量时间违规检测 - 不需要源码级标注的静态数据流方法
-
-现有方案:
-- Binsec/Rel: 关系符号执行，精确但需要全 SE 管线
-- DOCC: 动态 trace 分析，覆盖率依赖执行路径
-- ctgrind/FlowTracker: Valgrind 插件，需源码级 secret 标记
-
-本模块的差异化: 静态数据流分析，直接运行在反汇编的基本块上。不执行程序
-不依赖符号执行，仅通过 CFG + 前向传播分析。输入为:
-1. 从 IDA/Ghidra/Binja 反汇编的基本块序列
-2. 用户标记的 secret-carrying 寄存器/内存位置（如保存密钥的缓冲区地址）
-输出: 三类违规的位置列表及其数据流路径
-
-三类检测:
-A. 秘密依赖分支: JCC/CMOV/SETcc 的条件码寄存器被 secret 污染
-B. 秘密索引访存: MOV RAX, [RBX + RCX*4] 中 RCX 被 secret 污染
-C. 秘密边界循环: 循环回边的迭代计数依赖 secret 值
-
-ref: Schneider et al. "Breaking Bad: 编译器s Break Constant-Time."
- - 编译器在 -O2 以上引入的 CT 违规 43% 仅出现在
-二进制层面，IR/源码层面不可见。本模块的二进制直接分析规避了此盲区
-"""
 
 from __future__ import annotations
 

@@ -1,9 +1,3 @@
-"""
-语义差异 — 跨版本二进制/源码语义差异分析。
-
-对比函数语义检测补丁/回归/安全修复。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -378,14 +372,13 @@ class SemanticDiffer:
         sig_b: SemanticSignature,
         threshold: float = 0.9,
     ) -> PatchDelta:
-        """Compare two function versions and produce a patch delta."""
         similarity = self.compute_similarity(sig_a, sig_b)
 
         call_changes: List[str] = []
         constant_changes: List[str] = []
         structural_changes: List[str] = []
 
-        # Call target changes
+        # 调用目标变更
         old_calls = set(sig_a.call_targets)
         new_calls = set(sig_b.call_targets)
         added_calls = new_calls - old_calls
@@ -395,7 +388,7 @@ class SemanticDiffer:
         for c in removed_calls:
             call_changes.append(f"Removed call to {c}")
 
-        # Constant changes
+        # 常量变更
         old_consts = set(sig_a.constant_values)
         new_consts = set(sig_b.constant_values)
         added_consts = new_consts - old_consts
@@ -405,7 +398,7 @@ class SemanticDiffer:
         for c in removed_consts:
             constant_changes.append(f"Removed constant {hex(c)}")
 
-        # Structural changes
+        # 结构变更
         if sig_a.instruction_count != sig_b.instruction_count:
             structural_changes.append(
                 f"Instructions: {sig_a.instruction_count} -> {sig_b.instruction_count}"

@@ -139,7 +139,7 @@ N = len(categories)
 angles = [n / float(N) * 2 * np.pi for n in range(N)]
 angles += angles[:1]
 
-# Normalize each dimension to [0, 1]
+# 将每个维度归一化到 [0, 1]
 def norm_dr(v): return v / 100.0
 def norm_prec(v): return 1.0 - v / 100.0
 def norm_speed(v): return 1.0 - np.log10(v * 1000) / 6.0

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# Public interface: AddressEntry, MappingResult, AddressMapper
-# External deps: os, json, subprocess
-# Architecture: generator pattern over inheritance trees; avoids deep class hierarchies
+# 公共接口: AddressEntry, MappingResult, AddressMapper
+# 外部依赖: os, json, subprocess
+# 架构: 生成器模式替代继承树; 避免深层类层次
 import logging
 import os
 import json
@@ -29,7 +29,7 @@ class AddressEntry:
 
 @dataclass
 class MappingResult:
-    """Mapping result: status flag, entry set, 基址, ASLR delta, symbol count"""
+    """映射结果: 状态标志, 条目集, 基址, ASLR 偏移, 符号计数"""
     ok: bool = False
     entries: list = field(default_factory=list)
     base: int = 0

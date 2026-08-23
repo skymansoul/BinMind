@@ -1,21 +1,5 @@
-# 堆溢出误报三阶段过滤器 (Heap Overflow FP Filter)
-#
-# 三阶段级联过滤, 仅保留高置信度的堆溢出报告.
-# 每阶段独立运行, 前一阶段的"安全"判定直接丢弃, 不进入下一阶段.
-#
-# 阶段设计:
-#   Stage 1 - 常量传播: 若 memcpy 的 size 参数可从指令序列中
-#     静态推导为常量且 ≤ 分配大小 → 安全. 过滤率 ~15-25%.
-#   Stage 2 - Bounds Check: 若在到达危险调用前, size 参数
-#     已经过 cmp/jcc 与分配大小比较 → 安全. 过滤率 ~10-15%.
-#   Stage 3 - Allocation-Site Correlation: 若 malloc(N) 和
-#     memcpy(ptr, src, M) 的 N 和 M 来自同一变量或等价表达式
-#     → 安全 (分配=写入). 过滤率 ~5-10%.
-#
-# 总过滤率目标: 30-50% 的初始告警被抑制, 且漏报率不增加.
-# 过滤 soundness: 所有过滤判定均为 under-approximation of danger,
-#   即: 被过滤的告警在所有具体执行中确实不会溢出.
-#
+# 堆溢出误报三阶段过滤器
+# Stage1 常量传播 / Stage2 边界检查 / Stage3 分配-写入同源关联
 
 from typing import Dict, List, Optional, Tuple
 from .heap_slice_trace import BackwardSliceTracer, SourceKind, TaintSource

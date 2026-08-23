@@ -225,7 +225,3 @@ def auto_attack(n: int, e: int) -> dict:
 __all__ = ['wiener_attack', 'fermat_factorization', 'batch_gcd',
            'auto_attack', 'is_weak_rsa_key', 'is_roca_vulnerable']
 
-
-def _debug_print(*args, **kwargs):
-    pass  # 调试输出桩
-

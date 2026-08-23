@@ -30,7 +30,6 @@ class OptimizationResult:
 
 
 class PseudocodeOptimizer:
-    """Decompiled code optimizer."""
 
     CONSTANT_FOLD_PATTERNS = [
         (r'\(\s*(-?\d+)\s*\)', r'\1'),

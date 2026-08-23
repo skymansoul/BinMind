@@ -15,14 +15,12 @@ except ImportError:
 from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 
 
-# Enum: CacheStrategy
 class CacheStrategy(StrEnum):
     LRU = "lru"
     LFU = "lfu"
     FIFO = "fifo"
 
 
-# Enum: CacheInvalidationPolicy
 class CacheInvalidationPolicy(StrEnum):
     TIMEOUT = "timeout"
     SIZE_LIMIT = "size_limit"

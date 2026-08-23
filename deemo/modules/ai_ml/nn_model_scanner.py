@@ -1,10 +1,3 @@
-"""
-神经网络模型扫描器 —— ONNX/TFLite 模型安全分析。
-
-识别模型格式、解析元数据、检测后门触发器、恶意子图与序列化攻击，
-输出结构化扫描结果与风险评分。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -21,8 +14,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-
-# Enums
 
 class ModelFormat(Enum):
     ONNX = "onnx"
@@ -55,11 +46,8 @@ class Severity(Enum):
     INFO = 1.0
 
 
-# Data classes
-
 @dataclass
 class ModelMetadata:
-    """Metadata extracted from an NN model file."""
     format: ModelFormat = ModelFormat.UNKNOWN
     name: str = ""
     producer: str = ""
@@ -90,7 +78,6 @@ class SuspiciousPattern:
 
 @dataclass
 class SecurityFinding:
-    """A single security finding from model scanning."""
     finding_id: str = ""
     threat_category: ThreatCategory = ThreatCategory.UNKNOWN
     severity: Severity = Severity.INFO
@@ -114,11 +101,6 @@ class ScanResult:
 
 
 def _detect_format_from_magic(filepath: str) -> Tuple[ModelFormat, str, float]:
-    """
-    通过二进制魔数/文件头推断模型格式。
-    返回 (format, 匹配描述, 文件熵)。
-    即使后缀是 .txt 里面藏着 onnx protobuf 也能揪出来。
-    """
     import os as _os
     if not _os.path.exists(filepath):
         return ModelFormat.UNKNOWN, "file not found", 0.0
@@ -142,28 +124,28 @@ def _detect_format_from_magic(filepath: str) -> Tuple[ModelFormat, str, float]:
     # 优先匹配高危信号
     if "pe_header" in magic_found or "elf_header" in magic_found:
         return ModelFormat.UNKNOWN, \
-            f"Binary executable header detected — possibly malware masquerading as model", \
+            "检测到可执行文件头 -- 可能是伪装为模型的恶意软件", \
             file_entropy
 
     if "onnx_protobuf" in magic_found:
-        return ModelFormat.ONNX, "ONNX protobuf magic confirmed", file_entropy
+        return ModelFormat.ONNX, "ONNX protobuf 魔数确认", file_entropy
     if "tflite_fb" in magic_found:
-        return ModelFormat.TFLITE, "TFLite FlatBuffer magic confirmed", file_entropy
+        return ModelFormat.TFLITE, "TFLite FlatBuffer 魔数确认", file_entropy
     if "pytorch_zip" in magic_found:
-        return ModelFormat.PYTORCH, "PyTorch zip archive magic confirmed", file_entropy
+        return ModelFormat.PYTORCH, "PyTorch zip archive 魔数确认", file_entropy
     if "keras_h5" in magic_found:
-        return ModelFormat.KERAS, "Keras HDF5 magic confirmed", file_entropy
+        return ModelFormat.KERAS, "Keras HDF5 魔数确认", file_entropy
     if "pb_savedmodel" in magic_found:
-        return ModelFormat.TENSORFLOW, "TensorFlow protobuf magic confirmed", file_entropy
+        return ModelFormat.TENSORFLOW, "TensorFlow protobuf 魔数确认", file_entropy
     if "pickle_proto" in magic_found or "pickle_proto_v0" in magic_found:
-        return ModelFormat.PYTORCH, "Pickle serialized model (legacy PyTorch)", file_entropy
+        return ModelFormat.PYTORCH, "Pickle 序列化模型 (legacy PyTorch)", file_entropy
     if magic_found:
-        return ModelFormat.UNKNOWN, f"Ambiguous magic: {magic_found}", file_entropy
+        return ModelFormat.UNKNOWN, f"魔数歧义: {magic_found}", file_entropy
 
-    return ModelFormat.UNKNOWN, "no known magic signature", file_entropy
+    return ModelFormat.UNKNOWN, "无已知魔数签名", file_entropy
 
 
-# ONNX Parser
+# ONNX 解析器
 
 def _compute_shannon_entropy(data: bytes) -> float:
     if not data:
@@ -181,21 +163,20 @@ def _compute_shannon_entropy(data: bytes) -> float:
     return entropy
 
 _MODEL_MAGIC_SIGNATURES: Dict[str, Tuple[bytes, str]] = {
-    # (magic, description)
-    "onnx_protobuf":   (b'\x08\x01', "ONNX protobuf header (IR version field tag)"),
-    "tflite_fb":       (b'\x0c\x00\x00\x00', "TFLite FlatBuffer root table at offset 0"),
-    "pytorch_zip":     (b'PK\x03\x04', "PyTorch zip archive (standard ZIP header)"),
+    "onnx_protobuf":   (b'\x08\x01', "ONNX protobuf header"),
+    "tflite_fb":       (b'\x0c\x00\x00\x00', "TFLite FlatBuffer root table"),
+    "pytorch_zip":     (b'PK\x03\x04', "PyTorch zip archive"),
     "keras_h5":        (b'\x89HDF\r\n\x1a\n', "Keras HDF5 container"),
     "pb_savedmodel":   (b'\x0a\x1a', "TensorFlow SavedModel protobuf"),
-    "elf_header":      (b'\x7fELF', "ELF executable (suspicious in model files)"),
+    "elf_header":      (b'\x7fELF', "ELF executable (模型文件中可疑)"),
     "pe_header":       (b'MZ', "PE/DOS executable (极度可疑)"),
     "pickle_proto":    (b'\x80\x02', "Pickle protocol 2 header"),
-    "pickle_proto_v0": (b'(i', "Pickle proto 0 (ASCII) suspicious marker"),
+    "pickle_proto_v0": (b'(i', "Pickle proto 0 ASCII suspicious marker"),
 }
 
 
 class ONNXParser:
-    """Parses ONNX model protobuf format (basic implementation without protobuf dependency)."""
+    """ONNX protobuf 格式解析器（无 protobuf 依赖的基础实现）。"""
 
     __slots__ = ()
 
@@ -216,7 +197,7 @@ class ONNXParser:
         metadata.file_hash = hashlib.sha256(data).hexdigest()
         metadata.entropy_score = _compute_shannon_entropy(data)
 
-        # Scan for ONNX protobuf fields using wire-format heuristics
+        # 按 wire-format 启发式扫描 ONNX protobuf 字段
         metadata.ir_version = self._find_varint_field(data, 1)
         metadata.model_version = self._find_varint_field(data, 5)
         metadata.producer_name = self._find_string_field(data, 2)
@@ -283,10 +264,10 @@ class ONNXParser:
         return strings
 
 
-# TFLite Parser
+# TFLite 解析器
 
 class TFLiteParser:
-    """Parses TensorFlow Lite FlatBuffer models."""
+    """TensorFlow Lite FlatBuffer 模型解析器。"""
 
     __slots__ = ()
 
@@ -340,10 +321,10 @@ class TFLiteParser:
         return strings
 
 
-# Backdoor Detector
+# 后门检测器
 
 class BackdoorDetector:
-    """Detects neural network backdoors via pattern analysis."""
+    """通过模式分析检测神经网络后门。"""
 
     __slots__ = ('m_trigger_patterns', 'm_thresholds', 'model_data', '_trigger_patterns')
 
@@ -428,7 +409,7 @@ class SerializationAttackDetector:
 
 
 class ModelReconstructor:
-    """Attempts to reconstruct model structure from partial/broken files."""
+    """从部分/损坏文件中重建模型结构。"""
 
     __slots__ = ('nodes',)
 

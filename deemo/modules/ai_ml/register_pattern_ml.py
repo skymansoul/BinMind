@@ -1,9 +1,3 @@
-"""
-寄存器模式ML — 编译器/寄存器模式识别。
-
-识别编译器签名/优化级别/寄存器使用模式，辅助二进制分析与函数识别。
-"""
-
 from __future__ import annotations
 
 import re
@@ -14,7 +8,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 @dataclass
 class RegisterUsage:
-    """Register usage statistics for a function."""
     reg: str
     read_count: int = 0
     write_count: int = 0
@@ -23,7 +16,6 @@ class RegisterUsage:
 
 @dataclass
 class CompilerSignature:
-    """Compiler identification signature."""
     name: str
     confidence: float
     features: Dict[str, float]
@@ -220,7 +212,6 @@ ARCH_HEURISTICS: Dict[str, Dict[str, Any]] = {
 
 
 class RegisterPatternExtractor:
-    """Extracts register usage patterns from disassembly."""
 
     def __init__(self) -> None:
         self._all_registers = {
@@ -233,7 +224,6 @@ class RegisterPatternExtractor:
         self,
         disassembly: str,
     ) -> List[RegisterUsage]:
-        """Extract register usage statistics from disassembly text."""
         usage: Dict[str, Dict[str, int]] = defaultdict(
             lambda: {'read': 0, 'write': 0}
         )
@@ -338,7 +328,6 @@ class RegisterPatternExtractor:
         self,
         usage: List[RegisterUsage],
     ) -> Dict[str, float]:
-        """Compute a normalized feature vector from register usage."""
         total_reads = sum(u.read_count for u in usage)
         total_writes = sum(u.write_count for u in usage)
         total_ops = max(total_reads + total_writes, 1)
@@ -371,7 +360,6 @@ class RegisterPatternExtractor:
         self,
         usage: List[RegisterUsage],
     ) -> str:
-        """Detect likely calling convention from register usage patterns."""
         used_regs = {u.reg.lower() for u in usage if u.write_count > 0 or u.read_count > 0}
 
         if {'rcx', 'rdx', 'r8', 'r9'} & used_regs:
@@ -396,7 +384,6 @@ class RegisterPatternExtractor:
 
 
 class CompilerRegisterClassifier:
-    """ML-based compiler identification from register/instruction patterns."""
 
     COMPILER_FEATURES: Dict[str, Dict[str, float]] = {
         'msvc_debug': {
@@ -447,12 +434,10 @@ class CompilerRegisterClassifier:
         self,
         disassembly: str,
     ) -> CompilerSignature:
-        """Classify the likely compiler and optimization level."""
         features = self._extract_features(disassembly)
         return self._match_compiler(features)
 
     def _extract_features(self, disassembly: str) -> Dict[str, float]:
-        """Extract compiler-relevant features from disassembly."""
         lines = disassembly.split('\n')
         total_lines = max(len(lines), 1)
 
@@ -516,7 +501,6 @@ class CompilerRegisterClassifier:
         self,
         features: Dict[str, float],
     ) -> CompilerSignature:
-        """Match features against known compiler profiles."""
         # 获取特征区分度权重，提升匹配精度
         weights = self._compute_feature_weights()
 
@@ -549,7 +533,6 @@ class CompilerRegisterClassifier:
         a: Dict[str, float],
         b: Dict[str, float],
     ) -> float:
-        """Compute cosine similarity between two feature vectors."""
         keys = set(a.keys()) | set(b.keys())
         if not keys:
             return 0.0
@@ -699,7 +682,6 @@ class CompilerRegisterClassifier:
         self,
         functions: Dict[str, str],
     ) -> Dict[str, CompilerSignature]:
-        """Classify compiler for multiple functions."""
         return {
             name: self.classify(disasm)
             for name, disasm in functions.items()
@@ -709,7 +691,6 @@ class CompilerRegisterClassifier:
         self,
         results: Dict[str, CompilerSignature],
     ) -> CompilerSignature:
-        """Determine most likely compiler from batch classification."""
         counter: Counter[str] = Counter()
         total_confidence: Dict[str, float] = defaultdict(float)
 
@@ -745,5 +726,4 @@ class CompilerRegisterClassifier:
 
 
 def create_compiler_classifier() -> CompilerRegisterClassifier:
-    """Factory function to create a pre-configured compiler classifier."""
     return CompilerRegisterClassifier()

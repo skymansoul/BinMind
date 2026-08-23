@@ -1,6 +1,5 @@
-"""Bare-metal firmware 仿真器 using Unicorn引擎
-Qiling-style rootfs abstraction for OS-less firmware: 文件系统 mappers
-系统调用 dispatch tables, peripheral 寄存器 maps loaded JSON profiles"""
+"""裸机固件仿真器，基于 Unicorn 引擎
+Qiling 风格 rootfs 抽象：文件系统映射、系统调用分发表、外设寄存器映射加载自 JSON 配置"""
 import logging, os, struct, time, json
 from enum import Enum
 _log = logging.getLogger(__name__)
@@ -9,7 +8,7 @@ try:
     import unicorn
     UNICORN_AVAILABLE = True
 except ImportError:
-    _log.warning("Unicorn not installed")
+    _log.warning("Unicorn 未安装")
 
 class Architecture(Enum):
     ARM_CORTEX_M = "arm_cortex_m"
@@ -67,14 +66,12 @@ class FirmwareAnalysisResult:
         self.vulnerabilities = list(vulnerabilities) if vulnerabilities is not None else []
 
 class BareMetalEmulator:
-    """Bare-metal firmware 仿真 engine backed Unicorn
-    实现MMIO读写分发、NVIC中断向量表解析、外设hook注册，以及执行追踪
-    不依赖操作系统抽象层 — 直接操作物理地址空间的加载与执行
+    """裸机固件仿真引擎，基于 Unicorn
+    实现 MMIO 读写分发、NVIC 中断向量表解析、外设 hook 注册及执行追踪
+    不依赖操作系统抽象层，直接操作物理地址空间的加载与执行
 
-    舍入 2: Qiling-style rootfs abstraction — JSON profiles describe memory
-    layouts, peripheral 寄存器 maps, 中断 vector tables. decouples
-    hardware 配置 仿真器 core, enabling drop- 支持 for
-    new MCU families code changes
+    舍入2：Qiling 风格 rootfs 抽象，JSON 配置描述内存布局、外设寄存器映射、
+    中断向量表，解耦硬件配置与仿真器核心，支持新 MCU 家族零代码改动接入
     """
 
     # 配置文件搜索路径 — 按顺序查找固件平台描述文件
@@ -96,9 +93,9 @@ class BareMetalEmulator:
         self._breakpoints = set()
         self._vector_table = {}
         self._syscall_table: dict[int, callable] = {}
-        # Qiling风格: rootfs路径 — 固件运行时依赖的虚拟文件系统根目录
+        # Qiling 风格：rootfs 路径，固件运行时依赖的虚拟文件系统根目录
         self._rootfs_path: str = ""
-        # 文件映射器: 虚拟路径 -> 真实路径或字节数据
+        # 文件映射器：虚拟路径 -> 真实路径或字节数据
         self._fs_map: dict[str, bytes] = {}
 
     def load_firmware(self,path):
@@ -107,8 +104,8 @@ class BareMetalEmulator:
         self._load_static()
 
     def set_rootfs(self, rootfs_dir: str):
-        """指定Qiling风格的rootfs目录。固件内的open/read等syscall将映射到此目录
-        例如 打开("配置.bin") 会实际读取 {rootfs}/配置.bin"""
+        """指定 Qiling 风格 rootfs 目录，固件内 open/read 等系统调用将映射到此目录
+        例如 open("config.bin") 实际读取 {rootfs}/config.bin"""
         self._rootfs_path = rootfs_dir
         if os.path.isdir(rootfs_dir):
             for dirpath, _, filenames in os.walk(rootfs_dir):
@@ -120,24 +117,24 @@ class BareMetalEmulator:
                             self._fs_map[vpath] = fh.read()
                     except Exception:
                         pass
-            _log.info(f"rootfs loaded: {len(self._fs_map)} files from {rootfs_dir}")
+            _log.info(f"rootfs 已加载: {len(self._fs_map)} 个文件来自 {rootfs_dir}")
 
     def register_syscall(self, num: int, handler: callable):
-        """注册POSIX风格的syscall处理器
-        处理器签名: fn(emu, *args) -> int (返回值，-1表示ENOSYS)"""
+        """注册 POSIX 风格系统调用处理器
+        处理器签名：fn(emu, *args) -> int（返回值，-1 表示 ENOSYS）"""
         self._syscall_table[num] = handler
 
     def _dispatch_syscall(self, num: int, args: list) -> int:
         h = self._syscall_table.get(num)
         if h is None:
-            _log.debug(f"syscall {num} not implemented (ENOSYS)")
+            _log.debug(f"系统调用 {num} 未实现 (ENOSYS)")
             return -1
         return h(self, *args)
 
     def load_hw_profile(self, profile_path: str) -> bool:
-        """加载JSON格式的硬件平台描述文件
-        包含memory_regions, peripherals, vector_table, 系统调用s 四个节
-        Qiling框架使用Python脚本配置，这里用JSON实现等价功能"""
+        """加载 JSON 格式硬件平台描述文件
+        包含 memory_regions、peripherals、vector_table、syscalls 四个节
+        Qiling 框架使用 Python 脚本配置，此处用 JSON 实现等价功能"""
         if not os.path.isfile(profile_path):
             for d in self._PROFILE_SEARCH:
                 alt = os.path.join(d, os.path.basename(profile_path))
@@ -145,7 +142,7 @@ class BareMetalEmulator:
                     profile_path = alt
                     break
             else:
-                _log.warning(f"HW profile not found: {profile_path}")
+                _log.warning(f"未找到硬件配置: {profile_path}")
                 return False
 
         with open(profile_path, 'r', encoding='utf-8') as fh:
@@ -165,15 +162,15 @@ class BareMetalEmulator:
         for vt in cfg.get("vector_table", []):
             self._vector_table[vt["name"]] = vt["address"]
 
-        _log.info(f"HW profile loaded: {len(self.memory_regions)} regions, "
-                  f"{len(self.peripherals)} peripherals")
+        _log.info(f"硬件配置已加载: {len(self.memory_regions)} 个内存区域, "
+                   f"{len(self.peripherals)} 个外设")
         return True
 
     def run(self):
-        """执行固件仿真主循环。加载二进制到Unicorn内存空间、配置MMIO区域、
+        """执行固件仿真主循环。加载二进制到 Unicorn 内存空间、配置 MMIO 区域、
         设置栈指针和入口点，然后启动仿真循环直到遇到断点或异常"""
         if not self.UNICORN_AVAILABLE:
-            _log.warning("Unicorn absent; cannot run bare-metal emulation")
+            _log.warning("Unicorn 不可用，无法执行裸机仿真")
             self.stats["emulated"] = False
             return FirmwareAnalysisResult(self.firmware_path)
 
@@ -219,7 +216,7 @@ class BareMetalEmulator:
                 try:
                     mu.mem_map(addr, mr.size, unicorn.UC_PROT_READ | unicorn.UC_PROT_WRITE)
                 except unicorn.UcError:
-                    pass  # 可能已经映射过
+                    pass  # 可能已映射
 
             with open(self.firmware_path, 'rb') as fh:
                 fw_data = fh.read()
@@ -255,22 +252,22 @@ class BareMetalEmulator:
             self.stats["elapsed_us"] = elapsed_us
             self.stats["instructions"] = len(self._trace_log)
             result.traces = list(self._trace_log)
-            result.findings.append(f"Emulated {len(self._trace_log)} instructions in {elapsed_us}us")
+            result.findings.append(f"已仿真 {len(self._trace_log)} 条指令，耗时 {elapsed_us}us")
 
         except unicorn.UcError as e:
-            _log.info(f"Unicorn emulation ended: {e}")
+            _log.info(f"Unicorn 仿真结束: {e}")
             self.exceptions.append(str(e))
             result.traces = list(self._trace_log)
         except Exception as exc:
-            _log.error(f"Bare-metal emulation failed: {exc}")
+            _log.error(f"裸机仿真失败: {exc}")
             self.exceptions.append(str(exc))
 
         return result
 
     def _parse_vector_table(self, fw_data: bytes):
-        """ARM Cortex-M中断向量表解析
-        从固件起始处读取初始SP、复位向量、NMI/HardFault等系统异常向量
-        以及外部IRQ向量（偏移0x40开始）"""
+        """ARM Cortex-M 中断向量表解析
+        从固件起始处读取初始 SP、复位向量、NMI/HardFault 等系统异常向量
+        及外部 IRQ 向量（偏移 0x40 开始）"""
         if len(fw_data) < 0x100:
             return
         vectors = {
@@ -310,8 +307,8 @@ class BareMetalEmulator:
     def _detect_entry_point(self):
         """基于架构与已加载固件推导入口点。
 
-        Cortex-M: 从向量表偏移 4 读取 reset handler，剥除 thumb bit。
-        其他架构: 回退至默认内存布局首块基址。
+        Cortex-M：从向量表偏移 4 读取 reset handler，剥除 thumb bit。
+        其他架构：回退至默认内存布局首块基址。
         """
         if self.architecture == Architecture.ARM_CORTEX_M:
             for region in self.memory_regions.values():
@@ -333,11 +330,11 @@ class BareMetalEmulator:
             if layout:
                 self.entry_point = layout[0]["address"]
 
-# 舍入 2: 快照/恢复 — 参考Qiling的ql.保存()/ql.恢复()机制
-    # 配合fuzzing循环使用：崩溃后回滚到初始状态，而非重新创建Unicorn实例
+# 舍入2：快照/恢复，参考 Qiling 的 save()/restore() 机制
+    # 配合 fuzzing 循环使用：崩溃后回滚到初始状态，而非重新创建 Unicorn 实例
     def snapshot(self) -> dict:
-        """保存当前仿真状态到可序列化的快照
-        包含所有寄存器值、内存区域内容、MMIO状态和trace日志"""
+        """保存当前仿真状态到可序列化快照
+        包含所有寄存器值、内存区域内容、MMIO 状态和追踪日志"""
         if not self._uc:
             return {}
         snap = {
@@ -354,7 +351,7 @@ class BareMetalEmulator:
                         snap['regs'][reg_name] = self._uc.reg_read(const)
         except Exception:
             pass
-        # 快照已映射的可读内存区域 (前64KB)
+        # 快照已映射的可读内存区域（前 64KB）
         for addr, region in list(self.memory_regions.items())[:8]:
             try:
                 sz = min(region.size, 65536)
@@ -365,7 +362,7 @@ class BareMetalEmulator:
 
     def restore(self, snap: dict):
         """从快照恢复仿真状态
-        Qiling的restore通过上下文序列化实现；这里直接写回寄存器和内存"""
+        Qiling 的 restore 通过上下文序列化实现，此处直接写回寄存器和内存"""
         if not self._uc or not snap:
             return False
         try:
@@ -378,15 +375,15 @@ class BareMetalEmulator:
             self.entry_point = snap.get('entry_point', self.entry_point)
             return True
         except Exception as e:
-            _log.warning(f"Snapshot restore failed: {e}")
+            _log.warning(f"快照恢复失败: {e}")
             return False
 
-# Round 2: 执行路径去重 — LibIHT论文中LBR数据的CFG重建思路
-    # 硬件分支记录捕获每个taken/-taken分支；我们通过追踪PC序列去重
-    # 只保留首次观察到的基本块转移边，构建最小化CFG
+# 舍入2：执行路径去重，参考 LibIHT 论文中 LBR 数据的 CFG 重建思路
+    # 硬件分支记录捕获每个 taken/not-taken 分支，通过追踪 PC 序列去重
+    # 只保留首次观察到的基本块转移边，构建最小化 CFG
     def deduplicate_trace(self) -> list:
-        """对执行追踪去重，仅保留首次观察到的(src_pc, dst_pc)转移
-        这模拟LBR (Last Branch Record) 的行为 — 硬件只记录分支边，不记录顺序执行的指令"""
+        """对执行追踪去重，仅保留首次观察到的 (src_pc, dst_pc) 转移
+        模拟 LBR (Last Branch Record) 行为，硬件只记录分支边，不记录顺序执行的指令"""
         seen_edges = set()
         deduped = []
         prev = None

@@ -1,6 +1,6 @@
-# Core types: MemoryRegionType + 6 supporting classes
-# Dependencies: os, json
-# Design: generator replaces explicit 状态机
+# 核心类型: MemoryRegionType + 6 个辅助类
+# 依赖: os, json
+# 设计: 生成器替代显式状态机
 #
 # 2025 增强: ASLR 熵估计 + 地址空间布局熵量化
 # ASLR 的有效性取决于随机化位的"信息熵" - 若某段仅随机化了 8 位
@@ -121,7 +121,7 @@ class PagePermissionCache:
 
 
 class AddressSpaceSimulator:
-    """Address space layout simulation engine"""
+    """地址空间布局模拟引擎"""
 
     def __init__(self, aslr_seed: Optional[int] = None):
         self.randomizer = ASLRRandomizer(aslr_seed)

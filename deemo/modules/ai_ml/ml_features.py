@@ -21,7 +21,7 @@ __dbg = _logging.getLogger(__name__)
 
 @dataclass
 class RegisterAllocationPattern:
-    """Captures register usage patterns for compiler fingerprinting."""
+
     function_name: str = ""
     compiler: str = ""
     optimization_level: str = ""
@@ -48,15 +48,11 @@ class RegisterAllocationPattern:
 
 
 class RegisterAllocationClassifier:
-    """Identifies compiler and optimization level from register allocation patterns.
 
-    Uses known signatures for GCC, Clang, and MSVC with cosine similarity
-    matching and heuristic fallback for ambiguous cases.
-    """
 
     __slots__ = ('m_signatures', 'm_thresholds')
 
-    # GCC x86_64 register allocation signatures [pressure, spills, reloads, xmm, callee, caller]
+    # GCC x86_64 寄存器分配签名 [pressure, spills, reloads, xmm, callee, caller]
     GCC_SIGNATURES = {
         "O0": [0.35, 15.0, 12.0, 2.0, 5.0, 4.0],
         "O1": [0.45, 10.0, 8.0, 5.0, 4.0, 5.0],
@@ -109,7 +105,7 @@ class RegisterAllocationClassifier:
         return dot / (_math.sqrt(norm_a) * _math.sqrt(norm_b))
 
     def classify(self, pattern: RegisterAllocationPattern) -> Tuple[str, str, float]:
-        """Classify compiler and optimization level."""
+
         vec = pattern.to_vector()
         if len(vec) == 0:
             return ("unknown", "unknown", 0.0)
@@ -138,7 +134,7 @@ class RegisterAllocationClassifier:
         return (best_compiler, best_opt, best_sim)
 
     def classify_heuristic(self, pattern: RegisterAllocationPattern) -> Tuple[str, str, float]:
-        """Fallback heuristic classification when cosine similarity is ambiguous."""
+
         compiler, opt, sim = self.classify(pattern)
 
         if sim >= self.m_thresholds["cosine_match"]:
@@ -146,7 +142,7 @@ class RegisterAllocationClassifier:
 
         # Heuristic 回退
         if pattern.xmm_usage > 8:
-            compiler = "clang"  # Clang tends to use more XMM regs
+            compiler = "clang"
         if pattern.spill_count < 5 and pattern.reload_count < 3:
             opt = "O3" if compiler != "msvc" else "Ox"
         elif pattern.spill_count > 10:
@@ -160,7 +156,7 @@ class RegisterAllocationClassifier:
         self.m_signatures[compiler][opt_level] = list(signature)
 
     def extract_pattern_from_code(self, assembly_code: str) -> RegisterAllocationPattern:
-        """Extract register allocation pattern from assembly listing."""
+
         pattern = RegisterAllocationPattern()
 
         reg_usage: Dict[str, int] = _defaultdict(int)
@@ -172,7 +168,7 @@ class RegisterAllocationClassifier:
         li = 0
         while li < len(lines):
             line = lines[li].strip()
-            # Count register references
+            # 统计寄存器引用
             regs = _re.findall(r'\b(r[0-9a-d]x|r[bs]p|rsi|rdi|r[89]|r1[0-5]|'
                               r'e[a-d]x|e[bs]p|esi|edi|xmm\d+|'
                               r'rax|rbx|rcx|rdx)', line, _re.IGNORECASE)
@@ -211,26 +207,19 @@ class RegisterAllocationClassifier:
 # 2. Password Bypass Simulator
 
 class PasswordBypassSimulator:
-    """Discovers password verification routines and simulates bypass strategies.
 
-    Features:
-    - Password verification discovery via pattern matching
-    - Symbolic bypass using simulated angr-style constraint solving
-    - Password fuzzing with byte-level mutations
-    - Hardcoded password detection
-    """
 
     __slots__ = ('m_target_binary', 'm_verification_funcs', 'm_hardcoded_passwords',
                  'm_fuzz_results')
 
-    # Known string comparison functions
+    # 已知字符串比较函数
     COMPARE_FUNCTIONS = [
         "strcmp", "strncmp", "memcmp", "wcscmp", "wcsncmp",
         "_strcmp", "_strncmp", "strcmp_s", "lstrcmpA", "lstrcmpW",
         "StringCompare", "CompareString", "bcmp", "strcasecmp", "strncasecmp",
     ]
 
-    # Known hashing functions
+    # 已知哈希函数
     HASH_FUNCTIONS = [
         "MD5", "SHA1", "SHA256", "SHA512", "SHA384",
         "md5", "sha1", "sha256", "sha512", "sha384",
@@ -245,7 +234,7 @@ class PasswordBypassSimulator:
         self.m_fuzz_results: List[Dict[str, Any]] = []
 
     def discover_verification(self, function_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Discover password verification functions from a list of function metadata."""
+
         discovered: List[Dict[str, Any]] = []
 
         fi = 0
@@ -257,7 +246,7 @@ class PasswordBypassSimulator:
             score = 0.0
             reasons: List[str] = []
 
-            # Check for comparison function calls
+            # 检查比较函数调用
             for cmp_func in self.COMPARE_FUNCTIONS:
                 if cmp_func.lower() in func_name_lower:
                     score += 0.4
@@ -271,7 +260,7 @@ class PasswordBypassSimulator:
                     reasons.append(f"Uses {hash_func}")
                     break
 
-            # Check name patterns
+            # 检查名称模式
             name_patterns = [
                 (r'(?:check|verify|validate|auth).*(?:pass|cred|login|key|pw)', 0.5),
                 (r'(?:pass|cred|login|key|pw).*(?:check|verify|validate|auth)', 0.5),
@@ -297,10 +286,7 @@ class PasswordBypassSimulator:
 
     def symbolic_bypass(self, function_addr: int,
                         constraints: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Simulate symbolic execution to find a bypass input.
 
-        In a real implementation this would use angr; here we simulate the process.
-        """
         result = {
             "success": False,
             "bypass_input": None,
@@ -312,7 +298,7 @@ class PasswordBypassSimulator:
         import time as _time
         start = _time.time()
 
-        # Simulate constraint solving
+        # 模拟约束求解
         bypass_types = ["null_byte_injection", "buffer_overflow", "timing_side_channel",
                         "integer_overflow", "direct_bypass", "none"]
         weights = [0.15, 0.15, 0.05, 0.1, 0.15, 0.4]
@@ -344,7 +330,7 @@ class PasswordBypassSimulator:
     def fuzz_password(self, target_function: str,
                       seed_passwords: Optional[List[str]] = None,
                       iterations: int = 1000) -> List[Dict[str, Any]]:
-        """Fuzz password verification with byte-level mutations."""
+
         if seed_passwords is None:
             seed_passwords = ["", "admin", "password", "123456", "root", "test",
                               "guest", "user", "administrator", "letmein"]
@@ -412,10 +398,10 @@ class PasswordBypassSimulator:
         return results
 
     def detect_hardcoded_passwords(self, strings: List[str]) -> List[str]:
-        """Detect hardcoded passwords from a list of extracted strings."""
+
         hardcoded: List[str] = []
 
-        # Patterns indicative of hardcoded passwords
+        # 硬编码密码特征模式
         patterns = [
             r'^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]{8,32}$',
             r'(?:password|passwd|pwd|secret|api[_-]?key|token|auth)\s*[=:]\s*.+',
@@ -435,7 +421,7 @@ class PasswordBypassSimulator:
 
     def analyze(self, function_list: Optional[List[Dict[str, Any]]] = None,
                 strings: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Run full password bypass analysis pipeline."""
+
         report: Dict[str, Any] = {}
 
         if function_list:
@@ -463,7 +449,7 @@ class PasswordBypassSimulator:
 
 @dataclass
 class BenchmarkResult:
-    """Result of a micro-benchmark run."""
+
     name: str = ""
     iterations: int = 0
     total_time_ms: float = 0.0
@@ -484,7 +470,7 @@ class BenchmarkResult:
 
 
 class MicroBenchmarkFramework:
-    """Lightweight micro-benchmarking framework for ML feature extraction."""
+
 
     __slots__ = ('m_results', 'm_warmup_iterations')
 
@@ -510,13 +496,13 @@ class MicroBenchmarkFramework:
         import time as _time
         import math as _math
 
-        # Warmup
+        # 预热
         wi = 0
         while wi < self.m_warmup_iterations:
             func()
             wi += 1
 
-        # Benchmark
+        # 基准测试
         times: List[float] = []
         i = 0
         while i < iterations:
@@ -551,11 +537,7 @@ class MicroBenchmarkFramework:
     # 异步函数基准测试，适配协程调用链的延迟测量
     def benchmark_async(self, name: str, coro_func: Callable[[], Any],
                         iterations: int = 100) -> BenchmarkResult:
-        """Benchmark an async callable by driving it through the event loop.
 
-        The callable should return an awaitable (coroutine). Each invocation is
-        awaited inside asyncio.run() or an existing loop if one is running.
-        """
         import time as _time
         import math as _math
         import asyncio as _asyncio
@@ -616,7 +598,7 @@ class MicroBenchmarkFramework:
     # 包装异步调用
     async def _await_once(self, coro_func: Callable[[], Any]) -> Any:
         result = coro_func()
-        # 如果返回值本身就是 awaitable，等待它
+        # 如果返回值是 awaitable，等待它
         import inspect as _inspect
         if _inspect.isawaitable(result):
             return await result
@@ -638,10 +620,7 @@ class MicroBenchmarkFramework:
 
     # 多路比较，一次输出全部基准的速度比率矩阵
     def compare_multiple(self, names: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Compare all (or a subset of) benchmarks, returning a speedup matrix.
 
-        If names is None, all stored benchmarks are compared.
-        """
         if names is None:
             names = list(self.m_results.keys())
         valid = [n for n in names if n in self.m_results]
@@ -690,10 +669,7 @@ class MicroBenchmarkFramework:
 # 4. Function Heatmap 构造器
 
 class FunctionHeatmapGenerator:
-    """Generates execution heatmaps from strace/ltrace/objdump-style traces.
 
-    Maps function call frequency and timing to visual heatmap data.
-    """
 
     __slots__ = ('m_traces', 'm_heatmap_data')
 
@@ -702,7 +678,7 @@ class FunctionHeatmapGenerator:
         self.m_heatmap_data: Dict[str, Any] = {}
 
     def parse_strace(self, strace_output: str) -> List[Dict[str, Any]]:
-        """Parse strace output into structured syscall data."""
+
         syscalls: List[Dict[str, Any]] = []
         lines = strace_output.strip().split('\n')
         li = 0
@@ -723,7 +699,7 @@ class FunctionHeatmapGenerator:
         return syscalls
 
     def parse_ltrace(self, ltrace_output: str) -> List[Dict[str, Any]]:
-        """Parse ltrace output into structured library call data."""
+
         calls: List[Dict[str, Any]] = []
         lines = ltrace_output.strip().split('\n')
         li = 0
@@ -744,13 +720,13 @@ class FunctionHeatmapGenerator:
         return calls
 
     def parse_objdump(self, objdump_output: str) -> List[Dict[str, Any]]:
-        """Parse objdump disassembly into function/symbol data."""
+
         symbols: List[Dict[str, Any]] = []
         lines = objdump_output.strip().split('\n')
         li = 0
         while li < len(lines):
             line = lines[li].strip()
-            # Match: address <function_name>:
+            # 匹配: address <function_name>:
             match = _re.match(r'([0-9a-fA-F]+)\s+<([^>]+)>:', line)
             if match:
                 symbols.append({
@@ -761,10 +737,7 @@ class FunctionHeatmapGenerator:
         return symbols
 
     def generate_heatmap(self, granularity: str = "function") -> Dict[str, Any]:
-        """Generate heatmap data from parsed traces.
 
-        granularity: "function", "syscall", or "address"
-        """
         heatmap: Dict[str, Any] = {
             "granularity": granularity,
             "max_count": 0,
@@ -813,9 +786,7 @@ class FunctionHeatmapGenerator:
 # 5. CVE Pattern Learner
 
 class CVEPatternLearner:
-    """Learns vulnerability patterns from CVE database entries and generates
-    YARA-like detection rules with prediction capabilities.
-    """
+
 
     __slots__ = ('m_cve_db', 'm_patterns', 'm_rules', 'm_feature_vectors',
                  'm_cvss_profile')
@@ -848,7 +819,7 @@ class CVEPatternLearner:
         self.m_cvss_profile: Dict[str, Dict[str, Any]] = {}
 
     def load_cve_data(self, cve_entries: List[Dict[str, Any]]):
-        """Load CVE entries for training."""
+
         self.m_cve_db = []
         ci = 0
         while ci < len(cve_entries):
@@ -857,7 +828,7 @@ class CVEPatternLearner:
             ci += 1
 
     def train(self) -> Dict[str, Any]:
-        """Train pattern recognition on loaded CVE data."""
+
         vuln_types: Dict[str, List[str]] = _defaultdict(list)
         keyword_freq: Dict[str, Dict[str, int]] = _defaultdict(lambda: _defaultdict(int))
 
@@ -867,7 +838,7 @@ class CVEPatternLearner:
             desc = entry.get("description", "").lower()
             cwe = entry.get("cwe_id", "UNKNOWN")
 
-            # Extract keywords
+            # 提取关键词
             words = _re.findall(r'\b[a-z_]{3,}\b', desc)
             for w in words:
                 keyword_freq[cwe][w] += 1
@@ -875,7 +846,7 @@ class CVEPatternLearner:
             vuln_types[cwe].append(desc)
             ei += 1
 
-        # Build feature vectors
+        # 构建特征向量
         for cwe, word_counts in keyword_freq.items():
             top_words = sorted(word_counts.items(), key=lambda x: -x[1])[:50]
             if top_words:
@@ -891,7 +862,7 @@ class CVEPatternLearner:
         return dict(self.m_patterns)
 
     def generate_rules(self, min_confidence: float = 0.5) -> List[str]:
-        """Generate YARA-like detection rules from learned patterns."""
+
         rules: List[str] = []
 
         cwes = list(self.m_feature_vectors.keys())
@@ -930,7 +901,7 @@ class CVEPatternLearner:
         return rules
 
     def predict(self, description: str) -> List[Tuple[str, float]]:
-        """Predict CWE type for a vulnerability description."""
+
         desc_lower = description.lower()
         words = set(_re.findall(r'\b[a-z_]{3,}\b', desc_lower))
 
@@ -940,7 +911,7 @@ class CVEPatternLearner:
         ci = 0
         while ci < len(cwes):
             cwe = cwes[ci]
-            # Simple keyword overlap-based scoring
+            # 基于关键词重叠的简单评分
             related = self.m_cve_db
             matching = 0
             total = 0
@@ -968,11 +939,7 @@ class CVEPatternLearner:
     # 启发式快速分级工具，非精确 CVSS 计算器，
     # 在缺少完整 CVSS 向量字符串时给出合理的严重性估计
     def predict_cvss(self, description: str) -> Dict[str, Any]:
-        """Estimate CVSS v3.1 base score from vulnerability description text.
 
-        Uses weighted keyword matching against severity indicators. Returns
-        estimated base score, severity label, and confidence breakdown.
-        """
         desc_lower = description.lower()
         base_score = 5.0  # 从 MEDIUM 中位起步
         matched_keywords: Dict[str, float] = {}
@@ -1027,7 +994,7 @@ class CVEPatternLearner:
 
     # 批量 CVSS 预测，一次处理多个描述
     def predict_cvss_batch(self, descriptions: List[str]) -> List[Dict[str, Any]]:
-        """Estimate CVSS scores for multiple descriptions at once."""
+
         results: List[Dict[str, Any]] = []
         di = 0
         while di < len(descriptions):
@@ -1039,11 +1006,11 @@ class CVEPatternLearner:
 # 6. 智能 Stack Variable Analyzer
 
 class AIStackVariableAnalyzer:
-    """Infers variable purpose and annotates pseudocode using pattern recognition."""
+
 
     __slots__ = ('m_var_types', 'm_annotations', 'm_lifetime_graph')
 
-    # Variable purpose patterns
+    # 变量用途模式
     TYPE_PATTERNS = [
         (r'(?:len|size|count|n|num)', "size/count"),
         (r'(?:buf|buffer|dst|src|ptr|data)', "buffer/pointer"),
@@ -1081,12 +1048,12 @@ class AIStackVariableAnalyzer:
 
     def infer_variable_purpose(self, var_name: str,
                                usage_context: str = "") -> Tuple[str, float]:
-        """Infer the purpose of a stack variable from its name and usage context."""
+
         name_lower = var_name.lower().lstrip('_')
         best_type = "unknown"
         best_score = 0.0
 
-        # Heuristic: exact prefixes
+        # 启发式：精确前缀匹配
         prefix_map = {
             "sz": "size/count", "n": "size/count", "cch": "size/count",
             "dw": "flags/options", "b": "boolean/flag",
@@ -1102,7 +1069,7 @@ class AIStackVariableAnalyzer:
                     best_score = 0.7
                     break
 
-        # Regex-based matching
+        # 正则匹配
         pi = 0
         while pi < len(self.TYPE_PATTERNS):
             pattern, ptype = self.TYPE_PATTERNS[pi]
@@ -1115,10 +1082,10 @@ class AIStackVariableAnalyzer:
                     best_type = ptype
             pi += 1
 
-        # Context-based refinement
+        # 上下文修正
         if usage_context:
             ctx_lower = usage_context.lower()
-            # If used in a comparison, it might be a size/count
+            # 若用于比较操作，可能是 size/count
             if any(op in ctx_lower for op in ('<', '>', '==', '!=')):
                 if best_type == "unknown":
                     best_type = "size/count"
@@ -1128,7 +1095,7 @@ class AIStackVariableAnalyzer:
 
     def annotate_pseudocode(self, pseudocode: str,
                             variables: Optional[List[str]] = None) -> str:
-        """Annotate pseudocode with inferred variable purposes."""
+
         if variables is None:
             variables = _re.findall(r'\b([a-zA-Z_]\w*)\b', pseudocode)
 
@@ -1136,7 +1103,7 @@ class AIStackVariableAnalyzer:
         vi = 0
         while vi < len(variables):
             var = variables[vi]
-            # Skip common keywords
+            # 跳过常见关键字
             if var.lower() in ('if', 'else', 'while', 'for', 'return', 'int',
                                'void', 'char', 'long', 'short', 'unsigned',
                                'signed', 'const', 'static', 'sizeof', 'struct',
@@ -1162,10 +1129,7 @@ class AIStackVariableAnalyzer:
     # 仅通过模式匹配快速筛出高风险代码段，不依赖完整数据流分析，
     # 适合在大规模二进制审计中作为一级过滤
     def detect_lifetime_anomalies(self, pseudocode: str) -> List[Dict[str, Any]]:
-        """Scan pseudocode for variable lifetime anomalies (use-after-free, double-free, etc.).
 
-        Returns a list of detected anomalies with type, severity, and line context.
-        """
         anomalies: List[Dict[str, Any]] = []
         lines = pseudocode.split('\n')
 
@@ -1218,9 +1182,7 @@ class AIStackVariableAnalyzer:
 # 7. LLM Function Guess Engine
 
 class LLMFunctionGuessEngine:
-    """Guesses function purpose based on name, signature, and decompiled body
-    using heuristic pattern matching (LLM-ready prompts included).
-    """
+
 
     __slots__ = ('m_prompt_templates', 'm_guess_history')
 
@@ -1240,11 +1202,11 @@ class LLMFunctionGuessEngine:
 
     def guess(self, function_name: str, decompiled_body: str = "",
               call_graph_hints: Optional[List[str]] = None) -> Dict[str, Any]:
-        """Guess function category and purpose."""
+
         name_lower = function_name.lower()
         scores: Dict[str, float] = _defaultdict(float)
 
-        # Name-based heuristics
+        # 基于名称的启发式
         name_patterns = [
             (r'init', "initialization", 0.8),
             (r'clean|destroy|free|release|close|shutdown|fini', "cleanup", 0.7),
@@ -1278,7 +1240,7 @@ class LLMFunctionGuessEngine:
                 scores[category] += weight
             pi += 1
 
-        # Body-based heuristics
+        # 基于函数体的启发式
         body_lower = decompiled_body.lower() if decompiled_body else ""
         body_patterns = [
             (r'malloc|calloc|realloc|new\s', "allocation", 0.6),
@@ -1305,7 +1267,7 @@ class LLMFunctionGuessEngine:
                         scores[category] += weight * 0.3
                 hi += 1
 
-        # Normalize and sort
+        # 归一化并排序
         if not scores:
             scores["unknown"] = 1.0
 
@@ -1356,10 +1318,7 @@ Respond with JSON: {{"category": "...", "confidence": 0.0, "reasoning": "..."}}"
 # 8. 智能 Decompiler Optimization Advisor
 
 class AIDecompilerOptimizationAdvisor:
-    """Advises on decompiler settings and strategies for optimal output quality.
 
-    Analyzes binary characteristics and recommends decompiler parameter tuning.
-    """
 
     __slots__ = ('m_advice_history', 'm_rules')
 
@@ -1418,7 +1377,7 @@ class AIDecompilerOptimizationAdvisor:
         ]
 
     def analyze(self, binary_info: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze binary characteristics and produce optimization advice."""
+
         advice_list: List[Dict[str, Any]] = []
         merged_settings: Dict[str, bool] = {}
 

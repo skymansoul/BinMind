@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class QualityIssue:
-    """数据质量问题"""
     kind: str                    # missing_value, 离群点, class_imbalance, label_noise, feature_redundancy, duplicate
     severity: str                # low, medium, high, critical
     description: str
@@ -29,7 +28,6 @@ class QualityIssue:
 
 @dataclass
 class QualityReport:
-    """数据质量报告"""
     dataset_name: str
     n_samples: int
     n_features: int
@@ -63,16 +61,6 @@ class QualityReport:
 # 质量评估器
 
 class DataQualityAssessor:
-    """数据质量评估器
-
-    四个评估维度:
-      1. 完整性 (Completeness): 缺失值检测
-      2. 平衡性 (Balance): 类别分布 + 特征分布
-      3. 一致性 (Consistency): 重复样本 + 冲突标签
-      4. 可靠性 (Reliability): 标签噪声估计 (通过置信度分析)
-
-    每个维度产生 QualityIssue 列表和 0-1 分数
-    """
 
     def __init__(self, missing_threshold: float = 0.3,
                  outlier_std: float = 3.0,
@@ -90,7 +78,6 @@ class DataQualityAssessor:
                sample_ids: Optional[List[str]] = None,
                dataset_name: str = "unnamed",
                prediction_confidences: Optional[List[float]] = None) -> QualityReport:
-        """全维度质量评估"""
         N = len(X)
         D = len(X[0]) if X else 0
         n_classes = len(set(y)) if y else 1
@@ -271,7 +258,6 @@ class DataQualityAssessor:
         return issues
 
     def _find_duplicates(self, X, sample_ids) -> List[List[int]]:
-        """基于特征哈希的重复检测"""
         N = len(X)
         if N < 2:
             return []
@@ -311,7 +297,6 @@ class DataQualityAssessor:
         return [g for g in merged if len(g) >= 2]
 
     def _merge_dup_groups(self, pairs: List[List[int]]) -> List[List[int]]:
-        """合并重叠的重复组 (并查集)"""
         if not pairs:
             return []
 
@@ -337,7 +322,6 @@ class DataQualityAssessor:
         return list(groups.values())
 
     def _check_reliability(self, y, confidences) -> List[QualityIssue]:
-        """标签噪声估计 - 低置信度正确预测可能指示噪声"""
         issues = []
         low_conf_correct = []
         low_conf_incorrect = []
@@ -418,6 +402,5 @@ def create_quality_assessor(missing_threshold: float = 0.3,
 
 
 def assess_data_quality(X, y=None, feature_names=None, **kwargs):
-    """一次性质量评估"""
     assessor = create_quality_assessor(**kwargs)
     return assessor.assess(X, y, feature_names=feature_names)

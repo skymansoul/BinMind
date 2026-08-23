@@ -5,6 +5,12 @@ import logging
 import hashlib
 from typing import Optional, Dict, Any, List, Callable
 
+# 提示词版本号，用于调用记录追溯
+try:
+    from prompts import PROMPT_VERSION
+except Exception:
+    PROMPT_VERSION = "unknown"
+
 logger = logging.getLogger(__name__)
 
 # 统一 Finding 字段定义
@@ -198,6 +204,19 @@ def cache_put(prompt: str, model: str, response: str):
         logger.warning(f"缓存写入失败: {e}")
 
 
+def _log_llm_call(record: Dict[str, Any]):
+    """将本次 LLM 调用记录追加写入 llm_calls.jsonl"""
+    record.setdefault('prompt_version', PROMPT_VERSION)
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, 'llm_calls.jsonl')
+    try:
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+    except Exception as e:
+        logger.warning(f"LLM 调用记录写入失败: {e}")
+
+
 def call_llm(
     messages: List[Dict[str, str]],
     model: Optional[str] = None,
@@ -238,6 +257,8 @@ def call_llm(
         logger.warning("[LLM] AI 客户端不可用，进入模拟模式")
         result['simulation'] = True
         result['error'] = 'AI client not configured'
+        _log_llm_call({'model': active_model, 'status': 'simulation', 'error': result['error'],
+                       'prompt_preview': prompt_for_log})
         return result
 
     # 缓存
@@ -250,6 +271,8 @@ def call_llm(
             parsed = parse_llm_json(cached)
             if parsed:
                 result['findings'] = normalize_findings(parsed)
+            _log_llm_call({'model': active_model, 'status': 'cache_hit',
+                           'prompt_preview': prompt_for_log})
             return result
 
     # 真实调用
@@ -266,12 +289,16 @@ def call_llm(
         logger.error(f"[LLM] 调用类型错误: {e}")
         result['simulation'] = True
         result['error'] = str(e)
+        _log_llm_call({'model': active_model, 'status': 'error', 'error': str(e),
+                       'prompt_preview': prompt_for_log})
         return result
 
     if response_text is None:
         logger.warning("[LLM] API 调用失败，进入模拟模式")
         result['simulation'] = True
         result['error'] = 'API call failed after retries'
+        _log_llm_call({'model': active_model, 'status': 'error', 'error': result['error'],
+                       'prompt_preview': prompt_for_log})
         return result
 
     result['text'] = response_text
@@ -285,6 +312,7 @@ def call_llm(
     else:
         logger.warning("[LLM] JSON 解析失败")
 
+    _log_llm_call({'model': active_model, 'status': 'ok', 'prompt_preview': prompt_for_log})
     return result
 
 
@@ -311,7 +339,14 @@ def is_ai_configured() -> bool:
     provider = Config.AI_PROVIDER
 
     if provider == 'ollama':
-        return True
+        base_url = Config.OLLAMA_BASE_URL or f"{Config.OLLAMA_HOST}/v1"
+        try:
+            import urllib.request
+            req = urllib.request.Request(base_url, method='GET')
+            urllib.request.urlopen(req, timeout=3)
+            return True
+        except Exception:
+            return False
     if provider == 'deepseek':
         return bool(os.environ.get('CUSTOM_API_KEY') or os.environ.get('OPENAI_API_KEY'))
     if provider == 'openai':

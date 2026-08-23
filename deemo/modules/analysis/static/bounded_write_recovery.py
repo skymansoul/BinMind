@@ -14,11 +14,6 @@
 #   核心不动摇原则: 只做 under-approximation of danger,
 #   不确定即保守跳过, 绝不猜安全.
 #
-# 理论依据:
-#   "Automated Discovery of Discrepancy Attacks" 中
-#   通过恢复字面量/缓冲区尺寸剔除内存API误用误报;
-#   CWE-787/CWE-121 的静态检测同样依赖写入量上界的可靠恢复.
-#
 
 import re
 from enum import Enum

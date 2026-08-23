@@ -30,7 +30,7 @@ class FuzzingResult:
 
 
 # LLM 驱动的协议语法提取
-# Meng et al., "ChatAFL: Large Language Model guided 协议 模糊测试"
+# Meng et al., "ChatAFL: 大语言模型引导的协议模糊测试"
 # 核心方法: 将协议消息序列输入 LLM, 让 LLM 提取结构化的文法规则（字段名/类型/约束）
 # 本实现提供语法提取的骨架, 在实际部署中，LLM prompt 由外部调用者注入
 
@@ -299,7 +299,7 @@ class ContradictionGenerator:
 
 
 class StructuredInputFuzzer:
-    """Structured input 模糊测试器: 解析 格式化, injects contradictions
+    """结构化输入模糊测试器: 解析格式, 注入矛盾输入
     2025 升级: 融合 ChatAFL 的协议语法提取 + 语义新颖度排序
     """
 

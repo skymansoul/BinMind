@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-# Deobfuscation CLI entry point
-"""BinMind deobfuscation command-line interface
-
-策略: 每个子命令使用独立handler函数，避免巨型if-elif链
-argparse的subparser机制天然支持命令路由，比手动dispatch更可维护
-"""
 
 import argparse
 import logging
@@ -16,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 def _setup_logging(verbose: bool, debug: bool) -> None:
-    """配置ure 日志 基于 verbosity flags"""
     if debug:
         logging.basicConfig(
             level=logging.DEBUG,
@@ -35,7 +28,6 @@ def _setup_logging(verbose: bool, debug: bool) -> None:
 
 
 def _load_module_config(config_path: str | None) -> Dict[str, Any]:
-    """Load config file or return defaults"""
     if config_path and os.path.isfile(config_path):
         try:
             from .config import load_config as cfg_loader
@@ -48,11 +40,10 @@ def _load_module_config(config_path: str | None) -> Dict[str, Any]:
     }
 
 
-# Subcommand 处理器s
+# 子命令处理器
 
 
 def _handle_deobfuscate(args: argparse.Namespace) -> int:
-    """处理 '去混淆' subcommand"""
     input_path = args.input
     logger.info("Deobfuscating: %s", input_path)
 
@@ -79,12 +70,11 @@ def _handle_deobfuscate(args: argparse.Namespace) -> int:
 
 
 def _handle_decode_strings(args: argparse.Namespace) -> int:
-    """处理 '解码-strings' subcommand"""
     input_path = args.input
     logger.info("Decoding strings from: %s", input_path)
 
     try:
-        # Recieve strings 解码 file
+        # 读取字符串解码文件
         with open(input_path, "r", encoding="utf-8", errors="replace") as fh:
             strings = [line.strip() for line in fh if line.strip()]
 
@@ -112,7 +102,6 @@ def _handle_decode_strings(args: argparse.Namespace) -> int:
 
 
 def _handle_unpack(args: argparse.Namespace) -> int:
-    """处理 '脱壳' subcommand"""
     input_path = args.input
     output_dir = args.output or "unpacked_output"
     logger.info("Unpacking: %s -> %s", input_path, output_dir)
@@ -120,7 +109,7 @@ def _handle_unpack(args: argparse.Namespace) -> int:
     try:
         from .unpack import Unpacker, PyInstallerUnpacker
 
-        # Try PyInstaller first
+        # 先尝试 PyInstaller
         py_unpacker = PyInstallerUnpacker()
         try:
             result = py_unpacker.unpack(input_path, output_dir)
@@ -128,9 +117,9 @@ def _handle_unpack(args: argparse.Namespace) -> int:
                 print(f"PyInstaller archive unpacked: {result['file_count']} files")
                 return 0
         except Exception:
-            pass  # a PyInstaller archive
+            pass
 
-        # Try generic 脱壳器
+        # 尝试通用脱壳器
         unpacker = Unpacker()
         detections = unpacker.detect_packer(input_path)
         print(f"Detected packers: {len(detections)}")
@@ -151,7 +140,6 @@ def _handle_unpack(args: argparse.Namespace) -> int:
 
 
 def _handle_detect_vm(args: argparse.Namespace) -> int:
-    """处理 '检测-vm' subcommand"""
     input_path = args.input
     logger.info("Detecting VM protection in: %s", input_path)
 
@@ -174,7 +162,6 @@ def _handle_detect_vm(args: argparse.Namespace) -> int:
 
 
 def _handle_extract_scripts(args: argparse.Namespace) -> int:
-    """处理 '提取-scripts' subcommand"""
     input_path = args.input
     output_dir = args.output or "extracted_scripts"
     logger.info("Extracting embedded scripts from: %s", input_path)
@@ -200,7 +187,7 @@ def _handle_extract_scripts(args: argparse.Namespace) -> int:
         except ValueError:
             logger.warning("Not a PyInstaller archive, looking for embedded script patterns")
 
-            # 回退: look for common script indicators
+            # 回退: 查找常见脚本指示符
             text = data.decode("ascii", errors="ignore")
             script_indicators = [
                 "#!/usr/bin/env python", "#!/bin/bash", "#!/bin/sh",
@@ -220,7 +207,6 @@ def _handle_extract_scripts(args: argparse.Namespace) -> int:
 
 
 def _handle_detect_repack(args: argparse.Namespace) -> int:
-    """处理 '检测-repack' subcommand"""
     input_path = args.input
     logger.info("Detecting repacking in: %s", input_path)
 
@@ -249,7 +235,6 @@ def _handle_detect_repack(args: argparse.Namespace) -> int:
 
 
 def main(argv: List[str] | None = None) -> int:
-    """CLI 主入口, argv 默认取 sys.argv[1:], 返回退出码 (0 成功)。"""
     p = argparse.ArgumentParser(
         prog="binmind-deobfuscation",
         description="BinMind Deobfuscation Toolkit",
@@ -317,7 +302,7 @@ def main(argv: List[str] | None = None) -> int:
 
     logger.info("Running command: %s", args.command)
 
-    # Dispatch 处理器
+    # Dispatch 到处理器
     handlers = {
         "deobfuscate": _handle_deobfuscate,
         "decode-strings": _handle_decode_strings,

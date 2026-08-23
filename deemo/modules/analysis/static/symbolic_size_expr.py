@@ -17,11 +17,6 @@
 #   在分配点和写入点, 比较两个表达式是否结构等价 (α-equivalent).
 #   若等价 → 分配大小 == 写入大小 → 安全 (不可能溢出).
 #
-# 理论依据:
-#   符号化关联消除堆溢出检测中分类别误报的根本来源;
-#   符号化约束传播用于内核整数溢出.
-#
-
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Set
 from .disasm_util import norm_reg, extract_func_name, extract_stack_slot, \

@@ -61,6 +61,7 @@ def build_binary_profile(
             exploitable = []
 
     profile['plt_count'] = len(plt_entries)
+    profile['plt_entries'] = plt_entries[:20]  # 截断留存供报告展示
     profile['exploitable_imports'] = exploitable
     profile['dangerous_imports'] = dangerous_imports or []
 
@@ -91,8 +92,12 @@ def build_binary_profile(
             strings = scan_strings(binary_path)
             suspect_strings = find_suspicious_strings(strings)
         except ImportError:
+            strings = []
             suspect_strings = []
+    else:
+        strings = []
     profile['suspect_strings'] = suspect_strings[:20]
+    profile['key_strings'] = strings[:20] if strings else [s.get('string', '') for s in suspect_strings[:20]]
 
     # 利用难度评估
     profile['exploit_difficulty'] = _assess_exploit_difficulty(profile)

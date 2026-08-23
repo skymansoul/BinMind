@@ -85,7 +85,6 @@ def _is_var(expr, name=None):
 MBA_RULES: List[tuple] = []
 def _register_rule(pfn, rfn): MBA_RULES.append((pfn, rfn))
 
-# --- 21 条 MBA 恒等式规则（1-21 为上一轮保留的规则）---
 def _p1(node):
     if not isinstance(node, BinOp) or node.op != '+': return None
     if not isinstance(node.left, BinOp) or node.left.op != '^': return None
@@ -284,10 +283,6 @@ def _p21(node):
 def _r21(m): return BinOp('|', UnOp('~', _clone(m['x'])), UnOp('~', _clone(m['y'])))
 _register_rule(_p21, _r21)
 
-# 新增: 真实恶意软件 MBA 模式识别 - 基于对 TrickBot/Emotet/FormBook
-# 等恶意软件家族中 MBA 混淆的逆向经验，添加以下额外规则
-
-# 22. (x << 3) - x = x * 7
 def _p22(node):
     if not isinstance(node, BinOp) or node.op != '-': return None
     if not isinstance(node.left, BinOp) or node.left.op != '<<': return None
@@ -297,7 +292,6 @@ def _p22(node):
 def _r22(m): return BinOp('*', _clone(m['x']), Const(7))
 _register_rule(_p22, _r22)
 
-# 23. (x + y) ^ (x & y) = x | y [常见于 Emotet 的字符串解码器]
 def _p23(node):
     if not isinstance(node, BinOp) or node.op != '^': return None
     plus, and_part = None, None
@@ -315,7 +309,6 @@ def _p23(node):
 def _r23(m): return BinOp('|', _clone(m['x']), _clone(m['y']))
 _register_rule(_p23, _r23)
 
-# 24. (x ^ y) + ((x & y) << 1) = x + y [带进位加法模拟，TrickBot 特征]
 def _p24(node):
     if not isinstance(node, BinOp) or node.op != '+': return None
     xor_part, shl_and = None, None
@@ -335,7 +328,6 @@ def _p24(node):
 def _r24(m): return BinOp('+', _clone(m['x']), _clone(m['y']))
 _register_rule(_p24, _r24)
 
-# 25. ((x | y) - (x & y)) ^ (x & y) = x ^ y [双重混淆，FormBook 模式]
 def _p25(node):
     if not isinstance(node, BinOp) or node.op != '^': return None
     sub_, and2 = None, None

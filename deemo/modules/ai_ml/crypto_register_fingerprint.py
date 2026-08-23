@@ -43,7 +43,6 @@ class CryptoPrimitive(Enum):
 
 @dataclass
 class RegAccess:
-    """单条指令的寄存器访问记录"""
     address: int
     mnemonic: str
     reads: Set[str]          # 读寄存器集合
@@ -54,7 +53,6 @@ class RegAccess:
 
 @dataclass
 class CryptoMatch:
-    """密码原语匹配结果"""
     primitive: CryptoPrimitive
     confidence: float
     matched_region: Tuple[int, int]   # (start_addr, end_addr)
@@ -64,15 +62,6 @@ class CryptoMatch:
 
 
 class CryptoRegisterFingerprinter:
-    """密码原语寄存器指纹识别器。
-
-    密码算法的寄存器使用特征:
-      AES:    大量pxor/aesenc/aesenclast + XMM寄存器轮转
-      SHA256: 固定模式的ror/shr/add/xor + 消息扩展(W[i]计算)
-      ChaCha: quarter_round = add+xor+rol重复模式
-      RSA:    mul+adc链(大整数乘法) + mod操作
-      RC4:    单个XOR与固定256字节S盒的索引操作
-    """
 
     # 各密码原语的助记符特征签名
     _MNEMONIC_SIGNATURES = {
@@ -100,10 +89,6 @@ class CryptoRegisterFingerprinter:
         self._templates = self._build_templates()
 
     def _build_templates(self) -> Dict[CryptoPrimitive, np.ndarray]:
-        """为每个密码原语构建助记符频率模板向量。
-
-        模板向量维度 = 常见加密助记符的并集大小。
-        """
         all_mnemonics = sorted(set.union(
             *[s for s in self._MNEMONIC_SIGNATURES.values()]))
         mnemonic_index = {m: i for i, m in enumerate(all_mnemonics)}
@@ -120,11 +105,6 @@ class CryptoRegisterFingerprinter:
     def extract_reg_accesses(self,
                               instructions: List[str],
                               start_addr: int = 0) -> List[RegAccess]:
-        """从指令序列提取寄存器访问记录。
-
-        x86寄存器识别: rax/rbx/rcx/rdx/rsi/rdi/rbp/rsp/r8-r15
-        XMM/YMM: xmm0-xmm15/ymm0-ymm15
-        """
         accesses = []
         reg_pattern = (r'\b(r[a-z0-9]+|xmm\d+|ymm\d+|e[a-z]{2}|'
                        r'[abcd]x|[abcd][lh]|si|di|sp|bp)\b')
@@ -165,7 +145,6 @@ class CryptoRegisterFingerprinter:
     def identify(self,
                  instructions: List[str],
                  start_addr: int = 0) -> List[CryptoMatch]:
-        """识别指令序列中的密码原语。"""
         accesses = self.extract_reg_accesses(instructions, start_addr)
         if len(accesses) < 10:
             return []
@@ -204,7 +183,6 @@ class CryptoRegisterFingerprinter:
 
     def _match_window(self, accesses: List[RegAccess]
                       ) -> Tuple[CryptoPrimitive, float]:
-        """在指令窗口内匹配密码原语-频率+转移概率双通道"""
         mnemonic_counts = defaultdict(int)
         xmm_count = 0
         bigrams = defaultdict(int)
@@ -259,7 +237,6 @@ class CryptoRegisterFingerprinter:
         return best_prim, best_score
 
     def _detect_key_schedule(self, accesses: List[RegAccess]) -> bool:
-        """检测密钥扩展模式-连续的常量加载+移位/xor操作"""
         const_loads = 0
         shift_xor = 0
         for acc in accesses:

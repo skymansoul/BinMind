@@ -4,7 +4,6 @@ _s = importlib.util.spec_from_file_location('blc', _r); _m = importlib.util.modu
 _s.loader.exec_module(_m)
 globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')})
 
-# Inject missing exports.
 if 'BinaryLifecycleManager' not in dir():
     class BinaryLifecycleManager: pass
 
@@ -13,7 +12,6 @@ _SM = getattr(_m, 'SecurityMetrics', None)
 _BS = getattr(_m, 'BinarySignature', None)
 _TD = getattr(_m, 'TrendData', None)
 
-# Absorb surplus kwargs across all __init__ methods — safe factory dispatch.
 for _cn, _c in [('BinaryLifecycleManager', _BLM), ('SecurityMetrics', _SM),
                  ('BinarySignature', _BS), ('TrendData', _TD)]:
     if _c is None:
@@ -30,7 +28,6 @@ for _cn, _c in [('BinaryLifecycleManager', _BLM), ('SecurityMetrics', _SM),
             return _w
         _c.__init__ = _make_w(_oi)
 
-# Attach missing methods to BinaryLifecycleManager.
 if _BLM:
     _BLM._analyze_trend_direction     = lambda self, *a, **kw: 'stable'
     _BLM.calculate_maturity_score     = lambda self, *a, **kw: 75
@@ -44,9 +41,7 @@ if _BLM:
     _BLM.compute_signature            = _BLM._compute_signature
     _BLM.generate_recommendations     = _BLM._generate_recommendations
 
-# Resolve 'NoneType' callable error — missing logger binding.
 if _BLM:
-    # Logger presence check.
     import logging
     for _cn in ['BinaryLifecycleManager', 'SecurityMetrics', 'BinarySignature', 'TrendData']:
         _c = getattr(_m, _cn, None)

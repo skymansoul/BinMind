@@ -1,4 +1,4 @@
-"""Tests for 配置 加载器 env var override 校验"""
+"""配置加载器环境变量覆盖校验测试。"""
 
 import os
 import tempfile
@@ -19,7 +19,7 @@ def _write_temp_yaml(content: str) -> str:
 # Tests
 
 class TestLoadConfig:
-    """Tests for load_配置"""
+    """load_config 的测试"""
 
     @pytest.fixture
     def config_loader(self):
@@ -79,7 +79,7 @@ analysis:
 
 
 class TestValidateConfig:
-    """Tests for 校验_配置"""
+    """validate_config 的测试"""
 
     @pytest.fixture
     def validator(self):

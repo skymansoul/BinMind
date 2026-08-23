@@ -1,10 +1,3 @@
-"""
-Summary-Based Analyzer - Function analysis via LLM-generated summaries.
-
-Extracts and compares LLM-generated function summaries for rapid
-vulnerability assessment and binary triage.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -23,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FunctionSummary:
-    """Structured summary of a function's behavior."""
     name: str
     address: int = 0
     purpose: str = ""
@@ -89,8 +81,6 @@ DANGEROUS_APIS: Dict[str, float] = {
 
 
 class SummaryBasedAnalyzer:
-    """Analyzes functions based on their pseudocode summaries."""
-
     def __init__(self) -> None:
         self.function_summaries: Dict[str, FunctionSummary] = {}
         self._risk_cache: Dict[str, float] = {}
@@ -101,7 +91,6 @@ class SummaryBasedAnalyzer:
 
     @staticmethod
     def _derive_binary_marker() -> str:
-        """Generate a session marker from current time — 用于追溯分析批次"""
         return hashlib.sha1(str(_time.time()).encode()).hexdigest()[:12]
 
 # 改进1: 风险趋势追踪 & 模式学习
@@ -148,12 +137,7 @@ class SummaryBasedAnalyzer:
     # Syft/Grype/Trivy 生态，把函数级风险摘要导出为可被
     # 漏洞扫描器下游消费的格式（minimal CycloneDX-style vulnerability item）
     def export_vulnerability_items(self) -> List[Dict[str, Any]]:
-        """Generate vulnerability items keyed by high-risk functions.
-
-        Returns a list of dicts with 'bom-ref', 'id', 'name', 'description',
-        'recommendation', and CVSS-like severity derived from risk_score.
-        每一高危函数映射为一条漏洞条目，方便喂给聚合引擎。
-        """
+        """每一高危函数映射为一条漏洞条目，方便喂给聚合引擎。"""
         items: List[Dict[str, Any]] = []
         for summ in self.function_summaries.values():
             if not summ.security_relevant or summ.risk_score < 0.25:
@@ -205,10 +189,7 @@ class SummaryBasedAnalyzer:
     # 不仅看单个函数，还要鸟瞰全局--哪些 API 是最大地雷，
     # 风险分布是否符合长尾分布（理应如此），帮助 triage 时间分配
     def aggregate_statistics(self) -> Dict[str, Any]:
-        """Compute aggregate dashboard: risk distribution, API hotspot rank,
-        purpose category breakdown, and global percentiles.
-        返回一个可直接序列化的字典，前端或报告直接消费。
-        """
+        """返回一个可直接序列化的字典，前端或报告直接消费。"""
         if not self.function_summaries:
             return {'error': 'No summaries available', 'count': 0}
 
@@ -288,7 +269,6 @@ class SummaryBasedAnalyzer:
         address: int = 0,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> FunctionSummary:
-        """Analyze a function and generate a summary."""
         summary = FunctionSummary(
             name=name,
             address=address,
@@ -320,13 +300,11 @@ class SummaryBasedAnalyzer:
 
     @staticmethod
     def _extract_api_calls(pseudocode: str) -> List[str]:
-        """Extract API function calls from pseudocode."""
         calls = re.findall(r'\b([A-Za-z_]\w*)\s*\(', pseudocode)
         return list(set(calls))
 
     @staticmethod
     def _infer_purpose(pseudocode: str, api_calls: List[str]) -> str:
-        """Infer function purpose from its content."""
         code_lower = pseudocode.lower()
 
         if any(s in code_lower for s in ('encrypt', 'decrypt', 'hash', 'sha', 'md5', 'aes', 'rsa')):
@@ -356,7 +334,6 @@ class SummaryBasedAnalyzer:
 
     @staticmethod
     def _extract_io(pseudocode: str) -> Tuple[List[str], List[str]]:
-        """Extract likely inputs and outputs from pseudocode."""
         inputs: List[str] = []
         outputs: List[str] = []
 
@@ -376,7 +353,6 @@ class SummaryBasedAnalyzer:
 
     @staticmethod
     def _assess_risk(pseudocode: str, api_calls: List[str]) -> float:
-        """Assess security risk score (0.0 to 1.0)."""
         risk_score = 0.0
         matched_apis = 0
         max_api_score = 0.0
@@ -409,7 +385,6 @@ class SummaryBasedAnalyzer:
 
     @staticmethod
     def _identify_risk_factors(pseudocode: str, api_calls: List[str]) -> List[str]:
-        """Identify specific risk factors."""
         factors: List[str] = []
         code_lower = pseudocode.lower()
 
@@ -436,7 +411,6 @@ class SummaryBasedAnalyzer:
 
     @staticmethod
     def _summarize_data_flow(pseudocode: str) -> str:
-        """Create a brief data flow summary."""
         parts: List[str] = []
         code_lower = pseudocode.lower()
 
@@ -457,7 +431,6 @@ class SummaryBasedAnalyzer:
 
     @staticmethod
     def _generate_raw_summary(summary: FunctionSummary) -> str:
-        """Generate human-readable summary text."""
         lines = [
             f"Function: {summary.name}",
             f"Purpose: {summary.purpose}",
@@ -476,7 +449,6 @@ class SummaryBasedAnalyzer:
         functions: Dict[str, str],
         addresses: Optional[Dict[str, int]] = None,
     ) -> Dict[str, FunctionSummary]:
-        """Analyze multiple functions."""
         addresses = addresses or {}
         results: Dict[str, FunctionSummary] = {}
         for name, code in functions.items():
@@ -485,7 +457,6 @@ class SummaryBasedAnalyzer:
         return results
 
     def get_high_risk_functions(self, threshold: float = 0.5) -> List[FunctionSummary]:
-        """Get functions with risk scores above threshold."""
         high_risk = [
             s for s in self.function_summaries.values()
             if s.risk_score >= threshold
@@ -497,7 +468,6 @@ class SummaryBasedAnalyzer:
         name_a: str,
         name_b: str,
     ) -> Dict[str, Any]:
-        """Compare two function summaries."""
         if name_a not in self.function_summaries or name_b not in self.function_summaries:
             return {'error': 'Function not found', 'similarity': 0.0}
 
@@ -522,7 +492,6 @@ class SummaryBasedAnalyzer:
         }
 
     def save(self, filepath: str) -> None:
-        """Save analysis results to JSON."""
         data = {
             name: summary.to_dict()
             for name, summary in self.function_summaries.items()
@@ -533,7 +502,6 @@ class SummaryBasedAnalyzer:
         logger.info(f"Saved {len(data)} summaries to {filepath}")
 
     def load(self, filepath: str) -> None:
-        """Load analysis results from JSON."""
         with open(filepath, 'r') as f:
             data = json.load(f)
         self.function_summaries = {
@@ -543,7 +511,6 @@ class SummaryBasedAnalyzer:
         logger.info(f"Loaded {len(self.function_summaries)} summaries from {filepath}")
 
     def generate_report(self, top_n: int = 50) -> str:
-        """Generate a formatted analysis report."""
         sorted_funcs = sorted(
             self.function_summaries.values(),
             key=lambda s: s.risk_score,
@@ -576,7 +543,6 @@ class SummaryBasedAnalyzer:
 
 # 改进3配套: 统计报告生成器
     def generate_stats_report(self) -> str:
-        """Render aggregate_statistics as a human-readable report block."""
         stats = self.aggregate_statistics()
         if 'error' in stats:
             return f"[Stats] {stats['error']}"
@@ -622,6 +588,5 @@ def build_function_summaries(
     functions: Dict[str, str],
     addresses: Optional[Dict[str, int]] = None,
 ) -> Dict[str, FunctionSummary]:
-    """Convenience function for building function summaries."""
     analyzer = SummaryBasedAnalyzer()
     return analyzer.batch_analyze(functions, addresses)

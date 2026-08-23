@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
-"""BWR 无界写恢复辅助函数族.
-
-决策:
-  集中无界写分析的辅助逻辑: 源操作数存储来源解析 (立即数/注释
-  字面量/rodata/栈缓冲区跨度), 各写函数族 (strcpy/strcat/sprintf)
-  的写入上界恢复与越界判定, sprintf 格式串最大输出长度解析.
-  原拆分为独立模块的同类函数合并于此, 保持单一内聚单元.
-
-创建: 2024-01-03
-"""
+# BWR 无界写恢复辅助函数族
 
 import re
 from typing import Optional

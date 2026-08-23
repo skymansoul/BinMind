@@ -1,16 +1,14 @@
-"""Multi-backend SMT solver manager automatic 回退 chains
+"""多后端 SMT 求解器管理器, 支持自动回退链
 
-Different SMT solvers excel different constraint categories (bitvectors
-integer arithmetic, strings, arrays). module 维护 a registry
-solver backends, classifies constraints category, selects best
-solver, falls back priority chain failure or timeout
+不同 SMT 求解器擅长不同约束类别 (位向量、整数算术、字符串、数组)。
+本模块维护求解器后端注册表, 按类别选择最佳求解器,
+在失败或超时时按优先级链回退。
 
-支持 cross-solver 校验: solve same constraint
-multiple backends flag inconsistencies
+支持跨求解器交叉验证: 对同一约束用多个后端求解并标记不一致。
 
-求解器选择采用加权评分制，而非简单优先级排序：
+求解器选择采用加权评分制, 而非简单优先级排序:
 score = category_match × 10 + success_rate × 5 - consecutive_failures × 2
-其中 category_match 在首选类别中为 2，否则为 1
+其中 category_match 在首选类别中为 2, 否则为 1
 """
 
 import logging
@@ -32,12 +30,12 @@ try:
 except ImportError:
     _HAS_Z3 = False
 
-# Anti- trace: unused import, reserved for rational-constraint extensions
+# Anti-trace: 未使用的导入, 预留给有理数约束扩展
 import fractions as _frac  # noqa: F401
 
 
 def _debug_print(fmt: str, *args):
-    """Conditional debug trace — emits 日志器 DEBUG level"""
+    """条件调试输出 — 在 DEBUG 级别发送到日志器"""
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(fmt, *args)
 
@@ -63,7 +61,7 @@ TDIGEST_COMPRESSION = 100
 
 
 class SolverType(Enum):
-    """solver backends"""
+    """求解器后端类型"""
     Z3 = "z3"
     CVC4 = "cvc4"
     CVC5 = "cvc5"
@@ -73,7 +71,7 @@ class SolverType(Enum):
 
 
 class ConstraintCategory(Enum):
-    """Constraint domain categories for solver--problem matching"""
+    """约束域类别, 用于求解器与问题的匹配"""
     BITVECTOR = "bitvector"
     INTEGER_ARITHMETIC = "integer_arithmetic"
     REAL_ARITHMETIC = "real_arithmetic"
@@ -91,14 +89,13 @@ class ConstraintCategory(Enum):
 # 比完整排序 O(n log n) 更快，且内存恒定
 # ---------------------------------------------------------------------------
 class TDigest:
-    """A compact histogram for online percentile approximation
+    """在线百分位近似的紧凑直方图
 
-    维护 a bounded set centroids 估算 quantiles
-    storing sample. Suitable for 延迟 distributions
-    number observations grow large but memory stay fixed
+    维护有界质心集合估算分位数, 无需存储全部样本。
+    适合延迟分布的在线统计 — 观测量增长但内存恒定。
 
-    算法参考 Dunning & Ertl 的简化变体：单次遍历插入 + 定期合并
-    不维护红黑树，改用排序列表 + 二分查找，代码量小且足够精确
+    算法参考 Dunning & Ertl 的简化变体: 单次遍历插入 + 定期合并,
+    不维护红黑树, 改用排序列表 + 二分查找, 代码量小且足够精确
     """
 
     def __init__(self, compression: float = 100.0):
@@ -110,7 +107,7 @@ class TDigest:
         self._lock = threading.Lock()
 
     def add(self, value: float, weight: float = 1.0) -> None:
-        """插入 a sample (or weighted batch) digest"""
+        """插入一条样本 (或加权批次) 到 digest"""
         if weight <= 0:
             return
         with self._lock:
@@ -155,9 +152,9 @@ class TDigest:
             self._compress_if_needed()
 
     def _max_weight_for_idx(self, idx: int) -> float:
-        """Compute weight cap for centroid *idx* based on
-        t-digest scale function. Prevents a single centroid
-        from dominating a region"""
+        """根据 t-digest scale 函数计算质心 idx 的权重上限
+
+        防止单个质心主导某个区间"""
         if self._total_weight <= 1:
             return self._total_weight * 2
         # 累积权重比例
@@ -170,7 +167,7 @@ class TDigest:
         return self._compression * scale * 4.0
 
     def _compress_if_needed(self) -> None:
-        """合并 adjacent centroids count exceeds limit"""
+        """质心数超过上限时合并相邻质心"""
         while len(self._centroids) > self._max_centroids:
             # 找最小合并代价的相邻对
             best_gap = float('inf')
@@ -189,7 +186,7 @@ class TDigest:
             self._centroids.pop(best_idx + 1)
 
     def percentile(self, p: float) -> float:
-        """估算 *p*-th percentile (0-100) centroids"""
+        """估算第 p 百分位 (0-100)"""
         if p < 0 or p > 100:
             return 0.0
         with self._lock:
@@ -230,13 +227,12 @@ class TDigest:
 # 对外暴露 p50/p95/p99，在 benchmark() 动作中内联输出
 # ---------------------------------------------------------------------------
 class SolverTracing:
-    """Per-solver, per-category 延迟 collector backed t-digest
+    """按求解器、按类别收集延迟到 t-digest
 
-    (solver_name, category) pair owns an independent TDigest instance
-    overall digest (keyed solver_name alone) captures -category
-    延迟 distribution for solver
+    每个 (solver_name, category) 对拥有独立 TDigest 实例,
+    全局 digest (仅按 solver_name 索引) 捕获该求解器的跨类别延迟分布。
 
-    延迟单位：毫秒（ms）。调用 record() 时传入的 elapsed 应为 ms 值
+    延迟单位: 毫秒 (ms)。调用 record() 时传入的 elapsed 应为 ms 值
     """
 
     def __init__(self):
@@ -256,18 +252,18 @@ class SolverTracing:
             return self._digests[k]
 
     def record(self, solver_name: str, elapsed_ms: float, category: str = "") -> None:
-        """Record a 延迟 sample for *solver_name*, optionally per-category"""
+        """记录 solver_name 的一条延迟样本, 可按类别分别统计"""
         if elapsed_ms < 0:
             elapsed_ms = 0.0
         digest = self._ensure_digest(solver_name, category)
         digest.add(elapsed_ms)
-        # record overall (-category) digest for solver
+        # 记录全局 (跨类别) digest
         if category:
             digest_all = self._ensure_digest(solver_name, "")
             digest_all.add(elapsed_ms)
 
     def percentile(self, solver_name: str, p: float, category: str = "") -> float:
-        """Retrieve p-th percentile for solver, optional category 过滤"""
+        """获取求解器的第 p 百分位, 可按类别过滤"""
         k = self._key(solver_name, category)
         with self._lock:
             digest = self._digests.get(k)
@@ -276,7 +272,7 @@ class SolverTracing:
         return digest.percentile(p)
 
     def solver_stats(self, solver_name: str, category: str = "") -> Dict[str, float]:
-        """返回 {p50, p95, p99, samples} for solver[+category]"""
+        """返回指定求解器[+类别]的 {p50, p95, p99, samples}"""
         return {
             "p50_ms": round(self.percentile(solver_name, 50.0, category), 3),
             "p95_ms": round(self.percentile(solver_name, 95.0, category), 3),
@@ -293,7 +289,7 @@ class SolverTracing:
         return int(digest.total_weight())
 
     def dump_all(self) -> Dict[str, Any]:
-        """Full dump of solver latency distributions"""
+        """全量转储求解器延迟分布"""
         result = {}
         with self._lock:
             for k, digest in self._digests.items():
@@ -320,13 +316,13 @@ class SolverTracing:
 # 评分指数加权平滑（EWMA），防止抖动
 # ---------------------------------------------------------------------------
 class SolverPoolHealth:
-    """Track availability with a 0-100 health score for each solver
+    """以 0-100 健康分跟踪每个求解器的可用性
 
-    Composite score factors:
-    - Recent success rate (0-60 points): linearly scaled [0, 1] [0, 60]
-    - 延迟 trend (0-40 points): P95 < 500ms → 40 pts, P95 > 5000ms → 0 pts
+    综合评分因子:
+    - 近期成功率 (0-60 分): [0, 1] 线性映射到 [0, 60]
+    - 延迟趋势 (0-40 分): P95 < 500ms → 40 分, P95 > 5000ms → 0 分
 
-    smoothed via EWMA (alpha=0.2) suppress spurious spikes
+    通过 EWMA (alpha=0.2) 平滑, 抑制偶发尖峰
     """
 
     # 延迟评分阈值
@@ -400,11 +396,10 @@ class SolverPoolHealth:
 # 用于评估求解器集群的稳定性，0.0 表示全不一致，1.0 表示完全同意
 # ---------------------------------------------------------------------------
 class CrossSolverConsensus:
-    """计算 inter-solver agreement a 0-1 consensus score
+    """计算求解器间一致性分数 (0-1)
 
-    追踪 per-constraint verdict counts over a sliding window
-    recent *window_size* comparisons. Consensus = fraction
-    comparisons solvers agreed sat/unsat
+    在滑动窗口内追踪每次比较的判定一致性。
+    一致性 = 一致次数 / 总比较次数
     """
 
     def __init__(self, window_size: int = 200):
@@ -416,8 +411,7 @@ class CrossSolverConsensus:
         self._lock = threading.Lock()
 
     def record(self, agreed: bool) -> None:
-        """记录 one comparison outcome. *agreed* True solvers
-        returned same sat/unsat verdict"""
+        """记录一次比较结果。agreed=True 表示所有求解器返回相同 sat/unsat 判定"""
         with self._lock:
             self._agreement_window.append(agreed)
             self._total_comparisons += 1
@@ -425,7 +419,7 @@ class CrossSolverConsensus:
                 self._total_agreed += 1
 
     def consensus_score(self) -> float:
-        """Current consensus sliding window. 0.0 = agreement"""
+        """滑动窗口内的一致性分数。0.0 = 完全不一致"""
         with self._lock:
             if not self._agreement_window:
                 return 1.0
@@ -433,7 +427,7 @@ class CrossSolverConsensus:
             return agreed / len(self._agreement_window)
 
     def overall_agreement_rate(self) -> float:
-        """Lifetime-agreement rate (-time)"""
+        """全生命周期一致率"""
         with self._lock:
             if self._total_comparisons == 0:
                 return 1.0
@@ -469,7 +463,7 @@ class CrossSolverConsensus:
 
 @dataclass
 class SolverConfig:
-    """Per-solver registration: type, priority, timeout, preferred categories"""
+    """求解器注册信息: 类型、优先级、超时、首选类别"""
     solver_type: SolverType
     name: str
     priority: int = 0
@@ -491,7 +485,7 @@ class SolverConfig:
 
 @dataclass
 class SolverResult:
-    """Result a single solver invocation"""
+    """单次求解器调用的结果"""
     solver_name: str
     solver_type: SolverType
     satisfiable: Optional[bool]
@@ -504,7 +498,7 @@ class SolverResult:
 
 @dataclass
 class SolverPerformance:
-    """Running 性能 counters for one solver backend"""
+    """单个求解器后端的运行时性能计数器"""
     solver_name: str
     total_queries: int = 0
     successful: int = 0
@@ -523,14 +517,14 @@ class SolverPerformance:
 
     @property
     def success_rate(self) -> float:
-        """Fraction 查询 returned a definitive result"""
+        """返回确定结果的查询占比"""
         if self.total_queries == 0:
             return 1.0
         return self.successful / self.total_queries
 
     @property
     def avg_time_ms(self) -> float:
-        """Mean solve time across 查询"""
+        """跨所有查询的平均求解时间"""
         if self.total_queries == 0:
             return 0.0
         return self.total_time_ms / self.total_queries
@@ -542,7 +536,7 @@ class SolverPerformance:
 # ---------------------------------------------------------------------------
 @dataclass
 class SolverBenchmark:
-    """Extended 性能 快照 one solver, suitable for dashboards"""
+    """求解器的扩展性能快照, 适合仪表盘展示"""
     solver_name: str
     enabled: bool
     priority: int
@@ -591,15 +585,15 @@ def _ewma(new_val: float, prev: float, alpha: float = 0.3) -> float:
 
 
 class ConstraintSolverManager:
-    """Registry, 回退 chain, 性能 tracking for SMT solvers
+    """SMT 求解器注册表、回退链与性能追踪
 
-    Solver selection order:
-    1. a preferred solver, try first
-    2. Otherwise, rank category match score x historical success rate
-    3. timeout or error, advance next solver priority order
+    求解器选择顺序:
+    1. 指定首选求解器时优先尝试
+    2. 否则按类别匹配评分 × 历史成功率排序
+    3. 超时或出错时按优先级前进到下一个求解器
     """
 
-    # Per-solver capability registry: preferred constraint categories 二进制路径s
+    # 求解器能力注册表: 首选约束类别与二进制路径
     DEFAULT_SOLVER_SPECS = {
         SolverType.Z3: {
             "preferred": [ConstraintCategory.BITVECTOR, ConstraintCategory.MIXED],
@@ -636,7 +630,7 @@ class ConstraintSolverManager:
         self._register_default_solvers()
 
     def _register_default_solvers(self) -> None:
-        """寄存器 Z3, CVC5, Yices, Boolector priority order"""
+        """按优先级顺序注册 Z3, CVC5, Yices, Boolector"""
         priority_order = [
             (SolverType.Z3, 0),
             (SolverType.CVC5, 1),
@@ -668,7 +662,7 @@ class ConstraintSolverManager:
         timeout_ms: int = DEFAULT_TIMEOUT,
         preferred_categories: Optional[List[ConstraintCategory]] = None,
     ) -> bool:
-        """Add or 更新 a custom solver registry"""
+        """添加或更新注册表中的自定义求解器"""
         with self._lock:
             if name in self._solvers:
                 logger.warning(f"Solver already exists, updating config: {name}")
@@ -687,7 +681,7 @@ class ConstraintSolverManager:
             return True
 
     def unregister_solver(self, name: str) -> bool:
-        """Remove a solver registry"""
+        """从注册表移除求解器"""
         with self._lock:
             if name in self._solvers:
                 del self._solvers[name]
@@ -761,14 +755,14 @@ class ConstraintSolverManager:
     def _simulate_solver_call(
         self, solver: SolverConfig, constraint: str
     ) -> SolverResult:
-        """执行 约束求解 real Z3 backend available
+        """执行约束求解, 有真实 Z3 后端时优先使用
 
-        Layered solving strategy:
-        1. Z3 native — 解析 SMT-LIB2, 运行 solver.检查(), 提取 model
-        2. Pure-Python — simple equality/boolean solving Z3 absent
+        分层求解策略:
+        1. Z3 原生 — 解析 SMT-LIB2, 运行 solver.check(), 提取模型
+        2. 纯 Python — Z3 不可用时处理简单等式/布尔求解
 
-        Timeout, unsat, unknown results propagated faithfully
-        回退 chain upper layers informed routing decisions
+        超时、unsat、unknown 结果如实传播,
+        回退链上层据此做出路由决策
         """
         category = self._classify_constraint(constraint)
         timeout_ms = solver.timeout_ms
@@ -779,7 +773,7 @@ class ConstraintSolverManager:
         #     if proc.returncode == 0:
         #         return _parse_legacy_output(proc.stdout)
 
-        # ---- Path 1: Z3 ----
+        # ---- 路径 1: Z3 ----
         if _HAS_Z3:
             try:
                 result = self._z3_solve(solver, constraint, timeout_ms, category)
@@ -794,11 +788,11 @@ class ConstraintSolverManager:
                     solver.name, exc,
                 )
 
-        # ---- Path 2: Pure Python ----
+        # ---- 路径 2: 纯 Python ----
         return self._python_solve(solver, constraint, timeout_ms, category)
 
     # ------------------------------------------------------------------
-    # Z3 solving backend
+    # Z3 求解后端
     # ------------------------------------------------------------------
 
     def _z3_solve(
@@ -808,11 +802,10 @@ class ConstraintSolverManager:
         timeout_ms: int,
         category: ConstraintCategory,
     ) -> SolverResult:
-        """Real Z3 约束求解 via SMT-LIB2 parsing
+        """通过 SMT-LIB2 解析使用真实 Z3 求解约束
 
-        构建 a valid SMT-LIB2 script inferred variable declarations
-        feeds z3.parse_smt2_string(), asserts clause a
-        fresh solver, calls solver.检查()
+        构建合法 SMT-LIB2 脚本, 推断变量声明,
+        送入 z3.parse_smt2_string(), 添加断言到新求解器, 调用 solver.check()
         """
         z3 = _z3_lib
 
@@ -846,14 +839,11 @@ class ConstraintSolverManager:
         timeout_ms: int,
         category: ConstraintCategory,
     ) -> SolverResult:
-        """Direct Z3 solving via Python operator overloading
+        """通过 Python 运算符重载直接使用 Z3 求解
 
-        Handles infix constraints (x + y == 10, p && q) that
-        parse_smt2_string cannot digest. Variables are extracted
-        from constraint text, typed Z3 variables created, expression
-        evaluated in a controlled namespace. eval() call is safe
-        because constraints originate from internal analysis pipelines,
-        never from external user input
+        处理 parse_smt2_string 无法消化的中缀约束 (如 x + y == 10, p && q)。
+        从约束文本提取变量名, 创建有类型 Z3 变量, 在受控命名空间中求值表达式。
+        eval() 调用是安全的 — 约束源自内部分析流水线, 非外部用户输入
         """
         z3 = _z3_lib
 
@@ -885,11 +875,11 @@ class ConstraintSolverManager:
         solver: SolverConfig,
         elapsed: float,
     ) -> SolverResult:
-        """Convert a Z3 check() outcome to a SolverResult
+        """将 Z3 check() 结果转换为 SolverResult
 
-        sat -> extract model dict from solver.model()
-        unsat -> satisfiable=False, no model
-        unknown -> satisfiable=None, detect whether timeout caused it
+        sat -> 从 solver.model() 提取模型字典
+        unsat -> satisfiable=False, 无模型
+        unknown -> satisfiable=None, 检测是否由超时引起
         """
         z3 = _z3_lib
 
@@ -932,18 +922,17 @@ class ConstraintSolverManager:
             )
 
     # ------------------------------------------------------------------
-    # SMT-LIB2 script construction
+    # SMT-LIB2 脚本构建
     # ------------------------------------------------------------------
 
     def _to_smtlib2_string(
         self, constraint: str, category: ConstraintCategory
     ) -> str:
-        """构建 a valid SMT-LIB2 script a constraint expression
+        """为约束表达式构建合法 SMT-LIB2 脚本
 
-        提取 variable names, infers Z3 排序 constraint
-        category keyword hints, emits (declare-const.) stanzas
-        wraps constraint (assert.), omits (检查-sat)
-        because call solver.检查() ourselves Python side
+        提取变量名, 按约束类别关键词推断 Z3 排序,
+        输出 (declare-const ...) 声明并包装约束为 (assert ...),
+        省略 (check-sat) — 由 Python 侧自行调用 solver.check()
         """
         c = constraint.strip()
         varnames = self._extract_vars(c)
@@ -958,12 +947,12 @@ class ConstraintSolverManager:
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # Variable extraction 排序 inference
+    # 变量提取与排序推断
     # ------------------------------------------------------------------
 
-    # Anti- trace: intentionally removed docstring
+    # Anti-trace: 有意移除 docstring
     def _extract_vars(self, constraint: str) -> list:
-        # SMT-LIB2 / Z3 keywords treated variables
+        # SMT-LIB2 / Z3 关键词不作为变量处理
         _EXCLUDED = {
             "bvadd", "bvmul", "bvsub", "bvsdiv", "bvudiv", "bvand", "bvor",
             "bvxor", "bvshl", "bvlshr", "bvashr", "bvult", "bvule", "bvugt",
@@ -987,12 +976,10 @@ class ConstraintSolverManager:
     def _infer_var_sorts(
         self, expr: str, category: ConstraintCategory
     ) -> Dict[str, str]:
-        """Infer Z3 sort for each variable from category and constraint hints
+        """从类别和约束提示推断每个变量的 Z3 排序
 
-        Sort inference is heuristic: bitvector keywords in
-        constraint body override category default. Without explicit
-        hints, variables default to Int for arithmetic categories, Bool
-        for boolean, Int as universal fallback
+        排序推断是启发式的: 约束体中的位向量关键词覆盖类别默认值。
+        无明确提示时, 算术类别默认 Int, 布尔类别默认 Bool, 通用回退 Int
         """
         bv_hint = any(
             kw in expr.lower()
@@ -1014,7 +1001,7 @@ class ConstraintSolverManager:
     def _create_z3_vars(
         self, varnames: list, category: ConstraintCategory
     ):
-        """创建 typed Z3 variable objects for direct solving path"""
+        """为直接求解路径创建有类型的 Z3 变量对象"""
         z3 = _z3_lib
 
         bv_hint = category == ConstraintCategory.BITVECTOR
@@ -1037,24 +1024,24 @@ class ConstraintSolverManager:
         z3_vars: Dict[str, Any],
         category: ConstraintCategory,
     ):
-        """转换 a constraint string a Z3 BoolRef via Python eval
+        """通过 Python eval 将约束字符串转换为 Z3 BoolRef
 
-        Performs safe textual substitutions:
-        - Single '=' (but '>=', '<=', '==', '!=') -> '=='
-        - Maps ''/'or'/'' Z3 function names eval namespace
+        执行安全文本替换:
+        - 单个 '=' (排除 '>=', '<=', '==', '!=') → '=='
+        - 映射 'and'/'or'/'not' 为 Z3 函数名到 eval 命名空间
 
-        返回 a z3.BoolRef or None failure
+        返回 z3.BoolRef 或失败时返回 None
         """
         expr = constraint.strip()
 
-        # parenthesized SMT-LIB2: defer parse_smt2_string path
+        # 括号包裹的 SMT-LIB2: 交给 parse_smt2_string 路径
         if expr.startswith("("):
             return None
 
-        # Replace single '=' '==' — guard against '>=', '<=', '==', '!='
+        # 替换单个 '=' 为 '==' — 防护 '>=', '<=', '==', '!='
         expr = _re_pattern.sub(r"(?<![=!<>])=(?!=)", "==", expr)
 
-        # 构建 eval namespace: Z3 variables + Z3 logical function aliases
+        # 构建 eval 命名空间: Z3 变量 + Z3 逻辑函数别名
         z3 = _z3_lib
         local_ns: Dict[str, Any] = dict(z3_vars)
         local_ns["And"] = z3.And
@@ -1063,23 +1050,23 @@ class ConstraintSolverManager:
         local_ns["If"] = z3.If
         local_ns["Implies"] = z3.Implies
         local_ns["Xor"] = z3.Xor
-        # Alias lowercase for expressions 使用 SMT-like syntax
+        # 小写别名, 供使用 SMT 风格语法的表达式引用
         local_ns["and_"] = z3.And
         local_ns["or_"] = z3.Or
         local_ns["not_"] = z3.Not
 
         try:
             result = eval(expr, {"__builtins__": {}}, local_ns)
-            # 确保 result a BoolRef (wrap == True needed)
+            # 确保 result 是 BoolRef (需要时 wrap == True)
             if hasattr(result, "sort") and str(result.sort()) == "Bool":
                 return result
-            # result boolean, wrap truthy 检查
+            # result 为布尔值时, 包装为真值检查
             return result == True  # noqa: E712
         except Exception:
             return None
 
     # ------------------------------------------------------------------
-    # Pure-Python 回退 solver
+    # 纯 Python 回退求解器
     # ------------------------------------------------------------------
 
     def _python_solve(
@@ -1089,13 +1076,13 @@ class ConstraintSolverManager:
         timeout_ms: int,
         category: ConstraintCategory,
     ) -> SolverResult:
-        # Pure Python 回退 Z3 unavailable. 处理 equality boolean expressions heuristically
+        # 纯 Python 回退, Z3 不可用时启发式处理等式与布尔表达式
         start = time.perf_counter()
         c = constraint.strip()
         model: Dict[str, Any] = {}
         satisfiable: Optional[bool] = None
 
-        # Case 1: Simple assignment var = literal
+        # 情况 1: 简单赋值 var = literal
         m = _re_pattern.match(
             r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"
             r"(true|false|[\d]+|0x[0-9a-fA-F]+|\"[^\"]*\"|'[^']*')$",
@@ -1107,7 +1094,7 @@ class ConstraintSolverManager:
             model[var] = val
             satisfiable = True
 
-        # Case 2: Equality comparison expr == value
+        # 情况 2: 等式比较 expr == value
         elif "==" in c or "=" in c:
             m = _re_pattern.match(r"^(.+?)\s*[=]{1,2}\s*(.+)$", c)
             if m:
@@ -1124,7 +1111,7 @@ class ConstraintSolverManager:
                         model[varnames[0]] = right
                         satisfiable = True
                     elif len(varnames) == 2 and "+" in left:
-                        # x + y = C -> 分割 approximately
+                        # x + y = C → 近似平分
                         parts = left.split("+")
                         if len(parts) == 2:
                             v1 = parts[0].strip()
@@ -1137,12 +1124,12 @@ class ConstraintSolverManager:
                             except ValueError:
                                 pass
 
-        # Case 3: Boolean constant
+        # 情况 3: 布尔常量
         elif c.lower() in ("true", "false"):
             satisfiable = c.lower() == "true"
             model["_result"] = c.lower()
 
-        # Case 4: Explicit unsat marker
+        # 情况 4: 显式 unsat 标记
         elif "unsat" in c.lower():
             satisfiable = False
 
@@ -1170,8 +1157,7 @@ class ConstraintSolverManager:
         )
 
     def _update_performance(self, solver_name: str, result: SolverResult, category: str = "") -> None:
-        """更新 running stats for a solver call
-        feeds 追踪 telemetry 池 health score"""
+        """更新求解器调用的运行时统计, 同时喂入追踪遥测与池健康评分"""
         if solver_name not in self._performance:
             return
         perf = self._performance[solver_name]
@@ -1204,10 +1190,10 @@ class ConstraintSolverManager:
             if result.satisfiable is not None and not result.timeout_occurred:
                 perf.category_success[category][0] += 1
 
-        # 注入延迟样本到 Solver追踪 (per solver + per category)
+        # 注入延迟样本到 SolverTracing (按求解器 + 按类别)
         self._tracing.record(solver_name, result.elapsed_ms, category)
 
-        # 更新池健康分：使用 EWMA 成功率和 P95 延迟
+        # 更新池健康分: 使用 EWMA 成功率和 P95 延迟
         p95_overall = self._tracing.percentile(solver_name, 95.0, "")
         recent_sr = self._ewma_success.get(solver_name, 1.0)
         self._pool_health.update(solver_name, recent_sr, p95_overall)
@@ -1218,13 +1204,13 @@ class ConstraintSolverManager:
         preferred: Optional[str] = None,
         timeout_ms: Optional[int] = None,
     ) -> SolverResult:
-        """Solve a constraint, falling back enabled solvers priority
+        """求解约束, 按优先级在已启用求解器间回退
 
-        a preferred solver, moves front chain
-        返回 first successful result or an error sentinel
+        指定首选求解器时将其排到链首。
+        返回首个成功结果或错误哨兵。
 
-        增强：在 fallback 前先按类别匹配评分排序，EWMA 成功率权重高于
-        静态 priority 值，以便自适应绕过近期表现不佳的求解器
+        增强: 回退前先按类别匹配评分排序, EWMA 成功率权重高于
+        静态 priority 值, 以便自适应绕过近期表现不佳的求解器
         """
         with self._lock:
             enabled_solvers = sorted(
@@ -1246,7 +1232,7 @@ class ConstraintSolverManager:
                 error_message="No available solvers",
             )
 
-        # 按类别匹配度 x EWMA 成功率重排序
+        # 按类别匹配度 × EWMA 成功率重排序
         category = self._classify_constraint(constraint)
         with self._lock:
             def _rank(s: SolverConfig):
@@ -1291,18 +1277,17 @@ class ConstraintSolverManager:
 
     # ------------------------------------------------------------------
     # _detect_solver_divergence: 交叉验证中两个求解器对 sat/unsat 结论相反时
-    # 记录该约束和分歧结果，递增 divergence_counter，并返回多数裁定
-    # 设计取舍 — 不立即标记某个求解器为 faulty，因为分歧可能源自约束本身的
-    # 二义性或超时/非线性算子的近似处理差异，需要累积足够样本再判断
+    # 记录该约束和分歧结果, 递增 divergence_counter, 并返回多数裁定
+    # 设计取舍 — 不立即标记某个求解器为故障, 因为分歧可能源自约束本身的
+    # 二义性或超时/非线性算子的近似处理差异, 需要累积足够样本再判断
     # ------------------------------------------------------------------
     def _detect_solver_divergence(
         self, constraint: str, results: List[SolverResult]
     ) -> Dict[str, Any]:
-        """Cross-校验: 检测 solvers disagree sat/unsat
+        """交叉校验: 检测求解器间 sat/unsat 判定分歧
 
-        记录 conflicting results ``divergence_log`` 返回
-        majority verdict. A divergence recorded least two
-        solvers 返回 a definitive (non-None) verdict differs
+        记录冲突结果到 divergence_log, 返回多数裁定。
+        至少两个求解器返回确定性 (非 None) 判定且不一致时记为分歧
         """
         sat_results = [r for r in results if r.satisfiable is not None]
         sat_values = [r.satisfiable for r in sat_results]
@@ -1329,7 +1314,7 @@ class ConstraintSolverManager:
                 self.divergence_counter, sat_count, unsat_count, majority_verdict,
             )
 
-        # 每次交叉验证都喂入 Consensus tracker
+        # 每次交叉验证都喂入 Consensus 追踪器
         self._consensus.record(consistent)
 
         return {
@@ -1343,8 +1328,7 @@ class ConstraintSolverManager:
     def compare_solver_results(
         self, constraint: str, solver_names: Optional[List[str]] = None
     ) -> Dict[str, Any]:
-        """Cross-校验: solve same constraint multiple solvers
-        报告 whether sat/unsat verdicts agree"""
+        """交叉校验: 用多个求解器求解同一约束, 报告 sat/unsat 判定是否一致"""
         with self._lock:
             if solver_names is None:
                 solver_names = list(self._solvers.keys())
@@ -1391,12 +1375,12 @@ class ConstraintSolverManager:
         }
 
     def select_best_solver(self, constraint: str) -> str:
-        """Auto-select best solver for a constraint
+        """为约束自动选择最佳求解器
 
-        Decision factors, order weight:
-        1. Category match (preferred_categories)
-        2. Historical success rate
-        3. Consecutive failure penalty (degraded solvers skipped)
+        决策因子 (按权重排序):
+        1. 类别匹配 (preferred_categories)
+        2. 历史成功率
+        3. 连续失败惩罚 (降级求解器被跳过)
         """
         category = self._classify_constraint(constraint)
         logger.debug(f"Constraint category: {category.value}")
@@ -1436,15 +1420,14 @@ class ConstraintSolverManager:
         return best
 
     # ------------------------------------------------------------------
-    # recommend_solver_for_category: 按历史分类胜率最佳求解器
-    # 不依赖实时 EWMA，只看每个 solver 在该 category 下的 cumulative
-    # success rate，适用于调度器在冷启动后的类别路由决策
+    # recommend_solver_for_category: 按历史分类胜率推荐最佳求解器
+    # 不依赖实时 EWMA, 只看每个求解器在该类别下的累积成功率,
+    # 适用于调度器在冷启动后的类别路由决策
     # ------------------------------------------------------------------
     def recommend_solver_for_category(self, category: ConstraintCategory) -> str:
-        """返回 best solver for *category* per-category success rate
+        """按类别胜率返回最佳求解器
 
-        Falls back highest-priority enabled solver historical
-        data exists for category
+        无历史数据时回退到最高优先级的已启用求解器
         """
         cat_name = category.value
         best_name = ""
@@ -1474,7 +1457,7 @@ class ConstraintSolverManager:
             )
             return best_name
 
-        # 回退: 返回 highest-priority enabled solver
+        # 回退: 返回最高优先级的已启用求解器
         with self._lock:
             available = sorted(
                 [s for s in self._solvers.values() if s.enabled],
@@ -1487,9 +1470,9 @@ class ConstraintSolverManager:
         return fallback
 
     def solver_performance_benchmark(self) -> List[Dict[str, Any]]:
-        """Return a ranked performance report for registered solvers
+        """返回已注册求解器的性能排名报告
 
-        Includes solver tracked latency statistics and pool health scores
+        包含求解器追踪的延迟统计与池健康评分
         """
         bench_extended: List[Dict[str, Any]] = []
         with self._lock:
@@ -1526,7 +1509,7 @@ class ConstraintSolverManager:
     def _health_status(
         self, name: str, perf: SolverPerformance, solver: Optional[SolverConfig]
     ) -> str:
-        """Classify a solver's current health 性能 counters"""
+        """根据性能计数器对求解器健康状态分类"""
         if solver is None or not solver.enabled:
             return "disabled"
         if perf.consecutive_failures >= DEGRADED_CONSECUTIVE_FAILURES:
@@ -1540,10 +1523,10 @@ class ConstraintSolverManager:
         return "warning"
 
     def solver_health_check(self, solver_name: Optional[str] = None) -> Dict[str, Any]:
-        """运行 a health assessment for one or solvers
+        """对一个或多个求解器运行健康评估
 
-        检查 consecutive failure count recent success rate against
-        predefined thresholds. 返回 池 health scores
+        检查连续失败次数与近期成功率是否超过预设阈值,
+        返回池健康评分
         """
         results = {}
         with self._lock:
@@ -1571,7 +1554,7 @@ class ConstraintSolverManager:
         return {"success": True, "results": results, "checked_at": time.time()}
 
     def _health_recommendation(self, status: str) -> str:
-        """Map a health status a recommended operator action"""
+        """将健康状态映射为运维操作建议"""
         recommendations = {
             "healthy": "Running normally, no action needed",
             "normal": "Performance normal, continue monitoring",
@@ -1587,13 +1570,13 @@ class ConstraintSolverManager:
     # consensus_metrics: 获取求解器间一致性快照
     # ------------------------------------------------------------------
     def consensus_metrics(self) -> Dict[str, Any]:
-        """Return cross-solver consensus snapshot"""
+        """返回跨求解器一致性快照"""
         snap = self._consensus.snapshot()
         snap["divergence_counter"] = self.divergence_counter
         return snap
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """Dispatch solver management operations 'action' key"""
+        """按 action 键分派求解器管理操作"""
         action = kwargs.get("action", "solve")
 
         if action == "solve":
@@ -1689,7 +1672,7 @@ class ConstraintSolverManager:
 
 
 def manage_constraint_solver(**kwargs) -> Dict[str, Any]:
-    """Instantiate a ConstraintSolverManager and run a benchmark action"""
+    """实例化 ConstraintSolverManager 并执行 benchmark 动作"""
     mgr = ConstraintSolverManager()
     return mgr.analyze(action="benchmark", **kwargs)
 

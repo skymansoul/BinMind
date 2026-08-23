@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 class ObjectKind:
-    """Object type 分类 for memory scan results"""
+    """内存扫描结果的对象类型分类"""
     UNKNOWN = "unknown"
     CP_OBJECT = "c++_object"
     CP_VTABLE = "c++_vtable"
@@ -46,7 +46,7 @@ class ObjectKind:
     KERNEL_OBJECT = "kernel_object"
 
 class CandidateObject:
-    """Candidate object identified memory scan"""
+    """内存扫描识别的候选对象"""
     __slots__ = ('address', 'size', 'kind', 'vtable_ptr', 'inferred_type', 'refs', 'is_dangling', 'metadata')
 
     def __init__(self, address, size, kind, vtable_ptr=None, inferred_type="",
@@ -71,7 +71,7 @@ class ObjectReference:
         self.kind = kind
 
 class ObjectPointerGraph:
-    """Directed graph capturing object--object 指针 relationships"""
+    """捕获对象间指针关系的有向图"""
     __slots__ = ('objects', 'references', 'dangling', 'type_confusions', 'metadata', 'attention_scores',)
 
     def __init__(self, objects=None, references=None, dangling=None,
@@ -159,7 +159,7 @@ class MemoryAttentionScorer:
 
 
 class PointerScanHeuristics:
-    """Heuristic tests for 指针 validity: address range 对齐 检查"""
+    """指针有效性启发式测试: 地址范围与对齐检查"""
 
     DEFAULT_RANGES = [
         (0x0000000000400000, 0x00007FFFFFFFFFFF),

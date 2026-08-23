@@ -1,5 +1,3 @@
-"""Indirect call resolution: vtable dispatch, PLT stubs, function pointer tables."""
-
 import re
 import struct
 from enum import Enum
@@ -8,13 +6,12 @@ from collections import defaultdict
 name = "CallGraphEnhancer"
 module = "call_graph_enhancer"
 
-# pattern library -------------------------------------------------
 _VTABLE_PAT = re.compile(
-    rb'(?:lea|mov).*?(?:0x[0-9a-f]+)?\(.*?\)'   # rough LEA/MOV for vtable load
+    rb'(?:lea|mov).*?(?:0x[0-9a-f]+)?\(.*?\)'
 )
-_PLT_SIG = rb'\xff\x25'                           # jmp *offset(%rip) / jmp [addr]
+_PLT_SIG = rb'\xff\x25'
 _FPTR_TABLE_SIG = re.compile(
-    rb'\.quad\s+(0x[0-9a-f]+)'                    # function pointer arrays in .rodata
+    rb'\.quad\s+(0x[0-9a-f]+)'
 )
 _CALL_INDIRECT = re.compile(
     rb'\xff[\x10\x11\x12\x13\x14\x15\x16\x17\x50\x51\x52\x53\x54\x55\x56\x57\x90\x91\x92\x93\x94\x95\x96\x97\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7]'
@@ -176,7 +173,6 @@ class EnhancedCallGraph:
 
 
 class CallGraphEnhancer:
-    """Resolve indirect calls in a call graph using binary pattern analysis."""
 
     def __init__(self, binary_path=None, binary_data=None):
         self.binary_name = binary_path if binary_path is not None else "unknown"
@@ -190,7 +186,6 @@ class CallGraphEnhancer:
         self._call_ids = set()
 
     def enhance(self, functions=None, call_graph=None, decomp_data=None):
-        """Augment an existing call graph with resolved indirect calls."""
         if functions:
             for f in functions:
                 fname = f.get("name")
@@ -215,7 +210,7 @@ class CallGraphEnhancer:
             self._find_vtables([f.address for f in self.functions.values() if f.address])
             self._find_fptr_tables()
 
-        # for each indirect call site, try to resolve
+        # 逐个间接调用点尝试解析
         for call in self.indirect_calls:
             if call.call_type is IndirectCallType.CALLBACK:
                 self._resolve_callback_call(call)
@@ -228,8 +223,6 @@ class CallGraphEnhancer:
         result.vtables_discovered = len(self.vtables)
         result.functions.update(self.functions)
         return result
-
-    # -- internal resolvers -----------------------------------------------
 
     def _add_indirect_call(self, call_type, location, address, instruction,
                            source_register=None, context=None):
@@ -325,26 +318,22 @@ class CallGraphEnhancer:
         return result
 
     def _parse_plt(self):
-        """Parse Procedure Linkage Table entries from ELF binaries."""
         if self._data[:4] != b'\x7fELF':
             return
-        # scan for PLT stubs: ff 25 XX XX XX XX (jmp *offset(%rip))
         for m in re.finditer(rb'\xff\x25(....)', self._data):
             offset = struct.unpack('<i', m.group(1))[0]
             pos = m.start()
             self._plt_entries[pos] = f'plt_{len(self._plt_entries):04d}'
 
     def _find_vtables(self, known_func_addrs):
-        """Locate vtable structures by scanning for function pointer arrays."""
         if not self._data:
             return
         known_addrs = set(known_func_addrs)
 
-        # scan aligned pointer arrays in .rdata/.rodata
-        step = 8  # 64-bit pointers
+        step = 8
         for base in range(0, len(self._data) - step * 2, step):
             ptrs = []
-            for i in range(20):  # up to 20 methods
+            for i in range(20):
                 off = base + i * step
                 if off + step > len(self._data):
                     break
@@ -355,21 +344,19 @@ class CallGraphEnhancer:
                 if val in known_addrs:
                     ptrs.append((i * step, val))
                 elif val == 0:
-                    pass  # padding slot
+                    pass
                 else:
-                    break  # no longer a vtable
+                    break
             if len(ptrs) >= 2:
                 self.vtables[base] = VTableInfo(f'class_{base:#x}', ptrs, base)
 
     def _find_fptr_tables(self):
-        """Find function pointer jump tables (common in switch cases)."""
         if not self._data:
             return
         for m in _FPTR_TABLE_SIG.finditer(self._data):
             addr = int(m.group(1), 16)
             base = m.start()
             entries = [(0, addr)]
-            # scan consecutive entries
             for i in range(1, 32):
                 off = m.start() + i * 8
                 if off + 8 > len(self._data):
@@ -383,23 +370,21 @@ class CallGraphEnhancer:
                 self.fp_arrays[base] = FunctionPointerArray(base, entries)
 
     def _resolve_site(self, site, cg):
-        """Attempt to match an indirect call site to known targets."""
         if not self._data or not site.address:
             return
         if site.address >= len(self._data):
             return
 
-        # try PLT match
+        # PLT 匹配
         if site.address in self._plt_entries:
             func_name = self._plt_entries[site.address]
             site.resolved_targets.append(func_name)
             cg.resolved_indirect += 1
             return
 
-        # try vtable match: check nearby instructions for vtable base load
+        # 虚表匹配：检查附近指令是否包含虚表基址加载
         window = self._data[max(0, site.address - 16):site.address + 8]
         for vt in self.vtables.values():
-            # crude heuristic: if vtable address appears in instruction bytes
             vt_bytes = struct.pack('<Q', vt.vtable_address)
             if vt_bytes[:4] in window or vt_bytes[4:] in window:
                 for m_offset, func_name in vt.methods:
@@ -407,7 +392,7 @@ class CallGraphEnhancer:
                 cg.resolved_indirect += 1
                 return
 
-        # try function pointer table match
+        # 函数指针表匹配
         for fpa in self.fp_arrays.values():
             if abs(fpa.base_address - site.address) < 0x1000:
                 for _, func_addr in fpa.entries:
@@ -416,7 +401,6 @@ class CallGraphEnhancer:
                 return
 
 
-# ── module-level shim ─────────────────────────────────────────────────────
 def enhance_call_graph(binary_path="test.bin", functions=None, call_graph=None):
     """便捷入口：构造增强器并一次完成函数登记与调用图增强。"""
     enhancer = CallGraphEnhancer(binary_path=binary_path)

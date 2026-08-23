@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
-"""
-Diagnostic trace recorder — session-based function/系统调用/signal/error 追踪
-
-舍入 8: 编译器 fingerprinting binary code patterns
-Identifies GCC vs Clang vs MSVC vs ICC toolchains recognizing
-编译器-specific prologue/epilogue patterns, 字符串表 idioms
-优化 artifacts binary
-"""
+# 诊断追踪记录器 — 基于会话的函数/系统调用/信号/错误追踪
+# 舍入 8: 编译器指纹识别 — 二进制字节模式分析
 import logging, os, json, time, threading, traceback, re
 from collections import deque
 from dataclasses import dataclass, field

@@ -15,10 +15,6 @@
 #     区间分析只知道X∈[0,256], Y∈[0,256], 无法判断是否同源.
 #     符号化追踪知道X=arg0, Y=arg0 → 精确判定SAFE.
 #
-# 理论依据:
-#   符号化分配-写入关联判定同源; 指针来源感知的堆访问验证.
-#
-
 from typing import Dict, List, Optional, Tuple, Set
 from .symbolic_size_expr import SymExpr, SymbolicSizeTracker
 from .heap_constraint import HeapConstraintTracker, Interval

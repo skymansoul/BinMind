@@ -61,7 +61,9 @@ class ReportData:
                  strings_data: Optional[Dict[str, Any]] = None,
                  config_extraction_results: Optional[Dict[str, Any]] = None,
                  deadlock_detection_results: Optional[Dict[str, Any]] = None,
-                 corruption_classification_results: Optional[Dict[str, Any]] = None):
+                 corruption_classification_results: Optional[Dict[str, Any]] = None,
+                 decompilation_evidence: Optional[List[Dict[str, Any]]] = None,
+                 crash_log: Optional[str] = None):
         """
         Initialise report data container.
         """
@@ -78,6 +80,9 @@ class ReportData:
         self.config_extraction_results = config_extraction_results or {}
         self.deadlock_detection_results = deadlock_detection_results or {}
         self.corruption_classification_results = corruption_classification_results or {}
+        # 证据传递: 反编译伪代码原文与崩溃日志原文, 供 LLM 研判
+        self.decompilation_evidence = decompilation_evidence or []
+        self.crash_log = crash_log
 
 class ReverseReportGenerator:
     """
@@ -108,11 +113,13 @@ class ReverseReportGenerator:
         except Exception as e:
             logger.error(f"Failed to create output directory: {e}")
 
-    def set_report_data(self, data: ReportData):
+    def set_report_data(self, data: ReportData, simulation: Optional[bool] = None):
         """
-        Bind report data for generation.
+        Bind report data for generation. simulation 覆盖默认值。
         """
         self.report_data = data
+        if simulation is not None:
+            self._simulation = simulation
 
     def _generate_section_prompt(self, section: ReportSection) -> str:
         """
@@ -762,9 +769,10 @@ Direct, rigorous.
             'exploit_generation_status': 'Completed' if self.report_data.exploit_generation_results else 'Not executed',
         }
 
-        # 未接入 LLM — 模拟输出，必须标注 simulation
+        # simulation 模式走模板输出; 非模拟则保留模板但去除 simulation 标注
         content = self._simulate_llm_response(section, params)
-        content += "\n\n> **[simulation=true]** 本节内容由模板生成，未经 LLM 研判。"
+        if self._simulation:
+            content += "\n\n> **[simulation=true]** 本节内容由模板生成，未经 LLM 研判。"
         return content
 
     def _simulate_llm_response(self, section: ReportSection, params: Dict[str, str]) -> str:
@@ -1257,12 +1265,14 @@ Threat indicators should be ingested into security monitoring for continuous sur
                     'severity': v.get('severity', ''),
                     'location': v.get('location', ''),
                     'review_status': v.get('review_status', 'pending'),
-                    'tier': v.get('tier', ''),
+                    'tier': v.get('tier', 'lead'),
                     'description': v.get('description', ''),
                 }
                 for v in self.report_data.vulnerability_list
             ],
             'simulation': self._simulation,
+            'decompilation_evidence': self.report_data.decompilation_evidence,
+            'crash_log': self.report_data.crash_log,
             'analysis_phases': {
                 'decompilation': bool(self.report_data.decompilation_results),
                 'symbolic_execution': bool(self.report_data.symbolic_execution_results),

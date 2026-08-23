@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# SMT-LIB operator -> canonical symbol lookup for normalization
-# Mapping fixed; operators listed pass unchanged
+# SMT-LIB算子到规范化符号的映射表
+# 固定映射; 列出的算子原样传递
 NORMALIZE_PATTERNS: List[Tuple[str, str]] = [
     ("bvadd", "+"),
     ("bvmul", "*"),
@@ -48,7 +48,7 @@ def normalize_constraint(constraint: str) -> str:
     for old, new in NORMALIZE_PATTERNS:
         normalized = normalized.replace(f"({old} ", f"({new} ")
 
-    # Collapse residual double spaces multi-step replacements
+    # 多步折叠残留双空格
     while "  " in normalized:
         normalized = normalized.replace("  ", " ")
     normalized = normalized.replace("( ", "(")

@@ -251,9 +251,6 @@ def _try_import_z3():
 
 def lift_instructions_to_z3(instructions: List[str],
                              bit_width: int = 32) -> Optional[Dict[str, any]]:
-    """将指令序列提升为 Z3 表达式和符号变量映射
-    返回 {'exprs': {dest_reg: z3_expr,.}, 'symbols': {reg: BitVec,.}}
-    """
     z3 = _try_import_z3()
     if z3 is None:
         return None
@@ -307,7 +304,6 @@ def lift_instructions_to_z3(instructions: List[str],
 def verify_instruction_equivalence(seq_a: List[str], seq_b: List[str],
                                     target_reg: str,
                                     bit_width: int = 32) -> Optional[bool]:
-    """验证两条指令序列在目标寄存器上的等价性"""
     lifted_a = lift_instructions_to_z3(seq_a, bit_width)
     lifted_b = lift_instructions_to_z3(seq_b, bit_width)
     if lifted_a is None or lifted_b is None:
@@ -341,7 +337,6 @@ def verify_instruction_equivalence(seq_a: List[str], seq_b: List[str],
 
 
 class SymbolicExecutor:
-    """基于 capstone + angr + Z3 的不透明谓词检测"""
 
     def __init__(self, binary_path: str, angr_enabled: bool = True):
         self.binary_path = binary_path

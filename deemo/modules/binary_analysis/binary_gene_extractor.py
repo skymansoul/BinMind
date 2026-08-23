@@ -27,7 +27,7 @@ class BinaryGene:
 
 class GeneExtractor:
 
-    """基因extract器"""
+    """基因提取器"""
 
     def __init__(self):
         self.min_length = 16

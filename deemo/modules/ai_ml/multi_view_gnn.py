@@ -13,11 +13,8 @@ from collections import defaultdict as _defaultdict
 __dbg = _logging.getLogger(__name__)
 
 
-# Data classes
-
 @dataclass
 class GraphNode:
-    """A node in a function graph (basic block or instruction)."""
     node_id: int = 0
     node_type: str = "basic_block"
     features: List[float] = field(default_factory=list)
@@ -33,7 +30,6 @@ class GraphNode:
 
 @dataclass
 class GraphEdge:
-    """An edge in a function graph."""
     edge_id: int = 0
     source_id: int = 0
     target_id: int = 0
@@ -44,7 +40,6 @@ class GraphEdge:
 
 @dataclass
 class FunctionGraph:
-    """A complete function graph with multiple views."""
     function_name: str = ""
     function_address: int = 0
     nodes: List[GraphNode] = field(default_factory=list)
@@ -90,7 +85,6 @@ class FunctionGraph:
 
 @dataclass
 class EmbeddingResult:
-    """Result of embedding a function graph."""
     graph: FunctionGraph
     embedding: List[float] = field(default_factory=list)
     view_embeddings: Dict[str, List[float]] = field(default_factory=dict)
@@ -102,7 +96,6 @@ class EmbeddingResult:
 
 @dataclass
 class SimilarityResult:
-    """Similarity between two embedded function graphs."""
     function_a: str = ""
     function_b: str = ""
     embedding_a: List[float] = field(default_factory=list)
@@ -114,10 +107,10 @@ class SimilarityResult:
     confidence: float = 0.0
 
 
-# GNN Encoder (message-passing with mean-pool aggregation + EdgeDrop)
+# GNN 编码器 -- 消息传递 + 均值池化聚合 + EdgeDrop
 
 class GNNEncoder:
-    """Message-passing GNN encoder for function graphs."""
+    """消息传递 GNN 编码器 -- 用于函数图嵌入。"""
 
     __slots__ = ('m_input_dim', 'm_hidden_dim', 'm_output_dim', 'm_num_layers',
                  'm_weights', 'm_biases', 'm_trained', 'm_edge_dropout')
@@ -267,10 +260,10 @@ class GNNEncoder:
         return self.readout(node_embs)
 
 
-# Multi-View GNN (with 注意力-based view fusion)
+# 多视图 GNN -- 注意力融合
 
 class MultiViewGNN:
-    """Multi-view GNN combining CFG, DFG, call, and mnemonic views."""
+    """多视图 GNN -- 融合 CFG/DFG/call/助记符四视图。"""
 
     __slots__ = ('m_cfg_encoder', 'm_dfg_encoder', 'm_call_encoder',
                  'm_mnemonic_encoder', 'm_fusion_weights', 'm_output_dim',
@@ -302,8 +295,6 @@ class MultiViewGNN:
             enc.set_edge_dropout(0.15 if flag else 0.0)
 
     def _attention_fusion(self, view_embs: Dict[str, List[float]]) -> Tuple[List[float], Dict[str, float]]:
-        """注意力融合: 对每个视图嵌入计算注意力分数，加权求和得到融合向量。
-        分数计算: score(view) = softmax( dot(query_vector, view_embedding) / sqrt(dim) )"""
         view_keys = list(view_embs.keys())
         dim = self.m_output_dim
 
@@ -320,7 +311,7 @@ class MultiViewGNN:
             raw_scores.append(dot)
             vi += 1
 
-        # Softmax with temperature sqrt(dim)
+        # Softmax 温度缩放 sqrt(dim)
         scale = _math.sqrt(max(dim, 1))
         max_score = max(raw_scores) if raw_scores else 0.0
         exp_sum = 0.0
@@ -361,22 +352,22 @@ class MultiViewGNN:
         view_embs: Dict[str, List[float]] = {}
         node_feats = graph.node_features_matrix()
 
-        # CFG view
+        # CFG 视图
         cfg_adj = self._edge_list_to_adj(graph.cfg_edges, len(graph.nodes))
         cfg_node_embs = self.m_cfg_encoder.forward(node_feats, cfg_adj)
         view_embs["cfg"] = self.m_cfg_encoder.readout(cfg_node_embs)
 
-        # DFG view
+        # DFG 视图
         dfg_adj = self._edge_list_to_adj(graph.dfg_edges, len(graph.nodes))
         dfg_node_embs = self.m_dfg_encoder.forward(node_feats, dfg_adj)
         view_embs["dfg"] = self.m_dfg_encoder.readout(dfg_node_embs)
 
-        # Call view
+        # Call 视图
         call_adj = self._edge_list_to_adj(graph.call_edges, len(graph.nodes))
         call_node_embs = self.m_call_encoder.forward(node_feats, call_adj)
         view_embs["call"] = self.m_call_encoder.readout(call_node_embs)
 
-        # Mnemonic view
+        # 助记符视图
         mem_adj = self._identity_adj(len(graph.mnemonic_sequence))
         mem_feats = self._mnemonic_features(graph.mnemonic_sequence,
                                             len(node_feats[0]) if node_feats else 64)
@@ -391,11 +382,10 @@ class MultiViewGNN:
 
         result.view_embeddings = dict(view_embs)
 
-        # 注意力融合替代固定权重
         fused, attn_scores = self._attention_fusion(view_embs)
         result.view_attention_scores = attn_scores
 
-        # L2 normalize
+        # L2 归一化
         norm = _math.sqrt(sum(v * v for v in fused))
         if norm > 0:
             j = 0
@@ -449,10 +439,10 @@ class MultiViewGNN:
         return features
 
 
-# Contrastive Loss
+# 对比损失
 
 class ContrastiveLoss:
-    """InfoNCE / NT-Xent contrastive loss for embedding similarity learning."""
+    """对比学习损失 -- InfoNCE / NT-Xent。"""
 
     __slots__ = ('m_temperature', 'm_margin')
 
@@ -497,13 +487,9 @@ class ContrastiveLoss:
 
 
 # 图数据增强器 -- 边扰动与节点特征噪声，用于对比学习自监督预训练
-# GraphAugmenter: edge perturbation + node feature dropout
-# You et al., "GraphCL: Graph Contrastive Learning with Augmentations", NeurIPS 2020
 
 class GraphAugmenter:
-    """图数据增强 -- 生成图的两个增强视图用于对比预训练。
-    支持边随机删除 (edge_perturbation) 和节点特征掩码 (feature_mask)。
-    典型用法: aug1, aug2 = augmenter.augment(graph) -> 对比学习正样本对"""
+    """图数据增强 -- 生成图的两个增强视图用于对比预训练。"""
 
     __slots__ = ('m_edge_drop_rate', 'm_feature_mask_rate', 'm_seed')
 
@@ -522,18 +508,15 @@ class GraphAugmenter:
         g1 = _cp.deepcopy(graph)
         g2 = _cp.deepcopy(graph)
 
-        # Augment view 1
         self._perturb_edges(g1)
         self._mask_features(g1)
 
-        # Augment view 2 (独立采样)
         self._perturb_edges(g2)
         self._mask_features(g2)
 
         return g1, g2
 
     def _perturb_edges(self, graph: FunctionGraph):
-        """随机删除边 (edge perturbation) -- 对每个视图独立操作"""
         import random as _rnd
         for edge_list in [graph.cfg_edges, graph.dfg_edges, graph.call_edges, graph.memory_edges]:
             kept: List[GraphEdge] = []
@@ -546,7 +529,6 @@ class GraphAugmenter:
             edge_list.extend(kept)
 
     def _mask_features(self, graph: FunctionGraph):
-        """随机掩码节点特征维度 -- 将部分特征置零模拟缺失信息"""
         import random as _rnd
         ni = 0
         while ni < len(graph.nodes):
@@ -559,10 +541,10 @@ class GraphAugmenter:
             ni += 1
 
 
-# Multi-View GNN Embedder
+# 多视图 GNN 嵌入器
 
 class MultiViewGNNEmbedder:
-    """High-level interface for embedding function graphs and computing similarities."""
+    """函数图嵌入与相似度计算的高层接口。"""
 
     __slots__ = ('m_model', 'm_loss', 'm_cache', 'm_augmenter')
 
@@ -667,10 +649,10 @@ class MultiViewGNNEmbedder:
         self.m_cache.clear()
 
 
-# Multi-View GNN Embedder Analyzer
+# 多视图 GNN Embedder Analyzer
 
 class MultiViewGNNEmbedderAnalyzer:
-    """Analyzer for embedding and comparing function graphs."""
+    """函数图嵌入与比较的 Analyzer。"""
 
     __slots__ = ('m_embedder', 'm_database', 'm_results')
 
@@ -734,14 +716,11 @@ class MultiViewGNNEmbedderAnalyzer:
         return self.m_embedder.search_similar(query, self.m_database, top_k)
 
 
-# Graph builder utility
-# 增强版 -- 计算图结构全局特征 (圈复杂度、平均度、边密度)
+# 图构建工具 -- 增强版，自动计算图结构全局特征
 
 def build_function_graph_from_blocks(function_name: str, function_address: int,
                                      blocks: List[Dict[str, Any]],
-                                     edges: List[Tuple[int, int, str]] = None) -> FunctionGraph:
-    """从基本块列表构建函数图，并自动计算图结构统计特征。
-    edges = [(src_id, dst_id, type), ...] where type in {control_flow, data_flow, call, memory}"""
+                                      edges: List[Tuple[int, int, str]] = None) -> FunctionGraph:
 
     graph = FunctionGraph(
         function_name=function_name,
@@ -800,11 +779,11 @@ def build_function_graph_from_blocks(function_name: str, function_address: int,
     # 计算图结构全局特征
     n = len(graph.nodes)
     if n > 0:
-        # 圈复杂度近似: E - N + 2 (McCabe's cyclomatic complexity)
+        # 圈复杂度近似: E - N + 2
         graph.cyclomatic_complexity = max(1, total_edges - n + 2)
         # 平均度数
         graph.avg_degree = (2.0 * total_edges) / n
-        # 边密度: E / (N * (N-1)) for directed 图
+        # 边密度: E / (N*(N-1)) 有向图
         max_possible = n * (n - 1) if n > 1 else 1
         graph.edge_density = total_edges / max_possible
     else:

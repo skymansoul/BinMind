@@ -1,20 +1,3 @@
-#!/usr/bin/env python3
-"""
-Def-Use 链引导模糊测试引擎
-
-基于 def-use 链重建方法
-将静态定义-使用分析集成到模糊测试循环中
-对 def-use 链覆盖进行定向反馈
-
-核心机制：
-1. 二进制级 def-use 链重建（angr/radare2 后端）
-2. Def-use 链覆盖位图（替代 edge 覆盖率）
-3. 种子优先级排序（du-chain 权重评分）
-4. 基于链的变异策略调优
-
-结合 LLM 求解器概念用于复杂约束
-"""
-
 import logging
 import os
 import re
@@ -30,21 +13,19 @@ logger = logging.getLogger(__name__)
 
 
 class DefUseRelation(Enum):
-    """Def-Use 关系类型"""
-    REG_DEF = auto()     # 寄存器定义
-    REG_USE = auto()     # 寄存器使用
-    MEM_DEF = auto()     # 内存定义（写入）
-    MEM_USE = auto()     # 内存使用（读取）
-    FLAG_DEF = auto()    # 标志位定义
-    FLAG_USE = auto()    # 标志位使用
+    REG_DEF = auto()
+    REG_USE = auto()
+    MEM_DEF = auto()
+    MEM_USE = auto()
+    FLAG_DEF = auto()
+    FLAG_USE = auto()
 
 
 @dataclass
 class DUPoint:
-    """单个 Def 或 Use 点"""
     address: int
     instruction: str
-    variable: str  # 寄存器名或内存地址表达式
+    variable: str
     relation: DefUseRelation
     block_addr: int = 0
 
@@ -56,23 +37,17 @@ class DUPoint:
 
 @dataclass
 class DUChain:
-    """
-    Def-使用 链
-
-    从定义点到使用点的数据流路径
-    """
     def_point: DUPoint
     use_points: List[DUPoint] = field(default_factory=list)
     chain_id: str = ""
-    distance: int = 0  # def 到最远 use 的基本块距离
-    crossing_branches: int = 0  # 穿过的条件分支数
+    distance: int = 0
+    crossing_branches: int = 0
 
     def __post_init__(self):
         if not self.chain_id:
             self.chain_id = f"{self.def_point.address:x}_{self.def_point.variable}"
 
     def is_exploitable(self) -> bool:
-        """判断 def-use 链是否有安全意义"""
         sensitive_vars = {'buf', 'size', 'len', 'ptr', 'idx', 'offset',
                          'nbytes', 'count', 'src', 'dst', 'dest'}
         var_lower = self.def_point.variable.lower()
@@ -81,18 +56,11 @@ class DUChain:
 
 @dataclass
 class DUCoverageMap:
-    """
-    Def-Use 链覆盖位图
-
-    类似 AFL 的 edge 覆盖率 bitmap
-    但以 (def_addr, use_addr) 对为基本单元
-    """
     bitmap: bytearray = field(default_factory=lambda: bytearray(65536))
     hit_count: int = 0
     unique_chains: int = 0
 
     def record(self, chain: DUChain) -> bool:
-        """记录一条 du-chain 覆盖，返回是否为新发现"""
         key = (chain.def_point.address, chain.use_points[0].address
                if chain.use_points else 0)
         idx = (hash(key) & 0xFFFF)
@@ -118,13 +86,6 @@ class DUCoverageMap:
 
 
 class DUExtractor:
-    """
-    Def-Use 链提取器
-
-    从二进制汇编或 IR 中提取 def-use 关系
-    后端可选择 angr VEX IR 或 radare2 ESIL
-    """
-
     # x86-64 指令的隐式 def/use 模式
     _IMPLICIT_PATTERNS = {
         'push': {'def': ['rsp'], 'use': ['rsp']},
@@ -150,13 +111,8 @@ class DUExtractor:
     def extract_from_asm(
         self, assembly: str, base_addr: int = 0
     ) -> List[DUChain]:
-        """从汇编文本提取 def-use 链。
-
-        参数: assembly 汇编代码（多行文本）, base_addr 基址;
-        返回 DUChain 列表。
-        """
         lines = assembly.strip().split('\n')
-        defs: Dict[str, DUPoint] = {}  # variable → latest def
+        defs: Dict[str, DUPoint] = {}
         chains: Dict[str, DUChain] = {}
 
         addr_pattern = re.compile(r'^\s*(0x[0-9a-fA-F]+)\s*[:]?\s*')
@@ -174,8 +130,7 @@ class DUExtractor:
             for d in defs_in_instr:
                 defs[d.variable] = d
 
-                if d.variable not in chains:
-                    chains[d.variable] = DUChain(
+                if d.variable not in chains:                    chains[d.variable] = DUChain(
                         def_point=d,
                         chain_id=f"{addr:x}_{d.variable}"
                     )
@@ -189,14 +144,12 @@ class DUExtractor:
         return list(chains.values())
 
     def _extract_defs(self, instr: str, addr: int) -> List[DUPoint]:
-        """提取指令中的定义点"""
         defs = []
 
         mnemonic = instr.split()[0] if instr.split() else ''
 
         # 显式 def
         if self._REG_DEF_PATTERN.match(mnemonic):
-            # 提取目标操作数
             parts = instr[len(mnemonic):].strip().split(',')
             if parts:
                 dst = parts[0].strip()
@@ -220,7 +173,6 @@ class DUExtractor:
         return defs
 
     def _extract_uses(self, instr: str, addr: int) -> List[DUPoint]:
-        """提取指令中的使用点"""
         uses = []
 
         regs = re.findall(
@@ -253,18 +205,6 @@ class DUExtractor:
 
 
 class DefUseGuidedFuzzer:
-    """
-    Def-Use 链引导的模糊测试器
-
-    核心循环：
-    1. 从种子队列取种子
-    2. 执行并记录 du-chain 覆盖
-    3. 如果发现新的 du-chain → 将新输入加入种子队列
-    4. 对队列中的种子进行变异
-
-    参考 [FuzzRDUCC 2025, 2509.04967] 和 [HyllFuzz 2026]
-    """
-
     def __init__(
         self,
         target_binary: str,
@@ -283,8 +223,6 @@ class DefUseGuidedFuzzer:
 
         # 统计
         self.executions = 0
-        self.unique_crashes = 0
-
     def initialize_chains(self, assembly: str) -> int:
         """初始化 def-use 链（静态分析阶段），返回链数量"""
         self.du_chains = self.extractor.extract_from_asm(assembly)
@@ -341,11 +279,6 @@ class DefUseGuidedFuzzer:
         return max(score, 0.1)
 
     def mutate(self, seed: bytes) -> bytes:
-        """
-        种子变异（确定性 + 随机）
-
-        变异策略参考 AFL 的 havoc 阶段
-        """
         data = bytearray(seed)
 
         if len(data) == 0:
@@ -357,8 +290,7 @@ class DefUseGuidedFuzzer:
             data[pos] ^= (1 << bit)
 
         # 2. 字节替换
-        if len(data) > 4 and self.executions % 7 == 0:
-            idx = (self.executions * 3) % (len(data) - 4)
+        if len(data) > 4 and self.executions % 7 == 0:            idx = (self.executions * 3) % (len(data) - 4)
             interesting = [0x00, 0xFF, 0x41, 0x0A, 0x25, 0x2F]
             data[idx] = interesting[self.executions % len(interesting)]
 
@@ -376,15 +308,9 @@ class DefUseGuidedFuzzer:
 
     def run_cycle(
         self,
-        execute_callback,  # callable: bytes → (returncode, stdout, stderr)
+        execute_callback,
         max_cycles: int = 1000
     ) -> Dict[str, Any]:
-        """运行模糊测试循环。
-
-        参数: execute_callback 执行函数，返回 (exit_code,
-        stdout, stderr); max_cycles 最大循环次数;
-        返回统计结果。
-        """
         if not self.seed_queue:
             return {'error': '无种子', 'executions': 0}
 

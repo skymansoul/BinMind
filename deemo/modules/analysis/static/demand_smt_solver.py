@@ -1,12 +1,4 @@
-"""按需SMT约束求解器 (Demand-Driven SMT Constraint Solver) - DDSSC核心模块.
-
-核心决策:
-  符号关联分析无法判定的告警("unknown"), 需要更强的分析能力.
-  本模块在告警点构建路径约束 + 尺寸不等式, 通过Z3求解器验证
-  溢出路径的可行性. 若路径不可达 → 误报; 若可达 → 确认溢出.
-
-创建: 2023-09-21
-"""
+# 按需SMT约束求解器 - DDSSC核心模块
 
 import logging
 from typing import Dict, List, Optional, Tuple

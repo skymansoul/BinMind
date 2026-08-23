@@ -1,13 +1,11 @@
-"""Path diversity tracking for anti-explosion 符号执行
+"""符号执行路径多样性追踪 (防爆炸)。
 
-module a backward-兼容性 shim. real library code
-moved ``analysis.symbolic.src.path_diversity_core``
+本模块为向后兼容垫片。实际库代码
+已移至 ``analysis.symbolic.src.path_diversity_core``。
 
-``DynamicPathExplorator`` ``run_path_diversity_exploration``
-已废弃 fake/stub implementations 使用 random sleeps synthetic
-data. preserved deprecation warnings for backward
-兼容性. 使用 real engine classes ``path_diversity_core``
-for actual 符号执行
+``DynamicPathExplorator`` 和 ``run_path_diversity_exploration``
+已废弃 — 旧版使用随机休眠和合成数据的伪实现。保留弃用警告
+用于向后兼容。实际符号执行请使用 ``path_diversity_core`` 中的引擎类。
 """
 
 import warnings
@@ -15,7 +13,7 @@ import random
 import time
 from typing import Dict, Any, List, Optional
 
-# Re-export real library code 核心模块 for backward 兼容性
+# 向后兼容: 从核心模块重导出实际库代码
 from modules.analysis.symbolic.src.path_diversity_core import (
 # constants / enums
     DiversityStrategy,
@@ -49,7 +47,7 @@ from modules.analysis.symbolic.src.path_diversity_core import (
     _feature_to_vector,
 )
 
-# 确保 __all__ lists everything for star imports
+# 确保 __all__ 列出全部导出项, 支持 star import
 __all__ = [
     "DiversityStrategy",
     "PathFeatureType",
@@ -68,20 +66,18 @@ __all__ = [
     "_simhash",
     "_hamming_distance",
     "_feature_to_vector",
-    # 已废弃 fake parts - preserved for backward 兼容性
+    # 已废弃伪实现, 保留向后兼容
     "DynamicPathExplorator",
     "run_path_diversity_exploration",
 ]
 
 
 class DynamicPathExplorator:
-    """Top-level exploration 驱动. Accepts path candidates, selects
-    via a DiversityAwarePathSelector, simulates exploration
+    """顶层探索驱动器。接收路径候选, 通过 DiversityAwarePathSelector
+    筛选, 模拟探索流程
 
-    已废弃::
-    a fake exploration stub 使用 ``time.sleep`` random
-    values instead performing real 符号执行. 使用 core
-    engine classes ``path_diversity_core`` instead
+    已废弃: 使用 time.sleep 随机值和合成数据代替真实符号执行。
+    请使用 path_diversity_core 中的核心引擎类
     """
 
     def __init__(self, strategy: str = "hybrid"):
@@ -105,11 +101,11 @@ class DynamicPathExplorator:
 
     def add_path_candidate(self, path_id: str, address: int, constraints: List[str],
                            depth: int = 0, parent_id: Optional[str] = None):
-        """Feed a path selector's candidate 池"""
+        """向路径选择器的候选池添加路径"""
         self._selector.add_path(path_id, address, constraints, depth, parent_id)
 
     def explore(self, iterations: int = 50) -> Dict[str, Any]:
-        """运行 exploration loop for a fixed number iterations"""
+        """运行固定迭代次数的探索循环"""
         explored = []
         for _ in range(iterations):
             if self._exploration_count >= self._max_explorations:
@@ -131,18 +127,16 @@ class DynamicPathExplorator:
         }
 
     def _explore_path(self, path_id: str) -> Dict[str, Any]:
-        """Explore a path solving constraints deriving new branches
+        """探索单条路径, 求解约束并派生新分支
 
-        Retrieves path's constraint list diversity tracker
-        attempts SAT solving via Z3 (falling back claripy), 构造
-        new branches negating individual constraints - standard
-        concolic-execution (DART) pattern for branch discovery
+        从选择器的多样性追踪器中取路径约束列表, 尝试通过 Z3
+        (回退到 claripy) 做 SAT 求解, 对每条约束取反构造新分支 —
+        标准 concolic 执行 (DART) 的分支发现模式
 
-        solver available or path stored constraints
-        falls back a heuristic 估算 derived path's structural
-        features (depth) rather random data
+        求解器不可用或路径无约束时回退到启发式估算, 推导路径的
+        结构特征 (深度), 而非使用随机数据
         """
-        # Retrieve constraints selector's diversity tracker
+        # 从选择器的多样性追踪器中取约束
         constraints: List[str] = []
         path_depth: int = 0
         tracker = getattr(self._selector, '_diversity_tracker', None)
@@ -163,7 +157,7 @@ class DynamicPathExplorator:
                 'note': 'no_constraints_available',
             }
 
-        # Attempt SAT solving
+        # 尝试 SAT 求解
         start_time = time.time()
         sat, solution = self._solve_path_constraints(constraints)
         solve_time = time.time() - start_time
@@ -192,12 +186,12 @@ class DynamicPathExplorator:
 
     @staticmethod
     def _solve_path_constraints(constraints: List[str]) -> tuple:
-        """Attempt SAT solving a list constraint strings
+        """尝试对约束字符串列表做 SAT 求解
 
         返回 (satisfiable: bool, solution: dict or None)
-        Tries Z3 first, claripy
+        先试 Z3, 回退到 claripy
         """
-        # Try Z3
+        # 尝试 Z3
         try:
             import z3
             solver = z3.Solver()
@@ -229,7 +223,7 @@ class DynamicPathExplorator:
         except Exception:
             pass
 
-        # Try claripy
+        # 尝试 claripy
         try:
             import claripy
             s = claripy.Solver()
@@ -252,7 +246,7 @@ class DynamicPathExplorator:
 
     @staticmethod
     def _str_to_z3(s: str, var_map: Dict[str, Any], z3_mod: Any) -> Optional[Any]:
-        """Translate a constraint string a Z3 BoolRef expression"""
+        """把约束字符串转换为 Z3 BoolRef 表达式"""
         s = s.strip()
         if ' and ' in s:
             parts = s.split(' and ', 1)
@@ -278,7 +272,7 @@ class DynamicPathExplorator:
 
     @staticmethod
     def _parse_z3_term(term: str, var_map: Dict[str, Any], z3_mod: Any) -> Optional[Any]:
-        """解析 a term a variable var_map or an integer literal"""
+        """解析项: 从变量映射或整数字面量"""
         term = term.strip()
         if term in var_map:
             return var_map[term]
@@ -289,7 +283,7 @@ class DynamicPathExplorator:
 
     @staticmethod
     def _negate_constraint_str(constraint: str) -> Optional[str]:
-        """Negate a single constraint for branch generation"""
+        """对单条约束取反, 用于分支生成"""
         s = constraint.strip()
         if ' and ' in s or ' or ' in s:
             return f'not ({s})'
@@ -313,13 +307,11 @@ def run_path_diversity_exploration(
     iterations: int = 50,
     path_count: int = 20
 ) -> Dict[str, Any]:
-    """One-shot: 构造 a synthetic path population, explore chosen
-    diversity strategy, 返回 stats
+    """一次性接口: 构造合成路径群体, 按指定多样性策略探索, 返回统计
 
-    已废弃::
-    function 使用 已废弃 ``DynamicPathExplorator``
-    构造 fake random results. For real path diversity analysis
-    使用 ``PathDiversityTracker`` ``path_diversity_core`` directly
+    已废弃: 使用已废弃的 DynamicPathExplorator 构造伪随机结果。
+    真实路径多样性分析请直接使用 path_diversity_core 中的
+    PathDiversityTracker
     """
     warnings.warn(
         "run_path_diversity_exploration is deprecated: it uses "

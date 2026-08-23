@@ -106,8 +106,3 @@ class SecretAuditor:
 
 __all__ = ['SecretAuditor', 'SecretFinding']
 
-
-def _debug_print(*args, **kwargs):
-    """调试输出桩。"""
-    pass  # 无活跃调用点
-

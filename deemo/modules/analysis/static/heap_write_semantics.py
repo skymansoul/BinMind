@@ -11,10 +11,6 @@
 #   参数角色: 0=dst指针, 1=src/格式串, 2=size/数量, ...
 #   索引语义统一为"第k个实参", 由调用方映射到实际ABI寄存器.
 #
-# 理论依据:
-#   CodeQL 的 ExternalFlowSources/SummaryModels 同样依赖按函数签名
-#   建模参数语义; 静态分析精度首先取决于调用点参数角色的正确性.
-#
 
 from typing import Dict, Optional, Tuple
 

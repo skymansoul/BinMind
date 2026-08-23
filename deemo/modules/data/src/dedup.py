@@ -1,27 +1,3 @@
-"""Data deduplication —— exact hash + fuzzy (SimHash/MinHash) matching.
-
-For binary analysis results, exact dedup (sha256) catches literal duplicates.
-SimHash handles near-duplicates from different compilation settings or
-obfuscation variants. MinHash is better for section-level similarity.
-
-The chunk-based approach (CDC) splits binaries into content-defined chunks
-before hashing —— resistant to insertions/deletions at file boundaries.
-
-  - "Detecting Near-Duplicates for Web Crawling"
-    —— the SimHash paper. Using 128-bit fingerprints with Hamming distance.
-  - MinHash: Broder '97, "On the resemblance and containment of documents"
-  - FastCDC: Xia et al., USENIX ATC '16 —— gear-based CDC with normalized chunking.
-    Gear hash table precomputation and dynamic mask adjustment per §3.2-3.4.
-  - HyperLogLog: Flajolet et al., "HyperLogLog: the analysis of a near-optimal
-    cardinality estimation algorithm". 用于去重前的唯一项数估算。
-  - CuckooFilter: Fan et al., "Cuckoo Filter: Practically Better Than Bloom"
-. 支持删除操作, 同等 FPR 下空间效率优于 Bloom。
-  - One Permutation Hashing: Li et al., "One Permutation Hashing"
-. 单次置换替代 k 次 MinHash 置换, 流式场景 O(1) 更新。
-  - TDigest: Dunning & Ertl, "Computing Extremely Accurate Quantiles Using
-    t-Digests". 流式分位数估计, 内存 O(k), 用于 CDC chunk 分布追踪。
-"""
-
 import hashlib
 import logging
 import math
@@ -145,7 +121,6 @@ class TDigest:
 # 在启动去重管线前快速估算唯一 chunk 数量, 用于评估 dedup 的必要性
 
 def _hll_tau(_p: int) -> float:
-    """HLL bias correction constant for given precision."""
     if _p == 4:
         return 0.673
     if _p == 5:
@@ -322,8 +297,6 @@ class CuckooFilter:
     def load_factor(self) -> float:
         return self._n / (self._nb * self._bs)
 
-# Bloom filter
-
 class BloomFilter:
     """标准 Bloom filter, 用做去重前的快速负向检查。
 
@@ -390,7 +363,6 @@ def _coeffs_128():
     return _SIMHASH_COEFFS_128
 
 def _fnv1a_64(data: bytes, seed: int = 0xcbf29ce484222325) -> int:
-    # inline
     h = seed
     for b in data:
         h ^= b
@@ -398,12 +370,10 @@ def _fnv1a_64(data: bytes, seed: int = 0xcbf29ce484222325) -> int:
     return h
 
 def _hamming_dist(a: int, b: int) -> int:
-    # inline
     x = a ^ b
     return x.bit_count()
 
 class SimHashDedup:
-    """SimHash-based fuzzy deduplication for binary data."""
 
     def __init__(self, bits: int = 128, shingle_size: int = 8):
         self.bits = bits
@@ -411,7 +381,6 @@ class SimHashDedup:
         self.coeffs = _coeffs_128() if bits == 128 else _extract_simhash_coeffs(bits)
 
     def fingerprint(self, data: bytes) -> int:
-        """Compute SimHash fingerprint as an integer."""
         vec = [0] * self.bits
         n = len(data)
         step = max(1, n - self.shingle_size + 1)
@@ -512,7 +481,6 @@ class SimHashIndex:
 # MinHash + One Permutation Hashing (OPH)
 
 class MinHashDedup:
-    """MinHash for set-based similarity over binary chunks."""
 
     def __init__(self, num_perm: int = 128, seed: int = 42):
         self.num_perm = num_perm
@@ -609,14 +577,6 @@ def _gear_table():
 
 def cdc_chunk(data: bytes, min_chunk: int = 1024, max_chunk: int = 16384,
               mask_bits: int = 12, normalize: bool = True) -> List[bytes]:
-    """Split data into content-defined chunks using gear hash.
-
-    mask_bits controls average chunk size: 2^mask_bits.
-    12 bits → ~4KB average chunks.
-
-    normalize=True 启用 FastCDC 风格的动态 mask 调整,
-    使 chunk 大小尽量落在 [min_chunk, max_chunk] 区间内。
-    """
     if len(data) <= min_chunk:
         return [data]
 
@@ -733,19 +693,7 @@ def cdc_chunk_stats(chunks: List[bytes]) -> Dict:
         "p95": sizes[int(n * 0.95)],
     }
 
-# Main dedup orchestrator
-
 class DedupEngine:
-    """Orchestrates deduplication across exact + fuzzy algorithms.
-
-    Usage:
-      engine = DedupEngine(db, config.dedup)
-      canonical = engine.dedup_binary(data, sha256_hash)
-
-    内置 HyperLogLog 用于估算去重前的唯一项数 ——
-    若 HLL 估算 >> 已索引项数, 说明大量新数据, 可跳过模糊去重仅做精确匹配,
-    节省 SimHash / MinHash 的计算开销。
-    """
 
     def __init__(self, db, config):
         self.db = db
@@ -761,7 +709,6 @@ class DedupEngine:
         self._hll = HyperLogLog(p=14)
 
     def dedup_by_hash(self, sha256: str) -> Optional[str]:
-        """Check exact dedup —— returns canonical hash if duplicate."""
         self._db_lookups += 1
         hash_bytes = sha256.encode("ascii") if isinstance(sha256, str) else sha256
         if not self._bloom.might_contain(hash_bytes):
@@ -770,7 +717,6 @@ class DedupEngine:
         return self.db.get_canonical(sha256)
 
     def dedup_binary(self, data: bytes, sha256: str = "") -> Tuple[str, bool]:
-        """Full dedup pipeline for binary data."""
         if not sha256:
             sha256 = hashlib.sha256(data).hexdigest()
 
@@ -838,7 +784,6 @@ class DedupEngine:
         }
 
 def dedup_from_config(db, config=None):
-    """Factory: create DedupEngine from config or defaults."""
     if config is None:
         from .config import get_config
         config = get_config()

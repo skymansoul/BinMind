@@ -1,4 +1,3 @@
-# Bridge: core.crash_analysis with test-compatible API
 from core.crash_analysis import *
 import re as _re
 from typing import Dict, Any
@@ -18,7 +17,6 @@ REGISTER_NAMES = {
 
 
 def parse_registers_from_text(text):
-    """Parse register values from crash dump text."""
     result = {}
     if not isinstance(text, str):
         return result
@@ -32,7 +30,6 @@ def parse_registers_from_text(text):
 
 
 class CrashAnalyzer:
-    """Crash analysis wrapper class."""
     def __init__(self, crash_data=None):
         self.crash_data = crash_data or {}
 

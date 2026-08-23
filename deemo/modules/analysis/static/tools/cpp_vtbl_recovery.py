@@ -196,7 +196,7 @@ class VTableHeuristicDetector:
 
 
 class CallContextAnalyzer:
-    """Call context analyzer, 解析 virtual call sites binds concrete targets"""
+    """调用上下文分析器, 解析虚调用点并绑定具体目标"""
 
     def __init__(self, binary_path: str):
         self.binary_path = binary_path

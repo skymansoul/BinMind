@@ -1,7 +1,3 @@
-"""
-PE (Portable Executable) parsing. Requires pefile.
-"""
-
 import struct
 import os
 
@@ -17,7 +13,6 @@ def is_pe(path: str) -> bool:
 
 
 def pe_arch_name(path: str) -> str:
-    """Return 'x86', 'x86-64', 'ARM64', or 'unknown'."""
     try:
         import pefile
         p = pefile.PE(path)
@@ -46,7 +41,6 @@ def pe_arch_name(path: str) -> str:
 
 
 def read_pe_sections(path: str):
-    """Return list of {name, addr, size} dicts."""
     try:
         import pefile
         p = pefile.PE(path)

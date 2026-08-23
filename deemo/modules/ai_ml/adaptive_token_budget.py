@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TaskEstimate:
-    """任务难度预估"""
+    # 任务难度预估
     task_id: str
     function_name: str = ""
     cyclomatic_complexity: int = 1
@@ -61,7 +61,7 @@ class TaskEstimate:
 
 @dataclass
 class BudgetPool:
-    """全局token预算池"""
+    # 全局token预算池
     total_budget: int
     remaining: int
     allocated: int                     # 已分配但未使用的
@@ -70,15 +70,8 @@ class BudgetPool:
 
 
 class DifficultyEstimator:
-    """基于零成本静态特征的难度预估器。
-
-    特征选择理由:
-      - 圈复杂度: 分支数、推理路径数、分析难度
-      - 指令数: 输入长度、LLM处理量
-      - 调用深度: 上下文范围、需要的全局理解
-      - 间接调用比例: 不确定性、需要更多推理
-      - 基本块数: CFG复杂度、结构理解难度
-    """
+    # 基于零成本静态特征的难度预估器.
+    # 特征: 圈复杂度(分支/推理路径) + 指令数(输入长度/LLM处理量) + 调用深度(上下文范围) + 间接调用比例(不确定性) + 基本块数(CFG复杂度).
 
     def estimate(self, **features) -> float:
         cc = features.get('cyclomatic_complexity', 1)
@@ -102,16 +95,8 @@ class DifficultyEstimator:
 
 
 class AdaptiveBudgetAllocator:
-    """自适应计算预算分配器。
-
-    分配算法:
-      1. 对任务队列中每个任务预估难度
-      2. 对难度分数做softmax归一化，分配权重
-      3. 每个任务的初始预算 = 总预算 × 权重
-      4. 任务提前完成，剩余token加入surplus_pool
-      5. surplus_pool中的token重新按剩余任务的难度分配
-      6. 重复直至所有任务完成或预算耗尽
-    """
+    # 自适应计算预算分配器.
+    # 分配: 难度预估→softmax权重→初始预算; 任务完成回收剩余→surplus_pool重新分配给未完成任务.
 
     def __init__(self,
                  total_budget: int = 100000,
@@ -128,7 +113,6 @@ class AdaptiveBudgetAllocator:
     def allocate(self,
                  tasks: List[Dict[str, Any]]
                  ) -> Dict[str, TaskEstimate]:
-        """为任务队列分配token预算。"""
         estimates = {}
         for task in tasks:
             tid = task['task_id']
@@ -156,7 +140,7 @@ class AdaptiveBudgetAllocator:
         return estimates
 
     def _allocate_by_difficulty(self, estimates: Dict[str, TaskEstimate]):
-        """按难度比例分配预算"""
+        # 按难度比例softmax归一化分配预算
         scores = np.array([e.difficulty_score for e in estimates.values()])
         scores_exp = np.exp(scores - scores.max())
         weights = scores_exp / scores_exp.sum()
@@ -174,7 +158,7 @@ class AdaptiveBudgetAllocator:
     def report_completion(self, task_id: str,
                           tokens_used: int,
                           result_quality: float = 0.5):
-        """任务完成后报告-回收剩余token到surplus_pool。"""
+        # 任务完成后报告-回收剩余token到surplus_pool
         if task_id not in self._pool.task_estimates:
             return
         est = self._pool.task_estimates[task_id]
@@ -186,10 +170,7 @@ class AdaptiveBudgetAllocator:
 
     def redistribute_surplus(self,
                              pending_tasks: List[str]) -> Dict[str, int]:
-        """将surplus_pool重新分配给未完成的任务。
-
-        偏向复杂任务-它们从额外token中获益更多。
-        """
+        # 将surplus_pool重新分配给未完成任务, 偏向复杂任务(获益更多)
         if not pending_tasks or self._pool.surplus_pool <= 0:
             return {}
 
@@ -221,7 +202,7 @@ class AdaptiveBudgetAllocator:
         return redistributed
 
     def get_budget_status(self) -> Dict[str, Any]:
-        """获取预算池当前状态"""
+        # 获取预算池当前状态
         completed = sum(1 for e in self._pool.task_estimates.values()
                        if e.completed)
         total = len(self._pool.task_estimates)

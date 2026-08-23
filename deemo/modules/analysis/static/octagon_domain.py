@@ -5,7 +5,6 @@
 # 相比非关系型区间域, 可直接推导 malloc(x); memcpy(p,src,x) 中
 # write_size = alloc_size 的等价关系, 无需事后补救.
 #
-# 理论依据: Miné, SAS 2006 "The Octagon Abstract Domain"
 # 稀疏实现: 仅追踪堆分析相关变量 (分配大小/写入大小参数寄存器),
 # 避免全变量 O(n²) 开销.
 #

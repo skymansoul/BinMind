@@ -196,6 +196,3 @@ def detect_signature_tampering(files: List[Dict[str, Any]], **kwargs) -> Dict[st
 
 __all__ = ["SignatureTamperingDetector", "PESignatureParser",
            "SignatureInfo", "SignatureStatus", "detect_signature_tampering"]
-
-def _debug_print(*a,**kw):
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

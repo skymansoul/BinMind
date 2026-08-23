@@ -1,4 +1,3 @@
-# Proxy → binary_analysis/diff_analysis.py. __import__ chaining strategy.
 import os as _os, sys as _sys, functools as _ft
 _d = _os.path.dirname(_os.path.dirname(_os.path.dirname(__file__)))
 _sys.path.insert(0, _os.path.join(_d, 'binary_analysis'))
@@ -14,16 +13,7 @@ _TRACE_FLAGS = 0b1101_0010
 
 _IMM_RE = __import__('re').compile(r'(0x[0-9a-fA-F]+|[-+]?\d+)')
 
-# BB 哈希缓存 — 归一化指令序列的哈希计算是纯函数，LRU 缓存消除重复计算
 @_ft.lru_cache(maxsize=512)
-
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
-
 def _cached_normalize_insn(mnemonic: str, operands: str) -> str:
     return f"{mnemonic} {_IMM_RE.sub('IMM', operands)}"
 
@@ -65,7 +55,6 @@ def structural_similarity(cfg_a: dict, cfg_b: dict) -> float:
 
 
 # 指令级编辑距离
-# Wagner-Fischer DP, O(mn) time O(mn) space
 def instruction_edit_distance(seq_a: list[str], seq_b: list[str]) -> tuple[int, list]:
     m, n = len(seq_a), len(seq_b)
     if m == 0:

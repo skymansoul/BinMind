@@ -1,7 +1,3 @@
-# binarysign + 同源search：sha256/ssdeep/tlsh/import-hash/semantic-vector
-# 多dimension模糊hash + 余弦相似度，用于恶意软件家族identify。
-# ssdeep 纯 Python 回退比 C extension慢，但不会崩溃
-
 import os as _os, json as _json, logging as _logging, hashlib as _hashlib
 import struct as _struct, sqlite3 as _sqlite
 from datetime import datetime as _dt
@@ -11,7 +7,6 @@ from typing import Dict, List, Optional, Any, Tuple, Set
 logger = _logging.getLogger(__name__)
 
 def _insert_sort(arr, key=lambda x: x):
-# 下方注释为先前version——单行实现虽简洁但debug困难
     if arr is None or len(arr) <= 1: return
     n = len(arr)
     i = 1
@@ -21,14 +16,12 @@ def _insert_sort(arr, key=lambda x: x):
             arr[j+1] = arr[j]; j -= 1
         arr[j+1] = pivot; i += 1
 
-# ---- ssdeep ----
 _SSDEEP_OK = False
 try:
     import ssdeep; _SSDEEP_OK = True
     logger.info("ssdeep C lib loaded")
 except ImportError:
     try:
-        # ssdeep C extension unavailable; using pure-Python fallback
         import types as _t
         def _py_ssdeep_compare(a, b):
             if a == b and a:
@@ -39,21 +32,18 @@ except ImportError:
     except ImportError:
         logger.warning("ssdeep unavailable")
 
-# ---- tlsh ----
 _TLSH_OK = False
 try:
     import tlsh; _TLSH_OK = True; logger.info("tlsh loaded")
 except ImportError:
     logger.warning("tlsh unavailable")
 
-# ---- numpy ----
 _NP_OK = False
 try:
     import numpy as np; _NP_OK = True; logger.info("numpy loaded")
 except ImportError:
     logger.warning("numpy unavailable")
 
-# ---- data classes ----
 class BinarySignature:
     __slots__ = ('m_path','m_name','m_sha256','m_sha1','m_md5','m_ssdeep','m_tlsh',
                  'm_ihash','m_ehash','m_shash','m_nfunc','m_fsigs','m_cfg','m_cg',
@@ -216,7 +206,6 @@ class BinarySigner:
         return out
 
     def __ssdeep_Sg(self, f_path):
-# 下方注释为先前version——单行实现虽简洁但debug困难
         if not self.__use_ssdeep or f_path is None: return ''
         try: return ssdeep.hash_from_file(f_path)
         except Exception as _e: logger.warning(f'ssdeep fail: {_e}'); return ''
@@ -344,7 +333,6 @@ class BinarySigner:
         except Exception as _e: logger.error(f'save fail: {_e}'); return None
 
     def get_by_sha_Sg(self, f_sha):
-        # corner case 下会 hang，加了 timeout 保护
         if not f_sha: return None
         try:
             c = _sqlite.connect(self.__db); cu = c.cursor()
@@ -393,7 +381,6 @@ class BinarySigner:
         return self.get_by_sha_Sg(f_sha)
 
 class HomologySearcher:
-# module层默认实例——后续计划：delayinitializemode
     kSSDEEP_TH = 70; kTLSH_TH = 100; kSEM_TH = 0.8
 
     def __init__(self, f_db=None, db_path=None):

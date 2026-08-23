@@ -12,7 +12,7 @@ from config import (
     DEFAULT_DECOMPILER, R2_PATH, SUBPROCESS_TIMEOUT,
     GHIDRA_TIMEOUT, OPENAI_API_KEY, AI_PROVIDER, LLM_ENDPOINTS,
 )
-from core.ai_backends import query_llm
+from modules.llm_client import is_ai_configured, call_llm_simple
 
 logger = logging.getLogger(__name__)
 
@@ -127,23 +127,70 @@ For each vulnerability found, provide:
 Output as JSON with a "vulnerabilities" array."""
 
 
+# 启发式危险函数模式, 降级模拟分析时用于推断候选漏洞
+_DANGER_PATTERNS = [
+    (re.compile(r'\bstrcpy\s*\(', re.IGNORECASE), 'buffer_overflow',
+     'CWE-120', 'strcpy 无边界检查', 'High'),
+    (re.compile(r'\bstrcat\s*\(', re.IGNORECASE), 'buffer_overflow',
+     'CWE-120', 'strcat 无边界检查', 'High'),
+    (re.compile(r'\bgets\s*\(', re.IGNORECASE), 'buffer_overflow',
+     'CWE-242', 'gets 为不安全函数', 'Critical'),
+    (re.compile(r'\bsprintf\s*\(', re.IGNORECASE), 'format_string',
+     'CWE-134', 'sprintf 潜在格式化字符串漏洞', 'High'),
+    (re.compile(r'\bprintf\s*\([^)]*%[^\)]*\)', re.IGNORECASE), 'format_string',
+     'CWE-134', 'printf 含格式化占位符', 'Medium'),
+    (re.compile(r'\bmemcpy\s*\(', re.IGNORECASE), 'buffer_overflow',
+     'CWE-120', 'memcpy 需检查长度参数', 'Medium'),
+    (re.compile(r'\bfree\s*\(', re.IGNORECASE), 'use_after_free',
+     'CWE-416', 'free 后需置空指针', 'Low'),
+    (re.compile(r'\bmalloc\s*\(', re.IGNORECASE), 'integer_overflow',
+     'CWE-190', 'malloc 参数需检查整数溢出', 'Low'),
+    (re.compile(r'\bsystem\s*\(', re.IGNORECASE), 'command_injection',
+     'CWE-78', 'system 调用需检查输入来源', 'High'),
+]
+
+
+def _heuristic_analyze(func_name: str, pseudocode: str) -> Dict:
+    """启发式模拟分析: 基于危险函数模式推断候选漏洞, 返回结构化结果。
+
+    无 LLM 配置时作为降级路径, 保证管道拿到非空 findings。
+    """
+    vulns = []
+    for pat, vtype, cwe, desc, severity in _DANGER_PATTERNS:
+        for m in pat.finditer(pseudocode):
+            vulns.append({
+                'type': vtype,
+                'severity': severity,
+                'location': func_name,
+                'description': desc,
+                'cwe': cwe,
+                'evidence_snippet': pseudocode[max(0, m.start() - 20):m.end() + 20],
+            })
+
+    return {
+        'function': func_name,
+        'vulnerabilities': vulns,
+        'summary': f'启发式模拟分析: 识别 {len(vulns)} 个候选漏洞' if vulns
+                   else '启发式模拟分析: 未发现明显危险函数调用',
+        'pseudocode': pseudocode,
+        'simulation': True,
+        'analysis_mode': 'heuristic_fallback',
+    }
+
+
 def ai_analyze_function(func_name: str, pseudocode: str,
                         binary_info: Dict = None) -> Dict:
-    """LLM 审查反编译代码。无 API key 时返回带 skip 说明的空结果。"""
+    """LLM 审查反编译代码, 走 modules.llm_client 统一入口。
+
+    未配置 AI 时降级为启发式模拟分析, 返回带 simulation 标记的结构化结果。
+    """
     if not pseudocode or not pseudocode.strip():
         return {'function': func_name, 'vulnerabilities': [], 'summary': ''}
 
-    # 无 provider 凭据时跳过——query_llm 内部也会跳过并记录, 但提前检查
-    # 可避免构造无意义的 prompt 文本
-    from core.ai_backends import _effective_provider, _provider_configured
-    _provider = _effective_provider()
-    if not _provider_configured(_provider):
-        return {
-            'function': func_name,
-            'vulnerabilities': [],
-            'summary': '(no API key configured)',
-            'pseudocode': pseudocode,
-        }
+    # 未配置 AI 凭据时降级为启发式模拟, 不返回空结果
+    if not is_ai_configured():
+        logger.info("AI 未配置, 函数 %s 降级为启发式模拟分析", func_name)
+        return _heuristic_analyze(func_name, pseudocode)
 
     context = f'Arch: {binary_info.get("arch", "unknown")}, ' \
               f'Format: {binary_info.get("format", "unknown")}' \
@@ -161,29 +208,50 @@ Function: {func_name}
 Report vulnerabilities as JSON."""
 
     try:
-        response = query_llm(
-            system=_AI_SYSTEM_PROMPT,
-            user=user_prompt,
-            model=None,
+        result = call_llm_simple(
+            prompt=user_prompt,
+            system_prompt=_AI_SYSTEM_PROMPT,
             temperature=0.3,
         )
+
+        # 统一入口返回 simulation=True 时降级为启发式
+        if result.get('simulation'):
+            logger.info("LLM 调用进入模拟模式, 函数 %s 降级为启发式分析", func_name)
+            heuristic = _heuristic_analyze(func_name, pseudocode)
+            heuristic['llm_error'] = result.get('error', '')
+            return heuristic
+
+        response = result.get('text', '')
+        findings = result.get('findings', [])
+
+        if findings:
+            return {
+                'function': func_name,
+                'vulnerabilities': findings,
+                'summary': f'LLM 分析: 识别 {len(findings)} 个漏洞',
+                'pseudocode': pseudocode,
+                'simulation': False,
+                'model': result.get('model', ''),
+            }
+
+        # LLM 返回但未解析出 findings, 尝试原始 JSON 提取
         json_match = re.search(r'\{[\s\S]*\}', response)
         if json_match:
             parsed = json.loads(json_match.group(0))
             parsed['function'] = func_name
             parsed['pseudocode'] = pseudocode
+            parsed['simulation'] = False
             return parsed
+
         return {
             'function': func_name,
             'vulnerabilities': [],
-            'summary': response[:200],
+            'summary': response[:200] if response else 'LLM 未返回有效内容',
             'pseudocode': pseudocode,
+            'simulation': False,
         }
     except Exception as e:
-        logger.warning("AI analysis failed for %s: %s", func_name, e)
-        return {
-            'function': func_name,
-            'vulnerabilities': [],
-            'error': str(e),
-            'pseudocode': pseudocode,
-        }
+        logger.warning("AI analysis failed for %s: %s, 降级为启发式", func_name, e)
+        heuristic = _heuristic_analyze(func_name, pseudocode)
+        heuristic['llm_error'] = str(e)
+        return heuristic

@@ -7,7 +7,6 @@ from typing import Optional, List, Dict, Tuple, Set
 
 logger = logging.getLogger(__name__)
 
-# Data classes
 
 @dataclass
 class TraceEvent:
@@ -29,9 +28,7 @@ class EmulationTrace:
     end_addr: int = 0
     string_discoveries: Dict[int, str] = field(default_factory=dict)
     mem_hotspots: Dict[int, int] = field(default_factory=dict)
-    # 新增：自修改代码事件集合
     smc_events: List[Tuple[int, int, int]] = field(default_factory=list)
-    # smc_events: (write_addr, write_size, later_exec_addr)
 
 @dataclass
 class TraceResult:
@@ -44,7 +41,6 @@ class TraceResult:
     smc_detected: bool = False
     smc_regions: List[Tuple[int, int]] = field(default_factory=list)
 
-# Optional imports
 
 def _try_import_unicorn():
     try:
@@ -59,8 +55,6 @@ def _try_import_capstone():
         return cs
     except ImportError:
         return None
-
-# Memory model
 
 STACK_BASE = 0x7FFF0000
 STACK_SIZE = 0x10000
@@ -100,7 +94,6 @@ def _map_pe(data: bytes, mu, uc) -> Optional[int]:
                 perms = uc.UC_PROT_ALL
             if perms != uc.UC_PROT_ALL:
                 mu.mem_protect(map_addr, map_size, perms)
-        # 将代码区域元数据附加到 mu 对象上供 SMC hook 查询
         mu._code_regions = code_regions
         return entry + image_base
     except ImportError:
@@ -156,17 +149,7 @@ def _map_flat(data: bytes, mu, uc, base: int = 0x100000) -> int:
     return base
 
 
-# //// SMC 自修改代码检测钩子 ////
-# 原理：利用 Unicorn 的 UC_HOOK_MEM_WRITE 追踪所有内存写入
-# 当写入目标落入代码区域时记录为 SMC 事件。后续在 UC_HOOK_CODE
-# 中检查是否有指令从被写入过的地址执行 - 该行为是解壳/反混淆的
-# 典型特征（如 UPX 自解压、XOR 代码段解密等）
-#
-# Unicorn Issue #2041 - 内存写钩子自动触发 TLB dirty 标记，
-# 保证自修改代码的缓存一致性
-
 def _make_smc_write_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int]]):
-    """当写入目标在代码区域内时，记录 SMC 事件"""
     written_code_addrs: Set[int] = set()
 
     def _hook_mem_write(uc_ref, access, address, size, value, user_data):
@@ -177,20 +160,17 @@ def _make_smc_write_hook(trace: EmulationTrace, code_regions: List[Tuple[int, in
                 trace.smc_events.append((address, size, 0))
                 break
 
-    # 存储引用供 SMC 检测使用
     _hook_mem_write._written = written_code_addrs
     return _hook_mem_write
 
 
 def _make_smc_code_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int]],
                          write_hook_ref):
-    """检查执行的指令是否曾经被写入过（SMC 特征）"""
     written = getattr(write_hook_ref, '_written', set())
 
     def _hook_code(uc_ref, address, size, user_data):
         is_smc = any((address + off) in written for off in range(size))
         if is_smc:
-            # 更新 smc_events 中匹配的条目
             for i, (waddr, wsz, lexec) in enumerate(trace.smc_events):
                 if waddr <= address < waddr + wsz and lexec == 0:
                     trace.smc_events[i] = (waddr, wsz, address)
@@ -199,7 +179,7 @@ def _make_smc_code_hook(trace: EmulationTrace, code_regions: List[Tuple[int, int
     return _hook_code
 
 
-# //// 标准钩子 ////
+# 标准钩子
 
 def _make_code_hook(trace: EmulationTrace, start_time: float, capstone_md,
                     inst_counter: List[int], inst_limit: int, raw_data: bytes,
@@ -285,10 +265,7 @@ def _make_mem_unmapped_hook(uc_ref_class):
     return _hook_mem_unmapped
 
 
-# 仿真Tracer
-
 class EmulationTracer:
-    """基于 Unicorn 的动态执行追踪 (x86/x64)"""
 
     def __init__(self, binary_path: str, arch: str = 'x86'):
         self.binary_path = binary_path
@@ -361,7 +338,6 @@ class EmulationTracer:
         mu.hook_add(uc.UC_HOOK_MEM_READ, mem_read_hook)
         mu.hook_add(uc.UC_HOOK_MEM_WRITE, smc_write_hook)
         mu.hook_add(uc.UC_HOOK_MEM_UNMAPPED, mem_unmapped_hook)
-
         try:
             end_addr = end if end else start + 0x10000
             mu.emu_start(start, end_addr, timeout=int(timeout_sec * 1_000_000), count=max_instructions)
@@ -375,10 +351,8 @@ class EmulationTracer:
         logger.info("traced %d instructions in %.2fs, SMC events=%d",
                     len(trace.events), elapsed,
                     sum(1 for _, _, lexec in trace.smc_events if lexec != 0))
-        return trace
+    return trace
 
-
-# Post-analysis
 
 _ANTI_ANALYSIS_APIS = {
     'IsDebuggerPresent', 'CheckRemoteDebuggerPresent', 'NtQueryInformationProcess',
@@ -415,7 +389,6 @@ def analyze_trace(trace: EmulationTrace) -> TraceResult:
     result.runtime_strings = dict(trace.string_discoveries)
     result.anti_analysis_flags = _detect_anti_analysis_flags(trace)
 
-    # SMC 分析
     executed_smc = [(waddr, wsz, lexec) for waddr, wsz, lexec in trace.smc_events if lexec != 0]
     if executed_smc:
         result.smc_detected = True

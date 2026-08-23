@@ -1,4 +1,4 @@
-"""Memory manipulation code injection detection native binaries"""
+"""原生二进制的内存操作代码注入检测。"""
 
 import logging
 import os
@@ -34,13 +34,13 @@ class MemoryManipulationResult:
 
 
 class MemoryManipulationDetector:
-    """Scan binaries for code injection, process hollowing, memory manipulation
-    patterns common malware game hacking
+    """扫描二进制中的代码注入、进程镂空、内存操纵模式
+    恶意软件与游戏外挂中的常见模式
 
-    Usage::
+    用法::
 
     detector = MemoryManipulationDetector()
-    indicators = detector.检测("./suspicious_binary.exe")
+    indicators = detector.detect("./suspicious_binary.exe")
     """
 
     _INJECTION_IMPORTS = {

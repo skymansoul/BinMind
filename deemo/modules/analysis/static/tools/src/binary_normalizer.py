@@ -1,15 +1,14 @@
-"""Binary normalizer extracted differential_模糊测试器.py
+"""二进制归一化器, 从 differential_fuzzer.py 提取。
 
-module 处理 binary--canonical-form conversions needed
-differential 模糊测试 engine. Parsing file headers a uniform _BinaryMeta
-representation, extracting code sections, fingerprinting instruction streams
-computing locality-sensitive block 哈希 belong --
-orthogonal 模糊测试 orchestration execution-comparison logic
-remains differential_模糊测试器.py
+本模块处理二进制到规范形式的转换, 供差分模糊测试引擎使用。
+解析文件头为统一的 _BinaryMeta 表示, 提取代码节,
+指纹化指令流并计算局部敏感块哈希 — 归一化逻辑
+与模糊测试编排/执行比较逻辑正交, 后者保留在
+differential_fuzzer.py 中。
 
-Splitting out keeps normalizer testable isolation lets
-tools (binary_similarity, semantic_diff_analyzer) reuse same primitives
-pulling full 模糊测试器
+分离出来使归一化器可独立测试, 并让其他工具
+(binary_similarity, semantic_diff_analyzer) 复用相同原语,
+无需引入完整模糊测试器。
 """
 
 import struct
@@ -219,7 +218,7 @@ def _extract_code_section(binary_path: str) -> Tuple[bytes, int]:
 
 # 指令级指纹提取
 # 用于编译器差分比对：提取指令分布直方图作为编译器指纹
-# Rosenblum et al. "编译器 Provenance Attribution"
+# Rosenblum et al. "Compiler Provenance Attribution"
 
 def _extract_instruction_fingerprint(code: bytes, base_addr: int,
                                      meta: _BinaryMeta) -> Dict[str, Any]:

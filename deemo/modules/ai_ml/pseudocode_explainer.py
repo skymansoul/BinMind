@@ -1,9 +1,3 @@
-"""
-伪码解释 — 智能驱动伪码解释与分析。
-
-构造反编译伪码可读解释，含函数摘要/安全分析/批次报告。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -24,7 +18,6 @@ except ImportError:
 
 
 class ExplanationLevel(Enum):
-    """Detail level for code explanations."""
     BRIEF = "brief"
     STANDARD = "standard"
     DETAILED = "detailed"
@@ -43,7 +36,6 @@ class ExplanationLevel(Enum):
 
 @dataclass
 class CodeExplanation:
-    """A structured explanation of a code snippet."""
     original_code: str = ""
     natural_language_explanation: str = ""
     line_annotations: Dict[str, str] = field(default_factory=dict)
@@ -59,6 +51,8 @@ class CodeExplanation:
     complexity_notes: str = ""
     suggestions: List[str] = field(default_factory=list)
     raw_response: str = ""
+    simulation: bool = False
+    findings: List[Dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -74,12 +68,13 @@ class CodeExplanation:
             'key_variables': self.key_variables,
             'security_concerns': self.security_concerns,
             'suggestions': self.suggestions,
+            'simulation': self.simulation,
+            'findings': self.findings,
         }
 
 
 @dataclass
 class FunctionAnalysis:
-    """Detailed analysis of a single function."""
     function_name: str = ""
     signature: str = ""
     purpose: str = ""
@@ -116,7 +111,6 @@ class FunctionAnalysis:
 
 @dataclass
 class DiffSummary:
-    """Structural comparison of two pseudocode versions — 补丁分析核心产出."""
     added_lines: List[str] = field(default_factory=list)
     removed_lines: List[str] = field(default_factory=list)
     modified_blocks: List[Dict[str, str]] = field(default_factory=list)
@@ -246,7 +240,6 @@ class PseudocodeExplainer:
         level: ExplanationLevel = ExplanationLevel.STANDARD,
         use_ai: bool = False,
     ) -> CodeExplanation:
-        """Generate an explanation for a block of pseudocode."""
         cache_key = f"{hash(pseudocode)}:{level.value}"
         if cache_key in self._explanation_cache:
             return self._explanation_cache[cache_key]
@@ -286,7 +279,6 @@ class PseudocodeExplainer:
     def _explain_via_heuristics(
         self, pseudocode: str, level: ExplanationLevel
     ) -> CodeExplanation:
-        """Generate explanation using pattern-based heuristics."""
         lines = pseudocode.strip().split('\n')
         non_empty = [l.strip() for l in lines if l.strip()]
 
@@ -327,30 +319,102 @@ class PseudocodeExplainer:
         """
         template = EXPLANATION_TEMPLATES.get(level, EXPLANATION_TEMPLATES[ExplanationLevel.STANDARD])
         prompt = template.format(code=pseudocode)
+        fn_name = self._analyze_function_signature(pseudocode).get('function_name', '')
 
         if self.api_key or self.api_base_url:
             try:
                 raw = self._call_llm_api(prompt)
+                # 尝试从 LLM 响应中解析 JSON findings 并映射到 7 字段 Schema
+                llm_findings = self._parse_findings_from_response(raw, fn_name)
                 return CodeExplanation(
                     summary=self._extract_section(raw, "SUMMARY") or "unavailable (see raw_response)",
                     purpose=self._extract_section(raw, "PURPOSE") or "See raw_response",
                     logic_flow=self._extract_section(raw, "FLOW") or "See raw_response",
                     raw_response=raw,
+                    simulation=False,
+                    findings=llm_findings,
                 )
             except Exception as exc:
-                return CodeExplanation(
-                    summary=f"AI call failed: {exc}",
-                    purpose="AI backend unavailable",
-                    logic_flow="Falling back to heuristics",
-                    raw_response=str(exc),
-                )
+                # 降级为启发式，标记 simulation=True
+                heuristic = self._explain_via_heuristics(pseudocode, level)
+                heuristic.simulation = True
+                heuristic.raw_response = str(exc)
+                heuristic.findings = self._build_findings_from_heuristics(pseudocode, fn_name)
+                return heuristic
 
-        return CodeExplanation(
-            summary="explanation pending",
-            purpose="See raw_response for model output",
-            logic_flow="See raw_response for model output",
-            raw_response=f"[Would call {self.model_name} with prompt: {prompt[:200]}...]",
-        )
+        # 未配置模型 — 降级并标记 simulation=True
+        heuristic = self._explain_via_heuristics(pseudocode, level)
+        heuristic.simulation = True
+        heuristic.raw_response = f"[Would call {self.model_name} with prompt: {prompt[:200]}...]"
+        heuristic.findings = self._build_findings_from_heuristics(pseudocode, fn_name)
+        return heuristic
+
+    @staticmethod
+    def _parse_findings_from_response(raw: str, function_name: str) -> List[Dict[str, str]]:
+        """从 LLM 响应中提取 JSON findings 并映射到 7 字段 Schema
+
+        模型可能返回 ```json ... ``` 包裹的列表，也可能返回纯 JSON 数组。
+        """
+        if not raw:
+            return []
+        text = raw.strip()
+        # 剥离 markdown 代码块
+        if text.startswith('```'):
+            first_newline = text.find('\n')
+            if first_newline != -1:
+                text = text[first_newline + 1:]
+            if text.rstrip().endswith('```'):
+                text = text.rstrip()[:-3]
+            text = text.strip()
+
+        # 尝试解析 JSON 数组或含 findings 键的对象
+        parsed = None
+        try:
+            parsed = json.loads(text)
+        except (json.JSONDecodeError, ValueError):
+            # 尝试提取文本中第一个 JSON 数组
+            arr_match = re.search(r'\[.*\]', text, re.DOTALL)
+            if arr_match:
+                try:
+                    parsed = json.loads(arr_match.group(0))
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
+        if isinstance(parsed, dict) and 'findings' in parsed:
+            parsed = parsed['findings']
+        if not isinstance(parsed, list):
+            return []
+
+        mapped: List[Dict[str, str]] = []
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            mapped.append({
+                'function': item.get('function') or item.get('function_name') or function_name,
+                'evidence_address': item.get('evidence_address') or item.get('address', ''),
+                'input_source': item.get('input_source', 'pseudocode'),
+                'dangerous_op': item.get('dangerous_op') or item.get('op') or item.get('vulnerability', '') or item.get('type', ''),
+                'confidence': item.get('confidence', 'low'),
+                'evidence_snippet': item.get('evidence_snippet') or item.get('snippet', ''),
+                'review_status': item.get('review_status', 'pending'),
+            })
+        return mapped
+
+    def _build_findings_from_heuristics(self, pseudocode: str, function_name: str) -> List[Dict[str, str]]:
+        """将启发式扫描结果映射到 7 字段 Schema"""
+        raw_findings = self._scan_security_patterns(pseudocode)
+        mapped: List[Dict[str, str]] = []
+        for pattern, name, description in raw_findings:
+            mapped.append({
+                'function': function_name,
+                'evidence_address': '',
+                'input_source': 'pseudocode',
+                'dangerous_op': name,
+                'confidence': 'low',
+                'evidence_snippet': description,
+                'review_status': 'pending',
+            })
+        return mapped
 
     def _call_llm_api(self, prompt: str) -> str:
         """通过统一适配层调用 LLM
@@ -371,7 +435,18 @@ class PseudocodeExplainer:
         if result.get('simulation'):
             raise RuntimeError(f"AI backend unavailable: {result.get('error', 'simulation mode')}")
 
-        return result.get('text', '')
+        raw = result.get('text', '')
+
+        # markdown 代码块容错 — 模型可能把 JSON 包在 ```json ... ``` 中
+        raw = raw.strip()
+        if raw.startswith('```'):
+            first_newline = raw.find('\n')
+            if first_newline != -1:
+                raw = raw[first_newline + 1:]
+            if raw.rstrip().endswith('```'):
+                raw = raw.rstrip()[:-3]
+
+        return raw
 
     # LLM段落抽取
     @staticmethod
@@ -385,7 +460,6 @@ class PseudocodeExplainer:
             m = re.search(pat, text, re.DOTALL | re.IGNORECASE)
             if m:
                 return m.group(1).strip()
-        # Fallback: return first 200 chars if no structured section found
         return text[:200] if text else None
 
     # 推断代码块目的
@@ -413,7 +487,6 @@ class PseudocodeExplainer:
 
     @staticmethod
     def _describe_flow(lines: List[str]) -> str:
-        """Describe the control flow of the code."""
         has_condition = any(
             kw in l for l in lines for kw in ('if', 'else', 'switch')
         )
@@ -439,7 +512,6 @@ class PseudocodeExplainer:
 
     @staticmethod
     def _extract_key_variables(code: str) -> Dict[str, str]:
-        """Extract variable names and infer their purposes."""
         variables: Dict[str, str] = {}
         patterns = [
             (r'(?:int|long|char|float|double|void|bool|DWORD|BYTE|WORD|QWORD)\s*\*?\s+(\w+)',
@@ -462,7 +534,6 @@ class PseudocodeExplainer:
     def _scan_security_patterns(
         code: str,
     ) -> List[Tuple[str, str, str]]:
-        """Scan code for known insecure patterns."""
         findings: List[Tuple[str, str, str]] = []
         for pattern, name, description in SECURITY_PATTERNS:
             if re.search(pattern, code):
@@ -480,7 +551,6 @@ class PseudocodeExplainer:
 
     @staticmethod
     def _estimate_complexity(code: str) -> str:
-        """Estimate algorithmic complexity — 用静态特征猜，不是定理证明."""
         lines = code.split('\n')
         depth = 0
         max_depth = 0
@@ -558,7 +628,6 @@ class PseudocodeExplainer:
         name: str,
         pseudocode: str,
     ) -> FunctionAnalysis:
-        """Analyze a single function in detail."""
         sig_match = re.match(r'(\w[\w\s*]*?\s+)?(\w+)\s*\(([^)]*)\)', pseudocode.split('\n')[0] if pseudocode else '')
         signature = sig_match.group(0) if sig_match else name + '()'
 
@@ -598,7 +667,6 @@ class PseudocodeExplainer:
         functions: Dict[str, str],
         level: ExplanationLevel = ExplanationLevel.STANDARD,
     ) -> Dict[str, FunctionAnalysis]:
-        """Batch-analyze multiple functions."""
         results: Dict[str, FunctionAnalysis] = {}
         for name, code in functions.items():
             results[name] = self.analyze_function(name, code)
@@ -634,11 +702,6 @@ class PseudocodeExplainer:
         new_pseudocode: str,
         function_name: str = "",
     ) -> DiffSummary:
-        """Compare two versions of pseudocode and explain structural changes.
-
-        补丁分析核心方法 — 不逐行diff，而是从语义层面比较：
-        哪些API调用被新增/移除，调用图是否变化，安全风险升降。
-        用于判断一个补丁是修了漏洞还是引入了后门。"""
         old_lines = [l.strip() for l in old_pseudocode.split('\n') if l.strip()]
         new_lines = [l.strip() for l in new_pseudocode.split('\n') if l.strip()]
 

@@ -1,34 +1,4 @@
 # 间接调用定位 + 函数类型恢复 + landing pad 插入
-"""
-前向边控制流完整性 (CFI) - 剥离二进制的间接调用保护。
-
-现有 CFI 方案 (Intel CET/BTI, ARM PAuth) 需要硬件支持且仅检查目标是否
-为合法 landing pad - 不验证调用方/被调用方的类型兼容性。源码级 CFI
-(Clang CFI/IFCC) 需要重新编译, 无法保护 COTS 二进制。
-
-本模块实现纯软件的前向边 CFI - 在剥离二进制上直接插桩:
-  1. 间接调用定位: 扫描所有 call reg / jmp reg / call [mem] 指令
-  2. 函数类型恢复: 从调用约定和参数使用模式推断函数签名 (arg count + type hints)
-  3. landing pad 插入: 在每个函数入口插入类型标识, 间接调用前插入类型检查
-  4. 违反处理: 类型不匹配 → 记录 + 终止 (开发模式) 或静默跳过 (兼容模式)
-
-类型标识编码 (16-bit):
-  bits[7:0] = 参数计数 (0-255)
-  bits[11:8] = 返回类型 (0=void, 1=int, 2=ptr, 3=float)
-  bits[15:12] = 保留 / 调用约定标记
-
-为什么选择软件 CFI 而非硬件方案:
-  COTS 二进制 (特别是嵌入式/IoT) 运行在没有 CET/BTI/PAuth 的旧硬件上。
-  软件方案虽然开销更高 (~5% vs ~0.5%), 但覆盖了硬件方案无法覆盖的存量设备。
-
-ref: MOBIUS - 首个 COTS ARM 二进制的前向边
-     CFI, 使用 BTI 硬件 + 函数类型推断。本项目推广到 x86-64 (无 BTI 可用)
-     且将类型检查从硬件 BTI 替换为软件 landing pad 插桩
-ref: Clang CFI - 源码级前向边 CFI 的工业实现,
-     本项目将其函数类型哈希概念改编到二进制级
-ref: Branch Landing - Bloom filter 源授权,
-     本项目取其 src+dst 双重验证思路, 简化为类型签名匹配
-"""
 
 from dataclasses import dataclass, field
 import struct

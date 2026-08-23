@@ -1,37 +1,3 @@
-"""
-数据流图子图同构函数相似度 - 跨架构的精确函数匹配。
-
-现有函数匹配 (func_differ.py, block_matcher.py) 基于控制流图 (CFG) 或
-指令序列-在跨架构 (x86→ARM) 或跨优化级别 (O0→O3) 场景下匹配率骤降。
-根本原因: 编译器可以完全重组 CFG (循环展开/函数内联/尾调用优化),
-但数据流依赖关系必须保留-这是程序语义的核心。
-
-本模块将函数表示为数据流图 (DFG): 节点=指令 (def/use 关系),
-边=数据依赖 (A 的输出被 B 使用)。然后计算两个 DFG 之间的
-最大公共子图 (MCS)-公共子图越大, 两个函数越可能是同一源码编译而来。
-
-为什么 DFG 比 CFG 跨架构更稳定:
-  编译器可以改变控制流 (if→cmov, switch→jump table→if-else chain),
-  但不能改变数据依赖-算法逻辑必须保留 def-use 关系。
-  DFG 的边是语义强制的, CFG 的边是编译器可自由优化的。
-
-算法:
-  1. 构建 DFG: 每条指令的 def/use 集合 → 节点 + 有向边
-  2. 邻域特征: 每个节点的 2-hop 邻域哈希——捕获局部数据流模式
-  3. 二分图匹配: 用邻域哈希做节点级匹配, 贪心扩展为子图同构
-  4. 相似度 = |MCS 节点数| / max(|DFG_A|, |DFG_B|)
-
-为什么选择贪心扩展而非精确 MCS:
-  精确 MCS 是 NP-complete-对于 100+ 节点的函数不可行。
-  贪心邻域匹配在 O(N² log N) 内完成, 在 x86→ARM O0→O3 场景下
-  达到 85%+ 的匹配准确率 (经验值)。
-
-ref: CSB - 图同构的二进制比对先驱,
-     本项目以 DFG 替代 CFG 作为匹配对象, 显著改善跨编译器鲁棒性
-ref: VxWolf (BinDiff 后续) - 函数相似度的生产级图匹配,
-     本项目的邻域哈希思路与其"指令哈希→BB 匹配"类似但粒度更细
-"""
-
 from dataclasses import dataclass, field
 from collections import defaultdict
 import hashlib

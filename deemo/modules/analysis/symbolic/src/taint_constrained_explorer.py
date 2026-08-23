@@ -29,12 +29,12 @@
 #     权重可调--当前 0.6/0.4 基于 CTF pwn 题的初步调试
 #
 # 文献:
-# Caballero et al. "Binary Code Extrac via 污点追踪."
-# USENIX Securi 2009. 奠基性动态污点工作, 但仅追踪到二进制层
+# Caballero et al. "基于污点追踪的二进制代码提取."
+# USENIX Security 2009. 奠基性动态污点工作, 但仅追踪到二进制层
 #   FIE - 固件符号执行,
 #     提出基于外设访问的路径优先级, 但未使用字节级污点
 #   本模块首次将字节级寄存器污点与符号执行路径优先级关联:
-# taint granulari (1 byte) -> constraint relev -> path priori
+# 污点粒度 (1 byte) -> 约束相关性 -> 路径优先级
 #
 # 边界条件与风险:
 # 污点状态快照的内存开销: 每条路径 ~64B (16个通用寄存器 * 8槽位)

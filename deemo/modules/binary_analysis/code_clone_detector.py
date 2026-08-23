@@ -26,7 +26,6 @@ except ImportError:
 
 
 class CloneType(str, Enum):
-    """Code clone type."""
     EXACT = "exact"
     NEAR_MISS = "near_miss"
     SEMANTIC = "semantic"
@@ -34,7 +33,6 @@ class CloneType(str, Enum):
     UNKNOWN = "unknown"
 
 class CloneConfidence(str, Enum):
-    """Clone match confidence."""
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -143,7 +141,6 @@ class CloneReport:
 
 
 class CodeCloneDetector:
-    """Code clone detector for identifying code clones across binary files."""
 
     KNOWN_LIBRARY_PATTERNS = {
         'libc': ['printf', 'scanf', 'malloc', 'free', 'strcpy', 'strlen',
@@ -176,7 +173,6 @@ class CodeCloneDetector:
         binary_path: str,
         functions: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, FunctionInfo]:
-        """Extract function info from a binary file."""
         logger.info("Extracting function info: %s", binary_path)
 
         binary_name = os.path.basename(binary_path)
@@ -192,7 +188,6 @@ class CodeCloneDetector:
         return func_dict
 
     def _create_function_info(self, func_data: Dict[str, Any]) -> FunctionInfo:
-        """Create a FunctionInfo object from raw data."""
         name = func_data.get('name', 'unknown')
         address = func_data.get('address', 0)
         size = func_data.get('size', 0)
@@ -232,7 +227,6 @@ class CodeCloneDetector:
         source_functions: Dict[str, FunctionInfo],
         target_functions: Dict[str, FunctionInfo]
     ) -> CloneReport:
-        """Detect code clones between two binary files."""
         start_time = time.time()
 
         logger.info("Detecting code clones: %s vs %s", source_binary, target_binary)
@@ -270,7 +264,6 @@ class CodeCloneDetector:
         target: Dict[str, FunctionInfo],
         report: CloneReport
     ) -> None:
-        """Detect clones by exact hash matching."""
         for src_name, src_func in source.items():
             for tgt_name, tgt_func in target.items():
                 if src_func.md5 and src_func.md5 == tgt_func.md5:
@@ -299,7 +292,6 @@ class CodeCloneDetector:
         target: Dict[str, FunctionInfo],
         report: CloneReport
     ) -> None:
-        """Detect clones by fuzzy hash matching."""
         if not SSDEEP_AVAILABLE:
             return
 
@@ -353,7 +345,6 @@ class CodeCloneDetector:
         target: Dict[str, FunctionInfo],
         report: CloneReport
     ) -> None:
-        """Detect clones by TLSH matching."""
         if not TLSH_AVAILABLE:
             return
 
@@ -402,7 +393,6 @@ class CodeCloneDetector:
         target: Dict[str, FunctionInfo],
         report: CloneReport
     ) -> None:
-        """Detect clones by structural feature matching."""
         for src_name, src_func in source.items():
             for tgt_name, tgt_func in target.items():
                 if any(
@@ -449,7 +439,6 @@ class CodeCloneDetector:
         target: Dict[str, FunctionInfo],
         report: CloneReport
     ) -> None:
-        """Detect clones by call pattern matching."""
         for src_name, src_func in source.items():
             for tgt_name, tgt_func in target.items():
                 if any(
@@ -491,7 +480,6 @@ class CodeCloneDetector:
                                 report.total_clones_found += 1
 
     def _identify_library_sources(self, report: CloneReport) -> None:
-        """Identify library sources for clones."""
         library_functions: Dict[str, Set[str]] = {}
 
         for clone in report.clones:
@@ -511,7 +499,6 @@ class CodeCloneDetector:
         }
 
     def _score_to_confidence(self, score: float) -> CloneConfidence:
-        """Convert similarity score to confidence level."""
         if score >= 0.9:
             return CloneConfidence.HIGH
         elif score >= 0.7:
@@ -522,7 +509,6 @@ class CodeCloneDetector:
             return CloneConfidence.VERY_LOW
 
     def build_reuse_graph(self, report: CloneReport) -> Dict[str, List[str]]:
-        """Build a code reuse relationship graph."""
         graph: Dict[str, List[str]] = {}
 
         for clone in report.clones:
@@ -540,7 +526,6 @@ class CodeCloneDetector:
         function_hash: str,
         database_path: str
     ) -> List[Dict[str, Any]]:
-        """Search for a function in the database."""
         results = []
 
         if not os.path.exists(database_path):
@@ -562,7 +547,6 @@ class CodeCloneDetector:
         report: CloneReport,
         output_path: str
     ) -> None:
-        """Export report as JSON."""
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
 
@@ -573,7 +557,6 @@ def detect_code_clones(source_binary: str, target_binary: str,
                        source_functions: List[Dict[str, Any]],
                        target_functions: List[Dict[str, Any]],
                        min_similarity: float = 0.7) -> CloneReport:
-    """Convenience function: detect code clones."""
     detector = CodeCloneDetector(min_similarity=min_similarity)
 
     src_func_dict = {

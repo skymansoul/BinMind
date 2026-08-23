@@ -1,4 +1,3 @@
-"""Vulnerability Detection DSL — 内部 DSL vulnerability detectionruleengine增强版"""
 import logging, os, re, yaml
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,6 @@ class DSLRule:
 
 
 class VulnDetectionDSL:
-    """based on YAML/JSON rule的vulnerability detection DSL engine"""
 
     BUILTIN_RULES = [
         DSLRule("CWE-120", "Buffer Copy without Checking Size of Input",

@@ -1,4 +1,3 @@
-"""Error categorization, context propagation, and retry helpers."""
 from __future__ import annotations
 import time as _time
 import functools as _functools

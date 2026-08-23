@@ -1,30 +1,5 @@
 #!/usr/bin/env python3
-"""
-符号执行 engine — instruction-level 符号执行 over IR
-
-Architecture decisions:
-- Composition over inheritance — strategy objects easier swap
-runtime subclass trees. ExplorationStrategy injected, inherited
-- SymbolicState a frozen-style dataclass;.fork() 创建 a shallow copy
-deep-copied mutable fields (constraints list, memory 存储)
-- memory model 使用 a dict-based byte-level 存储: {expr_addr -> expr_value}
-支持 unconstrained symbolic 读取 solver invocation
-
-Edge cases:
-- Corner case: binary 使用 self-modifying code, symbolic 存储
-stale — re-读取 memory 写入 current model
-- Unconstrained 读取 返回 fresh symbolic variables avoid unsound
-concretization
-- 路径爆炸 bounded max_states; exceeded, executor
-prunes lowest-priority states (scored depth + 覆盖率 novelty)
-
-Time complexity:
-- step_one(): O(|constraints|) per instruction due constraint collection
-Dominated Z3 expression construction time
-- explore(): O(N * * C) N=states, =instructions per path, C=avg constraints
-Space: O(N * (R + M + C)) R=寄存器s, M=memory bytes touched
-"""
-# from collections import OrderedDict  # python3.7+不需要了
+"""符号执行引擎——指令级符号执行，消费 IR 流并维护状态工作列表"""
 from __future__ import annotations
 
 import logging
@@ -39,12 +14,10 @@ _log = logging.getLogger(__name__)
 # Enums & Data Classes
 
 class ExecutionStrategy(Enum):
-    """
-    状态探索排序策略。
+    """状态探索排序策略
 
-    设计策略: BFS 保证最短路径但深层路径内存爆炸;
-    DFS 省内存但会卡在无限循环; COVERAGE_MAX 平衡新颖度与深度;
-    LLM_GUIDED 在路径爆炸超出启发式能力时把排序交给语义模型。
+    BFS 保证最短路径但深层路径内存爆炸; DFS 省内存但会卡在无限循环;
+    COVERAGE_MAX 平衡新颖度与深度; LLM_GUIDED 在路径爆炸超出启发式能力时把排序交给语义模型。
     """
     BFS = "bfs"
     DFS = "dfs"
@@ -53,32 +26,31 @@ class ExecutionStrategy(Enum):
 
 
 class IR_Op(Enum):
-    """最小 IR 操作集 — VEX / BAP / ESIL 公共操作的子集。"""
-    # Arithmetic
+    """最小 IR 操作集——VEX/BAP/ESIL 公共操作的子集"""
+    # 算术
     ADD = auto(); SUB = auto(); MUL = auto(); DIV = auto(); MOD = auto()
-    # Bitwise
+    # 位运算
     AND = auto(); OR = auto(); XOR = auto(); SHL = auto(); SHR = auto()
-    # Comparison (signed / unsigned)
+    # 比较（有符号/无符号）
     EQ = auto(); NE = auto(); LT = auto(); LE = auto(); GT = auto(); GE = auto()
     ULT = auto(); UGT = auto()
-    # Memory
+    # 内存
     LOAD = auto(); STORE = auto()
     # 控制流
     JMP = auto(); CJMP = auto(); CALL = auto(); RET = auto()
-    # Data movement
+    # 数据移动
     MOV = auto(); CONST = auto()
-    # Special
+    # 特殊
     NOP = auto(); UNSUPPORTED = auto()
 
 
 @dataclass
 class IRInstruction:
-    """
-    表示单条 IR 级指令。
+    """单条 IR 级指令
 
     指令建模为 (opcode, operands) 元组。对符号执行的关键操作:
-    算术 (构造约束)、比较 (分叉)、加载/存储 (符号内存访问)、
-    控制流 (跳转目标)。size 默认为架构字长 (32 位)。
+    算术（构造约束）、比较（分叉）、加载/存储（符号内存访问）、
+    控制流（跳转目标）。size 默认为架构字长（32 位）。
     """
     op: IR_Op
     operands: List[str] = field(default_factory=list)
@@ -99,30 +71,25 @@ class IRInstruction:
 
 @dataclass
 class SymbolicState:
-    """
-    单个符号执行状态 — 寄存器、内存、路径约束与程序计数器的快照。
+    """单个符号执行状态——寄存器、内存、路径约束与程序计数器的快照
 
-    Forking: .fork() 返回复制了可变容器的新状态;
-    Merging: PC 相同且约束兼容的两个状态合并为约束集的并集
-    (见 symexec_optimizer.py)。
-
-    复杂度: fork 复制 O(R+M+C); 前向步进 O(1)。
+    fork() 返回复制了可变容器的新状态; PC 相同且约束兼容的两个状态
+    合并为约束集的并集（见 symexec_optimizer.py）。
     """
+
     state_id: int
-    pc: int                                    # program counter (address)
+    pc: int                                    # 程序计数器（地址）
     registers: Dict[str, Any] = field(default_factory=dict)
-    memory: Dict[int, Any] = field(default_factory=dict)  # addr -> symbolic expr
-    path_constraints: List[Any] = field(default_factory=list)  # list Z3 BoolRef
+    memory: Dict[int, Any] = field(default_factory=dict)  # 地址 -> 符号表达式
+    path_constraints: List[Any] = field(default_factory=list)  # Z3 BoolRef 列表
     depth: int = 0
     call_stack: List[int] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def fork(self, new_state_id: int) -> "SymbolicState":
-        """
-        深拷贝分叉状态的可变字段。
+        """深拷贝分叉状态的可变字段
 
-        寄存器与 metadata 浅拷贝; constraints 与 memory 深拷贝,
-        避免交叉污染。复杂度 O(R + M + C)。
+        寄存器与 metadata 浅拷贝; constraints 与 memory 深拷贝，避免交叉污染。
         """
         import copy
         return SymbolicState(
@@ -143,13 +110,12 @@ class SymbolicState:
 
 @dataclass
 class SymbolicExplorationResult:
-    """一次符号探索运行的聚合结果。
+    """一次符号探索运行的聚合结果
 
-    paths_explored: 完成的不同执行轨迹总数; timeouts: 因求解器/
-    执行超时终止的路径数; solutions_found: 提取的可满足模型数
-    (缺陷/漏洞候选); coverage: 到达的 (address, instruction_index)
-    元组集合; total_states: 探索中的并发状态峰值; elapsed_seconds:
-    墙钟执行时间。
+    paths_explored: 完成的不同执行轨迹总数; timeouts: 因求解器/执行超时终止的路径数;
+    solutions_found: 提取的可满足模型数（缺陷/漏洞候选）; coverage: 到达的
+    (address, instruction_index) 元组集合; total_states: 探索中的并发状态峰值;
+    elapsed_seconds: 墙钟执行时间。
     """
     paths_explored: int = 0
     timeouts: int = 0
@@ -170,13 +136,12 @@ class SymbolicExplorationResult:
         }
 
 
-# Symbolic Expression
+# 符号表达式
 
 class SymExpr:
-    """
-    符号表达式封装 — 持有具体值 (int) 或符号占位符 (字符串名)。
+    """符号表达式封装——持有具体值（int）或符号占位符（字符串名）
 
-    用于寄存器/内存值及 Z3 转换, 使 Z3 可用时也能以"具体值模式"运行。
+    用于寄存器/内存值及 Z3 转换，使 Z3 可用时也能以具体值模式运行。
     """
 
     __slots__ = ("value", "is_symbolic", "name", "size_bits")
@@ -202,27 +167,17 @@ class SymExpr:
         return cls(value=0, is_symbolic=True, name=name, size_bits=size_bits)
 
 
-# SymbolicExecutor
+# 符号执行引擎
 
 class SymbolicExecutor:
-    """
-    Main 符号执行 engine
+    """主符号执行引擎
 
-    Walks IR instruction streams, maintaining a worklist SymbolicState
-    objects. conditional jump, state forks: one branch
-    condition-True constraint, one condition-False
+    遍历 IR 指令流，维护 SymbolicState 工作列表。条件跳转时分叉:
+    一个分支加 True 约束，一个加 False 约束。
 
-    设计策略: 默认用带界工作列表的 DFS, 因为 BFS 即使在中等大小
-    二进制上也会内存爆炸 (50+ 基本块可构造上千状态)。
-    覆盖率引导模式用 Bloom-filter 风格的新颖度追踪器偏向新地址;
-    LLM_GUIDED 把优先级排序委托给 llm_explorer 模块。
-
-    Edge case handling:
-    - Self-modifying code: symbolic 存储 in校验d 写入
-    Caller re-初始化 executor for self-modifying targets
-    - Unsupported instructions: logged skipped; state continues
-    - Timeout per instruction: solver > timeout_per_check seconds
-    state abandoned added result.timeouts
+    默认用带界工作列表的 DFS，因为 BFS 即使在中等大小二进制上也会内存爆炸
+    （50+ 基本块可构造上千状态）。覆盖率引导模式用 Bloom-filter 风格的新颖度
+    追踪器偏向新地址; LLM_GUIDED 把优先级排序委托给 llm_explorer 模块。
     """
 
     def __init__(
@@ -239,38 +194,38 @@ class SymbolicExecutor:
         self.solver_timeout_ms = solver_timeout_ms
         self.memory_page_size = memory_page_size
 
-        # Internal state
+        # 内部状态
         self._state_counter: int = 0
         self._worklist: List[SymbolicState] = []
         self._coverage: Set[Tuple[int, int]] = set()
-        self._branch_coverage: Dict[int, int] = {}  # pc -> times visited
+        self._branch_coverage: Dict[int, int] = {}  # pc -> 访问次数
         self._symbolic_var_counter: int = 0
         self._ir_cache: Dict[int, IRInstruction] = {}
 
-        # Stats
+        # 统计
         self._stats: Dict[str, Any] = {
             "steps": 0, "forks": 0, "merges": 0, "timeouts": 0,
             "solutions": 0, "max_states_observed": 0,
         }
 
-        # Optional LLM ranker (lazy init)
+        # LLM 排序器（惰性初始化）
         self._llm_ranker: Any = None
 
-# fresh variable generation
+# 符号变量生成
 
     def _fresh_sym_var(self, prefix: str = "v", size_bits: int = 32) -> SymExpr:
-        """构造 a fresh symbolic variable name. O(1)"""
+        """构造一个新的符号变量名"""
         self._symbolic_var_counter += 1
         return SymExpr.symbolic(f"{prefix}_{self._symbolic_var_counter}", size_bits)
 
-# state management
+# 状态管理
 
     def _new_state_id(self) -> int:
         self._state_counter += 1
         return self._state_counter
 
     def _add_state(self, state: SymbolicState) -> None:
-        """按策略顺序把状态加入工作列表。"""
+        """按策略顺序把状态加入工作列表"""
         if len(self._worklist) >= self.max_states:
             self._prune_lowest_priority()
         if self.strategy == ExecutionStrategy.BFS:
@@ -286,14 +241,10 @@ class SymbolicExecutor:
             self._stats["max_states_observed"] = peak
 
     def _pop_state(self) -> Optional[SymbolicState]:
-        """
-        按当前策略弹出下一个待探索状态。
+        """按当前策略弹出下一个待探索状态
 
-        设计策略: DFS 弹头部 (栈), BFS 弹尾部 (队列);
-        COVERAGE_MAX 弹出前按 novelty score 排序工作列表;
-        LLM_GUIDED 每 N 步调用 LLM ranker。
-
-        复杂度: COVERAGE_MAX/LLM 排序 O(W log W), BFS/DFS O(1)。
+        DFS 弹头部（栈），BFS 弹尾部（队列）; COVERAGE_MAX 弹出前按
+        新颖度排序工作列表; LLM_GUIDED 每 N 步调用 LLM 排序器。
         """
         if not self._worklist:
             return None
@@ -322,11 +273,11 @@ class SymbolicExecutor:
         return self._worklist.pop(0)
 
     def _novelty_score(self, state: SymbolicState) -> float:
-        """按是否提供新的 (address, idx) 对给状态打分。"""
+        """按是否提供新的 (address, idx) 对给状态打分"""
         return 1.0 if (state.pc, 0) not in self._coverage else 0.0
 
     def _init_llm_ranker(self) -> None:
-        """惰性初始化 llm_explorer 的 LLM 路径排序器。"""
+        """惰性初始化 llm_explorer 的 LLM 路径排序器"""
         try:
             from modules.analysis.symbolic.llm_explorer.ranker import LLMPathRanker
             self._llm_ranker = LLMPathRanker()
@@ -335,11 +286,10 @@ class SymbolicExecutor:
             self._llm_ranker = None
 
     def _prune_lowest_priority(self) -> None:
-        """
-        从工作列表移除探索优先级最低的状态。
+        """从工作列表移除探索优先级最低的状态
 
-        Priority = depth (越浅越差) + constraint count (越简单越好);
-        在超过 max_states 时使用。复杂度 O(W)。
+        优先级 = depth（越浅越差）+ constraint count（越简单越好）;
+        在超过 max_states 时使用。
         """
         if not self._worklist:
             return
@@ -352,15 +302,13 @@ class SymbolicExecutor:
                 worst_idx = i
         self._worklist.pop(worst_idx)
 
-# instruction execution
+# 指令执行
 
     def _read_register(self, state: SymbolicState, reg: str) -> SymExpr:
-        """
-        读取 a symbolic 寄存器. uninitialized, 返回 a fresh
-        symbolic variable (unconstrained 读取)
+        """读取符号寄存器值，未初始化时返回新的符号变量
 
-        设计策略: 未初始化时选符号变量而非具体零, 因为把未初始化
-        读取具体化会隐藏缺陷 — 真实漏洞利用常借助未初始化内存。
+        未初始化时选符号变量而非具体零，因为把未初始化读取具体化会隐藏缺陷
+        ——真实漏洞利用常借助未初始化内存。
         """
         if reg not in state.registers:
             val = self._fresh_sym_var(f"reg_{reg}")
@@ -372,46 +320,30 @@ class SymbolicExecutor:
         state.registers[reg] = value
 
     def _read_memory(self, state: SymbolicState, addr: int, size_bytes: int = 4) -> SymExpr:
-        """
-        读取 symbolic memory address. Consecutive bytes concatenated
-        Uninitialized bytes become fresh symbolic variables
-
-        Corner case: binary 使用 self-modifying code, symbolic
-        存储 stale — don't 追踪 instruction 写入 back
-        code section
-        """
-        # Align page for consistency
+        """读取符号内存地址，连续字节拼接，未初始化字节变为新符号变量"""
         for offset in range(size_bytes):
             byte_addr = addr + offset
             if byte_addr not in state.memory:
                 state.memory[byte_addr] = self._fresh_sym_var(f"mem_{byte_addr:#x}", size_bits=8)
-        # concrete- mode, combine bytes; symbolic, 返回 first byte
-        # with an offset annotation (full multi-byte load needs Z3 concat)
+        # 具体模式拼接字节; 符号模式返回首字节（多字节加载需 Z3 concat）
         return state.memory[addr]
 
     def _write_memory(self, state: SymbolicState, addr: int, value: SymExpr) -> None:
-        """写入 a symbolic value memory addr. Byte-level 存储"""
+        """写入符号值到内存地址，字节级存储"""
         for offset in range(value.size_bits // 8):
             byte_addr = addr + offset
             byte_val = SymExpr.symbolic(f"{value.name}_b{offset}", size_bits=8) if value.is_symbolic else SymExpr.concrete((value.value >> (offset * 8)) & 0xFF, size_bits=8)
             state.memory[byte_addr] = byte_val if value.is_symbolic else byte_val
 
     def step_one(self, state: SymbolicState, instr: IRInstruction) -> List[SymbolicState]:
-        """
-        执行 a single IR instruction against a symbolic state
-        返回 a list successor states (usually 1; 2 conditional fork)
+        """执行单条 IR 指令，返回后继状态列表（通常 1 个，条件跳转时 2 个）
 
-        Time: O(|operands|) for arithmetic; O(|constraints|) for conditional branch
-        Space: O(R + M) per new state
-
-        Trade-off: don't 调用 Z3 step — 约束求解
-        deferred 检查() calls. faster for linear code but means
-        infeasible paths persist longer
+        约束求解延迟到 check() 调用——对线性代码更快，但不可达路径会存活更久。
         """
         op = instr.op
         ops = instr.operands
 
-        # NOP — effect
+        # NOP——无效果
         if op == IR_Op.NOP:
             state.pc = instr.address + instr.size
             return [state]
@@ -433,7 +365,7 @@ class SymbolicExecutor:
             state.pc = instr.address + instr.size
             return [state]
 
-        # Binary arithmetic: ADD, SUB, MUL, DIV, MOD,, OR, XOR, SHL, SHR
+        # 二元算术: ADD, SUB, MUL, DIV, MOD, AND, OR, XOR, SHL, SHR
         if op in (IR_Op.ADD, IR_Op.SUB, IR_Op.MUL, IR_Op.DIV, IR_Op.MOD,
                   IR_Op.AND, IR_Op.OR, IR_Op.XOR, IR_Op.SHL, IR_Op.SHR) and len(ops) >= 3:
             dst, lhs, rhs = ops[0], ops[1], ops[2]
@@ -445,7 +377,7 @@ class SymbolicExecutor:
             state.pc = instr.address + instr.size
             return [state]
 
-        # Comparison — sets flags; for simplicity 存储 a 寄存器 "zf", "cf", etc
+        # 比较——设置标志位; 简化处理，存入寄存器 "cmp_lhs", "cmp_rhs" 等
         if op in (IR_Op.EQ, IR_Op.NE, IR_Op.LT, IR_Op.LE, IR_Op.GT, IR_Op.GE,
                   IR_Op.ULT, IR_Op.UGT) and len(ops) >= 2:
             lhs_val = self._eval_operand(state, ops[0])
@@ -480,7 +412,7 @@ class SymbolicExecutor:
             state.pc = target
             return [state]
 
-        # CJMP cond, true_target, false_target (fork point)
+        # CJMP cond, true_target, false_target（分叉点）
         if op == IR_Op.CJMP and len(ops) >= 3:
             return self._handle_conditional_jump(state, ops, instr)
 
@@ -496,23 +428,22 @@ class SymbolicExecutor:
             if state.call_stack:
                 state.pc = state.call_stack.pop()
             else:
-                state.pc = 0  # end execution
+                state.pc = 0  # 结束执行
             return [state]
 
-        # Unsupported — advance PC 记录
+        # 不支持的操作——前进 PC 并记录
         _log.debug("Unsupported IR op at %#x: %s", instr.address, op)
         state.pc = instr.address + instr.size
         return [state]
 
     def _eval_operand(self, state: SymbolicState, operand: str) -> SymExpr:
-        """
-        Evaluate an operand string a SymExpr
+        """解析操作数字符串为 SymExpr
 
-        Operand 格式化:
-        - "%reg" -> 寄存器 读取
-        - "$0xABCD" -> concrete constant
-        - "123" -> concrete constant
-        - symbolic name -> treated 寄存器
+        操作数格式:
+        - "%reg" -> 读寄存器
+        - "$0xABCD" -> 具体常量
+        - "123" -> 具体常量
+        - 符号名 -> 当作寄存器处理
         """
         operand = operand.strip()
         if operand.startswith("%"):
@@ -529,12 +460,9 @@ class SymbolicExecutor:
             return self._read_register(state, operand)
 
     def _apply_binop(self, op: IR_Op, lhs: SymExpr, rhs: SymExpr) -> Optional[SymExpr]:
-        """
-        Apply binary operation two SymExpr values
-        返回 SymExpr result or None fully symbolic (needs Z3)
+        """对两个 SymExpr 执行二元运算，返回结果或 None（全符号需 Z3）
 
-        Concrete- path: 计算 integer result directly
-        Mixed symbolic: tags result symbolic
+        具体路径直接计算整数值; 混合符号路径标记结果为符号。
         """
         if not lhs.is_symbolic and not rhs.is_symbolic:
             a, b = lhs.value, rhs.value
@@ -553,13 +481,13 @@ class SymbolicExecutor:
                 return SymExpr.concrete(r & 0xFFFFFFFF, size_bits=32)
             except Exception:
                 return None
-        # Symbolic — 返回 a new symbolic expression
+        # 符号路径——返回新符号表达式
         symbolic_name = f"binop_{op.name}_{lhs.name}_{rhs.name}"
         result = SymExpr.symbolic(symbolic_name, size_bits=max(lhs.size_bits, rhs.size_bits))
         return result
 
     def _resolve_jump_target(self, state: SymbolicState, operand: str) -> int:
-        """解析 a jump target operand a concrete address. O(1)"""
+        """解析跳转目标操作数为具体地址"""
         try:
             return int(operand, 0)
         except ValueError:
@@ -569,30 +497,21 @@ class SymbolicExecutor:
     def _handle_conditional_jump(
         self, state: SymbolicState, ops: List[str], instr: IRInstruction
     ) -> List[SymbolicState]:
-        """
-        Fork state a conditional jump
+        """条件跳转时分叉状态
 
-        // 设计策略: 这里 Z3 solver 的效率比手写 check 好得多
-        Z3 available 创建 two states (/-)
-        appropriate path constraint appended. Z3 available
-        explore branches constraint checking (unsound but
-        maximally exploratory)
-
-        State explosion: CJMP doubles state count worst case
-        hence importance max_states path pruning
-
-        Time: O(C) copy constraints; Space: O(R + M + C) per new state
+        Z3 可用时创建两个状态（True/False 分支）并附加路径约束;
+        Z3 不可用时仅凭约束追加探索（不完全正确但最大化探索范围）。
         """
         results: List[SymbolicState] = []
         cond_reg = self._eval_operand(state, ops[0])
         true_target = self._resolve_jump_target(state, ops[1])
         false_target = self._resolve_jump_target(state, ops[2])
 
-        # TRUE branch
+        # TRUE 分支
         true_state = state.fork(self._new_state_id())
         true_state.pc = true_target
         if cond_reg.is_symbolic and cond_reg.name:
-            # 创建 symbolic constraint: condition!= 0
+            # 构造符号约束: condition != 0
             constraint_obj = {
                 "type": "neq", "var": cond_reg.name,
                 "value": 0, "desc": f"cjmp_true@{instr.address:#x}",
@@ -600,7 +519,7 @@ class SymbolicExecutor:
             true_state.path_constraints.append(constraint_obj)
         results.append(true_state)
 
-        # FALSE branch
+        # FALSE 分支
         false_state = state.fork(self._new_state_id())
         false_state.pc = false_target
         if cond_reg.is_symbolic and cond_reg.name:
@@ -614,7 +533,7 @@ class SymbolicExecutor:
         self._stats["forks"] += 1
         return results
 
-# main exploration loop
+# 主探索循环
 
     def explore(
         self,
@@ -622,13 +541,12 @@ class SymbolicExecutor:
         ir_fetcher: Callable[[int], Optional[IRInstruction]],
         max_steps: int = 10000,
     ) -> SymbolicExplorationResult:
-        """
-        主符号探索循环。
+        """主符号探索循环
 
-        把 ir_fetcher 提供的 IR 指令喂给 step_one(), 维护状态
-        工作列表; 工作列表清空或达到 max_steps 时终止。
+        把 ir_fetcher 提供的 IR 指令喂给 step_one()，维护状态工作列表;
+        工作列表清空或达到 max_steps 时终止。
 
-        参数: initial_state 起始 SymbolicState (PC 设为入口),
+        参数: initial_state 起始 SymbolicState（PC 设为入口）,
         ir_fetcher 为 address -> IRInstruction 的可调用,
         max_steps 为 step_one() 最大调用次数。
         """
@@ -646,7 +564,7 @@ class SymbolicExecutor:
                 self._stats["timeouts"] += 1
                 continue
             if state.pc == 0:
-                # Path ended
+                # 路径结束
                 result.paths_explored += 1
                 continue
 
@@ -656,7 +574,7 @@ class SymbolicExecutor:
                 result.paths_explored += 1
                 continue
 
-            # 追踪 覆盖率
+            # 追踪覆盖率
             result.coverage.add((instr.address, step_count))
             self._coverage.add((instr.address, step_count))
             self._branch_coverage[instr.address] = self._branch_coverage.get(instr.address, 0) + 1
@@ -675,7 +593,7 @@ class SymbolicExecutor:
             step_count += 1
             self._stats["steps"] = step_count
 
-        # Drain remaining paths
+        # 排空剩余路径
         result.paths_explored += len(self._worklist)
 
         result.elapsed_seconds = time.perf_counter() - start_time
@@ -690,7 +608,7 @@ class SymbolicExecutor:
         entry_address: int,
         max_steps: int = 5000,
     ) -> SymbolicExplorationResult:
-        """便捷方法: 从 entry_address 开始探索并返回结果, 复杂度与 explore() 相同。"""
+        """便捷方法: 从 entry_address 开始探索并返回结果"""
         initial = SymbolicState(
             state_id=self._new_state_id(),
             pc=entry_address,
@@ -700,10 +618,10 @@ class SymbolicExecutor:
         )
         return self.explore(initial, ir_fetcher, max_steps=max_steps)
 
-# constraint extraction
+# 约束提取
 
     def get_path_constraints(self, state: SymbolicState) -> List[Any]:
-        """返回 accumulated path constraints for a state. O(1)"""
+        """返回某状态的累积路径约束"""
         return list(state.path_constraints)
 
     def get_stats(self) -> Dict[str, Any]:

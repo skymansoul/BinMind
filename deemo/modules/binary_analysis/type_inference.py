@@ -182,7 +182,6 @@ class TypeInferenceEngine:
         return variables
 
     def infer_from_calls(self) -> Dict[str, InferredType]:
-        # Infer function signatures from call sites
         # 从函数调用infer函数sign
         signatures = {}
         try:

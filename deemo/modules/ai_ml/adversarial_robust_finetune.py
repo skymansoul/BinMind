@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RobustTrainConfig:
-    """对抗鲁棒训练配置"""
+    # 对抗鲁棒训练配置
     gradient_penalty_weight: float = 0.1
     spectral_norm_power_iter: int = 3
     distillation_temperature: float = 4.0
@@ -48,18 +48,12 @@ class RobustTrainConfig:
 
 
 class SpectralNormalization:
-    """谱归一化-通过幂迭代估计权重矩阵的谱范数并缩放。
-
-    对GNN的每一层权重W做: W_sn = W / σ(W)
-    其中σ(W) ≈ ||W||_2（最大奇异值）。
-
-    效果: 将GNN层的Lipschitz常数限制为1，
-    这意味着输入的小扰动不会在层间传播中被放大。
-    """
+    # 谱归一化-幂迭代估计权重矩阵谱范数并缩放.
+    # W_sn = W / σ(W), σ≈最大奇异值; 限制Lipschitz常数≤1, 输入小扰动不在层间放大.
 
     @staticmethod
     def normalize(W: np.ndarray, n_iter: int = 3) -> np.ndarray:
-        """对权重矩阵施加谱归一化。"""
+        # 对权重矩阵施加谱归一化
         if W.size == 0:
             return W
         # 幂迭代估计最大奇异值对应的左右奇异向量
@@ -83,22 +77,15 @@ class SpectralNormalization:
 
 
 class GradientPenalty:
-    """梯度惩罚-计算模型输出对输入的梯度范数。
-
-    ||∇_x f(x)||² 作为正则项加入损失:
-      直觉: 梯度越小，决策边界越平滑，对抗扰动越难改变预测
-    """
+    # 梯度惩罚-计算模型输出对输入的梯度范数 ||∇_x f(x)||².
+    # 梯度越小决策边界越平滑, 对抗扰动越难改变预测.
 
     @staticmethod
     def compute(model_fn: Callable,
                 features: np.ndarray,
                 adjacency: np.ndarray,
                 epsilon: float = 0.001) -> float:
-        """通过数值微分估计梯度范数。
-
-        对每个输入维度做小扰动，测量输出变化。
-        仅采样部分维度（对大型图）以控制计算成本。
-        """
+        # 数值微分估计梯度范数; 仅采样部分维度控制计算成本
         try:
             base_out = model_fn(features, adjacency)
             base_val = float(np.mean(np.abs(np.asarray(base_out).flatten())))
@@ -128,13 +115,8 @@ class GradientPenalty:
 
 
 class AdversarialRobustFinetuner:
-    """对抗鲁棒微调器-梯度惩罚+谱归一化+蒸馏+稀疏对抗注入。
-
-    训练流程:
-      1. 前向: 原始模型 + 鲁棒模型双前向
-      2. 损失: L_task + λ_gp·L_grad_penalty + λ_dist·L_distillation
-      3. 每K步: 生成PGD对抗样本，额外对抗损失
-    """
+    # 对抗鲁棒微调器-梯度惩罚+谱归一化+蒸馏+稀疏对抗注入.
+    # 损失: L_task + λ_gp·L_grad + λ_dist·L_distill + L_adv(每K步注入).
 
     def __init__(self, config: Optional[RobustTrainConfig] = None):
         self.config = config or RobustTrainConfig()
@@ -146,8 +128,8 @@ class AdversarialRobustFinetuner:
                            features: np.ndarray,
                            adjacency: np.ndarray,
                            labels: np.ndarray,
-                           ) -> Dict[str, float]:
-        """计算联合损失。"""
+                            ) -> Dict[str, float]:
+        # 计算联合损失
         self._step_count += 1
         cfg = self.config
 
@@ -206,10 +188,7 @@ class AdversarialRobustFinetuner:
                                features: np.ndarray,
                                adjacency: np.ndarray,
                                labels: np.ndarray) -> float:
-        """简化PGD对抗样本生成并计算损失。
-
-        仅扰动节点特征（不扰动图结构-CFG结构扰动复杂度高）。
-        """
+        # 简化PGD对抗样本生成并计算损失; 仅扰动节点特征不扰动图结构
         cfg = self.config
         if not isinstance(features, np.ndarray):
             return 0.0

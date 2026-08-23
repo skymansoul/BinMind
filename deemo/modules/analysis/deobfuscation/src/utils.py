@@ -1,5 +1,4 @@
-# Shared 工具集 for 去混淆
-"""Common 工具函数 error classes for 去混淆 module"""
+# 去混淆模块共享工具集
 
 import math
 import logging
@@ -8,49 +7,40 @@ from typing import Dict
 
 logger = logging.getLogger(__name__)
 
-# Error hierarchy
+
 
 
 class DeobfError(Exception):
-    """Base error for 去混淆 failures"""
 
     pass
 
 
 class UnpackError(DeobfError):
-    """Raised 脱壳 fails or 加壳器 unsupported"""
 
     pass
 
 
 class DecodeError(DeobfError):
-    """Raised 字符串解码 produces valid result"""
 
     pass
 
 
-# Entropy
+
 
 
 def compute_entropy(data: bytes) -> float:
-    """计算带 Laplace (+1) 平滑的 Shannon 熵。
-
-    Laplace 平滑确保零观测字节不会导致 log2(0) 问题,
-    为小样本提供稳定估算。
-    """
     if not data:
         return 0.0
 
     n = len(data)
-    # Count byte frequencies Laplace +1 smoothing
+    # 字节频率统计 + Laplace 平滑
     counter: Dict[int, int] = {}
     for b in data:
         counter[b] = counter.get(b, 0) + 1
 
-    # Laplace smoothing: add 1 256 possible byte values
+    # Laplace 平滑: 256 个可能字节值各加 1
     entropy = 0.0
-    # 留着备用，以后可能用
-# 遗留_shannon pre-smoothing implementation
+    # 遗留 Shannon pre-smoothing 实现
     for byte_val in range(256):
         count = counter.get(byte_val, 0) + 1  # +1 Laplace
         p = count / (n + 256)
@@ -60,19 +50,17 @@ def compute_entropy(data: bytes) -> float:
     return entropy
 
 
-# XOR
+
 
 
 def xor_decode(data: bytes, key: int) -> bytes:
-    """单字节 XOR 解码。"""
     return bytes(b ^ key for b in data)
 
 
-# Printable ratio
+
 
 
 def is_printable_ratio(s: str) -> float:
-    """计算字符串中可打印 ASCII 字符的占比, 返回 0.0-1.0。"""
     if not s:
         return 0.0
 
@@ -82,9 +70,9 @@ def is_printable_ratio(s: str) -> float:
     return printable_count / len(s)
 
 
-# English scoring
 
-# Common English bigram frequencies (normalised Peter Norvig's corpus)
+
+# 常见英文 bigram 频率 (Peter Norvig 语料库归一化)
 _ENGLISH_BIGRAMS: Dict[str, float] = {
     "th": 3.56, "he": 3.07, "in": 2.43, "er": 2.05, "an": 1.99,
     "on": 1.76, "at": 1.49, "en": 1.45, "nd": 1.35, "ti": 1.34,
@@ -98,12 +86,11 @@ _ENGLISH_BIGRAMS: Dict[str, float] = {
     "ma": 0.57, "si": 0.55, "om": 0.55, "ur": 0.54,
 }
 
-# Normalise bigrams weights
+# 归一化 bigram 权重
 _MAX_BIGRAM = max(_ENGLISH_BIGRAMS.values()) if _ENGLISH_BIGRAMS else 1.0
 
 
 def english_score(s: str) -> float:
-    """用双字母频率给字符串的英文相似度打分, 返回 0.0-1.0。"""
     if not s or len(s) < 2:
         return 0.0
 
@@ -123,18 +110,10 @@ def english_score(s: str) -> float:
     return min(total_score / bigram_count, 1.0)
 
 
-# CJK detection
+
 
 
 def cjk_detect(s: str) -> bool:
-    """检测字符串是否包含 CJK (中/日/韩) 字符。
-
-    检查 Unicode 范围:
-    - CJK 统一表意文字: U+4E00 - U+9FFF
-    - 平假名: U+3040 - U+309F
-    - 片假名: U+30A0 - U+30FF
-    - 谚文字节: U+AC00 - U+D7AF
-    """
     for c in s:
         cp = ord(c)
         if (

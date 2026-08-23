@@ -1,18 +1,6 @@
-"""后向约束窄化器 - 在危险调用点逆向查找条件分支, 窄化参数区间.
-
-创建: 2023-07-11
-用途: 当 absint 引擎无法静态确定 memcpy 的 size 参数 (来自运行时变量) 时,
-      逆向扫描 cmp+jcc 分支条件, 提取对 size 参数的上界约束.
-      若找到可靠的 bounds check, 可将 write=0 (未知) 窄化为 write∈[lo,hi],
-      显著降低 "未知大小" 导致的低置信度告警。
-
-算法:
-  1. 从危险调用点逆向扫描最多 30 条指令
-  2. 找到 cmp/jcc 对: 如 cmp r8, 256; ja .skip → r8 ∈ [0, 256] (ja未跳转侧)
-  3. 根据 jcc 目标的地址判断哪条路径通向调用点
-  4. 提取约束: ja .skip 未跳转 → r8 <= 256
-  5. 返回窄化后的 [min, max] 区间
-"""
+# 后向约束窄化器 - 在危险调用点逆向查找条件分支, 窄化参数区间.
+# 当 absint 引擎无法静态确定 memcpy 的 size 参数时, 逆向扫描 cmp+jcc
+# 分支条件, 提取对 size 参数的上界约束.
 
 from typing import Dict, List, Optional, Set, Tuple
 

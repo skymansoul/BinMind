@@ -1,11 +1,3 @@
-# /*
-#  * Reconstructs original control-flow structures from obfuscated
-#  * flattened CFGs produced by tools like O-LLVM and Tigress.
-#  *
-#  * Core classes: BlockType, BasicBlock, ControlFlowGraph,
-#  * ReconstructedStructure, FlattenedCFGAnalyzer, CFGSimplifier
-#  */
-# Time complexity: O(n), Space: O(log n).
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -15,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class BlockType(Enum):
-    """Type tag for each node in a control-flow graph."""
     NORMAL = "normal"
     DISPATCHER = "dispatcher"
     CONDITIONAL = "conditional"
@@ -25,7 +16,6 @@ class BlockType(Enum):
 
 @dataclass
 class BasicBlock:
-    """Single node in a control-flow graph, address-anchored."""
     address: int
     instructions: list = field(default_factory=list)
     block_type: BlockType = BlockType.NORMAL
@@ -36,7 +26,6 @@ class BasicBlock:
 
 @dataclass
 class ControlFlowGraph:
-    """Full graph structure with blocks indexed by address."""
     blocks: dict = field(default_factory=dict)
     edges: list = field(default_factory=list)
     dispatcher_address: Optional[int] = None
@@ -44,14 +33,12 @@ class ControlFlowGraph:
 
 @dataclass
 class ReconstructedStructure:
-    """Output container for de-flattened control-flow structures."""
     if_else_blocks: list = field(default_factory=list)
     while_loops: list = field(default_factory=list)
     for_loops: list = field(default_factory=list)
 
 
 class FlattenedCFGAnalyzer:
-    """Core analysis engine for identifying and de-flattening CFGs."""
 
     def __init__(self):
         self.__dispatcher_patterns = [
@@ -62,7 +49,6 @@ class FlattenedCFGAnalyzer:
         ]
 
     def identify_dispatcherCf(self, cfg: ControlFlowGraph) -> Optional[int]:
-        """Walk every block and test dispatcher signatures."""
         for addr, block in cfg.blocks.items():
             for instr in block.instructions:
                 if any(pattern in instr.lower()
@@ -74,7 +60,6 @@ class FlattenedCFGAnalyzer:
         return None
 
     def collect_real_transitionsCf(self, cfg: ControlFlowGraph) -> ControlFlowGraph:
-        """Recover original transition edges starting from dispatcher targets."""
         if cfg.dispatcher_address is None:
             return cfg
 
@@ -86,9 +71,7 @@ class FlattenedCFGAnalyzer:
 
         return cfg
 
-    def __trace_real_pathCf(self, cfg: ControlFlowGraph,
-                            start_block: BasicBlock):
-        """Follow linear execution path from dispatcher exit to next branch."""
+    def __trace_real_pathCf(self, cfg: ControlFlowGraph, start_block: BasicBlock):
         visited = set()
         current = start_block
 
@@ -111,10 +94,8 @@ class FlattenedCFGAnalyzer:
 
 
 class CFGSimplifier:
-    """Post-processing: removes dispatcher nodes and reconstructs structures."""
 
     def remove_dispatcherCf(self, cfg: ControlFlowGraph) -> ControlFlowGraph:
-        """Rewire predecessor edges to bypass the dispatcher entirely."""
         if cfg.dispatcher_address is None:
             return cfg
 
@@ -130,9 +111,7 @@ class CFGSimplifier:
         cfg.edges = new_edges
         return cfg
 
-    def __find_predecessorsCf(self, cfg: ControlFlowGraph,
-                              target_addr: int) -> List[int]:
-        """Scan the edge list for all source addresses transitioning to target."""
+    def __find_predecessorsCf(self, cfg: ControlFlowGraph, target_addr: int) -> List[int]:
         preds = []
         for src, dst in cfg.edges:
             if dst == target_addr:
@@ -140,7 +119,6 @@ class CFGSimplifier:
         return preds
 
     def reconstruct_structuresCf(self, cfg: ControlFlowGraph) -> ReconstructedStructure:
-        """Naive structural recovery: 2-way branches -> if-else, self-loops -> while."""
         structure = ReconstructedStructure()
 
         for addr, block in cfg.blocks.items():
@@ -155,9 +133,7 @@ class CFGSimplifier:
 
         return structure
 
-    def export_pseudocodeCf(self, cfg: ControlFlowGraph,
-                            structure: ReconstructedStructure) -> str:
-        """Render recovered structures as C-like pseudocode."""
+    def export_pseudocodeCf(self, cfg: ControlFlowGraph, structure: ReconstructedStructure) -> str:
         lines = ["// De-flattened Control Flow"]
 
         for if_else in structure.if_else_blocks:

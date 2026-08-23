@@ -167,7 +167,6 @@ class TripletMiner:
                 ai += 1
                 continue
 
-            # Sort by distance ascending (harder = closer)
             negatives.sort(key=lambda x: x[1])
             negatives = negatives[:self.m_max_negatives_per_anchor]
 
@@ -245,10 +244,6 @@ class TripletMiner:
 
 
 class ContrastiveLoss:
-    """Contrastive loss: encourages similar pairs to be close, dissimilar pairs far apart.
-
-    L = y * d^2 + (1-y) * max(margin - d, 0)^2
-    """
 
     __slots__ = ('m_margin',)
 
@@ -256,7 +251,6 @@ class ContrastiveLoss:
         self.m_margin = margin
 
     def compute_cl(self, vec_a, vec_b, label):
-        """Compute contrastive loss for a pair."""
         dist = EmbeddingStore._euclidean_distance(vec_a, vec_b)
         if label > 0.5:
             return 0.5 * dist * dist
@@ -264,7 +258,6 @@ class ContrastiveLoss:
             return 0.5 * max(self.m_margin - dist, 0.0) ** 2
 
     def compute_batch_cl(self, pairs, labels):
-        """Compute average loss over a batch of pairs."""
         if not pairs:
             return 0.0
         total = 0.0
@@ -491,13 +484,6 @@ class CrossModalAligner:
 
 
 class DeepBinarySearcher:
-    """Deep-learning-based binary code search engine.
-
-    Indexes function embeddings and performs semantic similarity search.
-    Uses Siamese architecture with contrastive loss training.
-
-    增强：跨模态对齐 / 自适应优化器 / 梯度驱动训练
-    """
 
     __slots__ = ('m_embedder', 'm_store', 'm_indexed_count',
                  'm_triplet_miner', 'm_loss_fn', 'm_optimizer',
@@ -563,7 +549,6 @@ class DeepBinarySearcher:
                 input_dim, hidden_dim, output_dim, modality=name)
 
     def index_function_ds(self, func_id, features, metadata=None):
-        """Compute embedding for a function and add to the search index."""
         if func_id is None or features is None:
             return
         emb = self.m_embedder.embed_fe(features)
@@ -583,7 +568,6 @@ class DeepBinarySearcher:
         self.m_indexed_count += 1
 
     def index_batch_ds(self, function_list):
-        """Index multiple functions at once."""
         fi = 0
         while fi < len(function_list):
             fid, feat, meta = function_list[fi]
@@ -591,7 +575,6 @@ class DeepBinarySearcher:
             fi += 1
 
     def search_ds(self, query_features, top_k=10, threshold=0.5):
-        """Search for semantically similar functions."""
         if query_features is None:
             return []
         query_emb = self.m_embedder.embed_fe(query_features)
@@ -624,9 +607,6 @@ class DeepBinarySearcher:
         return filtered_results[:top_k]
 
     def train_contrastive_ds(self, pairs, labels, epochs=10, lr=0.01):
-        """Train embedder with contrastive learning on similarity pairs。
-
-        增强：使用动量 SGD + 余弦退火替代固定学习率。"""
         if pairs is None or labels is None or len(pairs) == 0:
             return
 
@@ -708,11 +688,6 @@ class DeepBinarySearcher:
 
     def mine_hard_triplets_ds(self, anchor_features, positive_features,
                                all_features, labels, semi_hard=True):
-        """Mine hard triplets for improved contrastive training.
-
-        Returns list of (anchor_key, positive_key, negative_key).
-        """
-        # Convert features to embeddings first
         anchor_embs = {}
         pos_embs = {}
         all_embs = {}
@@ -742,7 +717,6 @@ class DeepBinarySearcher:
                                           labels, batch_size)
 
     def get_index_stats_ds(self):
-        """Return index statistics."""
         stats = {
             'indexed_functions': self.m_indexed_count,
             'embedding_dim': self.m_embedder.m_output_dim,
@@ -753,7 +727,6 @@ class DeepBinarySearcher:
         return stats
 
     def remove_function_ds(self, func_id):
-        """Remove a function from the index."""
         self.m_store.remove_es(func_id)
         # 同时清理跨模态索引
         for mod_name in list(self.m_modality_embedders.keys()):
@@ -761,7 +734,6 @@ class DeepBinarySearcher:
         self.m_indexed_count = max(0, self.m_indexed_count - 1)
 
     def clear_index_ds(self):
-        """Clear all indexed functions."""
         self.m_store = EmbeddingStore()
         self.m_indexed_count = 0
 

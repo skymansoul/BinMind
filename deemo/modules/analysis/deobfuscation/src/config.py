@@ -1,5 +1,3 @@
-"""YAML 配置加载器, 支持环境变量替换与覆盖。"""
-
 import os
 import re
 import logging
@@ -17,7 +15,6 @@ except ImportError:
 
 
 def _get_nested(d: Dict[str, Any], key_path: str) -> Any:
-    """用点分隔键路径从嵌套字典取值。"""
     keys = key_path.split(".")
     current = d
     for k in keys:
@@ -30,7 +27,6 @@ def _get_nested(d: Dict[str, Any], key_path: str) -> Any:
 
 
 def _set_nested(d: Dict[str, Any], key_path: str, value: Any) -> None:
-    """用点分隔键路径向嵌套字典写值, 缺失的中间字典自动创建。"""
     keys = key_path.split(".")
     current = d
     for k in keys[:-1]:
@@ -41,7 +37,6 @@ def _set_nested(d: Dict[str, Any], key_path: str, value: Any) -> None:
 
 
 def _substitute_env_vars(value: str) -> str:
-    """把字符串中的 ${VAR} 模式替换为环境变量值, 未设置的变量保留原文。"""
     if not isinstance(value, str):
         return value
 
@@ -53,7 +48,6 @@ def _substitute_env_vars(value: str) -> str:
 
 
 def _substitute_recursive(obj: Any) -> Any:
-    """递归替换嵌套结构中的字符串值环境变量。"""
     if isinstance(obj, str):
         return _substitute_env_vars(obj)
     elif isinstance(obj, dict):
@@ -66,14 +60,6 @@ def _substitute_recursive(obj: Any) -> Any:
 # 设计策略: 配置校验在加载时立即执行 -
 # fail-fast 好过花 20 分钟调试一条配置错误的流水线
 def load_config(path: str, env_prefix: str = "DEOBF_") -> Dict[str, Any]:
-    """加载 YAML 配置并应用环境变量覆盖。
-
-    1. 加载 YAML 文件
-    2. 把 ${VAR} 模式替换为环境变量值
-    3. 用点分隔键名应用 DEOBF_* 环境变量覆盖
-
-    文件不存在抛 FileNotFoundError, YAML 畸形抛 ValueError。
-    """
     if not _HAS_YAML:
         logger.warning("PyYAML not available, returning minimal default config")
         return {
@@ -90,16 +76,16 @@ def load_config(path: str, env_prefix: str = "DEOBF_") -> Dict[str, Any]:
         except yaml.YAMLError as exc:
             raise ValueError(f"Failed to parse YAML config: {exc}") from exc
 
-    # env var substitution
+    # 环境变量替换
     config = _substitute_recursive(config)
 
-    # DEOBF_* overrides
+    # DEOBF_* 环境变量覆盖
     for env_key, env_val in os.environ.items():
         if not env_key.startswith(env_prefix):
             continue
         # 转换 DEOBF_ANALYSIS_TIMEOUT_SECONDS -> analysis.timeout_seconds
         config_key = env_key[len(env_prefix):].lower()
-        # Try 转换 value int/float possible
+        # 尝试转为 int/float
         typed_val: Any = env_val
         try:
             typed_val = int(env_val)
@@ -115,11 +101,6 @@ def load_config(path: str, env_prefix: str = "DEOBF_") -> Dict[str, Any]:
 
 
 def validate_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    """校验配置 schema 并返回校验后的配置。
-
-    检查必需顶层节与类型; 故意与加载分离, 以便对程序构造的
-    配置做预校验。缺必需键或类型错误抛 ValueError。
-    """
     required_sections = ["paths", "logging"]
     for section in required_sections:
         if section not in config:

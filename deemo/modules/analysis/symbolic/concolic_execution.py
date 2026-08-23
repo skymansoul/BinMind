@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConcolicMode(Enum):
-    """Execution order for concolic 流水线"""
+    """concolic 流水线的执行顺序"""
     DYNAMIC_FIRST = "dynamic_first"
     SYMBOLIC_FIRST = "symbolic_first"
     HYBRID = "hybrid"
@@ -43,7 +43,7 @@ class ConcolicMode(Enum):
 
 
 class ConcolicStatus(Enum):
-    """Lifecycle states a concolic analysis 运行"""
+    """concolic 分析运行的生命周期状态"""
     NOT_STARTED = "not_started"
     RUNNING = "running"
     PAUSED = "paused"
@@ -53,7 +53,7 @@ class ConcolicStatus(Enum):
 
 @dataclass
 class ConcolicSeed:
-    """A concrete input captured dynamic taint, ready for symbolic injection"""
+    """动态污点采集的具体输入, 待注入符号执行器"""
     source_name: str
     source_type: str
     value: bytes
@@ -64,26 +64,26 @@ class ConcolicSeed:
     constraints: List = field(default_factory=list)
     taint_label: Optional[str] = None
     path_condition: Optional[str] = None
-    entropy: float = 0.0        # Shannon entropy seed bytes — diversity 代理
-    round_collected: int = 0    # concolic loop iteration seed harvested
+    entropy: float = 0.0        # 种子字节的 Shannon 熵 — 多样性代理指标
+    round_collected: int = 0    # 采集该种子的 concolic 循环轮次
 
 
 @dataclass
 class TaintGuidedConstraint:
-    """A constraint derived a taint flow: source → sink confidence"""
+    """污点流推导出的约束: source → sink 置信度"""
     source_addr: int
     sink_addr: int
     operation: str
     constraint: str
     confidence: float = 0.0
     tainted_bytes: int = 0
-    flow_depth: int = 0          # number intermediate taint propagation steps
+    flow_depth: int = 0          # 污点传播中间步数
     is_loop_related: bool = False
 
 
 @dataclass
 class ConcolicPath:
-    """A path discovered concolic exploration"""
+    """concolic 探索发现的路径"""
     path_id: str
     instructions: List = field(default_factory=list)
     constraints: List = field(default_factory=list)
@@ -96,7 +96,7 @@ class ConcolicPath:
 
 @dataclass
 class ConcolicResult:
-    """Aggregate 输出 one concolic analysis 运行"""
+    """单次 concolic 分析的聚合输出"""
     status: ConcolicStatus
     seeds: List = field(default_factory=list)
     paths: List = field(default_factory=list)
@@ -112,20 +112,19 @@ class ConcolicExecutor:
     """调度 concolic 流水线
 
     数据流:
-    dynamic taint tracker → ConcolicSeed → symbolic executor
-    symbolic paths → dynamic re-校验 → feasibility verdict
-    taint flows → TaintGuidedConstraint → guided symbolic exploration
+    动态污点跟踪器 → ConcolicSeed → 符号执行器
+    符号路径 → 动态重校验 → 可行性判定
+    污点流 → TaintGuidedConstraint → 引导式符号探索
 
-    concolic loop 迭代 up max_concolic_iterations, cycle
-    collecting fresh taint data, generating constraints, validating
-    newly discovered paths
+    concolic 循环最多迭代 max_concolic_iterations 次,
+    每轮采集新鲜污点数据, 生成约束, 校验新发现的路径
     """
 
     def __init__(self,
                  f_binary_path,
                  f_dynamic_engine='frida',
                  f_mode=ConcolicMode.HYBRID):
-        """Wire submodules set initial state"""
+        """连接子模块并初始化状态"""
         if f_binary_path is None:
             f_binary_path = ""
         if f_dynamic_engine is None:
@@ -168,13 +167,13 @@ class ConcolicExecutor:
 
 # metric 辅助函数
     def _record_metric(self, name: str, value: int):
-        """Accumulate a counter metric_accumulator. 无副作用，纯累加"""
+        """累计计数型指标, 纯累加无副作用"""
         if self.metric_accumulator is not None:
             setattr(self.metric_accumulator, name,
                     getattr(self.metric_accumulator, name, 0) + value)
 
     def _snapshot_metrics(self):
-        """Emit a single structured 记录 line per 舍入 — 替代分散的 info 日志"""
+        """每轮输出一条结构化记录, 替代分散的 info 日志"""
         m = self.metric_accumulator
         if m is None:
             return
@@ -186,7 +185,7 @@ class ConcolicExecutor:
         )
 
     def _init_submodules(self):
-        """Lazily import instantiate dynamic tracker symbolic executor"""
+        """惰性导入并实例化动态跟踪器与符号执行器"""
         try:
             # from .dynamic_taint import create_dynamic_taint_tracker
             # self.dynamic_tracker = create_dynamic_taint_tracker(
@@ -205,7 +204,7 @@ class ConcolicExecutor:
             logger.warning(f"[Concolic] Failed to initialize symbolic executor: {e}")
 
     def is_availableCx(self):
-        """True least one two sub-engines operational"""
+        """至少一个子引擎可用时返回 True"""
         dynamic_available = self.dynamic_tracker is not None and self.dynamic_tracker.is_available()
         symbolic_available = self.symbolic_executor is not None and self.symbolic_executor.is_available()
         return dynamic_available or symbolic_available
@@ -223,8 +222,7 @@ class ConcolicExecutor:
                             f_args=None,
                             f_timeout=60,
                             f_input_data=None):
-        """执行 dynamic taint tracker harvest concrete seeds
-        taint marks taint flows"""
+        """执行动态污点跟踪, 采集具体种子与污点标记"""
         logger.info("[Concolic] Starting dynamic seed collection")
 
         if self.dynamic_tracker is None:
@@ -313,10 +311,10 @@ class ConcolicExecutor:
             return []
 
     def _classify_source_typeCx(self, f_source_name):
-        """Map a function name a seed source category
+        """将函数名映射到种子来源类别
 
-        检查 specific patterns first avoid partial 匹配
-        (e.g. 'fread' 包含 '读取', 'fread' tested first)"""
+        先检查精确匹配避免部分匹配干扰
+        (如 'fread' 包含 'read', 需先测试 'fread')"""
         if f_source_name is None:
             return 'unknown'
         name_lower = f_source_name.lower()
@@ -330,11 +328,11 @@ class ConcolicExecutor:
         return 'unknown'
 
     def _generate_seed_valueCx(self, f_source_type, f_size):
-        """Synthesize a concrete byte pattern appropriate for seed's source type
+        """根据来源类型合成具体字节模式
 
-        input → printable fill ('A' * size)
-        file → BMP header prefix + null 填充
-        environment → "TEST=value\\0" truncated size
+        input → 可打印填充 ('A' * size)
+        file → BMP 头前缀 + null 填充
+        environment → "TEST=value\\0" 截断至指定长度
         unknown → 'A' * size
         """
         if f_size is None or f_size <= 0:
@@ -351,10 +349,10 @@ class ConcolicExecutor:
             return b'\x41' * capped
 
     def seed_symbolic_executorCx(self, f_seeds):
-        """Inject collected seeds symbolic executor's state
+        """将种子注入符号执行器状态
 
-        注：当停滞计数器 > 0 时，会对种子按熵值排序，优先注入高熵种子
-        因为低熵种子（全 'A' 之类）不太可能触达新路径"""
+        停滞计数器 > 0 时按熵值排序, 优先注入高熵种子
+        低熵种子（全 'A' 之类）不太可能触达新路径"""
         if self.symbolic_executor is None or not self.symbolic_executor.is_available():
             logger.warning("[Concolic] Symbolic executor unavailable")
             return False
@@ -377,8 +375,8 @@ class ConcolicExecutor:
 
     # 停滞检测：若本轮未发现新路径，stagnation_counter++
     # 连续 _max_stagnation 轮后进入"探索优先"模式：
-# 种子注入权重下降
-# 增加每轮路径探索深度
+    #   种子注入权重下降
+    #   增加每轮路径探索深度
     def _detect_stagnation(self, current_path_count: int):
         if current_path_count <= self._prev_path_count:
             self._stagnation_counter += 1
@@ -386,14 +384,13 @@ class ConcolicExecutor:
             self._stagnation_counter = 0
         self._prev_path_count = current_path_count
 
-    # Crash triage: 利用崩溃地址/错误信息/约束对已发现漏洞进行分类
-    # 在分析结束时自动调用，为每个 vulnerability 添加 crash_category 标签
+    # 崩溃分类: 利用崩溃地址/错误信息/约束对已发现漏洞进行分类
+    # 在分析结束时自动调用, 为每个漏洞添加 crash_category 标签
     def _classify_vulnerability_crashes(self, result: ConcolicResult) -> None:
-        """Tag 漏洞 *result* a crash category via
-        CrashTriage分类器, purely augmenting existing entry dicts
+        """通过崩溃分类器为漏洞标记崩溃类别
 
-        不修改 result.vulnerabilities 的顶层结构，只在每条记录中添加
-        crash_category / triage_confidence 键，保持向后兼容
+        不修改 result.vulnerabilities 的顶层结构, 只在每条记录中添加
+        crash_category / triage_confidence 键, 保持向后兼容
         """
         if not result.vulnerabilities:
             return
@@ -423,12 +420,12 @@ class ConcolicExecutor:
                               f_input_data=None,
                               f_max_paths=100,
                               f_exploration_depth=500):
-        """执行 full concolic analysis 流水线
+        """执行完整 concolic 分析流水线
 
-        Flow 依赖 mode:
-        DYNAMIC_FIRST → collect seeds, 运行 symbolic seeds
-        HYBRID → full 流水线: seeds + symbolic + concolic loop + 校验
-        SYMBOLIC_FIRST → 运行 symbolic first, seed dynamic
+        流程依 mode 而异:
+        DYNAMIC_FIRST → 采集种子, 用种子运行符号执行
+        HYBRID → 完整流水线: 种子 + 符号 + concolic 循环 + 校验
+        SYMBOLIC_FIRST → 先运行符号执行, 再用结果采集动态种子
         """
         start_time = time.time()
 
@@ -519,11 +516,10 @@ class ConcolicExecutor:
                                  f_args=None,
                                  f_max_paths=100,
                                  f_exploration_depth=500):
-        """运行 symbolic executor seeds applied
+        """注入种子后运行符号执行器
 
-        Collects paths crash_path, auto_explore_dangerous_functions
-        污点分析. path source contributes a different
-        覆盖率_increase weight"""
+        采集崩溃路径、自动探索危险函数、污点分析结果,
+        不同路径来源贡献不同的覆盖率增量权重"""
         if self.symbolic_executor is None:
             return {'paths': [], 'vulnerabilities': []}
 
@@ -599,14 +595,14 @@ class ConcolicExecutor:
         return results
 
     def _collect_taint_guided_constraintsCx(self, f_taint_result):
-        """转换 污点分析 flows TaintGuidedConstraint objects
+        """将污点流转换为 TaintGuidedConstraint
 
-        flow's source address sink list iterated; confidence
-        proportional tainted_bytes / 8, capped 1.0
+        遍历每条流的 source 地址与 sink 列表, 置信度
+        正比于 tainted_bytes / 8, 上限 1.0
 
-        增强：引入 flow_depth 字段追踪污点传播步数
-        深度越大的流越可能穿过循环结构，其置信度乘以衰减因子
-        (0.85 ** depth) 以防止过深传播路径的噪声约束淹没真实信号
+        引入 flow_depth 字段追踪污点传播步数,
+        深度越大的流越可能穿过循环结构,
+        置信度乘以衰减因子 (0.85 ** depth) 防止过深传播噪声淹没真实信号
         """
         if f_taint_result is None:
             return []
@@ -649,12 +645,12 @@ class ConcolicExecutor:
         return constraints
 
     def _generate_constraint_from_flowCx(self, f_flow):
-        """Map a taint flow's operation type a symbolic constraint string
+        """根据污点流操作类型映射为符号约束字符串
 
-        strcmp/strncmp → inequality compared value
-        memcmp → memcmp_result!= 0
-        strcpy/strncpy → input length exceeds max_length
-        printf → 格式化-string 检查
+        strcmp/strncmp → 不等于比较值
+        memcmp → memcmp_result != 0
+        strcpy/strncpy → 输入长度超过 max_length
+        printf → 格式化字符串检查
         default → tainted_<source>_reaches_<sink>
         """
         if f_flow is None:
@@ -679,13 +675,12 @@ class ConcolicExecutor:
         return f"tainted_{source}_reaches_{sink}"
 
     def _run_taint_guided_symbolic_executionCx(self, f_constraints):
-        """使用 taint-derived constraints steer 符号执行
+        """使用污点推导的约束引导符号执行
 
-        过滤 constraints confidence < 0.3. surviving constraint
-        triggers a guided analysis 运行; discovered paths vulnerabilities
-        tagged 'taint_guided'
+        过滤置信度 < 0.3 的约束, 存活约束触发引导分析;
+        发现的路径与漏洞标记为 'taint_guided'
 
-        2025 增强：循环相关的约束获得额外的探索深度 (max_depth × 1.5)
+        循环相关的约束获得额外探索深度 (max_depth × 1.5),
         因为循环中的污点传播路径往往需要更多步数才能触达边界条件
         """
         if self.symbolic_executor is None or not self.symbolic_executor.is_available():
@@ -740,16 +735,16 @@ class ConcolicExecutor:
         return results
 
     def _concolic_loopCx(self, f_args=None, f_timeout=60):
-        """Core concolic iteration loop
+        """concolic 核心迭代循环
 
-        cycle:
-        1. 运行 dynamic 污点分析
-        2. Collect taint-guided constraints
-        3. 运行 taint-guided 符号执行
-        4. 去重 discovered paths (discovered_from, input_hash)
-        5. 校验 new paths dynamically
+        每轮:
+        1. 运行动态污点分析
+        2. 采集污点引导的约束
+        3. 运行污点引导的符号执行
+        4. 对发现的路径去重 (discovered_from, input_hash)
+        5. 动态校验新路径
 
-        停止 max_concolic_iterations, timeout, or 50 new paths"""
+        达到 max_concolic_iterations / timeout / 50 条新路径时停止"""
         new_paths = []
         start_time = time.time()
 
@@ -795,14 +790,14 @@ class ConcolicExecutor:
 
         return new_paths
 
-    # Fuzz dict construction: 从已收集的种子池中选出高熵种子
-    # 按 覆盖率_gain + entropy 排序，输出 AFL/lib模糊测试器 字典
+    # Fuzz 字典构建: 从已收集的种子池中选出高熵种子
+    # 按 coverage_gain + entropy 排序, 输出 AFL/libFuzzer 字典
     def _build_fuzz_dictionary_from_seeds(self) -> None:
-        """Populate FuzzDictGenerator collected seeds
+        """用已采集的种子填充 FuzzDictGenerator
 
-        high-entropy seeds (>= 2.0 Shannon) considered; 覆盖率
-        gain inferred stagnation counter delta — seeds collected
-        stagnation dropped assigned higher gain
+        仅考虑高熵种子 (Shannon 熵 >= 2.0);
+        覆盖率增益由停滞计数器增量推断 —
+        停滞期采集的种子赋予更高增益
         """
         if not self.seeds:
             return
@@ -824,21 +819,19 @@ class ConcolicExecutor:
             )
 
     def export_fuzz_dictionary(self, output_path: str) -> int:
-        """写入 AFL/lib模糊测试器 dictionary *output_path*
+        """将 AFL/libFuzzer 字典写入 output_path
 
-        返回 number entries written, or 0 generator
-        entries (call analysis completes)
+        返回写入条数, 若生成器无条目则返回 0 (需先完成分析)
         """
         if self.fuzz_dict_generator.entry_count() == 0:
             self._build_fuzz_dictionary_from_seeds()
         return self.fuzz_dict_generator.export_to_file(output_path)
 
     def _validate_single_pathCx(self, f_path):
-        """Re-运行 dynamic tracker a path's concrete input verify
-        feasibility. Sets f_path.is_feasible accordingly
+        """用路径的具体输入重跑动态跟踪器以验证可行性
 
-        最多尝试验证 2 次 — 第一次失败可能是环境状态不一致
-        重试一次以排除瞬态错误。两次都失败则标记为不可行
+        最多尝试验证 2 次 — 第一次失败可能是环境状态不一致,
+        重试一次排除瞬态错误, 两次都失败则标记为不可行
         """
         if self.dynamic_tracker is None or f_path is None or f_path.concrete_input is None:
             return
@@ -860,9 +853,9 @@ class ConcolicExecutor:
         self._record_metric('false_positives', 1)
 
     def _validate_symbolic_pathsCx(self):
-        """Post-hoc 校验: re-执行 symbolically-discovered paths
-        dynamic tracker. paths concrete_input
-        discovered_from='symbolic' checked"""
+        """后验校验: 用动态跟踪器重跑符号发现的路径
+
+        仅校验 discovered_from='symbolic' 且有 concrete_input 的路径"""
         if self.dynamic_tracker is None or not self.paths:
             return
 
@@ -885,11 +878,10 @@ class ConcolicExecutor:
                 logger.debug(f"[Concolic] Path {path.path_id} validated as infeasible")
 
     def _calculate_coverageCx(self, f_result):
-        """估算 覆盖率 improvement path count
+        """根据路径数估算覆盖率增量
 
-        Formula: base 10% + 2% per path, capped 80% bonus
-        a heuristic approximation — real 覆盖率 requires
-        basic-block 插桩"""
+        公式: 基准 10% + 每条路径 2%, 上限 80% 增量
+        启发式近似 — 真实覆盖率需要基本块插桩"""
         if f_result is None:
             return
         base_coverage = 0.1
@@ -900,18 +892,17 @@ class ConcolicExecutor:
         f_result.coverage['increase'] = path_bonus
 
     def _count_new_pathsCx(self, f_paths):
-        """Count paths discovered concolic or symbolic means
-        (opposed pure dynamic)"""
+        """统计通过 concolic 或符号方式发现的路径数"""
         if f_paths is None:
             return 0
         return sum(1 for p in f_paths if p.discovered_from in ['concolic', 'symbolic'])
 
     def _generate_path_idCx(self):
-        """构造 a short unique path identifier"""
+        """构造短小唯一的路径标识符"""
         return str(uuid.uuid4())[:8]
 
     def export_seedsCx(self, f_output_dir='./seeds'):
-        """写入 collected seeds disk binary files JSON metadata"""
+        """将采集的种子写入磁盘二进制文件与 JSON 元数据"""
         if f_output_dir is None:
             f_output_dir = './seeds'
 
@@ -944,7 +935,7 @@ class ConcolicExecutor:
         return exported_files
 
     def generate_reportCx(self):
-        """Produce a structured JSON 报告 analysis 运行"""
+        """生成分析运行的结构化 JSON 报告"""
         from datetime import datetime
 
         report = {
@@ -995,7 +986,7 @@ class ConcolicExecutor:
         return report
 
     def save_reportCx(self, f_output_path=None):
-        """序列化 analysis 报告 a JSON file"""
+        """将分析报告序列化为 JSON 文件"""
         if f_output_path is None:
             output_dir = './reports/concolic'
             os.makedirs(output_dir, exist_ok=True)
@@ -1015,8 +1006,7 @@ class ConcolicExecutor:
 def create_concolic_executorCx(f_binary_path,
                              f_dynamic_engine='frida',
                              f_mode='hybrid'):
-    """Instantiate a ConcolicExecutor. 返回 None dynamic tracker
-    symbolic executor available"""
+    """实例化 ConcolicExecutor。若无动态追踪器或符号执行器则返回 None"""
     if f_binary_path is None:
         logger.error("[Concolic] binary_path cannot be None")
         return None
@@ -1066,11 +1056,11 @@ def run_concolic_analysisCx(f_binary_path,
     }
 
 
-# 模块级 aliases — keep existing callers working
+# 模块级别名 — 保持已有调用方正常工作
 create_concolic_executor = create_concolic_executorCx
 run_concolic_analysis = run_concolic_analysisCx
 
-# CrashCategory, CrashTriage分类器, FuzzDictEntry, FuzzDictGenerator
-# StructuredMetrics, Seed变异流水线, _entropy_of re-exported
-# from .src.concolic_strategies (imported at the top of this module).
+# CrashCategory, CrashTriageClassifier, FuzzDictEntry, FuzzDictGenerator
+# StructuredMetrics, SeedMutationPipeline, _entropy_of 从
+# .src.concolic_strategies 重新导出 (在本模块顶部已 import)
 

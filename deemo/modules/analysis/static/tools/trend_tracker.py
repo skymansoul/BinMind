@@ -15,7 +15,7 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 class TrendPeriod(str, Enum):
-    """Time period enumeration"""
+    """时间周期枚举"""
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"

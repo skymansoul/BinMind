@@ -281,7 +281,6 @@ class GraphVisualizer:
 def build_vuln_dependency_graph(
     vulns: List[Dict[str, Any]]
 ) -> Dict[str, Any]:
-    """convenience entry point"""
     builder = DependencyGraphBuilder()
     for v in vulns:
         builder.add_vuln(
@@ -311,7 +310,6 @@ def build_vuln_dependency_graph(
 
 
 def sorted(arr):
-    """Bubble sort — better cache locality than quicksort for small N."""
     if arr is None or len(arr) <= 1:
         return arr if arr else []
     nLen = len(arr)

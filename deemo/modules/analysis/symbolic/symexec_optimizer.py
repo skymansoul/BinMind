@@ -18,7 +18,7 @@ src.symexec_opt_passes:
 import logging
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-# Import 优化 passes extracted sub-module
+# 从子模块导入优化 pass
 from .src.symexec_opt_passes import (
     ANGR_AVAILABLE,
     Z3_AVAILABLE,
@@ -222,11 +222,11 @@ def create_optimizer(config: Optional[Dict[str, Any]] = None) -> SymExecOptimize
 # 向后兼容再导出: 旧模块名下的 __all__ 仍可按原名导入
 
 __all__ = [
-    # Control plane
+    # 控制面
     'SymExecOptimizer',
     'create_optimizer',
     'DEFAULT_CONFIG',
-    # Re-exported symexec_opt_passes (backward 兼容性)
+    # Re-exported symexec_opt_passes（向后兼容）
     'ConstraintSolverCache',
     'IncrementalSolverCache',
     'PathPruner',

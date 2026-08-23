@@ -1,9 +1,8 @@
-"""Config loading, YAML parsing, environment variable overrides,
-schema validation
+"""配置加载、YAML 解析、环境变量覆盖、模式校验。
 
-Environment variables prefixed ATOOLS_ are automatically applied as
-overrides. Nested keys specified via double underscore or dot notation:
-e.g., ATOOLS_ANALYSIS__TIMEOUT_SECONDS -> analysis.timeout_seconds
+前缀为 ATOOLS_ 的环境变量自动应用为覆盖项。
+嵌套键通过双下划线或点号表示:
+如 ATOOLS_ANALYSIS__TIMEOUT_SECONDS -> analysis.timeout_seconds
 """
 
 import logging
@@ -156,9 +155,9 @@ def _deep_get(data: dict[str, Any], key_path: str, sep: str = ".") -> Any:
 
 
 def _deep_set(data: dict[str, Any], key_path: str, value: Any, sep: str = ".") -> None:
-    """Set a nested value a dict using a dot-separated key path
+    """用点分隔的键路径设置嵌套字典值
 
-    创建 intermediate dicts needed
+    按需创建中间字典
     """
     keys = key_path.split(sep)
     current = data

@@ -1,5 +1,3 @@
-# Stub — refactored out; distributed config lives in config.py (DISTRIBUTED_MODE, REDIS_HOST).
-# Tests resolve this module via importlib.util.
 class DistributedCluster:
     def __init__(self, config=None): self.config = config or {}
     def connect(self): return True

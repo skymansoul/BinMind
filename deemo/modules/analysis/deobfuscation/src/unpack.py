@@ -1,5 +1,3 @@
-"""检测并脱壳常见可执行文件加壳器与 PyInstaller 归档。"""
-
 import os
 import struct
 import logging
@@ -8,11 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Unpacker
-
 
 class Unpacker:
-    """检测并脱壳常见可执行文件加壳器 (UPX、ASPack、MPRESS 等)。"""
 
     # 加壳器节名
     PACKER_SECTIONS: List[str] = [
@@ -42,7 +37,6 @@ class Unpacker:
         self._logger = logging.getLogger(__name__)
 
     def detect_by_sections(self, filepath: str) -> List[Dict[str, Any]]:
-        """按 PE 节名检测加壳器, 返回含加壳器名与置信度的检测结果列表。"""
         matches: List[Dict[str, Any]] = []
         try:
             with open(filepath, "rb") as fh:
@@ -51,7 +45,7 @@ class Unpacker:
             self._logger.error("Failed to read file %s: %s", filepath, exc)
             return matches
 
-        # Search for section name strings binary
+        # 搜索节名字符串
         content = data.decode("ascii", errors="ignore")
         content_lower = content.lower()
 
@@ -69,10 +63,6 @@ class Unpacker:
         return matches
 
     def detect_by_entropy(self, filepath: str) -> List[Dict[str, Any]]:
-        """按高熵节检测加壳。
-
-        高熵 (>7.0 bits) 是加壳/加密数据的强指示; 返回高熵发现列表。
-        """
         matches: List[Dict[str, Any]] = []
         try:
             with open(filepath, "rb") as fh:
@@ -85,7 +75,7 @@ class Unpacker:
         if file_size == 0:
             return matches
 
-        # 计算 entropy 4KB windows
+        # 计算 4KB 窗口熵值
         import math
         from collections import Counter
 
@@ -96,7 +86,7 @@ class Unpacker:
 
         for offset in range(0, file_size, window_size):
             chunk = data[offset : offset + window_size]
-            if len(chunk) < 256:  # Skip very small tail chunks
+            if len(chunk) < 256:  # 跳过过小的尾部块
                 continue
             total_windows += 1
 
@@ -127,7 +117,6 @@ class Unpacker:
         return matches
 
     def detect_by_signatures(self, filepath: str) -> List[Dict[str, Any]]:
-        """按字节签名检测加壳器, 返回签名匹配列表。"""
         matches: List[Dict[str, Any]] = []
         try:
             with open(filepath, "rb") as fh:
@@ -150,7 +139,6 @@ class Unpacker:
         return matches
 
     def detect_packer(self, filepath: str) -> List[Dict[str, Any]]:
-        """运行全部检测方法, 返回合并的检测结果列表。"""
         results: List[Dict[str, Any]] = []
         results.extend(self.detect_by_sections(filepath))
         results.extend(self.detect_by_entropy(filepath))
@@ -158,7 +146,6 @@ class Unpacker:
         return results
 
     def unpack_upx(self, filepath: str, output_dir: str) -> bool:
-        """用外部 upx 工具尝试 UPX 脱壳, 成功返回 True。"""
         output_path = os.path.join(
             output_dir,
             os.path.basename(filepath).replace(".exe", "_unpacked.exe"),
@@ -180,22 +167,21 @@ class Unpacker:
                 self._logger.warning(
                     "UPX unpacking failed: %s", result.stderr.strip()
                 )
-                # Clean up failed attempt
+                # 清理失败的尝试
                 if os.path.exists(output_path):
                     os.remove(output_path)
                 return False
         except FileNotFoundError:
-            self._logger.warning("upx binary not found on PATH")
+            self._logger.warning("未找到 upx 可执行文件")
             return False
         except subprocess.TimeoutExpired:
-            self._logger.error("UPX unpacking timed out")
+            self._logger.error("UPX 脱壳超时")
             return False
         except Exception as exc:
-            self._logger.error("UPX unpacking error: %s", exc)
+            self._logger.error("UPX 脱壳出错: %s", exc)
             return False
 
     def unpack(self, filepath: str, output_dir: str) -> Dict[str, Any]:
-        """完整检测与脱壳流水线, 返回含检测结果与脱壳状态的字典。"""
         os.makedirs(output_dir, exist_ok=True)
 
         results = self.detect_packer(filepath)
@@ -225,26 +211,19 @@ class Unpacker:
         }
 
 
-# PyInstaller脱壳器
+# PyInstaller 脱壳器
 
-# PyInstaller magic numbers - 只处理最新的版本
+# PyInstaller magic number — 只处理最新版本
 _PYINSTALLER_MAGIC = b"MEI\x0C\x0D\x0A\x0A\x0D\x0A\x0A"
 _PYINSTALLER_MAGIC_ALT = b"MEI\x0B\x0D\x0A\x0A\x0D\x0A\x0A"
 
 
 class PyInstallerUnpacker:
-    """提取 decompile PyInstaller-packaged Python applications"""
 
     def __init__(self) -> None:
         self._logger = logging.getLogger(__name__)
 
     def parse_carchive_header(self, data: bytes) -> Dict[str, Any]:
-        """解析 PyInstaller CArchive 头。
-
-        返回含 magic、cookie_size、toc_offset、toc_length、
-        python_version 的字典; 文件不像 PyInstaller 归档时抛
-        ValueError。
-        """
         # 查找 magic bytes
         magic = _PYINSTALLER_MAGIC
         magic_offset = data.find(magic)
@@ -258,7 +237,7 @@ class PyInstallerUnpacker:
 
         header_start = magic_offset + len(magic)
 
-        # CArchive header: cookie_size(4), TOC_length(4), TOC_offset(4), pyver(4)
+        # CArchive 头: cookie_size(4), TOC_length(4), TOC_offset(4), pyver(4)
         try:
             # struct 解析在截断数据上失败
             header_fields = struct.unpack_from(  # type: ignore[unused-variable]
@@ -281,7 +260,6 @@ class PyInstallerUnpacker:
     def extract_toc(
         self, data: bytes, header: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """提取 PyInstaller 归档的 Table of Contents, 返回 TOC 条目元数据列表。"""
         toc_offset = header["toc_offset"]  # type: ignore[arg-type]
         toc_length = header["toc_length"]  # type: ignore[arg-type]
 
@@ -292,9 +270,9 @@ class PyInstallerUnpacker:
         toc_entries: List[Dict[str, Any]] = []
         pos = toc_offset
 
-        # TOC entry a variable-length string-based structure
-        # 格式化: entry_size(4) + entry_offset(4) + entry_data_size(4) +
-        #         entry_type(b'z'|b's'|b'm'|b'x') + name_len(4) + name
+        # TOC 条目为变长字符串结构
+        # 格式: entry_size(4) + entry_offset(4) + entry_data_size(4) +
+        #       entry_type(b'z'|b's'|b'm'|b'x') + name_len(4) + name
         entry_count = 0
         while pos < toc_offset + toc_length and entry_count < 10000:
             try:
@@ -351,7 +329,6 @@ class PyInstallerUnpacker:
         toc: List[Dict[str, Any]],
         output_dir: str,
     ) -> List[str]:
-        """从归档资源提取 .pyc 文件, 返回已提取文件路径列表。"""
         os.makedirs(output_dir, exist_ok=True)
         extracted: List[str] = []
 
@@ -361,7 +338,7 @@ class PyInstallerUnpacker:
             size = entry["size"]
 
             safe_name = name.replace("/", os.sep).replace("\\", os.sep)
-            # Prevent path traversal
+            # 防止路径穿越
             if safe_name.startswith(os.sep) or ".." in safe_name:
                 self._logger.warning("Skipping suspicious path: %s", name)
                 continue
@@ -382,7 +359,6 @@ class PyInstallerUnpacker:
         return extracted
 
     def unpack(self, filepath: str, output_dir: str) -> Dict[str, Any]:
-        """完整 PyInstaller 脱壳流水线, 返回含头信息与已提取文件列表的字典。"""
         try:
             with open(filepath, "rb") as fh:
                 data = fh.read()

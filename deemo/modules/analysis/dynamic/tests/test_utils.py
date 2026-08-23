@@ -65,7 +65,7 @@ class TestComputeEntropy:
 
 
 class TestRegionEntropy:
-    """Test region-based entropy computation"""
+    """测试基于区域的熵计算"""
 
     def test_single_region(self):
         """Single window 返回 one value"""
@@ -183,7 +183,7 @@ class TestFormatApiTrace:
 
 
 class TestFileUtilities:
-    """Test file-related 工具集"""
+    """测试文件相关工具集"""
 
     def test_hash_file(self):
         """计算 file hash"""
@@ -218,7 +218,7 @@ class TestFileUtilities:
 
 
 class TestErrorHierarchy:
-    """Test error class hierarchy"""
+    """测试错误类层次结构"""
 
     def test_sandbox_error_is_dynamic_error(self):
         """沙箱Error a subclass DynamicError"""

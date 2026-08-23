@@ -14,15 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class RecoveryMode(str):
-    # Recovery strategy enumeration
-    MANUAL = "manual"           # Operator-driven 恢复
-    AUTO_RETRY = "auto_retry"   # Exponential-backoff 重试
-    SKIP = "skip"               # Discard failing task; preserve 流水线
-    ROLLBACK = "rollback"       # Revert recent valid 检查点
+    # 恢复策略枚举
+    MANUAL = "manual"           # 人工驱动恢复
+    AUTO_RETRY = "auto_retry"   # 指数退避重试
+    SKIP = "skip"               # 丢弃失败任务, 保留流水线
+    ROLLBACK = "rollback"       # 回退至最近有效检查点
 
 
 class SnapshotType(str):
-    """Task-state 快照 分类"""
+    """任务状态快照分类"""
     TASK_START = "task_start"
     TASK_COMPLETE = "task_complete"
     CHECKPOINT = "checkpoint"
@@ -86,7 +86,7 @@ class RecoveryPlan:
 
 
 class CheckpointManager:
-    """Persistent task 检查点 存储 -memory index"""
+    """持久化任务检查点存储 - 内存索引"""
 
     def __init__(self, checkpoint_dir: str = "data/checkpoints"):
         self._checkpoint_dir = Path(checkpoint_dir)
@@ -95,7 +95,7 @@ class CheckpointManager:
         self._lock = Lock()
 
     def create_checkpoint(self, task_id: str, state: Dict[str, Any], context: Dict[str, Any], snapshot_type: str = SnapshotType.CHECKPOINT, parent_snapshot_id: str = "") -> str:
-        # 序列化 current task state a 检查点 disk
+        # 序列化当前任务状态到检查点磁盘文件
         snapshot = TaskSnapshot(
             task_id=task_id,
             snapshot_type=snapshot_type,
@@ -110,12 +110,12 @@ class CheckpointManager:
             self._active_checkpoints[snapshot.snapshot_id] = snapshot
 
         self._persist_snapshot(snapshot)
-        logger.info(f"Checkpoint persisted: {snapshot.snapshot_id}")
+        logger.info(f"检查点已持久化: {snapshot.snapshot_id}")
 
         return snapshot.snapshot_id
 
     def _persist_snapshot(self, snapshot: TaskSnapshot):
-        # Flush 快照 JSON disk
+        # 将快照以 JSON 写入磁盘
         snapshot_dir = self._checkpoint_dir / snapshot.task_id
         snapshot_dir.mkdir(exist_ok=True)
 
@@ -124,7 +124,7 @@ class CheckpointManager:
             json.dump(snapshot.to_dict(), f, indent=2, ensure_ascii=False)
 
     def load_checkpoint(self, snapshot_id: str) -> Optional[TaskSnapshot]:
-        # Hydrate a saved 快照 disk ID
+        # 从磁盘按 ID 加载已保存的快照
         for task_dir in self._checkpoint_dir.iterdir():
             if not task_dir.is_dir():
                 continue
@@ -145,12 +145,12 @@ class CheckpointManager:
                             parent_snapshot_id=data.get("parent_snapshot_id", ""))
 
                 except Exception as e:
-                    logger.error(f"Checkpoint load error: {e}")
+                    logger.error(f"检查点加载失败: {e}")
 
         return None
 
     def get_task_checkpoints(self, task_id: str) -> List[TaskSnapshot]:
-        # 返回 快照s for a task, sorted timestamp
+        # 返回任务的所有快照, 按时间排序
         snapshots = []
         task_dir = self._checkpoint_dir / task_id
 
@@ -171,18 +171,18 @@ class CheckpointManager:
                         ))
 
                 except Exception as e:
-                    logger.error(f"Snapshot parse error: {e}")
+                    logger.error(f"快照解析错误: {e}")
 
         snapshots.sort(key=lambda x: x.timestamp)
         return snapshots
 
     def get_latest_checkpoint(self, task_id: str) -> Optional[TaskSnapshot]:
-        # 返回 recent 快照 for a task, or None
+        # 返回任务最近的快照, 无则返回 None
         checkpoints = self.get_task_checkpoints(task_id)
         return checkpoints[-1] if checkpoints else None
 
     def delete_checkpoint(self, snapshot_id: str) -> bool:
-        # Remove a 快照 disk -memory index
+        # 从磁盘和内存索引中删除快照
         for task_dir in self._checkpoint_dir.iterdir():
             if not task_dir.is_dir():
                 continue
@@ -198,7 +198,7 @@ class CheckpointManager:
         return False
 
     def cleanup_old_checkpoints(self, max_age_days: int = 30) -> int:
-        # 清除 快照s older threshold; 返回 count removed
+        # 清除超过阈值的旧快照, 返回删除数量
         cutoff_time = datetime.now() - timedelta(days=max_age_days)
         deleted_count = 0
 
@@ -213,13 +213,13 @@ class CheckpointManager:
                         snapshot_file.unlink()
                         deleted_count += 1
                 except Exception as e:
-                    logger.error(f"Checkpoint cleanup error: {e}")
+                    logger.error(f"检查点清理错误: {e}")
 
         return deleted_count
 
 
 class RecoveryStrategy:
-    """Abstract base: decides whether an error recoverable"""
+    """抽象基类: 判断错误是否可恢复"""
 
     def can_recover(self, error_record: 'ErrorRecord') -> bool:
         return False
@@ -232,7 +232,7 @@ class RecoveryStrategy:
 
 
 class AutoRetryStrategy(RecoveryStrategy):
-    """Re-attempt failed task exponential backoff"""
+    """指数退避重试失败任务"""
 
     def __init__(self, max_retries: int = 3, delay_seconds: int = 5):
         self.max_retries = max_retries
@@ -264,13 +264,13 @@ class AutoRetryStrategy(RecoveryStrategy):
                 if delay > 0:
                     time.sleep(delay)
 
-                logger.info(f"Retry task: {step['task_id']} (attempt {step['retry_count']})")
+                logger.info(f"重试任务: {step['task_id']}(第 {step['retry_count']} 次)")
 
         return True
 
 
 class SkipStrategy(RecoveryStrategy):
-    """Bypass failing task; 流水线 continues remaining work"""
+    """跳过失败任务, 流水线继续执行剩余工作"""
 
     def can_recover(self, error_record: 'ErrorRecord') -> bool:
         return True
@@ -284,7 +284,7 @@ class SkipStrategy(RecoveryStrategy):
             steps=[{
                 "action": "skip_task",
                 "task_id": error_record.task_id,
-                "reason": "Task skipped by automatic recovery policy"
+                "reason": "任务被自动恢复策略跳过"
             }],
             estimated_time=timedelta(seconds=0)
         )
@@ -292,13 +292,13 @@ class SkipStrategy(RecoveryStrategy):
     def execute_recovery(self, plan: RecoveryPlan) -> bool:
         for step in plan.steps:
             if step["action"] == "skip_task":
-                logger.warning(f"Skip task: {step['task_id']} — {step['reason']}")
+                logger.warning(f"跳过任务: {step['task_id']} - {step['reason']}")
 
         return True
 
 
 class RollbackStrategy(RecoveryStrategy):
-    """Rewind task state last -good 检查点"""
+    """回退任务状态到最后一个良好检查点"""
 
     def __init__(self, checkpoint_manager: CheckpointManager):
         self.checkpoint_manager = checkpoint_manager
@@ -342,13 +342,13 @@ class RollbackStrategy(RecoveryStrategy):
             if step["action"] == "rollback_to_checkpoint":
                 checkpoint = self.checkpoint_manager.load_checkpoint(step["checkpoint_id"])
                 if checkpoint:
-                    logger.info(f"Rollback to checkpoint: {step['checkpoint_id']}")
+                    logger.info(f"回退到检查点: {step['checkpoint_id']}")
                 else:
-                    logger.error(f"Checkpoint not found: {step['checkpoint_id']}")
+                    logger.error(f"未找到检查点: {step['checkpoint_id']}")
                     return False
 
             elif step["action"] == "retry_task":
-                logger.info(f"Retry task: {step['task_id']}")
+                logger.info(f"重试任务: {step['task_id']}")
 
         return True
 
@@ -373,14 +373,14 @@ class ErrorRecord:
 
 class BreakpointRecoveryManager:
     """
-    检查点-based task recovery 调度器
+    基于检查点的任务恢复调度器
 
-    Core 流水线:
-    1. 异常 capture full context 快照
-    2. State 持久化 SQLite + JSON
-    3. 检查点 恢复 parent-child lineage
-    4. Strategy chain: auto-重试 → rollback → skip
-    5. Task-level state audit trail
+    核心流水线:
+    1. 异常捕获并记录完整上下文快照
+    2. 状态持久化到 SQLite + JSON
+    3. 检查点恢复含父-子链路
+    4. 策略链: 自动重试 -> 回退 -> 跳过
+    5. 任务级状态审计轨迹
     """
 
     def __init__(self, checkpoint_dir: str = "data/checkpoints", db_path: str = "data/recovery.db"):
@@ -397,14 +397,14 @@ class BreakpointRecoveryManager:
         self._errors: Dict[str, ErrorRecord] = {}
         self._recovery_callbacks: List[Callable[[ErrorRecord], bool]] = []
         self._lock = Lock()
-        # 循环缓冲区日志 — 最近N条恢复操作记录
+        # 循环缓冲区日志 - 最近N条恢复操作记录
         self._audit_log: deque = deque(maxlen=500)
 
         self._init_database()
         self._load_errors()
 
     def _init_database(self):
-        # Bootstrap SQLite schema: error_records + recovery_history
+        # 初始化 SQLite 表结构: error_records + recovery_history
         conn = sqlite3.connect(str(self._db_path))
 
         cursor = conn.cursor()
@@ -443,7 +443,7 @@ class BreakpointRecoveryManager:
         conn.close()
 
     def _load_errors(self):
-        """Hydrate persisted error records -memory index"""
+        """从持久化存储加载错误记录到内存索引"""
         conn = sqlite3.connect(str(self._db_path))
 
         cursor = conn.cursor()
@@ -467,12 +467,12 @@ class BreakpointRecoveryManager:
                 )
                 self._errors[row[1]] = error_record
             except Exception as e:
-                logger.error(f"Error record deserialization failed: {e}")
+                logger.error(f"错误记录反序列化失败: {e}")
 
         conn.close()
 
     def capture_exception(self, exception: Exception, task_id: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> str:
-        # Wrap an 异常 an ErrorRecord; persist immediately
+        # 将异常封装为 ErrorRecord 并立即持久化
         error_key = f"{type(exception).__name__}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{id(exception)}"[:64]
 
         error_record = ErrorRecord(
@@ -490,17 +490,17 @@ class BreakpointRecoveryManager:
 
         self._persist_error(error_record)
         self._audit_log.append({'type': 'capture', 'error_key': error_key, 'ts': datetime.now().isoformat()})
-        logger.error(f"Exception captured: {error_key} — {exception}")
+        logger.error(f"异常已捕获: {error_key} - {exception}")
 
         return error_key
 
     def _format_traceback(self, exception: Exception) -> str:
-        # Produce a string traceback for 异常
+        # 生成异常的字符串回溯
         import traceback
         return traceback.format_exc()
 
     def _persist_error(self, error_record: ErrorRecord):
-        # Upsert error record SQLite
+        # 将错误记录写入或更新到 SQLite
         conn = sqlite3.connect(str(self._db_path))
 
         cursor = conn.cursor()
@@ -530,7 +530,7 @@ class BreakpointRecoveryManager:
         conn.close()
 
     def generate_recovery_plan(self, error_key: str) -> Optional[RecoveryPlan]:
-        """Select first applicable recovery strategy produce a plan"""
+        """选择首个可用恢复策略并生成恢复计划"""
         error_record = self._errors.get(error_key)
         if not error_record:
             return None
@@ -545,7 +545,7 @@ class BreakpointRecoveryManager:
         return None
 
     def execute_recovery(self, error_key: str) -> bool:
-        # 运行 assigned recovery plan against a captured error
+        # 执行已捕获错误对应的恢复计划
         error_record = self._errors.get(error_key)
         if not error_record:
             return False
@@ -570,14 +570,14 @@ class BreakpointRecoveryManager:
                 if success:
                     error_record.resolved = True
                     self._persist_error(error_record)
-                    logger.info(f"Recovery succeeded: {error_key}")
+                    logger.info(f"恢复成功: {error_key}")
 
                 return success
 
         return False
 
     def _get_strategy_type(self, mode: str):
-        """Map RecoveryMode string strategy class"""
+        """将 RecoveryMode 字符串映射到策略类"""
         mapping = {
             RecoveryMode.AUTO_RETRY: AutoRetryStrategy,
             RecoveryMode.SKIP: SkipStrategy,
@@ -586,7 +586,7 @@ class BreakpointRecoveryManager:
         return mapping.get(mode)
 
     def _record_recovery_history(self, error_key: str, plan: RecoveryPlan, success: bool):
-        # Append an audit entry recovery_history
+        # 向 recovery_history 写入审计条目
         conn = sqlite3.connect(str(self._db_path))
 
         cursor = conn.cursor()
@@ -608,24 +608,24 @@ class BreakpointRecoveryManager:
         conn.close()
 
     def save_checkpoint(self, task_id: str, state: Dict[str, Any], context: Dict[str, Any], snapshot_type: str = SnapshotType.CHECKPOINT) -> str:
-        """Persist a task 检查点; 返回 快照 ID"""
+        """持久化任务检查点, 返回快照 ID"""
         return self._checkpoint_manager.create_checkpoint(task_id, state, context, snapshot_type)
 
     def load_from_checkpoint(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """恢复 task state recent 检查点"""
+        """从最近检查点恢复任务状态"""
         checkpoint = self._checkpoint_manager.get_latest_checkpoint(task_id)
         return checkpoint.state if checkpoint else None
 
     def get_unresolved_errors(self) -> List[ErrorRecord]:
-        # 返回 errors awaiting resolution
+        # 返回待解决的错误
         return [e for e in self._errors.values() if not e.resolved]
 
     def register_recovery_callback(self, callback: Callable[[ErrorRecord], bool]):
-        # Chain an external 处理器 recovery 流水线
+        # 向恢复流水线链入外部处理器
         self._recovery_callbacks.append(callback)
 
     def trigger_recovery(self, error_key: str):
-        # 调用 寄存器ed 回调s until one 处理 error
+        # 调用已注册回调直到某个处理器处理该错误
         error_record = self._errors.get(error_key)
         if not error_record:
             return
@@ -635,19 +635,19 @@ class BreakpointRecoveryManager:
                 if callback(error_record):
                     break
             except Exception as e:
-                logger.error(f"Recovery callback error: {e}")
+                logger.error(f"恢复回调错误: {e}")
 
 # 新增: 审计日志导出
-    # 循环缓冲区保留最近500条操作记录，支持按时间范围和严重度过滤
+    # 循环缓冲区保留最近500条操作记录, 支持按时间范围和严重度过滤
     def export_audit_log(self, max_entries: int = 100) -> List[Dict]:
-        """导出最近N条审计日志 — 用于事后分析和报告生成"""
+        """导出最近N条审计日志 - 用于事后分析和报告生成"""
         return list(self._audit_log)[-max_entries:]
 
     def get_recovery_status(self, error_key: str) -> Dict[str, Any]:
-        # Query recovery state for a specific error key
+        # 查询特定错误键的恢复状态
         error_record = self._errors.get(error_key)
         if not error_record:
-            return {"error": "Error record not found"}
+            return {"error": "未找到错误记录"}
 
         return {
             "error_key": error_record.error_key,
@@ -663,7 +663,7 @@ class BreakpointRecoveryManager:
 _recovery_manager = None
 
 def get_recovery_manager() -> BreakpointRecoveryManager:
-    # 单例 accessor for global recovery manager
+    # 全局恢复管理器单例访问器
     global _recovery_manager
     if _recovery_manager is None:
         _recovery_manager = BreakpointRecoveryManager()
@@ -671,7 +671,7 @@ def get_recovery_manager() -> BreakpointRecoveryManager:
 
 
 class RecoveryContextManager:
-    """Context manager: 进入时自动检查点, 异常时自动恢复。"""
+    """上下文管理器: 进入时自动检查点, 异常时自动恢复"""
 
     def __init__(self, task_id: str, recovery_manager: BreakpointRecoveryManager = None):
         self._task_id = task_id
@@ -690,7 +690,7 @@ class RecoveryContextManager:
             self._save_final_checkpoint()
 
     def _save_initial_checkpoint(self):
-        # 快照 state task execution begins
+        # 任务执行开始时保存状态快照
         checkpoint_id = self._recovery_manager.save_checkpoint(
             self._task_id,
             {"status": "started"},
@@ -700,7 +700,7 @@ class RecoveryContextManager:
         self._checkpoint_ids.append(checkpoint_id)
 
     def _save_final_checkpoint(self):
-        # 快照 state upon successful task completion
+        # 任务成功完成时保存状态快照
         checkpoint_id = self._recovery_manager.save_checkpoint(
             self._task_id,
             {"status": "completed"},
@@ -711,7 +711,7 @@ class RecoveryContextManager:
         self._checkpoint_ids.append(checkpoint_id)
 
     def save_progress(self, progress: float, state: Optional[Dict[str, Any]] = None):
-        # Mid-execution incremental 检查点
+        # 执行中途增量检查点
         checkpoint_id = self._recovery_manager.save_checkpoint(
             self._task_id,
             {"status": "in_progress", "progress": progress, **(state or {})},
@@ -723,13 +723,13 @@ class RecoveryContextManager:
 
 
 def recover_from_checkpoint(task_id: str) -> Optional[Dict[str, Any]]:
-    # Convenience: 恢复 task state latest 检查点
+    # 便捷函数: 从最近检查点恢复任务状态
     recovery_manager = get_recovery_manager()
     return recovery_manager.load_from_checkpoint(task_id)
 
 
 def setup_recovery_handlers():
-    # 寄存器 default auto-recovery 回调 (up 3 重试)
+    # 注册默认自动恢复回调(最多重试3次)
     recovery_manager = get_recovery_manager()
 
     def auto_recovery_callback(error_record: ErrorRecord) -> bool:

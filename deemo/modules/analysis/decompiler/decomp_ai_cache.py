@@ -1,12 +1,3 @@
-"""Cache management for decompilation results.
-
-Provides LRU in-memory and on-disk dual-level cache for decompilation
-results and external API responses. Includes rate limiting for API calls.
-
-All cache-related module-level variables and functions extracted from
-decomp_ai.py to keep the core module focused on business logic.
-"""
-
 import os
 import json
 import time
@@ -20,8 +11,6 @@ from config import Config
 logger = logging.getLogger(__name__)
 
 
-# Cache module-level variables
-
 DECOMP_CACHE: Dict[str, Dict[str, Any]] = {}
 DECOMP_CACHE_DIR = os.path.join(os.getcwd(), '.deemo_cache')
 API_CACHE_DIR = os.path.join(os.getcwd(), '.api_cache')
@@ -29,8 +18,6 @@ API_RATE_LIMIT = getattr(Config, 'EXTERNAL_API_RATE_LIMIT', 10)
 _last_api_call_time = 0.0
 _api_call_count = 0
 
-
-# Utility
 
 def compute_binary_hash(binary_path: str) -> Optional[str]:
     # 计算二进制文件的SHA256哈希值，失败返回None
@@ -47,8 +34,6 @@ def compute_binary_hash(binary_path: str) -> Optional[str]:
         logger.debug(f"计算二进制哈希失败: {e}")
         return None
 
-
-# Internal helpers
 
 def _ensure_cache_dir() -> None:
     """
@@ -67,22 +52,10 @@ def _format_size(size: int) -> str:
     return f"{size:.2f} TB"
 
 
-# Legacy disk-cache CRC validation (deprecated in v2)
-# def _validate_cache_integrity(cache_file):
-#     with open(cache_file, 'rb') as f:
-#         raw = f.read()
-#         expected_crc = struct.unpack('>I', raw[-4:])[0]
-#         actual_crc = zlib.crc32(raw[:-4]) & 0xFFFFFFFF
-#         return expected_crc == actual_crc
 
-# Decompilation cache
 
 def get_cached_decompilation(binary_hash: str, func_name: str) -> Optional[Dict[str, Any]]:
-    """Retrieve decompilation result from persistent cache.
-
-    >>> binary_hash = compute_binary_hash('binary.exe')
-    >>> result = get_cached_decompilation(binary_hash, 'main')
-    """
+    """从持久化缓存获取反编译结果"""
     if not binary_hash or not func_name:
         return None
 
@@ -151,7 +124,6 @@ def cache_decompilation(
         return False
 
 
-# API cache
 
 def get_cached_api_response(api_key: str, ttl: int = None) -> Optional[Any]:
     """从缓存获取 API 响应"""
@@ -210,7 +182,6 @@ def cache_api_response(api_key: str, response: Any) -> bool:
         return False
 
 
-# Rate limiting
 
 def check_api_rate_limit() -> bool:
     """
@@ -251,7 +222,6 @@ def wait_for_api_rate_limit(timeout: float = 10.0) -> bool:
     return False
 
 
-# Cache cleanup
 
 def clear_decomp_cache() -> int:
     """清除所有反编译缓存"""

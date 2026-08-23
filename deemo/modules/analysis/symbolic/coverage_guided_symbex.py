@@ -1,26 +1,26 @@
-"""覆盖率-guided symbolic exploration genetic greedy strategies
+"""覆盖率引导的符号探索, 支持遗传与贪心策略
 
-维护 a block/edge 覆盖率 bitmap 使用 score path candidates
-支持 five exploration strategies:
-- GREEDY: always pick highest-scoring unexplored path
-- GENETIC: evolve a population input seeds via crossover/变异
-- RANDOM: uniform random selection
-- HYBRID: interleave genetic (5th step) greedy
-- EPSILON_GREEDY: probability epsilon pick random, else greedy
+维护基本块/边覆盖率位图, 用评分机制选择路径候选。
+支持五种探索策略:
+- GREEDY: 始终选择得分最高的未探索路径
+- GENETIC: 通过交叉/变异进化输入种子种群
+- RANDOM: 均匀随机选择
+- HYBRID: 交替使用遗传 (每5步) 与贪心
+- EPSILON_GREEDY: 以概率 epsilon 随机选择, 否则贪心
 
-genetic 优化器 使用 roulette-wheel selection, single-point crossover
-per-byte 变异. Fitness = 覆盖率_gain * 0.7 + risk_score * 0.3
+遗传优化器使用轮盘赌选择、单点交叉、逐字节变异。
+适应度 = 覆盖率增益 × 0.7 + 风险分 × 0.3
 
-epsilon-greedy 策略的意义：纯贪心策略容易陷入局部最优——总是选最高分的路径
-会导致探索集中在程序的一个子区域。epsilon 参数以固定概率引入随机探索
-在 漏洞利用ation 与 exploration 之间取得平衡，参考 Sutton & Barto
+epsilon-greedy 策略的意义: 纯贪心策略容易陷入局部最优 —
+总是选最高分的路径会导致探索集中在程序的子区域。
+epsilon 参数以固定概率引入随机探索, 在利用与探索之间取得平衡,
+参考 Sutton & Barto
 
-AdaptiveEpsilon 用指数衰减替代硬编码 epsilon，使探索前期更激进、后期更精耕
-CoverageDeltaTracker 用环形缓冲区追踪每步增量，检测覆盖衰退并自动触发变异增强
-
-StreamingCoverageReporter 将覆盖快照以异步生成器形式产出，便于实时监控面板消费
+AdaptiveEpsilon 用指数衰减替代硬编码 epsilon, 使探索前期更激进、后期更精耕
+CoverageDeltaTracker 用环形缓冲区追踪每步增量, 检测覆盖衰退并自动触发变异增强
+StreamingCoverageReporter 将覆盖快照以异步生成器形式产出, 便于实时监控面板消费
 DictionaryGenerator 从高适应度遗传种子中提取 magic byte 序列生成 AFL 字典
-CrashSignatureBuilder 构建 crash 去重签名用于崩溃分组与分类
+CrashSignatureBuilder 构建崩溃去重签名用于崩溃分组与分类
 """
 
 import logging
@@ -42,7 +42,7 @@ _log = logging.getLogger(__name__)
 
 
 class ExplorationStrategy(Enum):
-    """Available path selection strategies"""
+    """可用的路径选择策略"""
     GREEDY = "greedy"
     GENETIC = "genetic"
     RANDOM = "random"
@@ -51,7 +51,7 @@ class ExplorationStrategy(Enum):
 
 
 class CoverageMetric(Enum):
-    """Granularity 覆盖率 measurement"""
+    """覆盖率度量的粒度"""
     BLOCK = "block"
     EDGE = "edge"
     PATH = "path"
@@ -60,7 +60,7 @@ class CoverageMetric(Enum):
 
 @dataclass
 class CoverageInfo:
-    """快照 covered blocks, edges, functions, paths"""
+    """已覆盖块、边、函数、路径的快照"""
     blocks: Set[int] = field(default_factory=set)
     edges: Set[Tuple[int, int]] = field(default_factory=set)
     functions: Set[str] = field(default_factory=set)
@@ -69,7 +69,7 @@ class CoverageInfo:
     total_edges: int = 0
 
     def coverage_ratio(self, metric: CoverageMetric) -> float:
-        """Fraction target space covered"""
+        """返回目标空间的覆盖比例"""
         if metric == CoverageMetric.BLOCK:
             return len(self.blocks) / max(1, self.total_blocks)
         elif metric == CoverageMetric.EDGE:
@@ -81,7 +81,7 @@ class CoverageInfo:
 
 @dataclass
 class PathState:
-    """A candidate path scoring metadata for greedy selection"""
+    """贪心选择的路径候选及其评分元数据"""
     path_id: str
     constraints: List = field(default_factory=list)
     depth: int = 0
@@ -92,13 +92,13 @@ class PathState:
     metadata: Dict = field(default_factory=dict)
 
     def score(self) -> float:
-        """Weighted composite: 覆盖率 gain dominates, risk breaks ties"""
+        """加权综合分: 覆盖率增益主导, 风险分打破平局"""
         return self.coverage_gain * 0.6 + self.risk_score * 0.4
 
 
 @dataclass
 class GeneticSeed:
-    """One individual genetic population: input bytes + fitness"""
+    """遗传种群中的一个个体: 输入字节 + 适应度"""
     input_bytes: bytes
     fitness: float = 0.0
     coverage_bits: int = 0
@@ -107,7 +107,7 @@ class GeneticSeed:
     byte_entropy: float = 0.0
 
     def compute_id(self) -> str:
-        """Short hash for lineage tracking"""
+        """用于谱系追踪的短哈希"""
         return hashlib.sha256(self.input_bytes).hexdigest()[:16]
 
 
@@ -125,10 +125,9 @@ def _entropy_of_bytes(buf: bytes) -> float:
 
 
 class CoverageTracker:
-    """线程安全 block/edge recorder a sliding history window for
-    computing recent 覆盖率 velocity
+    """线程安全的块/边记录器, 维护滑动历史窗口用于计算近期覆盖率速度
 
-    增强：增加停滞检测计数器 `_stagnant_steps`，用于触发自适应突变率
+    停滞检测计数器 `_stagnant_steps` 用于触发自适应突变率
     """
 
     def __init__(self):
@@ -139,7 +138,7 @@ class CoverageTracker:
         self._last_block_count: int = 0
 
     def record(self, blocks: Set[int], edges: Optional[Set[Tuple[int, int]]] = None):
-        """Record newly covered blocks edges; 返回 count new blocks"""
+        """记录新覆盖的块与边, 返回新增块数"""
         with self._lock:
             prev_blocks = len(self._coverage.blocks)
             prev_edges = len(self._coverage.edges)
@@ -167,7 +166,7 @@ class CoverageTracker:
 
     @property
     def coverage(self):
-        """Current 覆盖率 快照"""
+        """当前覆盖率快照"""
         return self._coverage
 
     @property
@@ -175,18 +174,18 @@ class CoverageTracker:
         return self._stagnant_steps
 
     def get_current(self) -> CoverageInfo:
-        """线程安全 copy current 覆盖率"""
+        """线程安全地返回当前覆盖率副本"""
         with self._lock:
             return self._coverage
 
     def set_total(self, total_blocks: int, total_edges: int):
-        """Set denominator for 覆盖率 ratio calculations"""
+        """设置覆盖率比例计算的分母"""
         with self._lock:
             self._coverage.total_blocks = total_blocks
             self._coverage.total_edges = total_edges
 
     def coverage_gain_recent(self, window: int = 10) -> float:
-        """Average block 覆盖率 gain over last `window` 快照s"""
+        """最近 window 个快照的平均块覆盖率增量"""
         with self._lock:
             if len(self._history) < 2:
                 return 0.0
@@ -206,14 +205,13 @@ class CoverageTracker:
 # peak_delta 记录单步最大增益，all_time_peak 记录整个探索周期的峰值
 # 两者区分用于不同粒度的衰退判断
 class CoverageDeltaTracker:
-    """Ring-缓冲区 tracker per-step 覆盖率 deltas
+    """环形缓冲区追踪每步覆盖率增量
 
-    存储 new_blocks per exploration step a fixed-size deque (cov_ring)
-    trailing 10-step mean falls below 0.1 * all_time_peak
-    boost signal fires — indicating exploration saturated needs
-    a larger perturbation escape local optimum
+    在固定大小 deque (cov_ring) 中存储每步新增块数,
+    当最近 trigger_window 步均值低于 trigger_ratio × 历史峰值时
+    触发增强信号 — 表示探索已饱和, 需要更大的扰动来逃离局部最优
 
-    环形缓冲区最大长度 50，触发窗口 10，触发比率 0.1
+    环形缓冲区最大长度 50, 触发窗口 10, 触发比率 0.1
     """
 
     def __init__(self, window_size: int = 50, trigger_window: int = 10,
@@ -226,9 +224,9 @@ class CoverageDeltaTracker:
         self.all_time_peak: float = 0.0
 
     def record(self, new_blocks: int):
-        """Push a new delta sample ring 缓冲区
+        """将新增量样本推入环形缓冲区
 
-        同步更新 peak_delta（单步记录）和 all_time_peak（全局记录）
+        同步更新 peak_delta (单步记录) 和 all_time_peak (全局记录)
         """
         self.cov_ring.append(new_blocks)
         if new_blocks > self.peak_delta:
@@ -237,11 +235,11 @@ class CoverageDeltaTracker:
             self.all_time_peak = float(new_blocks)
 
     def should_trigger_boost(self) -> bool:
-        """返回 True recent 覆盖率 velocity collapsed
+        """覆盖率速度崩塌时返回 True
 
-        触发条件：cov_ring 至少已填充 trigger_window 个样本
-        且最近 trigger_window 步的均值 < trigger_ratio * all_time_peak
-        这表示当前探索效率已经严重低于历史水平
+        触发条件: cov_ring 至少已填充 trigger_window 个样本,
+        且最近 trigger_window 步均值 < trigger_ratio × all_time_peak,
+        表示当前探索效率已严重低于历史水平
         """
         if len(self.cov_ring) < self._trigger_window:
             return False
@@ -252,7 +250,7 @@ class CoverageDeltaTracker:
         return trailing_mean < self._trigger_ratio * self.all_time_peak
 
     def reset_peak_delta(self):
-        """重置 single-step peak (useful exploration phases)"""
+        """重置单步峰值 (用于探索阶段切换)"""
         self.peak_delta = 0.0
 
 
@@ -265,12 +263,12 @@ class CoverageDeltaTracker:
 # 后期（step 大）epsilon 衰减到 0.02，几乎纯贪心，精耕高收益路径
 # 30.0 的衰减常数意味着大约 90 步后 epsilon 降至 0.02 附近
 class AdaptiveEpsilon:
-    """Exponential decay epsilon for epsilon-greedy exploration
+    """epsilon-greedy 探索的指数衰减 epsilon
 
-    Replaces a hardcoded epsilon constant a 调度 favors
-    exploration early 漏洞利用ation late 覆盖率 saturates
+    用调度函数替代固定 epsilon 常数: 早期偏向探索,
+    后期覆盖率饱和时偏向利用
 
-    Formula: eps = 0.02 + (0.15 - 0.02) * exp(-step / 30.0)
+    公式: eps = 0.02 + (0.15 - 0.02) * exp(-step / 30.0)
     """
 
     def __init__(self, min_eps: float = 0.02, max_eps: float = 0.15,
@@ -288,21 +286,20 @@ class AdaptiveEpsilon:
         return self._max_eps
 
     def get(self, step: int) -> float:
-        """计算 epsilon for exploration step
+        """计算指定探索步的 epsilon
 
-        步数为 0 时返回 max_eps，随 step 增加指数衰减至 min_eps
+        步数为 0 时返回 max_eps, 随 step 增加指数衰减至 min_eps
         """
         return self._min_eps + (self._max_eps - self._min_eps) * math.exp(
             -step / max(1.0, self.eps_decay_rate))
 
 
 class GeneticPathOptimizer:
-    """Roulette-wheel selection, single-point crossover, per-byte 变异
-    Elitism preserves top N individuals generation
+    """轮盘赌选择、单点交叉、逐字节变异; 精英保留每代前 N 个个体
 
-    增强：停滞检测触发自适应突变率提升——连续 20 步无覆盖率增长时
-    临时将 mutation_rate 翻倍 5 轮，然后恢复原值
-    原理：种群可能过早收敛，需要更大的基因扰动来跳出局部最优
+    停滞检测触发自适应突变率提升 — 连续 20 步无覆盖率增长时
+    临时将 mutation_rate 翻倍 5 轮后恢复原值。
+    原理: 种群可能过早收敛, 需要更大的基因扰动跳出局部最优
     """
 
     def __init__(self, population_size: int = 50, mutation_rate: float = 0.1,
@@ -333,7 +330,7 @@ class GeneticPathOptimizer:
         return self._elitism
 
     def trigger_mutation_boost(self):
-        """externally 覆盖率 stagnation detected"""
+        """外部检测到覆盖率停滞时调用"""
         if self._boost_rounds_remaining == 0:
             self._mutation_rate = min(0.5, self._base_mutation_rate * 2.0)
             self._boost_rounds_remaining = 5
@@ -345,21 +342,21 @@ class GeneticPathOptimizer:
                 self._mutation_rate = self._base_mutation_rate
 
     def initialize(self, seed_inputs: List[bytes]):
-        """Seed population a list initial byte inputs"""
+        """用初始字节输入列表初始化种群"""
         self.population = [
             GeneticSeed(input_bytes=s, generation=0, byte_entropy=_entropy_of_bytes(s))
             for s in seed_inputs[:self.population_size]
         ]
 
     def evaluate(self, evaluator):
-        """Score individual using provided fitness evaluator"""
+        """用提供的适应度评估器对个体评分"""
         for seed in self.population:
             fitness_val, cov_bits = evaluator(seed.input_bytes)
             seed.fitness = fitness_val + seed.byte_entropy * 0.05
             seed.coverage_bits = cov_bits
 
     def select(self) -> Tuple[GeneticSeed, GeneticSeed]:
-        """Roulette-wheel selection: probability proportional fitness"""
+        """轮盘赌选择: 概率正比于适应度"""
         total_fitness = sum(s.fitness for s in self.population)
         if total_fitness == 0:
             return tuple(random.sample(self.population, 2))
@@ -376,7 +373,7 @@ class GeneticPathOptimizer:
         return _pick(), _pick()
 
     def crossover(self, parent1: GeneticSeed, parent2: GeneticSeed) -> bytes:
-        """Single-point crossover a random byte index"""
+        """在随机字节索引处单点交叉"""
         if random.random() > self.crossover_rate:
             return parent1.input_bytes
         if len(parent1.input_bytes) == 0 or len(parent2.input_bytes) == 0:
@@ -385,7 +382,7 @@ class GeneticPathOptimizer:
         return parent1.input_bytes[:cut] + parent2.input_bytes[cut:]
 
     def mutate(self, seed: bytes) -> bytes:
-        """Per-byte 变异: flip byte probability 变异_rate"""
+        """逐字节变异: 以 mutation_rate 概率翻转每个字节"""
         arr = bytearray(seed)
         for i in range(len(arr)):
             if random.random() < self._mutation_rate:
@@ -393,7 +390,7 @@ class GeneticPathOptimizer:
         return bytes(arr)
 
     def evolve(self):
-        """Produce next generation: elitism + selected offspring"""
+        """产生下一代: 精英保留 + 选择后代"""
         self.generation += 1
         self._tick_boost()
         new_pop = sorted(self.population, key=lambda s: s.fitness, reverse=True)[:self.elitism]
@@ -413,15 +410,14 @@ class GeneticPathOptimizer:
         self.population = new_pop
 
     def get_best(self) -> Optional[GeneticSeed]:
-        """返回 fittest individual, or None population empty"""
+        """返回适应度最高的个体, 种群为空时返回 None"""
         if not self.population:
             return None
         return max(self.population, key=lambda s: s.fitness)
 
 
 class GreedyPathSelector:
-    """维护 a set unexplored path candidates always picks
-    highest-scoring one"""
+    """维护未探索路径候选集合, 始终选择得分最高的路径"""
 
     def __init__(self, danger_threshold: float = 0.7):
         self._danger_threshold = danger_threshold
@@ -433,7 +429,7 @@ class GreedyPathSelector:
         return self._danger_threshold
 
     def add_path(self, path_id: str, constraints: List[str], depth: int = 0):
-        """寄存器 a new path candidate"""
+        """注册新的路径候选"""
         with self._lock:
             if path_id not in self.paths:
                 self.paths[path_id] = PathState(
@@ -444,7 +440,7 @@ class GreedyPathSelector:
                 )
 
     def update_path(self, path_id: str, coverage_gain: float = 0.0, risk_score: float = 0.0):
-        """更新 score metadata for an existing path"""
+        """更新已有路径的评分元数据"""
         with self._lock:
             if path_id in self.paths:
                 self.paths[path_id].coverage_gain = coverage_gain
@@ -452,7 +448,7 @@ class GreedyPathSelector:
                 self.paths[path_id].timestamp = time.time()
 
     def select_next(self, exclude: Optional[Set[str]] = None) -> Optional[str]:
-        """返回 highest-scoring unexplored path, marking explored"""
+        """返回得分最高的未探索路径, 并标记为已探索"""
         with self._lock:
             candidates = [
                 pid for pid, state in self.paths.items()
@@ -478,20 +474,19 @@ class GreedyPathSelector:
             return chosen
 
     def mark_explored(self, path_id: str):
-        """Mark a path explored selecting"""
+        """标记路径为已探索 (不经过选择)"""
         with self._lock:
             if path_id in self.paths:
                 self.paths[path_id].explored = True
 
 
 class CoverageGuidedSymbolicExecutor:
-    """调度器 wires 覆盖率 tracking, path selection, genetic
-    优化 a single exploration loop
+    """调度器: 组合覆盖率追踪、路径选择与遗传优化为单一探索循环
 
-    增强要点：
+    增强要点:
     - epsilon-greedy 策略以 AdaptiveEpsilon 指数衰减概率随机探索
-    - 覆盖率DeltaTracker 环形缓冲区检测覆盖衰退，自动触发 变异 boost
-    - 连续 20 步无覆盖率增长时，临时切换到随机策略 5 轮
+    - CoverageDeltaTracker 环形缓冲区检测覆盖衰退, 自动触发变异增强
+    - 连续 20 步无覆盖率增长时, 临时切换到随机策略 5 轮
     """
 
     _STAGNATION_THRESHOLD = 20
@@ -531,12 +526,12 @@ class CoverageGuidedSymbolicExecutor:
 
     @property
     def delta_tracker(self) -> CoverageDeltaTracker:
-        """Expose per-step delta ring 缓冲区 for external inspection"""
+        """暴露每步增量环形缓冲区供外部检查"""
         return self._delta_tracker
 
     @property
     def adaptive_epsilon(self) -> AdaptiveEpsilon:
-        """Expose adaptive epsilon 调度 for external inspection"""
+        """暴露自适应 epsilon 调度供外部检查"""
         return self._adaptive_epsilon
 
     @property
@@ -548,8 +543,7 @@ class CoverageGuidedSymbolicExecutor:
         return self._exploration_count
 
     def set_target_binary(self, binary_path: str, total_blocks: int = 0, total_edges: int = 0):
-        """Set binary under analysis total block/edge counts for
-        覆盖率 ratio calculation"""
+        """设置分析目标二进制及其总块/边数, 用于覆盖率比例计算"""
         self._binary_path = binary_path
         self._coverage_tracker.set_total(total_blocks, total_edges)
 
@@ -557,11 +551,11 @@ class CoverageGuidedSymbolicExecutor:
     # 两路触发源：覆盖率Tracker 的 stagnant_steps 计数器
     # 以及 CoverageDeltaTracker 的环形缓冲区衰退检测
     def _check_stagnation(self):
-        """Evaluate stagnation two independent signals react
+        """基于两个独立信号评估停滞并做出反应
 
-        信号1 — 覆盖率Tracker.stagnant_steps：连续无新块覆盖的步数
-        信号2 — 覆盖率DeltaTracker.should_trigger_boost：环形缓冲区
-        中最近10步均值低于历史峰值10%，说明覆盖速度已经断崖式下跌
+        信号1 — CoverageTracker.stagnant_steps: 连续无新块覆盖的步数
+        信号2 — CoverageDeltaTracker.should_trigger_boost: 环形缓冲区
+        中最近10步均值低于历史峰值10%, 说明覆盖速度已断崖式下跌
 
         任一信号触发即启动变异增强和随机探索爆发
         """
@@ -575,7 +569,7 @@ class CoverageGuidedSymbolicExecutor:
             self._random_burst_remaining = 5
 
     def _greedy_explore(self) -> Dict[str, Any]:
-        """Select simulate next greedy path candidate"""
+        """选择并模拟下一个贪心路径候选"""
         if self._random_burst_remaining > 0:
             self._random_burst_remaining -= 1
             next_path = self._greedy_selector.select_random()
@@ -593,7 +587,7 @@ class CoverageGuidedSymbolicExecutor:
         return result
 
     def _genetic_explore(self) -> Dict[str, Any]:
-        """Evaluate population, simulate best seed, evolve"""
+        """评估种群, 模拟最佳种子, 进化下一代"""
         if not self._genetic_optimizer.population:
             return {'status': 'waiting', 'path': None}
 
@@ -615,16 +609,16 @@ class CoverageGuidedSymbolicExecutor:
         return {'status': 'evolving', 'path': None}
 
     def _hybrid_explore(self) -> Dict[str, Any]:
-        """Interleave: 5th step genetic, rest greedy"""
+        """交替: 每5步遗传, 其余贪心"""
         if self._exploration_count % 5 == 0:
             return self._genetic_explore()
         return self._greedy_explore()
 
     def _epsilon_greedy_explore(self) -> Dict[str, Any]:
-        """epsilon-greedy: 以 AdaptiveEpsilon 指数衰减概率随机探索，其余贪心
+        """epsilon-greedy: 以 AdaptiveEpsilon 指数衰减概率随机探索, 其余贪心
 
-        与硬编码 epsilon 不同，AdaptiveEpsilon 随 exploration_count 增加
-        自动衰减：前期偏向探索（eps 接近 0.15），后期偏向利用（eps 接近 0.02）
+        与硬编码 epsilon 不同, AdaptiveEpsilon 随 exploration_count 增加
+        自动衰减: 前期偏向探索 (eps 接近 0.15), 后期偏向利用 (eps 接近 0.02)
         """
         eps = self._adaptive_epsilon.get(self._exploration_count)
         if random.random() < eps:
@@ -643,10 +637,10 @@ class CoverageGuidedSymbolicExecutor:
         return result
 
     def _evaluate_input(self, input_bytes: bytes) -> Tuple[float, int]:
-        """Fitness function for genetic 优化
+        """遗传优化器的适应度函数
 
-        注：fitness 中加入字节熵奖励项（权重 0.05），在 _genetic_优化器.evaluate()
-        中叠加，此处返回原始值"""
+        fitness 中加入字节熵奖励项 (权重 0.05), 在
+        GeneticPathOptimizer.evaluate() 中叠加, 此处返回原始值"""
         result = self._simulate_input_execution(input_bytes)
         cov_delta = result.get('coverage_gain', 0.0)
         risk = result.get('risk_score', 0.0)
@@ -654,7 +648,7 @@ class CoverageGuidedSymbolicExecutor:
         return fitness, result.get('new_blocks', 0)
 
     def _simulate_path_execution(self, path_id: str) -> Dict[str, Any]:
-        """Simulate executing a path; stochastically 构造 覆盖率 delta"""
+        """模拟路径执行, 随机构造覆盖率增量"""
         new_blocks = random.randint(0, 5)
         new_edges = random.randint(0, 3)
         risk_score = random.random()
@@ -677,7 +671,7 @@ class CoverageGuidedSymbolicExecutor:
         }
 
     def _simulate_input_execution(self, input_bytes: bytes) -> Dict[str, Any]:
-        """Simulate executing a concrete input; stochastically 构造 覆盖率 delta"""
+        """模拟具体输入执行, 随机构造覆盖率增量"""
         new_blocks = random.randint(0, 10)
         new_edges = random.randint(0, 5)
         self._coverage_tracker.record(
@@ -697,7 +691,7 @@ class CoverageGuidedSymbolicExecutor:
         }
 
     def explore(self, iterations: int = 100) -> Dict[str, Any]:
-        """运行 exploration loop for a fixed number iterations"""
+        """运行固定步数的探索循环"""
         results = []
         dispatch = {
             ExplorationStrategy.GREEDY: self._greedy_explore,
@@ -739,7 +733,7 @@ class CoverageGuidedSymbolicExecutor:
         return explorer()
 
     def add_seed_input(self, input_bytes: bytes):
-        """Inject a concrete input genetic population"""
+        """将具体输入注入遗传种群"""
         self._genetic_optimizer.population.append(GeneticSeed(
             input_bytes=input_bytes,
             generation=self._genetic_optimizer.generation,
@@ -747,11 +741,11 @@ class CoverageGuidedSymbolicExecutor:
         ))
 
     def add_path_candidate(self, path_id: str, constraints: List[str], depth: int = 0):
-        """寄存器 a symbolic path for greedy selection"""
+        """注册符号路径供贪心选择"""
         self._greedy_selector.add_path(path_id, constraints, depth)
 
     def get_stats(self) -> Dict[str, Any]:
-        """返回 current exploration 覆盖率 statistics"""
+        """返回当前探索与覆盖率统计"""
         coverage = self._coverage_tracker.get_current()
         current_eps = self._adaptive_epsilon.get(self._exploration_count)
         return {
@@ -783,15 +777,14 @@ class CoverageGuidedSymbolicExecutor:
 # stop_checker 回调允许外部在每次 yield 后检查是否应终止流
 # 返回 None 表示正常退出，否则返回哨兵值
 class StreamingCoverageReporter:
-    """Yield 覆盖率 快照s an async generator for real-time 消费者s
+    """以异步生成器产出覆盖率快照, 供实时消费者使用
 
-    快照 包含 {step, block_覆盖率, edge_覆盖率
-    new_edges_this_step, strategy_used}. generator polls executor
-    periodically, yielding a diff 快照 time new 覆盖率 data
-    available
+    快照包含 {step, block_coverage, edge_coverage,
+    new_edges_this_step, strategy_used}。生成器定期轮询 executor,
+    在有新覆盖率数据时产出差异快照。
 
-    stop_checker an optional 回调 invoked yield
-    返回 a truthy value, generator exits value
+    stop_checker 为可选回调, 每次 yield 后调用,
+    返回真值时生成器退出
     """
 
     def __init__(self, poll_interval_sec: float = 0.1):
@@ -843,10 +836,10 @@ class StreamingCoverageReporter:
     def stream_sync(self, executor: CoverageGuidedSymbolicExecutor,
                     stop_checker: Optional[Callable[[], Any]] = None
                     ) -> Iterator[Dict[str, Any]]:
-        """Synchronous generator version for non-async 消费者s
+        """非异步消费者的同步生成器版本
 
-        Yields same 快照 dict structure stream()
-        Useful 消费者 使用 asyncio
+        产出与 stream() 相同的快照结构,
+        适用于不使用 asyncio 的消费者
         """
         step = 0
         while True:
@@ -891,12 +884,11 @@ class StreamingCoverageReporter:
 # min_occurrences 控制子序列在单一种子内至少出现多少次才被收录
 # 默认为 2，避免收录偶然的单次匹配
 class DictionaryGenerator:
-    """提取 magic byte sequences high-fitness genetic seeds
-    输出 an AFL-compatible dictionary file
+    """从高适应度遗传种子中提取 magic byte 序列, 输出 AFL 兼容字典
 
-    seed's input_bytes scanned a sliding window (length 2-8)
-    查找 frequently recurring byte subsequences. written
-    AFL dictionary tokens names derived seed lineage
+    种子的 input_bytes 通过滑动窗口 (长度 2-8) 扫描,
+    查找高频重复子序列, 写入 AFL 字典 token,
+    名称源自种子谱系
     """
 
     _MIN_MAGIC_LEN = 2
@@ -925,11 +917,10 @@ class DictionaryGenerator:
         return tokens
 
     def generate(self, optimizer: GeneticPathOptimizer) -> List[Dict[str, str]]:
-        """提取 magic tokens top-K fittest seeds
+        """从适应度最高的 top-K 种子中提取 magic token
 
         返回:
-        List dicts keys 'name' (lineage-based token name)
-        'value' (escaped hex string suitable for AFL dictionary)
+            字典列表, 每项含 'name' (谱系标签) 和 'value' (转义 hex 字符串)
         """
         if not optimizer.population:
             return []
@@ -1015,22 +1006,21 @@ class DictionaryGenerator:
 # 输入变体淹没 triage 队列
 @dataclass
 class CrashSignature:
-    """Deduplication 签名 for grouping similar crashes
+    """崩溃去重签名, 用于分组相似崩溃
 
-    Composed crash_address (int), crash_type (str), a hash
-    top 3 栈帧 addresses (str). Two crashes same 签名
-    considered duplicates same root cause
+    由 crash_address (int)、crash_type (str)、栈顶 3 帧地址哈希 (str) 组成。
+    签名相同的崩溃视为同源根因
     """
     crash_address: int
     crash_type: str
     top_3_stack_frames_hash: str
 
     def to_key(self) -> str:
-        """返回 a compound key string suitable for dict/set deduplication"""
+        """返回复合键字符串, 用于 dict/set 去重"""
         return f"{self.crash_address:x}:{self.crash_type}:{self.top_3_stack_frames_hash}"
 
     def to_dict(self) -> Dict[str, Any]:
-        """序列化 a plain dict for JSON/记录 输出"""
+        """序列化为普通 dict, 用于 JSON 输出"""
         return {
             'crash_address': hex(self.crash_address),
             'crash_type': self.crash_type,
@@ -1039,16 +1029,15 @@ class CrashSignature:
 
 
 class CrashSignatureBuilder:
-    """构建 crash deduplication 签名s crash metadata
+    """构建崩溃去重签名
 
-    A 签名 derived {crash_address, crash_type
-    top_3_栈_frames_hash}. 启用 grouping deduplication
-    crashes storing full 栈 traces
+    签名由 {crash_address, crash_type, top_3_stack_frames_hash} 派生。
+    支持对崩溃分组去重, 避免存储完整栈回溯
 
-    使用方式:
-    builder = Crash签名Builder()
-    sig = builder.构建(0x7fffdead, "SIGSEGV", [0x401000, 0x402000, 0x403000,.])
-    key = sig.to_key() # 用于 crash bucket 的 dict key
+    用法:
+    builder = CrashSignatureBuilder()
+    sig = builder.build(0x7fffdead, "SIGSEGV", [0x401000, 0x402000, 0x403000])
+    key = sig.to_key() # 作为崩溃分桶的 dict key
     """
 
     _TOP_FRAMES_COUNT = 3
@@ -1112,7 +1101,7 @@ def run_coverage_guided_symbex(
     iterations: int = 100,
     seeds: Optional[List[bytes]] = None
 ) -> Dict[str, Any]:
-    """One-shot: 配置ure executor, seed, 运行 exploration, 返回 stats"""
+    """一次性接口: 配置执行器, 注入种子, 运行探索, 返回统计"""
     try:
         strat = ExplorationStrategy(strategy.lower())
     except ValueError:

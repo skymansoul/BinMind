@@ -39,7 +39,7 @@ from modules.analysis.dynamic.src.vmi import (
 
 
 class TestFullPipeline:
-    """Test full analysis 流水线 end-to-end"""
+    """测试完整分析流水线端到端"""
 
     def test_binary_trace_pipeline(self):
         """运行 a complete trace analysis 流水线"""
@@ -80,7 +80,7 @@ class TestFullPipeline:
 
 
 class TestMemoryIntegration:
-    """Test memory forensics features"""
+    """测试内存取证功能"""
 
     def test_dump_format_detection(self):
         """检测 raw 格式化 for random data"""
@@ -156,7 +156,7 @@ class TestEmulationIntegration:
 
 
 class TestRecoveryIntegration:
-    """Test recovery strategies"""
+    """测试恢复策略"""
 
     def test_recovery_retry(self):
         """RecoveryStrategy suggest 重试 unknown errors"""

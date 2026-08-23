@@ -54,7 +54,6 @@ class CVEMapping:
     description: str = ""
 
 class FunctionHasher:
-    """Function fingerprint generator."""
 
     def __init__(self, r2_path: str = "r2"):
         self.r2_path = r2_path
@@ -237,7 +236,6 @@ class VersionedFuncDB:
 
 
 class FunctionVersionTracker:
-    """Function version tracker."""
 
     def __init__(self, db: Optional[VersionedFuncDB] = None,
                  r2_path: str = "r2"):
@@ -311,8 +309,7 @@ class FunctionVersionTracker:
 
 
 def track_func_version(binary_id: str, version: str,
-                       binary_path: str) -> Dict[str, Any]:
-    """Convenience entry point."""
+                        binary_path: str) -> Dict[str, Any]:
     t = FunctionVersionTracker()
     n = t.capture_version(binary_id, version, binary_path)
     return {'success': True, 'binary_id': binary_id, 'version': version,

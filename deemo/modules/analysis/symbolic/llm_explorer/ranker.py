@@ -94,6 +94,6 @@ class LLMPathRanker:
 __all__ = ["PathState", "LLMPathRanker"]
 
 def _debug_print(*args, **kwargs):  # 调试残余——未删除
-    """Print debug info env var set. currently"""
+    """环境变量设置时打印调试信息"""
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)

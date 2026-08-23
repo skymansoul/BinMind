@@ -1,37 +1,4 @@
 # cmp_imm/call_target/struct 三类语义常量锚点
-"""
-稳定锚点二进制补丁定位器 - 跨编译器/优化级别的补丁代码精确匹配。
-
-现有二进制差异分析 (instruction_hash.py, block_matcher.py) 使用指令级
-或基本块级相似度-在跨编译器 (GCC vs Clang) 或跨优化级别 (O0 vs O3)
-的场景下匹配率急剧下降, 因为指令序列完全不同。
-
-稳定锚点 (stable anchor) 的核心洞察:
-  编译器和优化级别改变指令选择和排序, 但不改变程序的语义常量-
-  条件比较的立即数、函数调用的目标、switch case 的分支数是稳定的。
-  这些"锚点"是补丁定位的可靠特征, 跨编译环境不变。
-
-算法:
-  1. 锚点提取: 从 CFG 中提取三类锚点
-     - 条件锚点: cmp/jxx 指令中的立即数 (如 cmp eax, 42)
-     - 调用锚点: call 指令的目标函数名或地址模式
-     - 结构锚点: 基本块出度、循环嵌套深度
-   2. 锚点匹配: 在两个二进制间做贪心锚点对齐-最大权重匹配
-  3. 补丁定位: 匹配失败的锚点区域即补丁位置
-
-为什么选择锚点而非指令嵌入:
-  GNN/Transformer 嵌入需要训练数据且对编译器变化敏感。
-  锚点基于语义常量-编译器的自由度在此处最低, 跨平台最稳定。
-  匹配失败直接指示"此处的语义发生了变化"→ 这就是补丁。
-
-ref: PLocator - stable anchor values from
-     condition comparison and function call instructions for patch
-     localization, 本项目将其 anchor 概念从函数级扩展到 BB 级
-ref: BinDiff (zynamics/Google) - 图同构匹配的工业标准,
-     本项目用锚点替代图同构-降低复杂度从 NP-hard 到 O(N log N)
-ref: 1dFuzz - Trailing Call Sequence 作为 patch 特征,
-     本项目推广 TCS 为更通用的"稳定锚点"概念
-"""
 
 from __future__ import annotations
 

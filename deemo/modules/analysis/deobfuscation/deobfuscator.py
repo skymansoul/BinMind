@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# 主接口：去混淆级别关联的流水线类
 import json
 import logging
 import os
@@ -112,12 +110,6 @@ def _apply_peephole(instrs):
     return [l for l in joined.split("\n") if l.strip()], removed
 
 
-# Switch-case 跳转表恢复
-# 参考 Ghidra SwitchOverride.java 和 IDA switch_info_t 的算法:
-# 1) 定位间接跳转 jmp [base + reg*scale]
-# 2) 回溯范围检查 guard (cmp reg, max_val; ja default)
-# 3) 从 base 地址读取连续的指针作为 case 目标
-
 _INDIRECT_JMP_RX = re.compile(
     r"jmp\s+(?:qword\s+)?\[(\w+)\s*\+\s*(\w+)\s*\*\s*(\d+)\]", re.IGNORECASE)
 _CMP_GUARD_RX = re.compile(
@@ -125,9 +117,6 @@ _CMP_GUARD_RX = re.compile(
 
 
 def _recover_jump_tables(cfg: ControlFlowGraph, raw_bytes: bytes) -> int:
-    """扫描 CFG 中的所有基本块，识别 switch-case 跳转表模式
-    返回恢复的跳转表数量
-    """
     recovered = 0
     if not cfg or len(cfg.blocks) < 3:
         return 0
@@ -144,7 +133,6 @@ def _recover_jump_tables(cfg: ControlFlowGraph, raw_bytes: bytes) -> int:
         index_reg = m.group(2).lower()
         scale = int(m.group(3))
 
-        # 回溯搜索 guard: cmp index_reg, max_val; ja default
         max_val = 0
         default_target = -1
         for instr in reversed(block.instructions):
@@ -152,7 +140,6 @@ def _recover_jump_tables(cfg: ControlFlowGraph, raw_bytes: bytes) -> int:
             if cm and cm.group(1).lower() == index_reg:
                 try: max_val = int(cm.group(2), 0)
                 except ValueError: pass
-                # 找紧随其后的 ja/jae/jnb 目标
                 for later_instr in block.instructions[block.instructions.index(instr):]:
                     if "ja" in later_instr.lower() or "jnb" in later_instr.lower():
                         tgt_match = re.search(r"(0x[0-9a-fA-F]+)", later_instr)
@@ -165,8 +152,6 @@ def _recover_jump_tables(cfg: ControlFlowGraph, raw_bytes: bytes) -> int:
         if max_val <= 0 or max_val > 256:
             continue
 
-        # 从 base_reg 的使用位置推断跳转表基址
-        # 启发式: 搜索 'lea base_reg, [addr]' 或 'mov base_reg, addr' 在间接跳转之前
         base_addr = 0
         for instr in block.instructions:
             lea_match = re.search(
@@ -185,13 +170,11 @@ def _recover_jump_tables(cfg: ControlFlowGraph, raw_bytes: bytes) -> int:
             ptr_off = base_addr + i * scale
             if ptr_off + 4 > len(raw_bytes):
                 break
-            # 假设是 32-bit 相对偏移或绝对地址
             tgt = struct.unpack_from("<I", raw_bytes, ptr_off)[0]
             if 0x1000 <= tgt < len(raw_bytes):
                 case_targets.append(tgt)
 
         if len(case_targets) >= 3:
-            # 将每个 case 目标标记为独立的基本块
             for tgt in case_targets:
                 existing_id = max(cfg.blocks.keys()) + 1 if cfg.blocks else 0
                 cfg.blocks[existing_id] = BasicBlock(
@@ -225,16 +208,6 @@ def _compute_dominators_raw(cfg):
 
 
 class FunctionDeobfuscator:
-    """
-    函数级去混淆器
-
-    能力:
-    1. 死代码消除
-    2. 控制流平坦化恢复
-    3. 常量传播折叠
-    4. 不透明谓词消除
-    5. 去混淆效果评估
-    """
 
     def __init__(self, binary_path=None, deobfuscation_level=DeobfuscationLevel.MEDIUM):
         self.binary_path = binary_path; self.deobfuscation_level = deobfuscation_level
@@ -273,10 +246,6 @@ class FunctionDeobfuscator:
         return edges - len(cfg.blocks) + 2 if len(cfg.blocks) > 1 else 1
 
     def recover_jump_tables(self) -> int:
-        """Switch-case 跳转表恢复 - 在去混淆() 中死代码消除之前调用
-        成功恢复后，CFG 中会新增 case 目标块，后续的死代码消除和
-        常量传播可以处理这些新块
-        """
         if not self.cfg or not self.raw_bytes: return 0
         return _recover_jump_tables(self.cfg, self.raw_bytes)
 
@@ -527,7 +496,6 @@ class FunctionDeobfuscator:
             logger.info(f"Detected: {pattern.value}")
             modifications = []
 
-# 跳转表恢复（aggressive 模式）
             if self.deobfuscation_level == DeobfuscationLevel.AGGRESSIVE:
                 jtr = self.recover_jump_tables()
                 if jtr > 0:
