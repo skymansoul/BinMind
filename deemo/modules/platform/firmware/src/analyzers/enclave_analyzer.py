@@ -55,7 +55,7 @@ _WEAK_MRSIGNERS: set[str] = {
 }
 
 _INTERESTING_OPCODES = {b"\x0f\x01\xd7", b"\x0f\x01\xd6", b"\x0f\x30", b"\x0f\x31", b"\x0f\xa2", b"\x48\x89"}
-# 推测执行扫描 — Spectre/LVI/Foreshadow 检查
+# 关注指令集 — ENCLU/EEXIT/RDTSC/RDTSCP/CPUID/间接跳转，SGX 边界相关指令
 
 _SPECULATIVE_PATTERNS: list[tuple[bytes, EnclaveIssueType, str]] = [
     (re.compile(rb'\x0f\x01\xd7.{0,32}(?:\x48\x8b|\x8b|\x0f\xb6)').pattern,
@@ -123,7 +123,7 @@ class EnclaveAnalyzer:
 
     def _detect_side_channels_sgx(self, data, result):
         ts = sum(1 for i in range(len(data) - 1) if data[i:i + 2] == b"\x0f\x31")
-      # RDTSC / WRMSR 扫描 — 时序侧信道与 MSR 操纵检测
+        # RDTSC / WRMSR 扫描 — 时序侧信道与 MSR 操纵检测
         for i in range(len(data) - 1):
             if data[i:i + 2] == b"\x0f\x30":
                 result.findings.append(EnclaveFinding(EnclaveIssueType.CAP_LEAK, RiskLevel.HIGH,

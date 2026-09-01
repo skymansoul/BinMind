@@ -30,7 +30,7 @@ class EnergyPolicy(str, Enum):
     ADAPTIVE = "adaptive"    # EcoFuzz风格: 探索/利用状态自适应切换
     UCB_ENERGY = "ucb_energy"  # pAFL风格: UCB决定能量, 与调度器解耦
 
-# 能量计算函数
+    # 能量计算函数
 
 def energy_explore(seed_finds: int, total_finds: int,
                    seed_cycles: int, total_cycles: int,
@@ -86,7 +86,7 @@ def energy_fast(pick_count: int, base: float = 100.0) -> float:
         return base
     return base / (2.0 ** pick_count)
 
-# EcoFuzz 风格的自适应策略
+    # EcoFuzz 风格的自适应策略
 
 class AdaptiveEnergyPolicy:
     """EcoFuzz 风格的自适应能量策略。
@@ -152,7 +152,7 @@ class AdaptiveEnergyPolicy:
     def mode(self) -> str:
         return self._current_mode
 
-# UCB 能量分配
+    # UCB 能量分配
 
 class UCBEnergyAllocator:
     """基于 UCB 的能量分配器 [pAFL 2024]。
@@ -195,7 +195,7 @@ class UCBEnergyAllocator:
             self._success_counts[seed_id] = self._success_counts.get(seed_id, 0) + 1
         self._total_rounds += 1
 
-# 统一的能量计算门面
+    # 统一的能量计算门面
 
 class EnergyComputer:
     """能量计算器 -- 委托到具体策略函数。"""
@@ -267,7 +267,7 @@ class EnergyComputer:
             return self._adaptive.mode
         return None
 
-# 便捷函数
+    # 便捷函数
 
 def compute_energy(seed_meta: dict, policy: str = "fast",
                    base_energy: float = 10.0) -> float:

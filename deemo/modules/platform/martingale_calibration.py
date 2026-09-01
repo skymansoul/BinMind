@@ -218,7 +218,7 @@ class MartingaleCalibrationTester:
 
         return d_max, pval
 
-# 统计辅助函数
+    # 统计辅助函数: 正态CDF/χ²/Kolmogorov尾部概率, 供三个检验共用
 
     @staticmethod
     def _normal_cdf(x: float) -> float:

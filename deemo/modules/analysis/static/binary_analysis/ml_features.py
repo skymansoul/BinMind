@@ -12,19 +12,15 @@ from collections import Counter
 
 
 def opcode_histogram(opcodes: list[str]) -> dict[str, int]:
-    """从操作码序列生成频次直方图。O(n) n = len(opcodes)
-
-    返回 {opcode: count} 字典，是后续TF-IDF/N-gram特征的基础
-    """
+    # 从操作码序列生成频次直方图 O(n) n=len(opcodes)
+    # 返回 {opcode: count} 字典，是后续 TF-IDF/N-gram 特征的基础
     return dict(Counter(opcodes))
 
 
 def ngram_features(opcodes: list[str], n: int = 3) -> dict[str, int]:
-    """提取N-gram特征。O(n * m) m = len(opcodes)
-
-    策略: 3-gram比2-gram区分度高一个数量级
-    但维数爆炸。这里限制top 500个最高频的3-gram作为特征
-    """
+    # 提取 N-gram 特征 O(n*m) m=len(opcodes)
+    # 策略: 3-gram 比 2-gram 区分度高一个数量级，但维数爆炸
+    # 限制 top 500 个最高频的 3-gram 作为特征
     grams: list[str] = []
     for i in range(len(opcodes) - n + 1):
         grams.append("_".join(opcodes[i:i + n]))
@@ -72,10 +68,8 @@ def section_features(section_data: bytes) -> dict[str, float]:
 
 
 def compute_imphash(imports: list[str]) -> str:
-    """计算导入表哈希（类 pefile.imphash）。O(n log n) 排序主导
-
-    算法: 将所有 DLL:函数名 排序后拼接，MD5
-    """
+    # 计算导入表哈希（类 pefile.imphash） O(n log n) 排序主导
+    # 算法: 将所有 DLL:函数名 排序后拼接，MD5
     sorted_imports = sorted(imports, key=str.lower)
     concat = ",".join(sorted_imports)
     return hashlib.md5(concat.encode("utf-8", errors="replace")).hexdigest()
@@ -93,10 +87,8 @@ def compute_rich_header_hash(data: bytes) -> str:
 
 def extract_feature_vector(opcodes: list[str], imports: list[str],
                            section_sizes: list[int]) -> dict[str, Any]:
-    """综合特征提取——返回可直接喂给 sklearn 的特征字典
-
-    复杂度: O(n + m + k) n=opcodes, m=imports, k=sections
-    """
+    # 综合特征提取——返回可直接馈给 sklearn 的特征字典
+    # 复杂度: O(n + m + k) n=opcodes, m=imports, k=sections
     op_hist = opcode_histogram(opcodes)
     ngrams = ngram_features(opcodes, n=3)
 

@@ -18,7 +18,6 @@ import json as _json
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
 from enum import Enum as _Enum
-from typing import Optional as _Opt
 
 
 class CompatStatus(_Enum):
@@ -146,8 +145,6 @@ class CompatMatrix:
 
         return risk
 
-# 内部
-    @staticmethod
     def _latest_version(module: str) -> str:
         try:
             from modules.stubs.stub_contract_merkle import (
@@ -167,21 +164,25 @@ class CompatMatrix:
                 ContractMerkleTree, VersionedContractStore)
             store = VersionedContractStore()
             history = store.history(module)
-            for v in history:
-                if v.version_id == old_ver:
-                    # 找到旧版本的叶子哈希
-                    pass
+            # 简化: 旧版本不存在于历史中视为已变化
+            if not any(v.version_id == old_ver for v in history):
+                return False
             # 简化: 比较版本 ID
             return old_ver == new_ver
         except ImportError:
             return False
 
-    @staticmethod
-    def _find_prev_verified(caller: str,
-                            callee: str) -> _Opt[str]:
+    def _find_prev_verified(self, caller: str,
+                            callee: str) -> str | None:
         """查找上一次已验证兼容的 callee 版本。"""
-        # 简化实现: 遍历矩阵找最近 verified_ok 条目
-        return None  # Full impl would iterate _entries
+        best = None
+        best_ts = -1.0
+        for (c, cv, cc, ccv), e in self._entries.items():
+            if c == caller and cc == callee and e.status == 'verified_ok':
+                if e.verified_at > best_ts:
+                    best_ts = e.verified_at
+                    best = ccv
+        return best
 
     def _find_callers(self, module: str) -> list[str]:
         try:

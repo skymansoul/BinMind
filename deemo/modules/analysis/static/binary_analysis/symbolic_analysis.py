@@ -24,11 +24,9 @@ _CAPABILITY_CACHE: dict[str, Optional[bool]] = {
 
 
 def _has_z3() -> bool:
-    """检查 z3-solver 是否可用。O(1) 缓存查询
-
-    不直接 import z3——z3 的初始化较慢（~200ms），仅在需要时加载
-    此函数只检查 importlib 是否能找到模块
-    """
+    # 检查 z3-solver 是否可用 O(1) 缓存查询
+    # 不直接 import z3——z3 初始化较慢(~200ms)，仅在需要时加载
+    # 此函数只检查 importlib 是否能找到模块
     if _CAPABILITY_CACHE["z3"] is None:
         try:
             importlib.import_module("z3")
@@ -61,12 +59,9 @@ def _has_claripy() -> bool:
 
 
 class SymbolicAnalysisBridge:
-    """符号/约束求解的统一桥接
-
-    桥接模式而非直接依赖。当 z3 和 angr 都不可用时
-    降级到纯静态模式而非崩溃 - 宁可少报不可漏报的原则在此不适用
-    因为符号执行本身就是增强项，不是基础项
-    """
+    # 符号/约束求解的统一桥接
+    # 桥接模式而非直接依赖; z3 和 angr 都不可用时降级到纯静态模式而非崩溃
+    # 符号执行是增强项而非基础项，所以宁可少报不可漏报的原则在此不适用
 
     def __init__(self):
         self._z3_available = _has_z3()

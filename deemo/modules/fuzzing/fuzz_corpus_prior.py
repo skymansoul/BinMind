@@ -29,7 +29,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-# 令牌提取
+    # 令牌提取
 
 class TokenExtractor:
     """从单条种子字节流中提取结构化令牌。
@@ -77,7 +77,7 @@ class TokenExtractor:
             out.append((m.group(0).decode("ascii", errors="replace"), m.start()))
         return out
 
-# 语料令牌模型
+    # 语料令牌模型
 
 class CorpusTokenModel:
     """种子语料的统计模型: token 频率 / 分隔符 / 前后缀 / 格式分布。
@@ -142,7 +142,7 @@ class CorpusTokenModel:
                 pass
             return "unknown"
 
-# 查询
+    # 查询
 
     def token_prior(self, token: str) -> float:
         """Laplace 平滑后的 token 频率先验 (∈ (0,1])。"""
@@ -191,7 +191,7 @@ class CorpusTokenModel:
         mx = max(density) or 1.0
         return [d / mx for d in density]
 
-# 语义先验 (变异可用视图)
+    # 语义先验 (变异可用视图)
 
 class SemanticPrior:
     """语料语义先验 --- 面向字典与结构感知变异的查询接口。
@@ -284,7 +284,7 @@ _STRUCT_OPS = (
     "CHUNK_CROSSOVER", "CHUNK_REVERSE", "DICT_GUIDED_FIELD",
 )
 
-# 语料感知的结构变异器 (继承既有实现, 覆写算子选择与字典引导)
+    # 语料感知的结构变异器 (继承既有实现, 覆写算子选择与字典引导)
 
 class CorpusAwareStructureMutator:
     """语料感知的结构变异器 --- 包装 StructureAwareMutator。
@@ -342,7 +342,7 @@ class CorpusAwareStructureMutator:
             return self._inner.get_operator_stats()
         return {}
 
-# 模块级便捷函数
+    # 模块级便捷函数
 
 def build_corpus_prior(corpus_seeds: Sequence[bytes]) -> SemanticPrior:
     """从种子语料构建语义先验 (便捷入口)。"""

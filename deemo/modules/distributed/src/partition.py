@@ -5,14 +5,13 @@
 #
 # 三种分区策略：
 #   - hash:   一致性哈希环（复用 load_balancer.ConsistentHashRing）
-# range:  按 key 字典序均分至 N 个分区
-# round_robin: 轮询均分，无局部性，适合无状态任务
+#   - range:  按 key 字典序均分至 N 个分区
+#   - round_robin: 轮询均分，无局部性，适合无状态任务
 #
 # 自动再均衡：节点增删时仅迁移受影响分区的数据
 # 再均衡粒度：虚拟节点级别，单次迁移量 = 总数据 / 虚拟节点数
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
 from abc import ABC, abstractmethod
 
 import bisect
@@ -124,8 +123,7 @@ class PartitionManager:
         self._on_rebalance: Optional[Callable[[int, str, str], None]] = None
         # 回调签名: (partition_index, old_node_id, new_node_id)
 
-# 节点增删管理
-
+    # 节点增删管理
     def add_node(self, node_id: str) -> List[int]:
         """添加节点 → 从现有节点匀出分区分配给新节点。返回分配的分区列表。"""
         with self._lock:
@@ -177,8 +175,7 @@ class PartitionManager:
 
             return orphaned
 
-# 路由查询
-
+    # 路由查询
     def route(self, key: str) -> Optional[str]:
         """由 key 路由到负责的节点。"""
         p = self._partitioner.partition(key, self._n_partitions)
@@ -197,14 +194,12 @@ class PartitionManager:
         """查询某个节点持有的分区索引列表。"""
         return list(self._node_partitions.get(node_id, []))
 
-# 再均衡回调
-
+    # 再均衡回调
     def on_rebalance(self, callback: Callable[[int, str, str], None]):
         """设置再均衡回调 — 分区迁移时通知外部执行数据搬迁。"""
         self._on_rebalance = callback
 
-# 状态快照
-
+    # 状态快照
     @property
     def state(self) -> dict:
         with self._lock:

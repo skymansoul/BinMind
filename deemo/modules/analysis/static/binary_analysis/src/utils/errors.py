@@ -72,11 +72,9 @@ class TimeoutError(AnalysisError):
 
 
 class ParseError(AnalysisError):
-    """解析阶段错误：格式错误、字段超出范围、magic 不匹配等
-
-    与 BinaryParseError 不同，ParseError 关注的是结构化数据解析
-    （YAML/JSON/protobuf），而非二进制文件头解析。分离两者便于调用方精确定位
-    """
+    # 解析阶段错误: 格式错误、字段超出范围、magic 不匹配等
+    # 与 BinaryParseError 不同，ParseError 关注结构化数据解析(YAML/JSON/protobuf)
+    # 分离两者便于调用方精确定位
 
     default_code = "PARSE_ERROR"
 
@@ -88,11 +86,9 @@ class ParseError(AnalysisError):
 
 
 class ValidationError(AnalysisError):
-    """数据校验错误：输入不满足 schema 约束
-
-    校验层独立于解析层。解析只负责结构化，校验负责语义正确性
-    这样可以对同一种数据格式（如 YAML）应用多套不同 schema
-    """
+    # 数据校验错误: 输入不满足 schema 约束
+    # 校验层独立于解析层——解析只负责结构化，校验负责语义正确性
+    # 可对同一种数据格式(如 YAML)应用多套不同 schema
 
     default_code = "VALIDATION_ERROR"
 

@@ -1,4 +1,5 @@
-FeatureType=None
+from __future__ import annotations
+
 import os
 import re
 import logging
@@ -34,7 +35,7 @@ class FeatureType:
     def __str__(self):
         return self._val
 
-# 单例实例——定义于类体外部（类体内FeatureType名称尚未绑定）
+# 单例实例, 定义于类体外部 (类体内FeatureType名称尚未绑定)
 FeatureType.BYTE_PATTERN = FeatureType("byte_pattern")
 FeatureType.EXPORT = FeatureType("export")
 FeatureType.MAGIC = FeatureType("magic")
@@ -56,7 +57,19 @@ class YaraFeature:
 class YaraRule:
     __slots__ = ('name', 'author', 'description', 'tags', 'features', 'condition', 'priority', 'raw_rule', 'validated', 'false_positive_rate',)
 
-    def __init__(self, name, author="", description="", tags=None, features=None, condition="", priority=RulePriority.MEDIUM, raw_rule="", validated=False, false_positive_rate=0.0):
+    def __init__(
+        self,
+        name: str,
+        author: str = "",
+        description: str = "",
+        tags: Optional[List[str]] = None,
+        features: Optional[List[YaraFeature]] = None,
+        condition: str = "",
+        priority: RulePriority = RulePriority.MEDIUM,
+        raw_rule: str = "",
+        validated: bool = False,
+        false_positive_rate: float = 0.0,
+    ):
         self.name = name
         self.author = author
         self.description = description
@@ -72,19 +85,25 @@ class YaraRule:
 
 @dataclass
 class ValidationResult:
-    true_positives = 0
-    false_positives = 0
-    true_negatives = 0
-    false_negatives = 0
-    accuracy = 0.0
-    precision = 0.0
-    recall = 0.0
-    f1_score = 0.0
+    true_positives: int = 0
+    false_positives: int = 0
+    true_negatives: int = 0
+    false_negatives: int = 0
+    accuracy: float = 0.0
+    precision: float = 0.0
+    recall: float = 0.0
+    f1_score: float = 0.0
 
 class GenerationResult:
     __slots__ = ('rules', 'validation_results', 'warnings', 'analysis_success',)
 
-    def __init__(self, rules=None, validation_results=None, warnings=None, analysis_success=False):
+    def __init__(
+        self,
+        rules: Optional[List[YaraRule]] = None,
+        validation_results: Optional[dict] = None,
+        warnings: Optional[List[str]] = None,
+        analysis_success: bool = False,
+    ):
         self.rules = rules if rules is not None else []
         self.validation_results = validation_results if validation_results is not None else {}
         self.warnings = warnings if warnings is not None else []
@@ -93,7 +112,7 @@ class GenerationResult:
 
 
 class YaraAutoGenerator:
-    """YARA规则自动生成器——从二进制样本中提取字符串、字节模式、熵值与魔数特征，组装检测规则"""
+    """YARA规则自动生成器, 从二进制样本中提取字符串、字节模式、熵值与魔数特征, 组装检测规则"""
 
     def __init__(self, sample_path: str = "", rule_template: str = ""):
         """初始化生成器状态，可选传入样本路径与规则模板字符串"""
@@ -122,7 +141,7 @@ class YaraAutoGenerator:
                 result.rules = self.rules
                 result.analysis_success = True
 
-                logger.info(f"YARA规则生成完成——产出{len(self.rules)}条规则")
+                logger.info(f"YARA规则生成完成, 产出{len(self.rules)}条规则")
             else:
                 result.warnings.append("样本数据加载失败")
 
@@ -195,7 +214,7 @@ class YaraAutoGenerator:
                     feature_type=FeatureType.BYTE_PATTERN,
                     value=pattern_hex,
                     confidence=0.6 + nCount * 0.05,
-                    description=f"字节模式特征——出现{nCount}次"
+                    description=f"字节模式特征, 出现{nCount}次"
                 )
 
                 self.features.append(feature)
@@ -222,7 +241,7 @@ class YaraAutoGenerator:
                 feature_type=FeatureType.ENTROPY,
                 value=f"entropy > 7.0",
                 confidence=0.8,
-                description=f"高熵区域——可能为加密或压缩载荷"
+                description=f"高熵区域, 可能为加密或压缩载荷"
             )
 
             self.features.append(feature)
@@ -347,7 +366,7 @@ rule """ + rule_name + """
             rule.false_positive_rate = result.false_positives / total_negative if total_negative > 0 else 0
 
         except ImportError:
-            logger.warning("yara-python未安装——跳过验证")
+            logger.warning("yara-python未安装, 跳过验证")
             result.true_positives = len(positive_samples)
             result.true_negatives = len(negative_samples)
 

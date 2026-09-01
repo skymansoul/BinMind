@@ -51,7 +51,7 @@ class MicroarchSideChannelValidator:
         if calibrate:
             self._calibrate()
 
-# 公开接口
+        # 公开接口
 
     def validate(self, impl: Any, trials: int = 1000) -> VerificationResult:
         """`impl` 为可调用对象 (secret) 或二进制路径。"""
@@ -64,8 +64,7 @@ class MicroarchSideChannelValidator:
             mitigation_suggestions=["使用可调用对象对目标进行插桩后运行"],
         )
 
-# Flush+Reload
-
+    # Flush+Reload: 命中 vs 驱逐访问时延差测量
     def flush_reload(self, probe_address: int, iterations: int = None) -> Tuple[float, float]:
         """测量缓存命中与驱逐状态下探测地址的访问时间差。"""
         n = iterations or _FLUSH_RELOAD_ITERATIONS
@@ -92,7 +91,7 @@ class MicroarchSideChannelValidator:
         evicted_median = statistics.median(evicted_times)
         return cached_median, evicted_median
 
-# Prime+Probe 检测
+        # Prime+Probe 检测
     # Mastik 工具包 Prime+Probe 模式：先用攻击者数据填充缓存组，
     # 再测重访耗时, 慢则说明被 victim 踢出缓存。
 
@@ -135,7 +134,7 @@ class MicroarchSideChannelValidator:
             raw_samples=[float(x) for x in probe_results],
         )
 
-# Evict+Time 检测
+        # Evict+Time 检测
     # NDSS 2025 系统性评估：Evict+Time 比 Flush+Reload 更隐蔽，
     # 不依赖 clflush 指令，适配无特权场景。
 
@@ -181,9 +180,7 @@ class MicroarchSideChannelValidator:
                         f"(ratio={diff_ratio:.2f})",
             raw_samples=evicted_times,
         )
-
-# Spectre 模式检测
-
+    # Spectre 模式检测
     def detect_spectre_v1(self, condition_fn: Callable[[int], int], array_size: int = 256,
                           trials: int = 100) -> SideChannelEvidence:
         """检查条件访问是否通过 Spectre-v1（边界检查绕过）泄漏。
@@ -232,9 +229,7 @@ class MicroarchSideChannelValidator:
             description=f"间接分支探测中位={median_access:.1f} 周期",
             raw_samples=times,
         )
-
-# Meltdown 模式检测
-
+    # Meltdown 模式检测
     def detect_meltdown(self, kernel_access_fn: Callable[[], int],
                         probe_array_base: int, trials: int = 100) -> SideChannelEvidence:
         """检查 Meltdown（通过故障抑制泄漏内核内存）。"""
@@ -257,8 +252,7 @@ class MicroarchSideChannelValidator:
             raw_samples=times,
         )
 
-# 信息泄漏率
-
+    # 信息泄漏率估算: 观察准确率换算比特/秒带宽
     def measure_leakage_rate(self, victim_fn: Callable[[bytes], None],
                               observe_fn: Callable[[], int],
                               secret_bits: int = 8,
@@ -284,9 +278,7 @@ class MicroarchSideChannelValidator:
             info_per_trial = -(accuracy * (accuracy and 1) or 0)
         bitrate = trials * info_per_trial / elapsed
         return max(0.0, bitrate)
-
-# 内部辅助方法
-
+    # 内部辅助方法
     def _validate_callable(self, impl: Callable, trials: int) -> VerificationResult:
         evidence: List[SideChannelEvidence] = []
         # 采集两个不同秘密的时序轨迹
@@ -336,8 +328,7 @@ class MicroarchSideChannelValidator:
             resilience_scores=resilience,
         )
 
-# 平台抽象
-
+    # 平台抽象: 缓存探测/屏障/计数器封装, 屏蔽平台差异
     def _calibrate(self) -> None:
         """测量当前硬件的实际缓存命中/未命中阈值。"""
         buf = bytearray(self._cl_size * 2)
@@ -374,10 +365,7 @@ class MicroarchSideChannelValidator:
             # Python 层刷新：内存屏障 + 无关数据驱逐 L1
             _ = [0] * 4096  # 用无关数据驱逐 L1
         except Exception:
-            _log.debug("suppressed", exc_info=True)
-
-    @staticmethod
-    def _clflush_all_probe_array(size: int) -> None:
+            _log.debug("clflush近似驱逐失败, 降级为纯访问", exc_info=True)
         _ = [0] * size
 
     @staticmethod
@@ -387,7 +375,7 @@ class MicroarchSideChannelValidator:
             import ctypes
             ctypes.c_char.from_address(addr).value
         except Exception:
-            _log.debug("suppressed", exc_info=True)
+            _log.debug("探测地址不可访问, 计时仅含开销", exc_info=True)
         return time.perf_counter_ns() - t0
 
     @staticmethod

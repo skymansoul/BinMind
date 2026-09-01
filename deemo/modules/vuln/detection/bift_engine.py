@@ -57,12 +57,7 @@ class BiftReport:
 
 
 class BiftEngine:
-    """二进制级前向污点分析引擎。
-
-    使用示例:
-        engine = BiftEngine()
-        report = engine.analyze(functions, call_graph)
-    """
+    """二进制级前向污点分析引擎。"""
 
     def __init__(self, max_taint_iterations: int = 20):
         self._propagator = TaintPropagator(max_taint_iterations)

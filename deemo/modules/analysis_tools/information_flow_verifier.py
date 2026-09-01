@@ -212,10 +212,3 @@ class InformationFlowVerifier(BaseAnalyzer):
             dependencies=[],
             supported_platforms=["x86", "x86_64", "arm", "arm64"]
         )
-
-
-class SecurityLevel:
-    PUBLIC = "public"
-    CONFIDENTIAL = "confidential"
-    SECRET = "secret"
-    TOP_SECRET = "top_secret"

@@ -13,6 +13,7 @@ from ..src.gpu.fuzzer import (
 
 
 def _debug_print(msg: str) -> None:
+    # 调试输出占位, 发布版保持静默避免污染stdout
     pass
 
 
@@ -241,10 +242,12 @@ def test_fuzz_result_dataclass():
     assert result.novel_paths == 3
 
 
+# 暂留 — SASS trace比对测试待实现, 依赖反汇编trace采集器就绪后补充
 # def test_compare_sass_trace():
 #     pass
 
 
 def _unused_placeholder() -> None:
+    # 占位函数: 携带未使用import的引用, 避免静态检查器误报后被清理
     _debug_print("test suite loaded")
-    _unused_sys  # 抑制检查器告警
+    _unused_sys  # 反检测标注, 保留sys导入

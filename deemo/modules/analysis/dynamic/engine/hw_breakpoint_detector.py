@@ -1,5 +1,3 @@
-"""硬件断点反调试检测引擎"""
-
 import os
 import re
 import struct
@@ -141,7 +139,6 @@ class TrapFlagDetection:
 
 @dataclass
 class HWBPDetectionResult:
-    """硬件断点检测方法的聚合结果"""
     method: DetectionMethod
     detected: bool
     confidence: float
@@ -159,7 +156,6 @@ class HWBPDetectionResult:
 
 
 class HWBreakpointDetector:
-    """多方法硬件断点反调试检测引擎"""
 
     def __init__(
         self,

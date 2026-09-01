@@ -27,7 +27,6 @@ from typing import Optional as _Opt, Callable
 from modules.stubs.stub_contract import FuncContract as _FuncContract
 
 
-# 蜕变关系类型枚举
 class MRCategory:
     """蜕变关系分类体系。
 
@@ -63,7 +62,6 @@ class MetamorphicRelation:
             self.confidence = 0.0
 
 
-# MR 合成引擎
 class MetamorphicSynthesizer:
     """从 FuncContract 推导蜕变关系集合。
 
@@ -94,8 +92,6 @@ class MetamorphicSynthesizer:
 
         # 去重: 同 category 只保留最高置信度
         return self._deduplicate(mrs)
-
-# 各检查规则
 
     def _idempotence_check(self, fc: _FuncContract, params: list) -> list[MetamorphicRelation]:
         """幂等性: 若返回类型与唯一参数类型一致 → f(f(x)) == f(x)。"""
@@ -422,16 +418,14 @@ class MetamorphicSynthesizer:
         )
         return [mr]
 
-# 工具方法
     @staticmethod
     def _simple_base(ann: str) -> str:
         """取类型注解的最外层基础类型名。"""
-        import re
         a = (ann or '').strip().lower()
         while a.startswith(('optional[', 'union[')):
             inner = a[a.index('[') + 1:]
             a = inner.split(',')[0].strip() if inner else ''
-        m = re.match(r'([a-z_][a-z0-9_]*)', a)
+        m = _re.match(r'([a-z_][a-z0-9_]*)', a)
         return m.group(1) if m else ''
 
     @staticmethod

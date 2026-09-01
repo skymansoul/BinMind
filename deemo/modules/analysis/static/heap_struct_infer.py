@@ -94,11 +94,6 @@ class HeapStructLayout:
 
 
 class HeapStructInference:
-    """堆对象结构推断引擎.
-
-    从指令序列中提取对同一堆指针的内存访问模式,
-    聚类为字段/数组, 推断结构布局.
-    """
 
     # 指令→访问大小 (bytes) 的启发式规则
     _SIZE_HINTS = {
@@ -127,12 +122,6 @@ class HeapStructInference:
 
     def feed_memory_access(self, ins: dict, ptr_reg: str,
                            alloc_addr: int = 0):
-        """记录一次对堆指针的内存访问.
-
-        ins: 反汇编指令字典.
-        ptr_reg: 被解引用的基址寄存器.
-        alloc_addr: 关联的分配点地址 (若已知).
-        """
         reg = self._norm_reg(ptr_reg)
         if reg not in self._GPR64:
             return

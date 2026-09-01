@@ -209,16 +209,6 @@ class RobustFeatureVector:
 
 
 class AdversarialRobustExtractor:
-    """对抗鲁棒的特征提取器主类
-
-    使用流程:
-    extractor = AdversarialRobustExtractor()
-    rfv = extractor.extract(
-        blocks={0: ["mov eax, 1", "add eax, 2"], 1: ["ret"]},
-        edges=[(0, 1, "fallthrough")],
-    )
-    # rfv.full_vector: 128 维浮点向量
-    """
 
     def extract(
         self,
@@ -226,11 +216,6 @@ class AdversarialRobustExtractor:
         edges: List[Tuple[int, int, str]],
         ngram_n: int = 3,
     ) -> RobustFeatureVector:
-        """提取完整的鲁棒特征向量
-
-        blocks: {block_id: [instruction_strings]}
-        edges: [(src_block_id, dst_block_id, edge_type)]
-        """
         # A. 块内不变量
         block_invariants = [
             extract_block_invariants(bid, insns)

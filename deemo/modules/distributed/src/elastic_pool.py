@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from abc import ABC, abstractmethod
 
 import time
 import threading
@@ -189,8 +188,7 @@ class ElasticPool:
         self._thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
 
-# 启停控制
-
+    # 启停控制
     def start(self):
         if self._thread is not None:
             return
@@ -205,8 +203,7 @@ class ElasticPool:
             self._thread.join(timeout=10)
             self._thread = None
 
-# 主循环逻辑
-
+    # 主循环逻辑
     def _loop(self):
         while not self._stop.is_set():
             try:
@@ -238,8 +235,7 @@ class ElasticPool:
             self._guard.record_scale_down()
             self._on_scale_down(delta)
 
-# 手动干预接口
-
+    # 手动干预接口
     def set_worker_count(self, n: int):
         old = self._active_workers
         self._active_workers = max(1, n)

@@ -136,8 +136,8 @@ SYSCALL_TABLE_X64: Dict[int, str] = {
     360: "futex_requeue",    361: "statmount",
     362: "listmount",        363: "lsm_get_self_attr",
     364: "lsm_set_self_attr", 365: "lsm_list_modules",
-    366: "mseal",            367: "fchmodat2",
-    # uringspawn/process_mappings — 预留槽位
+    366: "mseal",
+    # 370: 后续版本预留槽位，uringspawn/process_mappings 尚未定号
     370: "copy_file_range_ex",
 }
 

@@ -24,7 +24,6 @@ import math as _math
 import time as _time
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 from modules.stubs.stub_contract import (
     StubContractor as _StubContractor,
@@ -144,7 +143,6 @@ class GhostDetector:
     def ghost_candidates(self, min_score: float = 0.4) -> list[GhostReport]:
         return [r for r in self.detect() if r.ghost_score >= min_score]
 
-# 生存分析 (Kaplan-Meier)
     @staticmethod
     def _extract_intervals(health_info: dict, now: float) -> list[float]:
         """从健康数据提取调用间隔序列（秒）。
@@ -259,7 +257,6 @@ class GhostDetector:
 
         return est
 
-# 评分
     @staticmethod
     def _static_score(has_deps: bool, has_compat: bool) -> float:
         s = 0.0
@@ -308,7 +305,6 @@ class GhostDetector:
             return 'monitor'
         return 'keep'
 
-# 数据加载
     def _build_dep_graph(self) -> dict:
         try:
             from modules.stubs.stub_dependency_graph import ModuleDependencyGraph

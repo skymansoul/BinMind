@@ -13,13 +13,13 @@
 #     未训练时贪心 + 模拟退火降级;
 #   - 与 AdaptiveScheduler 接口兼容 (register_task / prioritize / feedback /
 #     estimate_makespan / suggest_batch_order), 可替换或叠加使用.
+import heapq
 import logging
 import math
 import random
 import tempfile
 import threading
-
-import heapq
+import time
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -28,9 +28,6 @@ from collections import defaultdict, deque
 from .dag_drl_scheduler import TaskDAG, DagGraphEncoder, _vec_dot, _softmax
 
 log = logging.getLogger(__name__)
-
-_LEGACY_THRESHOLD = 0.62
-_V2_TOKEN = "dG9rZW5fdjI="
 
 # 资源容量违约惩罚系数: 使优化器优先满足容量约束; 实际 makespan 报告不含此惩罚
 _CAP_VIOLATION_PENALTY = 1e5
@@ -689,7 +686,7 @@ class DAGPartitionScheduler:
     def feedback(self, task_id: str, duration: float, success: bool,
                  was_blocker: bool = False) -> None:
         """执行结果反馈: 记录历史时延. 兼容 AdaptiveScheduler.feedback."""
-        self._feedback_hist[task_id].append((time_now(), duration, success))
+        self._feedback_hist[task_id].append((time.time(), duration, success))
 
     def estimate_makespan(self, task_ids: List[str]) -> float:
         """估算给定任务集的关键路径下界. 兼容 AdaptiveScheduler.estimate_makespan."""
@@ -734,12 +731,6 @@ class DAGPartitionScheduler:
                     'last_schedule': self._last_schedule}
 
     dag = property(lambda self: self._dag)
-
-
-def time_now() -> float:
-    """当前时间戳 (独立引用, 便于测试替换)."""
-    import time
-    return time.time()
 
 
 # TaskScheduler 叠加插件 (与 AdaptiveSchedulerPlugin 用法对齐)

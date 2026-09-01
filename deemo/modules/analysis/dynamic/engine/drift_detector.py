@@ -56,7 +56,6 @@ class CalibrationAction(Enum):
 
 @dataclass
 class DriftReport:
-    """单次漂移检测的报告"""
     timestamp: float
     severity: DriftSeverity
     mahalanobis_distance: float
@@ -69,14 +68,6 @@ class DriftReport:
 # 多维联合漂移检测器
 
 class DriftDetector:
-    """多维联合漂移检测--Mahalanobis 距离 + 滞后触发
-
-    参数:
-    warmup_samples:      EWMA 初始化前收集的最小样本数
-    alert_quantile:      卡方分布的告警分位数 (默认 0.999)
-    consecutive_threshold: 连续多少次异常后触发校准
-    cooldown_collects:   两次校准间的最小采集周期数
-    """
 
     # 6 自由度卡方分布的分位数表 (预先计算)
     # alpha = 0.99: 16.81, alpha = 0.999: 22.46, alpha = 0.9999: 27.86
@@ -117,7 +108,6 @@ class DriftDetector:
         self._recent_samples: deque = deque(maxlen=20)
 
     def _vector_from_snapshot(self, snap: MetricSnapshot) -> List[float]:
-        """从 MetricSnapshot 提取 6 维特征向量"""
         return [
             snap.solver_latency_ms,
             float(snap.constraint_size),
@@ -237,7 +227,6 @@ class DriftDetector:
         return inv
 
     def _compute_z_scores(self, vec: List[float]) -> Dict[str, float]:
-        """每度量的单维 z-score--用于异常度量的可解释性"""
         metric_names = [
             "solver_latency", "constraint_size", "path_entropy",
             "state_queue_depth", "taint_confidence", "coverage_gain",
@@ -253,10 +242,6 @@ class DriftDetector:
         return z_scores
 
     def detect(self, snapshot: MetricSnapshot) -> DriftReport:
-        """检测当前快照是否存在漂移
-
-        返回 DriftReport 包含严重度、异常度量和建议动作
-        """
         vec = self._vector_from_snapshot(snapshot)
         self._recent_samples.append(vec)
 
@@ -375,7 +360,6 @@ class DriftDetector:
         return actions if actions else [CalibrationAction.NONE]
 
     def mark_calibration_complete(self) -> None:
-        """标记当前校准周期完成--重置连续异常计数, 进入冷却期"""
         self._consecutive_anomalies = 0
         self._last_calibration_time = time.monotonic()
         self._last_calibration_count = self._count

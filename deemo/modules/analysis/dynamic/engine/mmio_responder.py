@@ -5,7 +5,7 @@ MMIO 仿真 responder。按外设寄存器映射生成 C 语言访问存根，
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 
 
 class RegisterType(Enum):
@@ -23,8 +23,8 @@ class RegisterSpec:
     size: int = 4
     reg_type: RegisterType = RegisterType.READ_WRITE
     reset_value: int = 0
-    read_handler: Optional[callable] = None
-    write_handler: Optional[callable] = None
+    read_handler: Optional[Callable] = None
+    write_handler: Optional[Callable] = None
 
     def __repr__(self):
         return f"RegisterSpec({self.name}, offset=0x{self.offset:x}, size={self.size})"

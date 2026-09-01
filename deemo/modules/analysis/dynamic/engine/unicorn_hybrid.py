@@ -384,22 +384,11 @@ def _generate_speculative_targets(
 class HybridEmulationEngine:
     """Unicorn-driven hybrid analysis block 缓存 speculative execution
 
-    Usage (typical path):
-    engine = HybridEmulationEngine("x64")
-    engine.map_region(MemoryRegion(name=".text", base=0x400000, size=0x2000, data=code))
-    engine.map_region(MemoryRegion(name=".栈", base=0x7fff0000, size=0x10000))
-    engine.write_registers({"rip": 0x400100, "rsp": 0x7fff8000})
-    result = engine.run(0x400100, max_instructions=5000)
-
     Public API stability: public method 签名s 返回 types
     frozen for external 兼容性
     """
 
     def __init__(self, architecture: str = "x64"):
-        """按架构初始化混合引擎。
-
-        architecture: "x86", "x64", "arm", "arm64", "mips" 之一。
-        """
         self._arch_str = architecture.lower()
         if not UNICORN_AVAILABLE:
             raise RuntimeError(
@@ -636,11 +625,6 @@ class HybridEmulationEngine:
         对指定范围内的所有代码路径进行静态反汇编，然后用动态模拟补充
         路径覆盖率。若 enable_speculative=True，碰到间接跳转时启用
         投机执行来探索更多路径。
-
-        参数: start_address 分析的起始地址, end_address 分析的
-        结束地址（不含）, max_instructions 模拟的最大指令数,
-        enable_speculative 是否启用投机间接跳转解析;
-        返回 HybridAnalysisResult 包含静态和动态分析的数据。
         """
         t_start = time.perf_counter()
         hr = HybridAnalysisResult(
@@ -992,13 +976,7 @@ class HybridEmulationEngine:
 
 def create_engine(architecture: str = "x64",
                   block_cache_capacity: int = 512) -> HybridEmulationEngine:
-    """工厂: 构造并返回就绪的 HybridEmulationEngine。
-
-    参数: architecture Target ISA string ("x86", "x64", "arm",
-    "arm64", "mips"), block_cache_capacity Maximum number of
-    cached translated blocks;
-    返回配置好的 HybridEmulationEngine 实例。
-    """
+    """工厂: 构造并返回就绪的 HybridEmulationEngine。"""
     engine = HybridEmulationEngine(architecture)
     engine._block_cache = BlockCache(capacity=block_cache_capacity)
     return engine

@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""dynamic — 命令行入口
-
-子命令: trace, memory-forensics, instrument, emulate, vmi
-
-用法:
-binmind-dynamic trace --input sample.exe
-binmind-dynamic memory-forensics --转存 memory.dmp
-binmind-dynamic instrument --target process_name
-binmind-dynamic emulate --binary sample.exe
-binmind-dynamic vmi --domain win10_vm
-"""
 
 import argparse
 import json

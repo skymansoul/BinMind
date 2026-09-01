@@ -187,7 +187,7 @@ class PatchTestGenerator:
 
         return _suite
 
-# 测试类型选择
+    # 测试类型选择
 
     def _select_test_types(self, vuln_type: str, cwe_id: str) -> List[Tuple[str, float]]:
         """按漏洞类型选择测试策略。"""
@@ -261,7 +261,7 @@ class PatchTestGenerator:
         }
         return _map.get(kind, "continue")
 
-# 变异增强
+    # 变异增强
 
     def _mutate_existing(self, cases: List[TestCase],
                          num_output: int) -> List[TestCase]:
@@ -320,7 +320,7 @@ class PatchTestGenerator:
 
         return _mutated
 
-# 统计
+    # 统计
 
     def _estimate_coverage(self, suite: TestSuite) -> float:
         """估算测试套件对补丁行为的覆盖率。

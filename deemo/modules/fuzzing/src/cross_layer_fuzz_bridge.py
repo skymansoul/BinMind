@@ -104,7 +104,7 @@ class CrossLayerFuzzBridge:
         self._last_sync: float = 0.0
         self._stats = {'partitions': 0, 'repairs': 0, 'syncs': 0}
 
-# 构建
+    # 构建
 
     def build_campaign_dag(self, seeds: List, isrg=None) -> TaskDependencyGraph:
         """从种子列表 + 种子覆盖关系图构建 GRL 任务依赖图。
@@ -182,7 +182,7 @@ class CrossLayerFuzzBridge:
         self._dag = dag
         return dag
 
-# 划分与调度
+    # 划分与调度
 
     def partition_campaign(self, dag: TaskDependencyGraph = None,
                            n_nodes: int = None) -> Dict[int, List[str]]:
@@ -257,7 +257,7 @@ class CrossLayerFuzzBridge:
             return sorted(seeds_in_node, key=lambda x: local_ranks.get(x, 0.0), reverse=True)
         return list(seeds_in_node)
 
-# 反馈
+    # 反馈
 
     def coverage_feedback(self, seed_id: str, new_edges: int,
                           exec_time_ms: float):
@@ -286,7 +286,7 @@ class CrossLayerFuzzBridge:
         old_et = nd.exec_time
         nd.exec_time = 0.7 * old_et + 0.3 * max(0.001, exec_time_ms / 1000.0)
 
-# 工具
+    # 工具
 
     def _round_robin_assign(self, dag: TaskDependencyGraph,
                             n_nodes: int) -> Dict[int, List[str]]:

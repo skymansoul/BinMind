@@ -117,10 +117,6 @@ class PathSensitiveVRA:
     def check_safety(self, instructions: List[dict],
                      call_addr: int, size_reg: str,
                      alloc_size: int) -> bool:
-        """检查在call_addr处, size_reg的值是否可窄化到 ≤ alloc_size.
-
-        返回 True 表示安全 (被bounds check保护).
-        """
         narrowed = self.narrow_for_bounds_check(
             instructions, call_addr, size_reg)
         if narrowed and narrowed.hi <= alloc_size:

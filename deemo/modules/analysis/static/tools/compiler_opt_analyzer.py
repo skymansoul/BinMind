@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Fingerprint 编译器 toolchain 优化 level binary artifacts
-
-对给定二进制调用 strings 工具提取编译标识字符串，
-据此推断编译器厂商与优化级别，并评估安全缓解选项缺失带来的风险。
-"""
 
 import json
 import os

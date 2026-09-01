@@ -118,8 +118,7 @@ class LyapunovCarbonGate:
         self._lock = threading.Lock()
         self._history: deque = deque(maxlen=200)  # CarbonMetrics 记录
 
-# 准入决策
-
+    # 准入决策
     def admit(self, task_id: str, priority: float = 0.5,
               is_deferrable: bool = True) -> Tuple[AdmissionDecision, float]:
         """对单个任务的碳感知准入。
@@ -138,7 +137,7 @@ class LyapunovCarbonGate:
 
             # 估算该任务的碳排放 (gCO₂eq)
             # 碳速率 = intensity(g/kWh) * power(W) / 1000 / 3600 * 3600
-# intensity * power / 1000  (g/h)
+            #        = intensity * power / 1000  (g/h)
             # 假设任务持续 task_duration_s 秒 → carbon = rate * duration / 3600
             # 此处用 1 秒作为边际碳成本的近似 (每任务准入的增量)
             carbon_marginal = intensity * self._power / (1000.0 * 3600.0)
@@ -194,8 +193,7 @@ class LyapunovCarbonGate:
             ))
             return decision, defer_s
 
-# 批处理释放
-
+    # 批处理释放
     def release_deferred(self) -> List[str]:
         """释放延迟队列中到期或碳强度已降低的任务。
 
@@ -219,8 +217,7 @@ class LyapunovCarbonGate:
             self._deferred = remaining
             return released
 
-# 查询
-
+    # 查询
     @property
     def virtual_queue_length(self) -> float:
         return self._virtual_queue

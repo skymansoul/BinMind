@@ -23,9 +23,8 @@
 #   推导的 MR 集合。
 import math as _math
 import random as _random
-import struct as _struct
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt, Callable
+from typing import Callable
 
 from modules.stubs.stub_contract import FuncContract as _FuncContract
 
@@ -45,7 +44,7 @@ class FuzzCounterexample:
 
 @_dc
 class AdversarialFuzzResult:
-    """一次对抗性模糊测试的完整结果。"""
+    """一次启发式模糊测试的完整结果。"""
     func_name: str
     iterations: int = 0
     seeds_tried: int = 0
@@ -187,10 +186,9 @@ def _mutate_tuple_guided(args: tuple, mr_categories: list[str]) -> tuple:
     mutated = list(args)
     for i, v in enumerate(mutated):
         # 对每个违反的MR类别，50%概率施加该类别引导变换
-        import random as _rnd
         for cat in mr_categories[:2]:  # 最多应用前2个类别的引导
             guide = _MR_GUIDED_MUTATORS.get(cat)
-            if guide and _rnd.random() < 0.5:
+            if guide and _random.random() < 0.5:
                 try:
                     mutated[i] = guide(v)
                 except Exception:
@@ -264,8 +262,7 @@ class AdversarialFuzzer:
 
                 for _ in range(self.mutants_per_round):
                     # 70%随机变异 + 30%MR引导变异
-                    import random as _rnd2
-                    if _rnd2.random() < 0.3 and current_fitness > 0:
+                    if _random.random() < 0.3 and current_fitness > 0:
                         violated_cats = self._violated_categories(
                             fn, relations, current)
                         mutant = _mutate_tuple_guided(current, violated_cats)
@@ -367,7 +364,6 @@ class AdversarialFuzzer:
             except Exception:
                 pass
 
-# 辅助
     @staticmethod
     def _load_relations(fc: _FuncContract) -> list:
         try:
@@ -435,7 +431,6 @@ class AdversarialFuzzer:
         return unique
 
 
-# 便捷入口
 def fuzz_contract(fn: Callable, fc: _FuncContract,
                   max_iter: int = 200) -> AdversarialFuzzResult:
     """一行式对抗性模糊测试。"""

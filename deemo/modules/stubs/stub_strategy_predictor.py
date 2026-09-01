@@ -151,7 +151,6 @@ class StrategyPredictor:
             recommend_manual=recommend_manual,
         )
 
-# 特征提取
     def _extract_features(self, module_name: str,
                           contract=None) -> _Opt[StubFeatures]:
         """从模块合约中提取特征向量。"""
@@ -201,7 +200,6 @@ class StrategyPredictor:
 
         return feats
 
-# 相似度
     @staticmethod
     def _feature_similarity(a: StubFeatures, b: StubFeatures) -> float:
         """计算两个特征向量的归一化相似度 (0~1)。

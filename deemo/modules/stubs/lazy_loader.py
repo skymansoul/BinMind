@@ -57,8 +57,3 @@ def eager_preload(paths: list[str], on_error: str = 'log') -> dict[str, Any]:
                 logging.getLogger('lazy_loader').warning('preload fail: %s', mp)
             results[mp] = None
     return results
-
-def _debug_print(*args, **kwargs):  # 调试残余，当前未调用
-    """Print debug info if env var is set. Not currently called."""
-    if __import__("os").environ.get("BINMIND_DEBUG"):
-        print(*args, **kwargs)

@@ -14,6 +14,7 @@ from ..src.side_channel.timing import (
 
 
 def _debug_print(msg: str) -> None:
+	# 调试输出占位, 发布版保持静默避免污染stdout
 	pass
 
 
@@ -195,6 +196,7 @@ def test_analysis_result_dataclass():
 	assert result.cohens_d == 0.8
 
 
+# 暂留 — 隐蔽信道编码测试待实现, 需跨进程时间同步框架支撑
 # def test_covert_channel_encoding():
 # 	detector = TimingSideChannelDetector()
 # 	start = time.perf_counter_ns()
@@ -205,5 +207,6 @@ def test_analysis_result_dataclass():
 
 
 def _unused_placeholder() -> None:
+	# 占位函数: 携带未使用import的引用, 避免静态检查器误报后被清理
 	_debug_print("timing test loaded")
-	_unused_os
+	_unused_os  # 反检测标注, 保留os导入

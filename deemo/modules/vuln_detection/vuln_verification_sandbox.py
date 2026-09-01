@@ -2,7 +2,7 @@ import logging
 import os
 import time
 import hashlib
-import typing
+from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,17 @@ VerificationStatus.PARTIALLY_REPRODUCED = VerificationStatus("partially_reproduc
 class VerificationResult:
     __slots__ = ('verification_id', 'vuln_id', 'status', 'platform', 'snapshot_id', 'output', 'error', 'elapsed_seconds')
 
-    def __init__(self, verification_id, vuln_id, status, platform="linux_amd64", snapshot_id="", output="", error="", elapsed_seconds=0.0):
+    def __init__(
+        self,
+        verification_id: str,
+        vuln_id: str,
+        status: "VerificationStatus",
+        platform: str = "linux_amd64",
+        snapshot_id: str = "",
+        output: str = "",
+        error: str = "",
+        elapsed_seconds: float = 0.0,
+    ):
         self.verification_id = verification_id
         self.vuln_id = vuln_id
         self.status = status
@@ -52,7 +62,7 @@ class VerificationResult:
 
 
 class VulnVerificationSandbox:
-    """沙箱化漏洞验证框架——快照环境状态，执行exploit桩，记录验证结果。"""
+    """沙箱化漏洞验证框架, 快照环境状态, 执行exploit桩, 记录验证结果。"""
 
     def __init__(self, sandbox_dir: str = ""):
         self.sandbox_dir = sandbox_dir or os.path.join(

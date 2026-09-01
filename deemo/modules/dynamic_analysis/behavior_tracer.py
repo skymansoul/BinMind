@@ -1,6 +1,4 @@
-# behavior_tracer.py — dynamic API-call-sequence profiler
-# Categorises sequences into behaviour profiles: file, network, process, registry.
-
+# 动态 API 调用序列分析器，将序列归类为文件/网络/进程/注册表等行为画像
 import re
 import json
 from collections import OrderedDict, Counter
@@ -105,7 +103,7 @@ class ApiCall:
         return f"<ApiCall {self.name}({len(self.args)} args)>"
 
 class TraceResult:
-    """Container returned after tracing a binary."""
+    # 跟踪结果容器
     def __init__(self):
         self.calls = []
         self.categories_detected = BehaviorCategory.NONE
@@ -136,7 +134,7 @@ def _classify_single(api_name):
 
 
 def _extract_sequence_category(calls):
-    """Find the ordered sequence of unique behavior categories."""
+    # 提取有序的唯一行为类别序列
     seen = set()
     seq = []
     for c in calls:
@@ -147,7 +145,7 @@ def _extract_sequence_category(calls):
 
 
 def _sliding_window_match(seq, pattern, window_len):
-    """Sliding-window partial-order match for malicious behavior."""
+    # 滑动窗口偏序匹配恶意行为模式
     pat_len = len(pattern)
     for start in range(len(seq) - pat_len + 1):
         window = seq[start:start + pat_len]
@@ -159,13 +157,13 @@ def _sliding_window_match(seq, pattern, window_len):
 # ── main tracer ────────────────────────────────────────────────────────────
 
 class BehaviorTracer:
-    """Dynamic API-call-sequence behaviour classifier."""
+    # 动态 API 调用序列行为分类器
 
     def __init__(self, sensitivity=0.5):
         self.sensitivity = sensitivity
 
     def trace(self, binary):
-        """Trace API calls from binary or call list."""
+        # 从二进制或调用列表中追踪 API 调用
         result = TraceResult()
 
         if isinstance(binary, list):

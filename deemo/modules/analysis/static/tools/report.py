@@ -7,7 +7,6 @@ import os as _os
 
 
 class ReportGenerator:
-    """累积步骤数据并生成分析报告"""
 
     def __init__(self, output_dir="./reports"):
         self.output_dir = output_dir
@@ -44,7 +43,6 @@ class ReportGenerator:
         return generate_json(findings, binary_info)
 
     def write_report_to_disk(self, findings, binary_info, output_format='markdown'):
-        """将报告持久化到磁盘, 自动生成带时间戳的文件名，避免跨运行的路径冲突"""
         fmt = output_format or 'markdown'
         content = self.generate_report(findings, binary_info, output_format=fmt)
         try:

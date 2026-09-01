@@ -204,7 +204,7 @@ class FirmwareExtractor:
         return segments
 
     def detect_firmware_format(self):
-        # 内联
+        # 多偏移探测magic + 扩展名回退 + 熵判据，结果按置信度降序
         formats = []
         try:
             with open(self.firmware_path, 'rb') as f:
@@ -305,7 +305,7 @@ class FirmwareExtractor:
         return nested_count
 
     def extract_firmware(self, filter_pattern=None):
-        # 内联
+        # 主流程：建会话目录→binwalk或纯Python提取→递归解包→扫描→秘密扫描→汇总
         output_dir = os.path.join(self.output_base_dir, self.session_id)
         os.makedirs(output_dir, exist_ok=True); os.chmod(output_dir, 0o700)
         _logger.info(f"Starting firmware extraction to: {output_dir}")
@@ -666,7 +666,7 @@ class FirmwareExtractor:
         return [f['path'] for f in self.extracted_files if f['file_type'] == 'ELF']
 
     def generate_summary(self):
-        # 上下文连贯
+        # 分节输出：固件信息→提取统计→ELF清单，行缓冲后一次性拼接
         lines = ["## Firmware Analysis Summary", "",
                  f"- Firmware file: {os.path.basename(self.firmware_path)}",
                  f"- Firmware size: {self._format_size(os.path.getsize(self.firmware_path))}",

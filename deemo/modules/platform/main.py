@@ -264,7 +264,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     sub = parser.add_subparsers(dest='command', title='commands')
 
-# analyze
+    # analyze 子命令
     p_analyze = sub.add_parser('analyze', help='cross-platform analysis')
     p_analyze.add_argument('--target', help='target system identifier')
     p_analyze.add_argument('--firmware', help='firmware image path')
@@ -276,16 +276,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_analyze.add_argument('--dry-run', action='store_true', help='check toolchain only')
     p_analyze.add_argument('-o', '--output', help='output JSON path')
 
-# correlate
+    # correlate 子命令
     p_corr = sub.add_parser('correlate', help='cross-layer correlation')
     p_corr.add_argument('--findings', required=True, help='findings JSON path')
 
-# provenance
+    # provenance 子命令
     p_prov = sub.add_parser('provenance', help='binary provenance tracking')
     p_prov.add_argument('--sbom', help='SBOM JSON path')
     p_prov.add_argument('--hash', help='binary hash to query')
 
-# diff
+    # diff 子命令
     p_diff = sub.add_parser('diff', help='OTA diff security classification')
     p_diff.add_argument('--old', required=True, help='old firmware path')
     p_diff.add_argument('--new', required=True, help='new firmware path')
@@ -293,7 +293,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p_diff.add_argument('--new-tag', help='new version tag')
     p_diff.add_argument('--diff-json', help='pre-computed diff JSON')
 
-# taint
+    # taint 子命令
     p_taint = sub.add_parser('taint', help='cross-layer taint tracking')
     p_taint.add_argument('--mmio', nargs='+', help='MMIO source specs')
     p_taint.add_argument('--mmio-bytes', type=int, default=8)

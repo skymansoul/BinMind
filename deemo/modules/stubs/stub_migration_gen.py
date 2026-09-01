@@ -90,7 +90,6 @@ class _CallRewriter(_ast.NodeTransformer):
         has_kw = any(kw.arg == self.param_name for kw in node.keywords)
         if has_kw:
             return node
-        # 解析默认值: 使用类型推断，禁止 eval()
         resolved = _resolve_default_val(self.default_val)
         node.keywords.append(_ast.keyword(
             arg=self.param_name,
@@ -98,8 +97,21 @@ class _CallRewriter(_ast.NodeTransformer):
         self.modified = True
         return node
 
+    def _remove_arg(self, node: _ast.Call) -> _ast.Call:
+        node.keywords = [kw for kw in node.keywords
+                        if kw.arg != self.param_name]
+        self.modified = True
+        return node
+
+    def _rename(self, node: _ast.Call) -> _ast.Call:
+        if isinstance(node.func, _ast.Attribute):
+            node.func.attr = self.new_name
+            self.modified = True
+        return node
+
+
 def _resolve_default_val(raw: str) -> object:
-    """Parse a string default value into a Python constant. No eval()."""
+    """解析字符串默认值为 Python 常量，禁止 eval()。"""
     if raw in ('None', ''):
         return None
     if raw == 'True':
@@ -114,31 +126,16 @@ def _resolve_default_val(raw: str) -> object:
         return float(raw)
     except ValueError:
         pass
-    # Quoted string: strip the surrounding quotes
     if len(raw) >= 2:
         first, last = raw[0], raw[-1]
         if first == last and first in ('"', "'"):
             return raw[1:-1]
-    # bytes literal or other complex literal
     if raw.startswith('b"') or raw.startswith("b'"):
         try:
-            return ast.literal_eval(raw)
+            return _ast.literal_eval(raw)
         except (ValueError, SyntaxError):
             return raw
     return raw
-
-    def _remove_arg(self, node: _ast.Call) -> _ast.Call:
-        # 移除关键字参数
-        node.keywords = [kw for kw in node.keywords
-                        if kw.arg != self.param_name]
-        self.modified = True
-        return node
-
-    def _rename(self, node: _ast.Call) -> _ast.Call:
-        if isinstance(node.func, _ast.Attribute):
-            node.func.attr = self.new_name
-            self.modified = True
-        return node
 
 
 class MigrationGenerator:
@@ -233,7 +230,7 @@ class MigrationGenerator:
 
     @staticmethod
     def _extract_aliases(tree: _ast.AST, source_module: str) -> dict[str, str]:
-        """Extract {alias -> original_module} mappings for the target module."""
+        """提取目标模块的 {别名 → 原始模块名} 映射。"""
         aliases = {}
         for node in _ast.walk(tree):
             if isinstance(node, _ast.Import):

@@ -16,15 +16,7 @@ from ._covert_types import CovertChannelAlert
 
 
 class DnsTunnelDetector:
-    """DNS 隧道检测 —— 综合熵+长度+频率+查询多样性评分。
-
-    DNS隧道的典型特征：
-    - 查询域名标签熵值异常高（base32/base64编码数据）
-    - 单个标签长度异常长（>40字符）
-    - 查询频率远高于正常DNS（隧道需持续通信）
-    - 查询域名多样性极低（总是查询同一隧道域名）
-    - TXT/MX/CNAME等非A记录异常占比高
-    """
+    """基于熵、长度、频率与查询多样性四维特征综合评分。"""
 
     def detect(self, queries: List[Dict]) -> List[CovertChannelAlert]:
         """输入查询列表 [{domain, qtype, query_len, timestamp}, ...]"""

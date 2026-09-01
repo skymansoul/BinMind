@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from typing import Optional
+from typing import Optional, Dict, Any, List
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +39,7 @@ class FunctionInliner:
         self._max_size = 64
         self._min_call_count = 3
 
-    def analyze_candidates(self, functions: list[Dict[str, Any]]) -> List[InlineCandidate]:
+    def analyze_candidates(self, functions: List[Dict[str, Any]]) -> List[InlineCandidate]:
         candidates = []
 
         for func in functions:
@@ -66,7 +66,7 @@ class FunctionInliner:
 
         return False
 
-    def inline(self, candidates: list[InlineCandidate]) -> List[InlineResult]:
+    def inline(self, candidates: List[InlineCandidate]) -> List[InlineResult]:
         results = []
 
         for candidate in candidates:
@@ -84,14 +84,14 @@ class FunctionInliner:
     def set_strategy(self, strategy: InlineStrategy):
         self._strategy = strategy
 
-    def set_thresholds(self, max_size: typing.Optional[int] = None, min_call_count: typing.Optional[int] = None):
+    def set_thresholds(self, max_size: Optional[int] = None, min_call_count: Optional[int] = None):
         if max_size is not None:
             self._max_size = max_size
         if min_call_count is not None:
             self._min_call_count = min_call_count
 
 
-def inline_functions(functions: list[Dict[str, Any]], strategy: str = "size_based") -> List[InlineResult]:
+def inline_functions(functions: List[Dict[str, Any]], strategy: str = "size_based") -> List[InlineResult]:
     inliner = FunctionInliner(InlineStrategy(strategy.upper()))
     candidates = inliner.analyze_candidates(functions)
     return inliner.inline(candidates)

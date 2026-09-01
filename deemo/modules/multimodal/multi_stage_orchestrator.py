@@ -5,6 +5,8 @@
 三种执行策略：sequential（线性）、parallel_layer（层内并行）、best_effort（失败继续）。
 支持 subprocess 真实执行、目标类型感知过滤、链式模糊变异、动态策略自选。
 """
+from __future__ import annotations
+
 from enum import Enum
 from typing import Dict, List, Optional, Set, Callable, Any
 from dataclasses import dataclass, field

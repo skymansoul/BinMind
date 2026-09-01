@@ -68,6 +68,14 @@ class ModelConfig:
     learning_rate: float = 0.001
     batch_size: int = 32
     max_epochs: int = 50
+    embedding_dim: Optional[int] = None
+    hidden_dim: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if self.embedding_dim is not None:
+            self.embed_dim = self.embedding_dim
+        if self.hidden_dim is not None:
+            self.embed_dim = self.hidden_dim
 
 
 class BasicBlockTokenizer:
@@ -260,12 +268,44 @@ class GPTStyleModel:
                     x = self.ln_f(x)
                     return self.head(x)
 
-            self._pytorch_model = MiniGPT(config)
+            self._pytorch_model = MiniGPT(self.config)
             _log.info("PyTorch GPT model initialized")
 
         except ImportError:
             _log.info("PyTorch not available, using n-gram fallback model")
             self._pytorch_model = None
+
+    def __call__(self, x):
+        # 直接转发到 PyTorch 模型的 forward
+        if self._pytorch_model is not None:
+            return self._pytorch_model(x)
+        raise RuntimeError("PyTorch model not available")
+
+    def compute_perplexity(self, tokens):
+        # 计算序列困惑度，返回 float
+        if self._pytorch_model is None:
+            return 0.0
+        import torch
+        import torch.nn.functional as F
+        model = self._pytorch_model
+        model.eval()
+        with torch.no_grad():
+            if tokens.dim() == 1:
+                tokens = tokens.unsqueeze(0)
+            logits = model(tokens)
+            log_probs = F.log_softmax(logits, dim=-1)
+            shift_logits = log_probs[..., :-1, :].contiguous()
+            shift_labels = tokens[..., 1:].contiguous()
+            nll = F.nll_loss(
+                shift_logits.view(-1, shift_logits.size(-1)),
+                shift_labels.view(-1),
+                reduction='mean',
+            )
+            return float(torch.exp(nll).item())
+
+    def eval(self):
+        if self._pytorch_model is not None:
+            self._pytorch_model.eval()
 
 # 模型持久化：避免每次重启都重新训练
     def save_model(self, directory: str) -> None:
@@ -955,14 +995,15 @@ class TrajectoryAnomalyDetector:
         try:
             os.makedirs(path, exist_ok=True)
 
+            # 委托给 GPTStyleModel 的持久化方法，内部区分 PyTorch/n-gram 双路径
             if self.model is not None:
-                import torch
-                torch.save(self.model.state_dict(), os.path.join(path, "model.pt"))
+                self.model.save_model(path)
 
-            self.tokenizer.save(os.path.join(path, "tokenizer.pkl"))
+            self.tokenizer.save(os.path.join(path, "tokenizer.json"))
 
             config_data = {
                 'threshold': self.threshold,
+                '_threshold': self._threshold,
                 'config': self.config.__dict__
             }
             with open(os.path.join(path, "config.pkl"), 'wb') as f:
@@ -980,16 +1021,20 @@ class TrajectoryAnomalyDetector:
             with open(os.path.join(path, "config.pkl"), 'rb') as f:
                 config_data = pickle.load(f)
 
-            self.threshold = config_data['threshold']
-            self.config.__dict__.update(config_data['config'])
+            self.threshold = config_data.get('threshold', 100.0)
+            self._threshold = config_data.get('_threshold', self.threshold)
+            self.config.__dict__.update(config_data.get('config', {}))
 
-            self.tokenizer.load(os.path.join(path, "tokenizer.pkl"))
+            self.tokenizer.load(os.path.join(path, "tokenizer.json"))
 
-            import torch
-            self.model = GPTStyleModel(self.config).to(self._get_device())
-            self.model.load_state_dict(torch.load(os.path.join(path, "model.pt"), map_location=self._get_device()))
-            self.model.eval()
+            if self.model is None:
+                self.model = GPTStyleModel(self.config)
+            if not self.model.load_model(path):
+                _log.warning("未找到已保存的模型权重文件")
+            else:
+                self.model.eval()
 
+            self._trained = True
             _log.info(f"模型已从 {path} 加载")
             return True
         except Exception as e:
@@ -1025,7 +1070,8 @@ class TrajectoryAnomalyAnalyzer:
         mode = kwargs.get("mode", "detect")
 
         try:
-            is_valid, error = self.validate_input(mode=mode, **kwargs)
+            validate_kwargs = {k: v for k, v in kwargs.items() if k != "mode"}
+            is_valid, error = self.validate_input(mode=mode, **validate_kwargs)
             if not is_valid:
                 return {"success": False, "error": error}
 

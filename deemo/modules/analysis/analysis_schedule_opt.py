@@ -41,11 +41,7 @@ class StageProfile:
 class AnalysisScheduleOptimizer:
     """分析管线调度优化器.
 
-    用法:
-      aso = AnalysisScheduleOptimizer()
-      aso.register_stage('decompile', depends_on=['disasm'])
-      aso.record_execution('decompile', elapsed_s=3.2, success=True, findings=1)
-      order = aso.optimize_order()
+    依据历史执行数据在线重排阶段顺序, 依赖约束下按得分降序拓扑出队.
     """
 
     def __init__(self):

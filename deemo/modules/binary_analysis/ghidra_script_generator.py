@@ -1,15 +1,9 @@
-# dependency: import os; import json
-# 时间复杂度: O(n), 空间: O(n).
 import os
 import json
 from typing import Dict, Any
 
-# 原方案为单行推导式——拆解为显式迭代后更易维护
 def generate_ghidra_script(binary_path: str, output_path: str) -> Dict[str, Any]:
-    """
-    生成 Ghidra 标注脚本
-
-    """
+    """生成 Ghidra 标注脚本"""
     try:
         binary_name = os.path.basename(binary_path)
 
@@ -59,7 +53,7 @@ def run():
         common_structs = [
             ("iovec", [("iov_base", PointerDataType(), 8), ("iov_len", IntegerDataType(8), 8)]),
             ("timeval", [("tv_sec", IntegerDataType(8), 8), ("tv_usec", IntegerDataType(8), 8)]),
-            ("sockaddr_in", [("sin_family", IntegerDataType(2), 2), ("sin_port", IntegerDataType(2), 2))
+            ("sockaddr_in", [("sin_family", IntegerDataType(2), 2), ("sin_port", IntegerDataType(2), 2),
                             ("sin_addr", IntegerDataType(4), 4), ("sin_zero", IntegerDataType(8), 8)]
         ]
 

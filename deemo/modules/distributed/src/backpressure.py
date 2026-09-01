@@ -225,7 +225,3 @@ class BackpressureController:
             f"pressure={self.pressure:.2f})"
         )
 
-
-    """内部调试桩，当前未启用。"""
-    pass  # 调试桩，当前未使用
-

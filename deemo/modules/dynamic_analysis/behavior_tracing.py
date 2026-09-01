@@ -1,16 +1,15 @@
-# Entry-point: BehaviorTracer with string-level pattern matching and typed report output.
-
+# BehaviorTracer 入口：字符串级模式匹配与结构化报告输出
 import os
 import logging
 
-__log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class BehaviorTracer:
-    """Binary feature scanner — matches API import strings against a behavior taxonomy."""
+    # 二进制特征扫描器，将 API 导入字符串与行为分类法匹配
 
     def __init__(self):
-        """Seed the pattern library with categorized I/O, network, process, and registry signatures."""
+        # 用分类好的 I/O、网络、进程、注册表签名填充模式库
         self.patterns = [
             {'pattern': 'socket',       'type': 'Network',  'description': 'Network socket operation'},
             {'pattern': 'connect',      'type': 'Network',  'description': 'Network connection attempt'},
@@ -34,11 +33,11 @@ class BehaviorTracer:
         self.behaviors = []
 
     def trace(self, binary_path, output_dir=None):
-        """Scan binary for pattern matches; optionally emit a grouped report to disk."""
+        # 扫描二进制文件中的模式匹配，可选输出分组报告到磁盘
         try:
             self.behaviors = []
 
-            # Latin-1: safe superset for arbitrary byte sequences in binaries.
+            # Latin-1 编码：二进制中任意字节序列的安全超集
             with open(binary_path, 'rb') as f:
                 content = f.read().decode('latin-1', errors='ignore')
 
@@ -59,7 +58,7 @@ class BehaviorTracer:
                     f.write(f"Binary: {binary_path}\n")
                     f.write(f"Behaviors Detected: {hit_count}\n\n")
 
-                    # Partition matched behaviors by category for structured output.
+                    # 按类别分组匹配到的行为用于结构化输出
                     by_type = {}
                     for behavior in self.behaviors:
                         behavior_type = behavior['type']
@@ -88,6 +87,6 @@ class BehaviorTracer:
 
 
 def trace_behavior(binary_path, output_dir=None):
-    """Backward-compatible entry: instantiate tracer and delegate."""
+    # 向后兼容入口，实例化 tracer 后委托执行
     tracer = BehaviorTracer()
     return tracer.trace(binary_path, output_dir)

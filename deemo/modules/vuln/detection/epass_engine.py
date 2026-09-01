@@ -82,13 +82,6 @@ class EpassReport:
 class EpassEngine:
     """漏洞利用原语感知的沙箱策略合成引擎。
 
-    使用示例:
-        engine = EpassEngine()
-        report = engine.generate(
-            strategies=['rop_chain', 'ret2libc'],
-            vuln_type='stack_buffer_overflow',
-            binary_name='/usr/bin/target')
-
     与exploit_generation_pipeline集成:
       ExploitPlan.strategies - 传入strategies参数
       保护机制信息 - 用于效果评估(ASLR/NX已启用-某些原语天然受阻)

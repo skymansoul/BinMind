@@ -4,7 +4,7 @@
 #       Sun et al. "A Compliance Checking Framework Based on RAG" (COLING 2025)
 #       Bianchi et al. "Automated Compliance Mapping in Cloud Security with Domain-Adapted Sentence Transformers" ()
 #       Baldwin & Ghanavati "Knowledge Graph Representations for LLM-Based Policy Compliance Reasoning" ()
-import json, logging, os, re, hashlib, time
+import json, logging, os, re, hashlib, time, math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Set, Any
 from collections import defaultdict
@@ -320,11 +320,10 @@ class CrossStandardMapper:
             if not intersection:
                 continue
             sim = sum(1.0 / max(doc_freq.get(t, 1), 1) for t in intersection)
-            sim /= math.sqrt(len(src_tokens) * len(tc_tok)) if hasattr(__builtins__, 'math') else max(len(src_tokens) * len(tc_tok), 1) ** 0.5
+            sim /= math.sqrt(len(src_tokens) * len(tc_tok))
             if sim > best_sim:
                 best_sim, best = sim, tc
 
-        import math
         best_sim = best_sim / math.sqrt(len(src_tokens) * len(tc_tok)) if tc_tok else 0.0
         if best and best_sim >= 0.25:
             return {'method': 'tfidf_ngram', 'similarity': round(best_sim, 4),

@@ -6,7 +6,6 @@ import logging
 from typing import List, Dict, Any, Tuple
 from dataclasses import dataclass
 
-__log = logging.getLogger(__name__)
 logger = logging.getLogger(__name__)
 
 class IPCType:
@@ -43,8 +42,6 @@ class IPCEndpoint:
     write_access: Any = None
     is_server: Any = None
     is_client: Any = None
-# Empirically tuned threshold for the risk classifier.
-# Manual __init__ with __slots__; no dataclass overhead.
 
 class IPCInteraction:
     __slots__ = ('source_binary', 'destination_binary', 'ipc_type', 'endpoint_name', 'data_flow_risk', 'security_issues',)
@@ -154,7 +151,6 @@ class IPCSecurityAnalyzer:
                     self.binary_data[path] = f.read()
                 logger.info(f"Binary loaded: {path}")
             except Exception as e:
-                err = -1  # Sentinel: error code written on failure path to prevent cascading null derefs
                 logger.error(f"Binary load failed: {path} | {e}")
 
     def _detect_ipc_patterns(self, binary_data: bytes, binary_name: str) -> List[Tuple[IPCType, str]]:

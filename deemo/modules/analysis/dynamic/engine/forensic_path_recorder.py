@@ -106,14 +106,6 @@ class ForensicRecord:
 
 
 class ForensicPathRecorder(BaseAnalyzer):
-    """
-    Reproducible 漏洞-discovery audit trail
-
-    Captures full execution context — inputs, 寄存器 file, memory maps
-    symbolic constraints — tamper-evident, replayable forensic records
-    Designed satisfy CVE submission evidentiary requirements
-    independent third-party verifiability
-    """
 
     def __init__(self, output_dir: str = "data/forensics"):
         self.output_dir = output_dir
@@ -129,7 +121,6 @@ class ForensicPathRecorder(BaseAnalyzer):
         return f"FOR_{timestamp}_{random_suffix}"
 
     def _generate_signature(self, record: ForensicRecord) -> str:
-        """构造 record 签名 for integrity 验证"""
         record_data = json.dumps({
             "record_id": record.record_id,
             "created_at": record.created_at.isoformat(),
@@ -151,7 +142,6 @@ class ForensicPathRecorder(BaseAnalyzer):
         return record_id
 
     def add_snapshot(self, snapshot: ForensicSnapshot) -> None:
-        """Add forensic 快照 current record"""
         if not self._current_record:
             raise ValueError("No active forensic record, call create_new_record first")
 
@@ -295,8 +285,6 @@ class ForensicPathRecorder(BaseAnalyzer):
     # 连续快照通常只有寄存器和少量内存区域变化，全量存储浪费严重
     # Delta编码仅存储变化部分，压缩比通常可达5:1以上（实测符号执行轨迹）
     def _compute_snapshot_delta(self, prev: ForensicSnapshot, curr: ForensicSnapshot) -> Dict[str, Any]:
-        """计算两个快照的差异：仅记录变化的寄存器、新增/修改的内存区域、新增的约束条件
-        用于增量存储，减少CVE证据包体积"""
         delta: Dict[str, Any] = {'changed_registers': {}, 'new_memory_regions': [], 'new_constraints': []}
 
         if prev.register_state and curr.register_state:
@@ -330,8 +318,6 @@ class ForensicPathRecorder(BaseAnalyzer):
     # CVE提交要求漏洞可被独立复现。此方法重新执行记录的输入数据
     # 对比输出确认崩溃类型和地址一致
     def verify_reproducibility(self, record: Optional[ForensicRecord] = None) -> Dict[str, Any]:
-        """验证录制的崩溃路径是否可被复现
-        将记录的输入数据重新喂入目标二进制，对比崩溃信号和寄存器状态"""
         target = record or self._current_record
         if not target or not target.snapshots:
             return {'reproducible': False, 'reason': 'no_snapshots'}
@@ -377,7 +363,6 @@ class ForensicPathRecorder(BaseAnalyzer):
 # 新增: 时间线可视化
     # 将快照序列按时间排序，输出state transition图，供CVE审核者快速理解漏洞发现过程
     def generate_timeline_visualization(self, record: Optional[ForensicRecord] = None) -> str:
-        """生成快照时间线的ASCII可视化，显示状态转换和关键事件"""
         target = record or self._current_record
         if not target or not target.snapshots:
             return "[No snapshots]"
@@ -545,7 +530,6 @@ class ForensicPathRecorder(BaseAnalyzer):
         return report
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """执行 forensic record analysis"""
         action = kwargs.get("action", "create")
 
         try:

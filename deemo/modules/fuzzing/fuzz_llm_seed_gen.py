@@ -155,7 +155,7 @@ class TemplateSeedGenerator(SeedGenerator):
                 break
         return seeds[:n]
 
-# 格式族构造子程序
+    # 格式族构造子程序
     # 均通过随机填充或长度注入制造样本差异
 
     def _rand_fill(self, lo: int = 1, hi: int = 8) -> bytes:

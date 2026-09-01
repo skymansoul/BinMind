@@ -2,6 +2,8 @@
 整数溢出源级检测类型定义 — IOSV (Integer Overflow Source Verifier) 共用类型.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple

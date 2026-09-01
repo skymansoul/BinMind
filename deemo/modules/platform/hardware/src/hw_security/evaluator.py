@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 def _debug_print(msg: str) -> None:
+    # 调试输出占位, 发布版保持静默避免污染stdout
     pass
 
 
@@ -19,7 +20,7 @@ class ExploitabilityDifficulty:
     MEDIUM = "medium"
     HARD = "hard"
     VERY_HARD = "very_hard"
-    EXPLOITATION_IMPOSSIBLE = "c"
+    EXPLOITATION_IMPOSSIBLE = "impossible"
 
 
 class HardwareFeature:
@@ -35,7 +36,7 @@ class HardwareFeature:
     PAGE_TABLE_ISOLATION = "page_table_isolation"
     CET = "cet"
     IBT = "ibt"
-    SHSTK = "c"
+    SHSTK = "shstk"
     # CFI / stack canary / RELRO / NX
     CFI = "cfi"
     STACK_CANARY = "stack_canary"
@@ -50,7 +51,7 @@ class ExploitDifficulty:
     MEDIUM = "Medium"
     HARD = "Hard"
     EXTREMELY_HARD = "Extremely Hard"
-    IMPOSSIBLE = "c"
+    IMPOSSIBLE = "Impossible"
 
 
 class ExploitabilityImpact:
@@ -246,7 +247,7 @@ class HardwareSecurityEvaluator:
                         elif machine == 40:
                             return 'arm'
             except Exception:
-                logger.debug("suppressed", exc_info=True)
+                logger.debug(f"架构识别失败, 回退unknown: {self.binary_path}", exc_info=True)
             return 'unknown'
 
     def _fetch_compile_hardening(self) -> None:
@@ -434,7 +435,6 @@ class HardwareSecurityEvaluator:
     def _evaluate_x86_64_fallback(self, report: HardwareSecurityEvaluationReport) -> None:
         # 备用路径：调用readelf解析note段获取CET标志
         try:
-            result_list = []
             try:
                 result = subprocess.run(
                     ['readelf', '-n', self.binary_path],
@@ -737,6 +737,7 @@ class HardwareSecurityEvaluator:
         else:
             return "风险无显著变化"
 
+    # 暂留 — 旧版绕过难度评估, 已被EPSS加权模型取代
     # def _resolve_mitigation_bypass_difficulty(self, feature_type: str) -> str:
     #     """评估绕过特定硬件防护所需难度级别。"""
     #     bypass_map = {

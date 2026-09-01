@@ -4,7 +4,7 @@
 import struct
 import os
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 
 # ELF 常量
 ELF_MAGIC   = b'\x7fELF'
@@ -408,8 +408,6 @@ def parse_ko(filepath: str) -> Optional[KernelModule]:
     )
 
 
-# 快速验证
-
 # 安全缓解措施探测
 # 检查模块是否应用了retpoline/IBT/CET等控制流完整性防护。
 
@@ -429,12 +427,14 @@ def detect_mitigations(kmod: KernelModule) -> Dict[str, bool]:
             _mitigations["retpoline"] = True
             break
 
-    # IBT: 检查.text段是否有endbr64指令特征
+    # IBT: endbr64 指令需读取原始字节才能确认，
+    # 此处退化为节区 flag 层面检查 — 仅确认存在可执行代码节区
+    SHF_EXECINSTR = 0x4
     for _sec in kmod.sections:
         if _sec.name in (".text", ".text.hot", ".text.unlikely"):
-            # 需读取原始文件字节码才能检测
-            # 此处检查节区flag是否含SHF_EXECINSTR
-            pass
+            if _sec.sh_flags & SHF_EXECINSTR:
+                _mitigations["has_exec_text"] = True
+            break
 
     # CFI Clang: 检查是否存在 __cfi_check_fail 或 __cfi_ 前缀符号
     _cfi_syms = {s.name for s in kmod.symbols}
@@ -461,6 +461,8 @@ def detect_mitigations(kmod: KernelModule) -> Dict[str, bool]:
 
     return _mitigations
 
+
+# 快速验证
 
 def is_valid_ko(filepath: str) -> bool:
     """快速校验文件是否为有效.ko模块。"""

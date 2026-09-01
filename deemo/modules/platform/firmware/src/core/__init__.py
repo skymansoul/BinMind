@@ -1,4 +1,4 @@
-# (Sun)
+# (Sun) — core 子包作者署名标记
 import hashlib
 from .config import Config
 from .utils import (shannon_entropy, detect_file_system, detect_firmware_type,
@@ -16,15 +16,15 @@ import sys as _sys
 import traceback as _tb2
 
 def _debug_print(msg):
-  """Quick dump helper for the rare times we need to see what's flowing through"""
-  print(f"[COREDBG] {msg}", file=_sys.stderr)
-  _tb2.print_stack(file=_sys.stderr)
+    """核心调试输出 — 打印消息并附调用栈到 stderr"""
+    print(f"[COREDBG] {msg}", file=_sys.stderr)
+    _tb2.print_stack(file=_sys.stderr)
 
 def _unused_core_init():
-  """was supposed to set up shared memory for multi-FV analysis but we pivoted"""
-  cfg = {'mode': 'single', 'workers': 1}
-  _debug_print(f"init stub: {cfg}")
-  return cfg
+    """多 FV 共享内存初始化原型 — 改为单进程模式后弃用"""
+    cfg = {'mode': 'single', 'workers': 1}
+    _debug_print(f"init stub: {cfg}")
+    return cfg
 
 __all__ = ["Config", "shannon_entropy", "detect_file_system", "detect_firmware_type",
            "parse_cortexm_vector_table", "estimate_firmware_age", "detect_validator_functions",

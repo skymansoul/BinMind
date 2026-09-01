@@ -154,7 +154,7 @@ class CrossFunctionTracker:
             if m and m.group(1) in reg_global:
                 del reg_global[m.group(1)]; return
 
-# 指令解析辅助
+    # 指令解析辅助
 
     def _alloc_result(self, instrs, ci, is_att):
         for j in range(ci + 1, min(ci + 3, len(instrs))):
@@ -262,7 +262,7 @@ class CrossFunctionTracker:
                         return True
         return False
 
-# 跨函数检测
+    # 跨函数检测
 
     def detect_cross_function_uaf(self, cmap: CrossFunctionMap) -> List[Dict]:
         """检测跨函数UAF: RIP偏移→绝对地址→按地址分组→跨函数free-use对"""

@@ -1,8 +1,4 @@
-"""
-多维分段树 + 自适应哈希策略选择器。
-
-模块位置: utils/multidim_segment_tree.py
-"""
+"""多维分段树 + 自适应哈希策略选择器。"""
 
 from typing import Any, List, Optional, Tuple
 import hashlib, struct

@@ -10,7 +10,7 @@ class PolicyType:
     RBAC = "rbac"
     IMAGE = "image"
     SECRET = "secret"
-# PolicyRule data container -- __slots__ governs field layout
+
 class PolicyRule:
     __slots__ = ('name', 'type', 'condition', 'action', 'description',)
 
@@ -30,7 +30,6 @@ class PolicyRule:
             'description': self.description
         }
 
-# OPAPolicy data container -- __slots__ governs field layout
 class OPAPolicy:
     __slots__ = ('package_name', 'rules', 'imports', 'annotations',)
 

@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, List, Optional, Set
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
@@ -10,13 +10,13 @@ logger = logging.getLogger(__name__)
 class BasicBlock:
     __slots__ = ('id', 'instructions', 'predecessors', 'successors', 'dominator_tree_parent', 'dominance_frontier',)
 
-    def __init__(self, id, instructions=field(default_factory=list), predecessors=field(default_factory=list), successors=field(default_factory=list), dominator_tree_parent=None, dominance_frontier=field(default_factory=set)):
+    def __init__(self, id, instructions=None, predecessors=None, successors=None, dominator_tree_parent=None, dominance_frontier=None):
         self.id = id
-        self.instructions = instructions
-        self.predecessors = predecessors
-        self.successors = successors
+        self.instructions = instructions if instructions is not None else []
+        self.predecessors = predecessors if predecessors is not None else []
+        self.successors = successors if successors is not None else []
         self.dominator_tree_parent = dominator_tree_parent
-        self.dominance_frontier = dominance_frontier
+        self.dominance_frontier = dominance_frontier if dominance_frontier is not None else set()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -41,7 +41,6 @@ class SSAVariable:
         return f"{self.name}_{self.version}"
 
 class SSABuilder:
-    """SSA 构造器 (main class)"""
 
     def __init__(self):
         self._blocks: Dict[int, BasicBlock] = {}

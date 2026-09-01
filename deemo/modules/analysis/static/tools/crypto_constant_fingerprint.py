@@ -3,41 +3,6 @@
 # 放宽签名容差
 # 卡方 S-box 置换检验: 区分256字节排列与随机数据, 消除对AES的假阳性
 
-"""加密算法常量熵指纹 - 通过常量池熵剖面识别加密函数
-
-现有加密识别方法:
-  - BinCrypto: 区间域仿真+相似度分析, 83.2% 准确率, 需仿真
-  - Mnemocrypt: 随机森林在助记符上, ~6s/样本, 需训练
-  - CipherTrace: 动态 VMI trace 分析, 需执行环境
-
-本模块的方法: 加密算法需要常量表 (S-box, 轮常量, 初始向量)
-这些常量表在字节级熵剖面上产生独特的签名
-
-例如:
-  AES S-box: 256 字节的全排列->字节熵 = log2(256) = 8.0 (理论最大值)
-  SHA-256 K: 64 个 32-bit 常量->字节熵 ≈ 5.5 (64 个半随机值)
-  ChaCha20 常量: "expand 32-byte k" -> ASCII 段熵低, 后续轮常量熵高
-
-扫描策略:
-  1. 从二进制 .rodata/.text 段提取候选常量区域
-  2. 滑动窗口熵剖面 (256 字节窗, 64 字节步) + 卡方置换检验
-  3. 与已知加密算法签名做相关性匹配
-  4. 卡方检验区分真 S-box (256 字节排列) 与随机/重复数据
-
-卡方置换检验原理:
-  S-box 是 0..255 的排列, 每字节值恰好出现一次
-  期望频数 E_i=1, 观测频数 O_i={0,1,2,...}
-  χ² = Σ(O_i - 1)² / 1 = Σ(O_i - 1)²
-  自由度 255, 95% 临界值 ≈ 293
-  真 S-box: χ² ≈ 0; 重复模式: χ² > 10³; 随机: χ² ≈ 255±22
-
-优势:
-  - 速度: 熵计算 O(N), 匹配 O(K), K=已知算法数≈10
-    总耗时 < 10ms/MB (vs BinCrypto 的秒级仿真)
-  - 鲁棒性: 仅依赖常量数据, 不依赖指令序列->对混淆不敏感
-  - 不需要执行环境或训练数据
-"""
-
 from __future__ import annotations
 
 import math
@@ -77,7 +42,7 @@ _CRYPTO_SIGNATURES: Dict[str, Tuple[float, float, int]] = {
 
 @dataclass
 class CryptoDetection:
-    """单个加密算法检测结果"""
+    # 单个加密算法检测结果
     algorithm: str
     confidence: float
     offset: int                 # 常量表在二进制中的偏移
@@ -88,30 +53,20 @@ class CryptoDetection:
 
 @dataclass
 class CryptoFingerprintReport:
-    """加密常量指纹检测报告"""
+    # 加密常量指纹检测报告
     detections: List[CryptoDetection]
     total_bytes_scanned: int
     scan_time_ms: float = 0.0
 
 
 class CryptoConstantFingerprinter:
-    """加密算法常量熵指纹提取器
-
-    用法:
-    fingerprinter = CryptoConstantFingerprinter()
-    report = fingerprinter.scan(binary_data)
-    """
+    # 加密算法常量熵指纹提取器
 
     _WINDOW_SIZE = 256
     _STEP_SIZE = 64
 
     def scan(self, data: bytes) -> CryptoFingerprintReport:
-        """扫描二进制数据中的加密常量表
-
-        data: 完整的二进制文件内容 (或 .rodata 段)
-
-        返回 CryptoFingerprintReport
-        """
+        # 扫描二进制数据中的加密常量表
         import time
         t0 = time.perf_counter()
 
@@ -174,11 +129,7 @@ class CryptoConstantFingerprinter:
         )
 
     def _window_entropy_stats(self, data: bytes) -> Tuple[float, float]:
-        """计算窗口字节熵, 全窗统计+子块标准差
-
-        均值: 全 256 字节窗的 Shannon 熵 (最大 8.0)
-        标准差: 8 个 32 字节子块熵的散布
-        """
+        # 计算窗口字节熵: 全窗Shannon熵(均值) + 8个32字节子块熵散布(标准差)
         if len(data) < 32:
             return 0.0, 0.0
 
@@ -219,14 +170,9 @@ class CryptoConstantFingerprinter:
 
     @staticmethod
     def _chi_squared_permutation_test(data: bytes) -> Tuple[float, bool]:
-        """卡方置换检验: 判断 256 字节是否构成 0..255 的排列。
-
-        真 S-box (如 AES): 每字节值恰好出现一次, 期望频数=1,
-        χ² = Σ(O_i - 1)², 自由度=255; 真排列 χ² ≈ 0, 随机数据
-        χ² ≈ 255±22 (泊松分布, λ=1), 重复模式 χ² >> 10³。
-        返回 (χ²值, 是否为真排列), 阈值 50 允许少量偏差
-        (编译器可能在 S-box 前后插入对齐填充)。
-        """
+        # 卡方置换检验: 判断256字节是否构成0..255的排列
+        # 真 S-box 每字节值恰好出现一次, χ²=Σ(O_i-1)², 自由度255
+        # 真排列χ²≈0, 随机χ²≈255±22, 重复χ²>>10³; 阈值50允许少量填充噪声
         if len(data) < 256:
             return float('inf'), False
         window = data[:256]
@@ -241,7 +187,7 @@ class CryptoConstantFingerprinter:
     def _merge_overlapping(
         self, detections: List[CryptoDetection]
     ) -> List[CryptoDetection]:
-        """合并重叠的检测, 相邻窗口同算法->同一常量表"""
+        # 合并重叠检测: 相邻窗口同算法视为同一常量表
         if len(detections) < 2:
             return detections
 

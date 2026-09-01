@@ -8,7 +8,7 @@ import io
 
 from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class PerformanceProfiler(BaseAnalyzer):

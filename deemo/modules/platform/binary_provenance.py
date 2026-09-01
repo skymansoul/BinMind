@@ -179,7 +179,6 @@ class ProvenanceGraph:
                 if k in self._scc_dag.get(i, set()):
                     self._scc_dag[i].update(self._scc_dag.get(k, set()))
 
-    # 此段后续可微调，当前先保证正确性
     def summary(self) -> Dict[str, Any]:
         scc_count = len(set(self._node_to_scc.values())) if self._node_to_scc else 0
         return {

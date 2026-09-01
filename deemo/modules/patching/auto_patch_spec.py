@@ -151,8 +151,10 @@ _RULE_SPECS = {
 
 
 class PatchSpecGenerator:
+    """spec 生成器基类 — 子类按上下文产出 PatchSpecification。"""
+
     def generate_specification(self, vulnerability_context):
-        pass
+        raise NotImplementedError("subclass must implement generate_specification")
 
 
 class RuleBasedSpecGenerator(PatchSpecGenerator):

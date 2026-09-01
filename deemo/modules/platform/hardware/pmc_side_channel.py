@@ -72,8 +72,7 @@ class PMCSideChannelEvaluator:
         self._perf_available = False
         self._check_perf()
 
-# 主评估入口
-
+    # 主评估入口：按“时序→指令数→缓存→分支”顺序归集各类泄漏信号
     def evaluate(self, impl: Any, secrets: Optional[List[bytes]] = None,
                  trials: int = 500) -> List[ExploitabilityScore]:
         """评估实现。`impl` 为可调用对象(secret) -> result。"""
@@ -87,8 +86,7 @@ class PMCSideChannelEvaluator:
         secrets = secrets or [b"\x00", b"\xFF", b"\xAA", b"\x55"]
         return self._profile_callable(impl, secrets, trials)
 
-# 性能剖析
-
+    # 性能剖析：逐秘密值采样时序与指令数，供后续组间差异检验
     def _profile_callable(self, op: Callable, secrets: List[bytes],
                           trials: int) -> List[ExploitabilityScore]:
         """采集每个秘密值的 PMC 数据并计算相关性。"""
@@ -113,18 +111,18 @@ class PMCSideChannelEvaluator:
 
         scores: List[ExploitabilityScore] = []
 
-# 基于时序的泄漏
+        # 基于时序的泄漏：最直接的侧信道信号源
         timing_score = self._compute_leakage(all_timings, PMCCounterType.CYCLES)
         if timing_score.score > 0.1:
             scores.append(timing_score)
 
-# 指令数泄漏
+        # 指令数泄漏：执行路径长短直接映射秘密值
         icount_score = self._compute_leakage(all_icounts, PMCCounterType.INSTRUCTIONS,
                                              is_int=True)
         if icount_score.score > 0.1 or timing_score.score <= 0.1:
             scores.append(icount_score)
 
-# 缓存相关泄漏
+        # 缓存相关泄漏：仅 perf 可用时才有真实计数器数据
         if self._perf_available:
             cache_data = self._read_perf_cache()
             if cache_data:
@@ -133,7 +131,7 @@ class PMCSideChannelEvaluator:
                     if s.score > 0.05:
                         scores.append(s)
 
-# 分支预测泄漏
+        # 分支预测泄漏：以时序偏度近似分支方向的可预测性差异
         branch_variance = self._estimate_branch_misses(all_timings)
         if branch_variance > 0.15:
             scores.append(ExploitabilityScore(

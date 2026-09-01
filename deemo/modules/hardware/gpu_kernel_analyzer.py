@@ -1,10 +1,9 @@
-MemoryAccess=None
-from typing import Optional
 """
 GPU kernel analysis for CUDA/OpenCL binaries.
 Detects shared memory bank conflicts, uncoalesced memory access patterns,
 and atomic operation bottlenecks in SASS/PTX/GCN assembly.
 """
+from typing import Optional
 
 import re
 import struct
@@ -359,4 +358,3 @@ class GPUKernelAnalyzer:
             findings.append({"type": "timing_side_channel",
                              "detail": "GPU clock query in kernel may leak timing info"})
         return findings
-KernelInfo=None

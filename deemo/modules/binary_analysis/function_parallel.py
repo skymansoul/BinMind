@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import threading
 import concurrent.futures
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +248,38 @@ class DependencyAwareScheduler:
         self._analyzer = ParallelAnalyzer()
 
     def build_graph_from_binary(self, binary_path: str) -> None:
-        pass
+        import subprocess, re
+        try:
+            r = subprocess.run(
+                ['r2', '-q', '-c', 'afl;q', binary_path],
+                capture_output=True, text=True, timeout=60,
+                encoding='utf-8', errors='replace'
+            )
+            for line in r.stdout.split('\n'):
+                m = re.search(r'0x([0-9a-f]+)\s+(\d+)\s+(\S.*)', line)
+                if m:
+                    addr = int(m.group(1), 16)
+                    size = int(m.group(2))
+                    name = m.group(3).strip()
+                    self._call_graph.add_function(name, addr, size)
+        except Exception as e:
+            logger.warning(f"radare2 list_functions failed: {e}")
+        try:
+            r = subprocess.run(
+                ['r2', '-q', '-c', 'agj;q', binary_path],
+                capture_output=True, text=True, timeout=60,
+                encoding='utf-8', errors='replace'
+            )
+            import json
+            graph = json.loads(r.stdout)
+            for node in graph.get('nodes', []):
+                for edge in node.get('outrefs', []):
+                    caller = node.get('name', '')
+                    callee = edge.get('name', '')
+                    if caller and callee:
+                        self._call_graph.add_call(caller, callee)
+        except Exception as e:
+            logger.warning(f"radare2 call graph failed: {e}")
 
     def schedule_analysis(self, analysis_func: Callable[[str], Any]) -> Dict[str, Any]:
         self._analyzer.set_call_graph(self._call_graph)

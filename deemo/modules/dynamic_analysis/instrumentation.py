@@ -99,7 +99,7 @@ antiDebug.run();
 """
 
     def _generate_ret_override_script(self, func_name: str, return_value: int) -> str:
-        """Generate return value override script"""
+        # 生成返回值覆盖脚本
         script = """
 const retOverride = {
     targetFunc: '%s',
@@ -134,7 +134,7 @@ retOverride.run();
         return script
 
     def _generate_syscall_monitor_script(self) -> str:
-        """Generate system call monitor script"""
+        # 生成系统调用监控脚本
         return """
 const syscallMonitor = {
     monitoredCalls: ['open', 'read', 'write', 'execve', 'fork', 'socket'],
@@ -172,7 +172,7 @@ syscallMonitor.run();
 """
 
     def _generate_memory_dump_script(self, address: str, size: int) -> str:
-        """Generate memory dump script"""
+        # 生成内存转储脚本
         script = """
 const memoryDump = {
     address: ptr('%s'),
@@ -204,7 +204,7 @@ memoryDump.run();
         return script
 
     def _generate_argument_replace_script(self, func_name: str, arg_index: int, new_value: int) -> str:
-        """Generate argument replacement script"""
+        # 生成参数替换脚本
         script = """
 const argReplace = {
     targetFunc: '%s',
@@ -239,7 +239,7 @@ argReplace.run();
         return script
 
     def _generate_function_trace_script(self) -> str:
-        """Generate function call trace script"""
+        # 生成函数调用跟踪脚本
         return """
 const functionTrace = {
     traceDepth: 0,
@@ -287,7 +287,7 @@ functionTrace.run();
 """
 
     def generate_template_script(self, template_type: str, params: Dict[str, Any] = None) -> Optional[str]:
-        """Generate Frida script for a given template type"""
+        # 按模板类型生成 Frida 脚本
         params = params or {}
 
         try:
@@ -333,7 +333,7 @@ functionTrace.run();
             return None
 
     def spawn_process(self, target_path: str, args: List[str] = None) -> bool:
-        """Spawn target process"""
+        # 通过 Frida 启动目标进程
         if not FRIDA_AVAILABLE:
             logger.error("Frida unavailable. Cannot spawn process.")
             return False
@@ -467,7 +467,7 @@ functionTrace.run();
             return result
 
     def detach(self):
-        """Detach from process"""
+        # 从目标进程分离
         if self.frida_session:
             try:
                 self.frida_session.detach()
@@ -589,9 +589,3 @@ functionTrace.run();
 
     def __del__(self):
         self.detach()
-
-
-class InstrumentationMode:
-    SPAWN = "spawn"
-    ATTACH = "attach"
-    INJECT = "inject"

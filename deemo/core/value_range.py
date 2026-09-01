@@ -6,6 +6,8 @@ M.hi > N.hi 且 M.lo <= N.hi 为疑似溢出 (WARNING); M.hi <= N.hi 为安全�
 """
 
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple

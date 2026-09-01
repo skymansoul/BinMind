@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-import typing
+from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,22 @@ class AnomalySeverity:
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
-    LOW = AnomalySeverity("low")
+
+    _val = None
+    def __init__(self, value):
+        self._val = value
+
+    @property
+    def value(self):
+        return self._val
+
+    def __str__(self):
+        return self._val
+
+AnomalySeverity.CRITICAL = AnomalySeverity("critical")
+AnomalySeverity.HIGH = AnomalySeverity("high")
+AnomalySeverity.MEDIUM = AnomalySeverity("medium")
+AnomalySeverity.LOW = AnomalySeverity("low")
 
 class ChangeType(Enum):
     FUNCTION_ADDED = "function_added"
@@ -25,7 +40,16 @@ class ChangeType(Enum):
 class AnomalyFinding:
     __slots__ = ('change_type', 'severity', 'description', 'location', 'old_value', 'new_value', 'confidence',)
 
-    def __init__(self, change_type, severity, description, location, old_value, new_value, confidence):
+    def __init__(
+        self,
+        change_type: ChangeType,
+        severity: "AnomalySeverity",
+        description: str,
+        location: str,
+        old_value: Any,
+        new_value: Any,
+        confidence: float,
+    ):
         self.change_type = change_type
         self.severity = severity
         self.description = description
@@ -49,7 +73,14 @@ class AnomalyFinding:
 class ZeroDayResult:
     __slots__ = ('anomalies', 'total_changes', 'security_relevant_changes', 'confidence_score', 'recommendations',)
 
-    def __init__(self, anomalies, total_changes, security_relevant_changes, confidence_score, recommendations):
+    def __init__(
+        self,
+        anomalies: List[AnomalyFinding],
+        total_changes: int,
+        security_relevant_changes: int,
+        confidence_score: float,
+        recommendations: List[str],
+    ):
         self.anomalies = anomalies
         self.total_changes = total_changes
         self.security_relevant_changes = security_relevant_changes
@@ -105,7 +136,7 @@ class ZeroDayAnomalyDetector:
             anomaly = self._analyze_new_function(func)
             if anomaly:
                 anomalies.append(anomaly)
-                total_changes += 1,
+                total_changes += 1
                 if anomaly.severity in [AnomalySeverity.CRITICAL, AnomalySeverity.HIGH]:
                     security_relevant_changes += 1
 
@@ -125,7 +156,7 @@ class ZeroDayAnomalyDetector:
             anomaly = self._analyze_new_string(string)
             if anomaly:
                 anomalies.append(anomaly)
-                total_changes += 1,
+                total_changes += 1
                 if anomaly.severity in [AnomalySeverity.CRITICAL, AnomalySeverity.HIGH]:
                     security_relevant_changes += 1
 
@@ -216,18 +247,18 @@ class ZeroDayAnomalyDetector:
 
         critical_anomalies = [a for a in anomalies if a.severity == AnomalySeverity.CRITICAL]
         if critical_anomalies:
-            recommendations.append(f"{len(critical_anomalies)} 个严重异常——需立即调查")
+            recommendations.append(f"{len(critical_anomalies)} 个严重异常, 需立即调查")
 
         high_anomalies = [a for a in anomalies if a.severity == AnomalySeverity.HIGH]
         if high_anomalies:
-            recommendations.append(f"{len(high_anomalies)} 个高风险异常——建议优先审查")
+            recommendations.append(f"{len(high_anomalies)} 个高风险异常, 建议优先审查")
 
         if len(anomalies) >= 10:
-            recommendations.append("检测到大量变更——建议全面安全审计")
+            recommendations.append("检测到大量变更, 建议全面安全审计")
 
         return recommendations
 
 
 def detect_zeroday_anomalies(old_binary: Dict[str, Any], new_binary: Dict[str, Any]) -> ZeroDayResult:
     detector = ZeroDayAnomalyDetector()
-    return detector.detect(old)
+    return detector.detect(old_binary, new_binary)

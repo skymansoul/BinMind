@@ -29,13 +29,7 @@ _log = logging.getLogger(__name__)
 
 
 class InterProcTaintTracker:
-    """跨函数递归污点追踪 - 调用图驱动的精确污点分析。
-
-    使用示例:
-        tracker = InterProcTaintTracker(call_graph, functions)
-        reachable_sinks = tracker.trace(source_func='main',
-                                         tainted_regs={'rdi', 'rsi'})
-    """
+    """跨函数递归污点追踪 - 调用图驱动的精确污点分析。"""
 
     def __init__(self, call_graph: Dict[str, List[str]],
                  functions: Dict[str, List[str]],

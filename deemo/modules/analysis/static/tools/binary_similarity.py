@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""
-二进制函数语义相似度分析
-
-基于 LLM 嵌入和结构特征的多层次二进制函数相似度比较
-融合 的对比学习框架与 的基准评估策略
-
-支持：
-- 指令序列 n-gram 哈希（快速初筛）
-- 控制流图图核相似度（结构层）
-- LLM 嵌入语义相似度（语义层）
-- 多层次融合打分
-"""
 
 import logging
 import hashlib
@@ -142,11 +130,6 @@ class CFGSimilarity:
         bb_features_a: Optional[Dict[int, str]] = None,
         bb_features_b: Optional[Dict[int, str]] = None
     ) -> float:
-        """计算两个 CFG 的结构相似度。
-
-        cfg_a/cfg_b: address -> [successor addresses];
-        bb_features_a/bb_features_b: address -> 归一化指令摘要。
-        """
         if not cfg_a or not cfg_b:
             return 0.0
 
@@ -436,11 +419,6 @@ def compute_function_similarity(
     pseudo_a: Optional[str] = None,
     pseudo_b: Optional[str] = None
 ) -> Dict[str, Any]:
-    """
-    便捷函数：计算两个函数的语义相似度
-
-    终端用户接口，封装了完整的初始化-注册-比较流程
-    """
     analyzer = BinarySimilarityAnalyzer()
     analyzer.register_function(name_a, instrs_a, cfg_a, pseudo_a)
     analyzer.register_function(name_b, instrs_b, cfg_b, pseudo_b)

@@ -1,16 +1,3 @@
-"""仿真门面 — Unicorn 引擎混合符号执行封装。
-
-封装 engine/unicorn_hybrid.py, 提供干净的 Python API:
-- 局部二进制仿真 (从完整二进制中提取函数)
-- 多架构支持 (x86, x64, ARM, ARM64, MIPS)
-- 快照/检查点以支持状态空间探索
-- 翻译代码的 LRU 块缓存
-- 推测式间接分支解析
-
-注: 底层 engine/unicorn_hybrid.py 曾存在 UC_ARCH_X86_64 =
-None 重复赋值问题, 本门面在重新导入时规范化架构常量。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -116,25 +103,6 @@ class CodeBlock:
 # UnicornHybrid — 主仿真引擎
 
 class UnicornHybrid:
-    """Unicorn 引擎混合符号执行引擎。
-
-    结合 Unicorn 的具体仿真与可选符号执行用于路径探索。支持:
-
-    - 多架构仿真 (x86, x64, ARM, ARM64, MIPS)
-    - 局部二进制仿真 (函数级)
-    - 内存映射 I/O 处理
-    - 基于钩子的插桩 (代码, 内存, 系统调用钩子)
-    - 快照/恢复以支持状态空间回溯
-
-    用法::
-
-    emu = UnicornHybrid(Arch.X64)
-    emu.map_memory(0x400000, 0x10000)
-    emu.write_memory(0x400000, binary_bytes)
-    emu.write_register("rip", 0x400000)
-    result = emu.emulate(timeout_seconds=30)
-    print(f"Executed {result.instructions_executed} instructions")
-    """
 
     UC_AVAILABLE = False
 
@@ -156,7 +124,6 @@ class UnicornHybrid:
         self._check_unicorn()
 
     def _check_unicorn(self) -> None:
-        """检查 Unicorn 引擎是否可用。"""
         try:
             import unicorn  # type: ignore
             self.UC_AVAILABLE = True
@@ -167,31 +134,26 @@ class UnicornHybrid:
 # 内存管理
 
     def map_memory(self, address: int, size: int, permissions: str = "rwx") -> None:
-        """映射一段内存区域。"""
         log.debug("Mapping memory: %#x size=%d perm=%s", address, size, permissions)
         self._memory[address] = b"\x00" * size
 
     def write_memory(self, address: int, data: bytes) -> None:
-        """向仿真内存写入原始字节。"""
         log.debug("Writing %d bytes to %#x", len(data), address)
         self._memory[address] = data
 
     def read_memory(self, address: int, size: int) -> bytes:
-        """从仿真内存读取原始字节。"""
         data = self._memory.get(address, b"")
         if len(data) < size:
             return data + b"\x00" * (size - len(data))
         return data[:size]
 
     def write_register(self, reg_name: str, value: int) -> None:
-        """设置寄存器值。"""
         if hasattr(self._registers, reg_name):
             setattr(self._registers, reg_name, value)
         else:
             log.warning("Unknown register: %s", reg_name)
 
     def read_register(self, reg_name: str) -> int:
-        """读取寄存器值。"""
         return getattr(self._registers, reg_name, 0)
 
 # 仿真控制
@@ -203,11 +165,6 @@ class UnicornHybrid:
         max_instructions: Optional[int] = None,
         timeout_seconds: int = 30,
     ) -> EmulationResult:
-        """从 start_address 起运行仿真, 直到 end 或超时。
-
-        Unicorn 不可用时返回仿真模式结果, 寄存器值为测试
-        占位值。
-        """
         start_time = time.time()
 
         if start_address is not None:
@@ -235,7 +192,6 @@ class UnicornHybrid:
     def _emulate_with_unicorn(
         self, end_address: Optional[int], max_insns: int, timeout: int
     ) -> EmulationResult:
-        """使用 Unicorn 引擎执行真实仿真。"""
         try:
             import unicorn
             import unicorn.x86_const
@@ -313,7 +269,6 @@ class UnicornHybrid:
             return self._emulate_simulated(max_insns)
 
     def _emulate_simulated(self, max_insns: int) -> EmulationResult:
-        """Unicorn 不可用时的仿真模式。"""
         self._registers.eip += 4 * max_insns
         self._registers.eax = max_insns
         self._state = EmulationState.TERMINATED
@@ -330,21 +285,17 @@ class UnicornHybrid:
     def add_code_hook(
         self, callback: Callable[[int, int, bytes], None], begin: int = 0, end: int = 0
     ) -> None:
-        """注册代码执行钩子。"""
         self._hooks.append({"type": "code", "callback": callback, "begin": begin, "end": end})
 
     def add_mem_hook(
         self, hook_type: str, callback: Callable[[int, int, int, int], None]
     ) -> None:
-        """注册内存访问钩子 (读取/写入)。"""
         self._hooks.append({"type": hook_type, "callback": callback})
 
     def set_breakpoint(self, address: int) -> None:
-        """设置断点地址。"""
         self._breakpoints.add(address)
 
     def clear_breakpoint(self, address: int) -> None:
-        """移除断点。"""
         self._breakpoints.discard(address)
 
 # 代码提升
@@ -352,7 +303,6 @@ class UnicornHybrid:
     def lift_code_block(
         self, address: int, max_bytes: int = 64
     ) -> Optional[CodeBlock]:
-        """使用 Capstone 从仿真内存中提升代码块。"""
         data = self.read_memory(address, max_bytes)
         if not data or data == b"\x00" * len(data):
             return None
@@ -378,11 +328,9 @@ class UnicornHybrid:
 # 状态管理
 
     def get_state(self) -> EmulationState:
-        """返回当前仿真状态。"""
         return self._state
 
     def reset(self) -> None:
-        """重置仿真到初始状态。"""
         self._state = EmulationState.IDLE
         self._registers = RegisterSet()
         self._memory.clear()

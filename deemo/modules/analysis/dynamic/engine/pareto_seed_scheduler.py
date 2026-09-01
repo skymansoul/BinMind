@@ -99,15 +99,6 @@ class ParetoSeedScheduler:
                      coverage_bitmap: Optional[Dict[int, int]] = None,
                      exec_times: Optional[Dict[str, float]] = None,
                      seed_sizes: Optional[Dict[str, int]] = None) -> List[Tuple[str, float]]:
-        """从候选种子中选择帕累托最优的 n_select 个。
-
-        参数: candidates 候选种子 ID 列表, n_select 需要选择的
-        种子数量, coverage_bitmap {edge_id: hit_count} 可选，
-        更新全局 bitmap, exec_times {种子_id: avg_exec_time}
-        可选, seed_sizes {种子_id: byte_s} 可选;
-        返回 [(种子_id, energy_weight), ...] 选中种子及其变异
-        能量权重, 权重用于后续变异阶段分配 fuzz 时间。
-        """
         if coverage_bitmap:
             for edge_id, cnt in coverage_bitmap.items():
                 self._bitmap_hits[edge_id] += cnt

@@ -1,12 +1,9 @@
-logger=None
-# Entry point: TypeConfusionAnalyzer.
-# Dependencies: os, re.
 import os
 import re
 import logging
 from typing import Dict, Any, List
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 class TypeConfusionAnalyzer:
     """
@@ -33,7 +30,6 @@ class TypeConfusionAnalyzer:
         self.type_info: Dict[str, Dict[str, Any]] = {}
 
     def analyze(self) -> Dict[str, Any]:
-# Guard: boundaries and null input validated.
         """
         Execute the complete type confusion analysis pipeline.
         """
@@ -61,7 +57,6 @@ class TypeConfusionAnalyzer:
         return result
 
     def _collect_type_info(self):
-# Guard: null binary path short-circuits.
         # Delegate to decompiler engine for type extraction.
         if not self.binary_path:
             return
@@ -107,22 +102,17 @@ class TypeConfusionAnalyzer:
         method_pattern = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*;'
         lines = pseudocode.split('\n')
         for line in lines:
-            # Scan for method declarations inside class or struct scopes.
-            if 'class' in line or 'struct' in line:
-                # Class definition boundary detected.
-                pass
-            else:
-                # Search for method signatures within the current class scope.
-                match = re.search(method_pattern, line)
-                if match:
-                    return_type = match.group(1)
-                    method_name = match.group(2)
-                    # Assign method to the most recently parsed class (proximity heuristic).
-                    for class_name in reversed(list(types.keys())):
-                        if types[class_name]['type'] in ['class', 'struct']:
-                            if method_name not in types[class_name]['methods']:
-                                types[class_name]['methods'].append(method_name)
-                            break
+            # 类/结构体声明行由 class_pattern 处理，这里仅扫描方法签名。
+            match = re.search(method_pattern, line)
+            if match:
+                return_type = match.group(1)
+                method_name = match.group(2)
+                # Assign method to the most recently parsed class (proximity heuristic).
+                for class_name in reversed(list(types.keys())):
+                    if types[class_name]['type'] in ['class', 'struct']:
+                        if method_name not in types[class_name]['methods']:
+                            types[class_name]['methods'].append(method_name)
+                        break
 
         # Match vtable dispatch patterns: obj->method().
         vtable_pattern = r'(\w+)\s*\-\>\s*(\w+)\s*\('
@@ -140,7 +130,6 @@ class TypeConfusionAnalyzer:
             return
 
         try:
-            pass
             from deobfuscation.decomp_ai import DecompilerAI
 
             decompiler = DecompilerAI(self.binary_path, client=None)
@@ -272,7 +261,20 @@ class TypeConfusionAnalyzer:
 
     def _analyze_type_confusion_paths(self):
         # Map type confusion exploitation paths.
-        pass
+        # 由高危及重解释 cast 构建潜在利用路径：cast 目标类型 + 关联函数。
+        for cast in self.suspicious_casts:
+            if cast['risk'] != 'high':
+                continue
+            path = {
+                'function': cast['function'],
+                'target_type': cast['target_type'],
+                'expression': cast['expression'],
+                'kind': cast['cast_type']
+            }
+            # 若存在高危 vtable 记录则关联为 vtable 劫持路径。
+            if self.vtable_hijack_risk:
+                path['vtable_hijack'] = True
+            cast['exploitation_path'] = path
 
     def _calculate_risk_level(self) -> str:
         # Compute aggregate risk tier from cast and vtable findings.

@@ -1,3 +1,8 @@
+"""汇总打印 tests/scan_results 下的扫描结果 JSON。
+
+TP/FP 堆样本与真实 CVE 样本分开三批展示，单条含检测数、
+TP/FP/不确定计数与相位贡献，加载失败仅标记不中断。
+"""
 import json, glob, os
 
 def dump(pattern, label):

@@ -185,11 +185,10 @@ class AdversarialConsistencyDetector:
         if avg_gap < 1e-9:
             return None
 
-        # 最大间距
+        # 最大间距: 离群值在该间距右侧第一个位置
         max_gap_idx = max(range(len(gaps)), key=lambda i: gaps[i])
         if gaps[max_gap_idx] > self.outlier_z * avg_gap:
-            # 最大间距右侧的所有方法 → 取最右端
-            outlier_val, outlier_name = sorted_pairs[-1]
+            outlier_val, outlier_name = sorted_pairs[max_gap_idx + 1]
             return outlier_name
 
         return None

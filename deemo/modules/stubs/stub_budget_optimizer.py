@@ -20,9 +20,7 @@
 #   分数背包允许"部分使用" → 本场景中对应 LLM 仅生成部分函数 body，
 #   剩余由模板补齐。这比 0/1 背包更贴合实际:
 #   LLM 可只生成函数的核心逻辑骨架，模板填充类型检查和边界处理。
-import math as _math
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 from modules.stubs.stub_contract import (
     FuncContract as _FuncContract,
@@ -173,7 +171,6 @@ class BudgetOptimizer:
             {contract.module_name: dep_depth},
         )
 
-# 成本估算
     def _estimate_cost(self, fc: _FuncContract) -> int:
         params = [p for p in fc.params if p.kind not in ('varargs', 'varkw')]
         cost = self.COST_BASE
@@ -185,7 +182,6 @@ class BudgetOptimizer:
             cost += len(fc.raises) * 15
         return cost
 
-# 价值估算
     @staticmethod
     def _estimate_value(fc: _FuncContract, module_name: str,
                         call_volumes: dict, dep_depths: dict) -> float:
@@ -212,7 +208,6 @@ class BudgetOptimizer:
         annotated = sum(1 for p in params if p.annotation and p.annotation.strip())
         return annotated / len(params)
 
-# 报告
     def plan_report(self, plan: BudgetPlan) -> str:
         """生成 Markdown 预算分配报告。"""
         lines = [

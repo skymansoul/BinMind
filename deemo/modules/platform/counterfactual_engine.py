@@ -155,8 +155,7 @@ class StructuralCausalPropagator:
             intervention_paths_blocked=blocked,
         )
 
-# 内部
-
+    # 内部：结构方程与阻断路径枚举
     def _predict_risk_from_structure(self, node_id: str) -> float:
         """仅用结构信息预测风险（不含噪声）, 结构方程的确定性部分。"""
         node = self._graph._nodes.get(node_id)

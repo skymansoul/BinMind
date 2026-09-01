@@ -282,8 +282,7 @@ class UEFIFirmwareAnalyzer:
                 n_size / 1024 / 1024))
         self.firmware_path = s_path
 
-# Analysis pipeline
-
+    # 分析流水线 — 解析/提取/检测/评估/报告按序调度
     def analyze(self):
         logger.info("[UEFI] starting firmware analysis...")
         start_time = datetime.now()
@@ -317,8 +316,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] modules found: {}".format(len(self.modules)))
         logger.info("[UEFI] SMM modules: {}".format(len(self.smm_modules)))
 
-# uefi_firmware path
-
+    # uefi_firmware 库解析路径 — 有第三方库时优先使用
     def _parse_with_uefi_firmware(self):
         try:
             firmware = uefi_firmware.FirmwareFile(self.firmware_path)
@@ -377,8 +375,7 @@ class UEFIFirmwareAnalyzer:
             return None
         return module
 
-# Built-in parser
-
+    # 内建解析路径 — 无第三方库时的回退实现
     def _parse_with_builtin(self):
         logger.info("[UEFI] using built-in parser...")
         try:
@@ -567,7 +564,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] saveindexfailed: {}".format(e))
 
-# PE analysis
+    # PE 模块分析 — 导入表/导出表/节区信息提取
     # 暂留 — 旧版 GUID 去重逻辑，新方法有遗漏时兜底
     # _seen_guids = set()
     # for _mod in self.modules:
@@ -643,8 +640,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] PE analysis failed ({}): {}".format(module.name, e))
 
-# DXE dependency graph
-
+    # DXE 依赖图 — 协议生产者/消费者关系构建
     def _build_dxe_dependency_graph(self):
         if not self.dxe_modules:
             return
@@ -664,8 +660,7 @@ class UEFIFirmwareAnalyzer:
             logger.info("[UEFI] DXE dependency graph built: %d protocol nodes",
                         len(self._dxe_dep_graph))
 
-# SMM vulnerability detection
-
+    # SMM 漏洞检测 — 按模块逐项检查已知危险模式
     def _detect_smm_vulnerabilities(self):
         logger.info("[UEFI] running SMM vulnerability detection...")
         i = 0
@@ -821,8 +816,7 @@ class UEFIFirmwareAnalyzer:
             })
         return vulns
 
-# NIST 800-193
-
+    # NIST SP 800-193 弹性评估 — 保护/检测/恢复三维度覆盖度
     def _assess_nist_800_193(self):
         # NIST SP 800-193 固件弹性三维度：检测 / 保护 / 恢复，不可偏废
         all_imports_flat: set[str] = set()
@@ -852,8 +846,7 @@ class UEFIFirmwareAnalyzer:
                 })
         self.analysis_stats['nist_800_193'] = resiliency_scores
 
-# Report
-
+    # 报告生成 — 汇总统计、漏洞清单与处置建议
     def _generate_report(self):
         report = {
             'success': True,

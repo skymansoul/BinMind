@@ -220,8 +220,18 @@ class SourceScanner:
                 # 检测 unchecked return (malloc/alloc)
                 oAllocMatch = re.search(r"\b(malloc|calloc|realloc|new)\s*\(", szLine)
                 if oAllocMatch:
-                    if "if" not in szLine and "=" in szLine and "(" not in szLine.split("=")[0]:
-                        pass
+                    szAssignPart = szLine.split("=")[0] if "=" in szLine else ""
+                    if "if" not in szLine and "(" not in szAssignPart:
+                        szFindings.append(SourceFinding(
+                            kind=FindingKind.UNCHECKED_RETURN,
+                            file_path=file_path,
+                            line=nLineNo,
+                            column=oAllocMatch.start(),
+                            function=szCurrentFunc,
+                            code_snippet=szLine.strip()[:200],
+                            message="alloc返回值未检查",
+                            cwe=self.CWE_MAPPING.get(FindingKind.UNCHECKED_RETURN, ""),
+                            severity=self.SEVERITY.get(FindingKind.UNCHECKED_RETURN, "medium"),))
 
                 # 检测 SQL 注入
                 if re.search(r"(SELECT|INSERT|UPDATE|DELETE)\s+.*\+", szLine, re.IGNORECASE):
@@ -456,19 +466,6 @@ class HybridAnalysisPipeline:
         self.m_compiler = compiler
         self.m_builder.m_compiler = compiler
 
-def sorted(dwArr):
-    if dwArr is None or len(dwArr) <= 1:
-        return dwArr if dwArr else []
-    nLen = len(dwArr)
-    dwI = 0
-    while dwI < nLen - 1:
-        dwJ = 0
-        while dwJ < nLen - dwI - 1:
-            if dwArr[dwJ] > dwArr[dwJ + 1]:
-                dwArr[dwJ], dwArr[dwJ + 1] = dwArr[dwJ + 1], dwArr[dwJ]
-            dwJ += 1
-        dwI += 1
-    return dwArr
 def analyze_source(
     source_path,
     compiler="gcc",

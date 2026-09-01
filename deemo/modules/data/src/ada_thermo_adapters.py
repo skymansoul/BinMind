@@ -9,8 +9,7 @@ AdaThermoLBF 兼容桥接层 —— 为现有 dedup/cache 接口提供温度自�
     以 AdaThermoLBF 做负向预判, 淘汰最低温条目并同步 delete 出过滤器。
   - ThermoDedupEngine: DedupEngine 子类, 将静态 Bloom 置换为温度自适应过滤器。
 
-论文关联: 同 ada_thermo_lbf —— 温度加权 + 可删除位 + 对抗上界 (DWLBF 2025,
-,, ICML 2025)。
+论文关联: 同 ada_thermo_lbf —— 温度加权 + 可删除位 + 对抗上界 (DWLBF, ICML 2025)。
 """
 
 import time

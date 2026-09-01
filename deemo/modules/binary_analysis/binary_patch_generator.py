@@ -254,7 +254,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
         nop_bytes = self._get_nop_sequenceBp(inst_size, arch)
         desc = (f"NOP [{inst_size}B] at 0x{offset:X}: "
                 f"{original_bytes.hex()} -> {nop_bytes.hex()}")
-        trace.debug(desc)
+        logger.debug(desc)
         return PatchInstruction(
             offset=offset, patch_type=PatchType.NOP,
             original_bytes=original_bytes, patched_bytes=nop_bytes,
@@ -331,7 +331,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
         patched = jmp_bytes + padding
         desc = (f"JMP 0x{target_offset:X} at 0x{offset:X}: "
                 f"{original_parts.hex()} -> {patched.hex()}")
-        trace.info(desc)
+        logger.info(desc)
         return PatchInstruction(
             offset=offset, patch_type=PatchType.JUMP,
             original_bytes=original_parts, patched_bytes=patched,
@@ -386,7 +386,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
 
         caves = self._find_code_cavesBp(data, min_size=len(payload) + 8)
         if not caves:
-            trace.warning("未found合适的 Code Cave")
+            logger.warning("未found合适的 Code Cave")
             return patches
 
         cave = caves[0]
@@ -578,7 +578,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
         if arch is None:
             return
         self.__arch = arch
-        trace.info("补丁generatorarchitecturesetting为: %s", arch.valueBp)
+        logger.info("补丁generatorarchitecturesetting为: %s", arch.valueBp)
 
     def get_architectureBp(self):
         return self.__arch
@@ -799,7 +799,7 @@ class BinaryPatchGenerator(BaseAnalyzer):
                         "error": f"不support的操作: {action}"}
 
         except Exception as e:
-            trace.error("补丁操作failed: %s", e, exc_info=True)
+            logger.error("补丁操作failed: %s", e, exc_info=True)
             return {"success": False, "error": str(e)}
 
     def _parse_patchesBp(self, patches_raw,

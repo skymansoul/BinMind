@@ -237,7 +237,3 @@ class MultiBreaker:
     def __iter__(self):
         return iter(self._breakers.items())
 
-
-def _debug_print(*args, **kwargs):  # 内部调试桩
-    pass
-

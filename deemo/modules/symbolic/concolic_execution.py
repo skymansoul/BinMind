@@ -139,20 +139,13 @@ class ConcolicExecutor:
         self._init_submodules()
 
     def _init_submodules(self):
-        """Lazily import and instantiate the dynamic tracker and symbolic executor."""
+        """Initialize stubs for the dynamic tracker and symbolic executor."""
         try:
-            # from .dynamic_taint import create_dynamic_taint_tracker
-            # self.dynamic_tracker = create_dynamic_taint_tracker(
-            #     self.binary_path,
-            #     engine=self.dynamic_engine
-            # )
             logger.info(f"[Concolic] Dynamic taint tracker initialized: {self.dynamic_engine}")
         except Exception as e:
             logger.warning(f"[Concolic] Failed to initialize dynamic taint tracker: {e}")
 
         try:
-            # from .symbolic_exe import SymbolicExecutor
-            # self.symbolic_executor = SymbolicExecutor(self.binary_path)
             logger.info("[Concolic] Symbolic executor initialized")
         except Exception as e:
             logger.warning(f"[Concolic] Failed to initialize symbolic executor: {e}")

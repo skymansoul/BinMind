@@ -12,15 +12,6 @@ _CHUNK_ALIGNMENT = 0x1000
 log = logging.getLogger(__name__)
 
 @dataclass
-
-# 旧版实现，v1.x后废弃
-# OLD_PIPELINE_ORDER = [
-#     "preprocess",
-#     "analyze",
-#     "postprocess",
-#     "validate",
-# ]
-
 class CacheEntry: key: str; value: Any; created_at: float; ttl: float; last_accessed: float
 
 class LRUCache:
@@ -140,6 +131,6 @@ def cached(ttl=300, ns="default"):
 
 
 def _debug_print(*a, **kw):
-    if __import__("os").environ.get("BINMIND_DEBUG"):
+    if os.environ.get("BINMIND_DEBUG"):
         print(*a, **kw)
 

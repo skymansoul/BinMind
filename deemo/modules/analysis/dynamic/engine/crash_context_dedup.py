@@ -1,38 +1,4 @@
 # BB 序列指数衰减嵌入 + 三级级联去重 + LCA 验证
-"""
-执行上下文感知的崩溃去重引擎 — 超越 crash hash 的智能去重。
-
-现有崩溃去重 (crash_lsh_dedup.py) 基于崩溃地址 + 栈指纹——
-同一 bug 的不同触发输入 (路径不同但根因相同) 可能产生不同栈指纹,
-导致重复报告。本模块增加执行上下文维度, 提高去重精度。
-
-核心思路:
-  崩溃去重 = crash_signature 相似度 + execution_context 相似度
-  crash_signature: 崩溃地址 + 异常类型 + 栈帧 (传统方法)
-  execution_context: 崩溃前的执行轨迹嵌入 (新增维度)
-
-执行上下文捕获崩溃前 N 条基本块的执行序列——
-即使最终崩溃地址相同, 如果到达路径不同, 可能是不同的 bug,
-或同一 bug 的不同触发方式 (应合并)。
-
-三级去重策略:
-  1. 精确匹配: crash_signature 完全相同 → 直接合并
-  2. 上下文邻近: execution_context 余弦相似度 > 0.85 → 合并
-  3. 根因判定: 两个崩溃的最近公共祖先 BB 是否相同 → 若相同则合并
-
-为什么选择 N=50 基本块窗口:
-  过长 → 包含无关噪声, 不同路径被错误合并
-  过短 → 丢失到达崩溃点的关键路径信息
-  N=50 经实验校准——覆盖函数调用深度 3-5 层的典型崩溃路径。
-
-ref: CrashTriage (Microsoft Research) — crash bucket 分类,
-     本项目在其基础上增加执行上下文嵌入维度
-ref: LSH crash dedup — 本项目的 crash_lsh_dedup.py 做第一级过滤,
-     本模块做执行上下文维度的第二级精化
-ref: AFL++ crash exploration mode — 崩溃唯一性判定,
-     本项目取其"同一 bug 的不同路径应合并"的理念
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -45,7 +11,6 @@ from typing import Optional
 
 @dataclass
 class CrashRecord:
-    """单次崩溃的完整记录。"""
     crash_id: str = ''           # SHA-256(crash_addr + exception + stack[:3])
     crash_addr: int = 0
     exception_type: str = ''     # 'SIGSEGV' | 'SIGABRT' | 'SIGBUS' | 'SIGILL'
@@ -63,7 +28,6 @@ class CrashRecord:
 
 @dataclass
 class CrashBucket:
-    """去重桶——一组根因相同的崩溃。"""
     bucket_id: int
     representative: CrashRecord   # 代表性崩溃 (最早发现或最简)
     members: list[CrashRecord] = field(default_factory=list)
@@ -75,7 +39,6 @@ class CrashBucket:
 
 def make_crash_signature(crash_addr: int, exception_type: str,
                          stack_trace: list[int]) -> str:
-    """传统崩溃签名——基于崩溃地址 + 异常 + 栈 top-3。"""
     h = hashlib.sha256()
     h.update(struct.pack('<Q', crash_addr & 0xFFFFFFFFFFFFF000))
     h.update(exception_type.encode())
@@ -127,7 +90,6 @@ def context_cosine_similarity(a: list[float], b: list[float]) -> float:
 # 如果两个崩溃的 BB 序列共享最近公共祖先, 它们很可能来自同一根因。
 
 def find_lca_bb(seq_a: list[int], seq_b: list[int]) -> int:
-    """找到两个 BB 序列的最近公共祖先 (离崩溃点最近)。"""
     # 从崩溃点 (序列末尾) 向前查找第一个共享 BB
     for bb_a in reversed(seq_a):
         if bb_a in seq_b:
@@ -151,7 +113,6 @@ class CrashContextDeduplicator:
         self._next_bucket_id = 0
 
     def classify(self, crash: CrashRecord) -> int:
-        """将崩溃分类到 bucket。返回 bucket_id。"""
         # 第1级: 精确签名匹配
         sig = make_crash_signature(
             crash.crash_addr, crash.exception_type, crash.stack_trace)
@@ -201,7 +162,6 @@ class CrashContextDeduplicator:
         return bid
 
     def classify_batch(self, crashes: list[CrashRecord]) -> dict[int, int]:
-        """批量分类。返回 {crash_index: bucket_id}。"""
         return {i: self.classify(c) for i, c in enumerate(crashes)}
 
     def dedup_ratio(self) -> float:

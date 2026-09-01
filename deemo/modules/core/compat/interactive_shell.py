@@ -381,3 +381,6 @@ def _register_script_command(shell: InteractiveShell):
 
 
 _register_script_command(InteractiveShell)
+
+# v1 旧 API 别名：重构前类名为 InteractiveReversingShell
+InteractiveReversingShell = InteractiveShell

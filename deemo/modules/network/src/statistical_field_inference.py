@@ -56,9 +56,6 @@ class InferenceReport:
 class StatisticalTypeInferrer:
     """统计字段类型推断器 —— 每偏移拟合7种分布, 相邻合并多字节字段。"""
 
-    def __init__(self):
-        pass
-
     def infer(self, messages: List[bytes]) -> InferenceReport:
         """从同协议多消息推断各字节位置的字段类型。"""
         if not messages:

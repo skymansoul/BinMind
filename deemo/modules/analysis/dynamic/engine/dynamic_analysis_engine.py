@@ -1,16 +1,3 @@
-"""动态二进制分析引擎 — 沙箱执行, 运行时行为追踪,
-MITRE ATT&CK-based 恶意模式检测。
-
-angr 风格 analysis pass 流水线。子分析 (entropy scan,
-pattern matching, risk scoring) 注册为独立 pass, 声明
-inputs/输出, 支持 drop-in 替换与 pass 重排。
-
-真实二进制执行引擎: subprocess + 可选 strace/ptrace。
-替换先前的 _simulate_execution (仅按文件名关键字伪造
-C2/injection/ransomware 轨迹), 改为受控本地执行: 超时保护,
-崩溃信号监控, 系统调用捕获, 以及原生执行不可行时 (不支持的
-架构, 缺失依赖, 非可执行文件) 诚实地回退静态分析。
-"""
 import logging, time, json, uuid, math, hashlib
 import os, sys, platform, struct, shutil, re
 import subprocess
@@ -232,9 +219,6 @@ class DynamicAnalysisResult:
 # knowledge_base模式。新增子分析只需实现AnalysisPass接口并注册即可
 
 class AnalysisPass(ABC):
-    """angr风格的独立分析通道抽象
-    子类实现run()方法，通过result.pass_artifacts存储中间结果
-    这避免了之前版本中将熵值/模式/评分逻辑硬编码在单个方法中的耦合问题"""
 
     name: str = "base_pass"
     priority: int = 50
@@ -588,13 +572,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
     # ── 导入表解析 (replaces _simulate_binary_load) ────────────────
 
     def _parse_imports(self, result: DynamicAnalysisResult, binary_path: str) -> None:
-        """解析 PE/ELF 导入表以记录实际 DLL/shared-object 依赖。
-
-        Unlike previous _simulate_binary_load, 读取 binary's real
-        import descriptors rather injecting a hard-coded list. parsing
-        fails (corrupt header, non-PE/ELF), 记录 a warning move —
-        import list auxiliary execution trace, a prerequisite
-        """
         try:
             with open(binary_path, 'rb') as fh:
                 header = fh.read(0x1000)  # first 4 KiB covers headers + import dir
@@ -686,12 +663,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         return imported
 
     def _parse_elf_imports(self, header: bytes, binary_path: str) -> List[str]:
-        """提取 NEEDED shared-object names ELF.dynamic section
-
-        a best-effort shallow 解析 — 读取 section header string
-        table, locate.dynamic, walk DT_NEEDED entries. For a full 解析
-        使用 pyelftools; keeps engine dependency-free
-        """
         imported: List[str] = []
         try:
             if header[4] == 1:
@@ -810,12 +781,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
 
     @staticmethod
     def _elf_vaddr_to_offset(raw: bytes, is_64: bool, endian: str, vaddr: int) -> Optional[int]:
-        """使用 program headers 将 ELF 虚拟地址映射到文件偏移。
-
-        粗糙近似 — 高级 ELF 特性 (PT_LOAD 中 p_vaddr !=
-        p_offset) 需要更丰富的映射, 但覆盖动态链接
-        x86/x86_64 二进制的常见情况。
-        """
         if len(raw) < 52:
             return None
         try:
@@ -885,19 +850,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         arguments: Optional[List[str]],
         timeout_seconds: int,
     ) -> None:
-        """在受控子进程中执行二进制。
-
-        预检:
-        1. 文件存在且可读
-        2. 架构匹配宿主 (否则回退静态分析)
-        3. 文件为可执行文件 (或 Windows .exe)
-
-        Linux 优先使用 strace 执行以捕获系统调用;
-        Windows / macOS 或 strace 不可用时使用 direct
-        子进程执行并解析退出码;
-        执行结构上不可行 (架构不匹配, 文件缺失) 时
-        回退到诚实的静态分析。
-        """
 # 预检: 存在性
         if not os.path.isfile(binary_path):
             log.warning("Binary not found, falling back to static analysis: %s", binary_path)
@@ -961,16 +913,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         arguments: List[str],
         timeout: int,
     ) -> None:
-        """执行 binary under strace, 解析 系统调用 记录 RuntimeTraces
-
-        strace invocation:
-        strace -f -qq -e trace= -o <tmpfile> -- <binary> [args.]
-
-        Flags:
-        -f follow children (captures fork/clone-spawned 系统调用s)
-        -qq suppress strace's own stderr (cleaner 输出 separation)
-        -o 写入 系统调用 记录 a temp file 解析 afterwards
-        """
         import tempfile
         strace_log = tempfile.mktemp(suffix='.strace', prefix='dae_')
         cmd = ['strace', '-f', '-qq', '-e', 'trace=all', '-o', strace_log,
@@ -1026,12 +968,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         arguments: List[str],
         timeout: int,
     ) -> None:
-        """通过子进程直接执行二进制, 受资源限制约束。
-
-        无系统调用追踪 — 依赖退出码、stdout/stderr、时序
-        获取行为信号。在 strace 不可用时
-        (Windows, macOS, 精简 Linux 容器) 回退使用。
-        """
         result.execution_mode = "direct"
         cmd = [binary_path] + arguments
         log.debug("Direct execution: %s", ' '.join(cmd))
@@ -1094,13 +1030,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         binary_path: str,
         reason: str,
     ) -> None:
-        """原生执行不可行时回退静态分析。
-
-        *诚实* 路径: 不伪造轨迹, 记录清晰的警告, 对二进制文件
-        本身做静态分析 (熵值, 节布局, 导入表 — 由 pass
-        流水线处理)。result.execution_mode 字段记录原因,
-        使下游消费者知道这不是一次真实运行。
-        """
         result.execution_mode = f"static_fallback:{reason}"
         log.warning(
             "Dynamic analysis fell back to static: %s (reason: %s)",
@@ -1118,11 +1047,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
 
     @staticmethod
     def _detect_binary_arch(binary_path: str) -> Optional[str]:
-        """从二进制头确定目标架构。
-
-        返回归一化架构字符串, 遵循 platform.machine() 约定
-        ('x86_64', 'aarch64', 'i386', 'armv7l' 等), 未知返回 None。
-        """
         try:
             with open(binary_path, 'rb') as fh:
                 header = fh.read(128)
@@ -1194,12 +1118,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
 
     @staticmethod
     def _interpret_exit_status(result: DynamicAnalysisResult, exit_code: int) -> None:
-        """将退出码分类为正常退出或崩溃信号。
-
-        POSIX 下, 信号 N 终止的进程返回 -N (或 shell 的 128+N,
-        但 subprocess.run 在 Unix 上报告 -N)。Windows 下, 崩溃码
-        为大的负 32 位整数 (NTSTATUS)。
-        """
         if sys.platform == 'win32':
             # Windows: crash codes >= 0x80000000 unsigned, negative signed
             code_u32 = exit_code & 0xFFFFFFFF
@@ -1232,15 +1150,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
         lines: List[str],
         binary_path: str,
     ) -> None:
-        """解析 raw strace lines RuntimeTrace objects
-
-        strace 输出 格式化 (example):
-        12345 openat(AT_FDCWD, "/etc/passwd", O_RDONLY) = 3
-        12345 connect(3, {sa_family=AF_INET, sin_port=htons(443),.}, 16) = 0
-
-        提取: PID, 系统调用 name, arguments (a truncated string)
-        返回 value, map 系统调用 a RuntimeBehaviorType
-        """
         # Regex 匹配 typical strace line: optional [pid] prefix, 系统调用 name
         # parenthesized arguments, " = " 返回 value
         _STRACE_RE = re.compile(
@@ -1332,12 +1241,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
 
     @staticmethod
     def _lookup_syscall_behavior(syscall_name: str) -> Optional[Tuple[str, str]]:
-        """将系统调用名与映射表匹配。
-
-        返回 (behavior_type, severity), 无趣的系统调用返回
-        None。遍历 _SYSCALL_MAP 键 — 字典足够小, 不构成
-        瓶颈。
-        """
         for prefix, (btype, sev) in _SYSCALL_MAP.items():
             if syscall_name == prefix or syscall_name.startswith(prefix):
                 return (btype, sev)
@@ -1346,12 +1249,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
     @staticmethod
     def _extract_network_info(result: DynamicAnalysisResult, syscall_name: str,
                               args_raw: str) -> None:
-        """尝试从 connect/bind/sendto 参数提取远端地址/端口。
-
-        strace 输出内联 sockaddr 结构, e.g.:
-        sin_port=htons(443), sin_addr=inet_addr("10.0.0.1")
-        基于正则的最佳努力提取。
-        """
         addr_match = re.search(r'inet_addr\("([^"]+)"\)', args_raw)
         port_match = re.search(r'htons\((\d+)\)', args_raw)
         if addr_match:
@@ -1365,10 +1262,6 @@ class DynamicAnalysisEngine(BaseAnalyzer):
 
     @staticmethod
     def _extract_file_path(syscall_name: str, args_raw: str) -> Optional[str]:
-        """从 strace 参数中提取文件路径。
-
-        strace typically quotes paths: openat(AT_FDCWD, "/etc/passwd",.)
-        """
         m = re.search(r'"([^"]+)"', args_raw)
         if m:
             return m.group(1)

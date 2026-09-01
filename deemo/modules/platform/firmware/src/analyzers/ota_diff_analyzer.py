@@ -200,7 +200,7 @@ def _ngram_similarity(a, b, n=3):
 
 
 def _risk_weight(entry: DiffEntry) -> int:
-  # 加权风险评分 — 严重程度 × 变更类型 × FSS 乘数
+    # 加权风险评分 — 严重程度 × 变更类型 × FSS 乘数
     w = {RiskLevel.HIGH: 30, RiskLevel.MEDIUM: 20, RiskLevel.LOW: 10}.get(entry.risk, 5)
     c = {ChangeType.ADDED: 3, ChangeType.MODIFIED: 2, ChangeType.DELETED: 1}.get(entry.change, 1)
     return min(int(w * c * (1.0 + entry.block.fss)), 100)
@@ -286,7 +286,7 @@ class OTADiffAnalyzer:
         })
         self._last_result = res; return res
 
-    # 暂留
+    # 暂留 — ASCII 热力图可视化，风险区域一图速览，后续可能恢复
     #def _visualize_heatmap(diffs: list[DiffEntry], width: int = 80):
     #    """ASCII-art heatmap of changed regions, might bring back later"""
     #    if not diffs:

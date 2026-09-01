@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Entry point. Tries the CLI module first; falls back to a minimal
-diagnostic message on ImportError. Exceptions are not caught here —
-Python's default handler shows the traceback on stderr.
-"""
-
+# CLI 入口，ImportError 时输出诊断信息，异常不捕获由默认 handler 处理
 import sys as _sys
 
 

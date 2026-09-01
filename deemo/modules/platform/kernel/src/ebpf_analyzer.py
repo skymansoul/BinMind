@@ -9,8 +9,8 @@ from enum import IntEnum
 from collections import namedtuple, Counter
 from typing import Optional
 
-_DEPR_SIG = "sig_v1_deprecated"
-_SEED_MASK = 0xDEADBEEF
+_DEPR_SIG = "sig_v1_deprecated"   # 未使用, 旧版签名格式标识暂留 (兼容历史报告)
+_SEED_MASK = 0xDEADBEEF           # 未使用, 随机化种子掩码暂留 (模糊测试扩展用)
 
 # eBPF 指令集 - 操作码常量
 

@@ -3,16 +3,12 @@
 # 概览:
 # features.py：- 可解释特征提取
 # equivalence.py：- 细粒度等价校验
-# 签名.py：- 组合约束签名恢复
+# signature.py：- 组合约束签名恢复
 #
 # 设计意图:
 #   现有反编译/相似性依赖端到端嵌入，是黑盒。本包在其上叠加三层
 # 可解释性: 结构化语义特征、等价性证明/反例、跨架构签名约束
 # 把相似性判定从"分数"降级为"证据链"
-#
-# 使用:
-#   from modules.analysis.interp_bcs import analyze_function_bcs
-#   report = analyze_function_bcs(decompiled_text, reference=ref_text)
 
 import logging
 from typing import Any, Dict, List, Optional, Tuple

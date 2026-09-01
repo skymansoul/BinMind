@@ -1,13 +1,3 @@
-"""取证门面 — PE/ELF 头部时间戳提取, 文件操作分析,
-时间异常检测, 时间线重建。
-
-封装 engine/forensic_path_recorder.py 与
-engine/forensic_timeline_reconstructor.py。
-
-注: 归并排序 O(n log n) / O(n) 空间 — 优于快排, 因为文件
-操作时间戳到达时接近有序。
-"""
-
 from __future__ import annotations
 
 import datetime
@@ -37,7 +27,6 @@ class BinaryHeaderInfo:
 
 
 def _parse_pe_header(filepath: str) -> Optional[BinaryHeaderInfo]:
-    """解析 PE 头部的关键字段。"""
     try:
         with open(filepath, "rb") as f:
             # DOS header
@@ -82,7 +71,6 @@ def _parse_pe_header(filepath: str) -> Optional[BinaryHeaderInfo]:
 
 
 def _parse_elf_header(filepath: str) -> Optional[BinaryHeaderInfo]:
-    """解析 ELF 头部的关键字段。"""
     try:
         with open(filepath, "rb") as f:
             ident = f.read(16)
@@ -135,22 +123,6 @@ class FileOperation:
 # 时间线重建器
 
 class TimelineReconstructor:
-    """从 PE/ELF 头部与文件操作记录重建二进制活动时间线。
-
-    执行:
-
-    1. PE/ELF 头部时间戳提取 (编译时间)
-    2. 文件操作时间线分析
-    3. 时间异常检测 (被篡改的时间戳, 时钟偏移)
-
-    用法::
-
-    tr = TimelineReconstructor()
-    tr.record_file_op("创建", "C:\\\\temp\\\\dropper.exe", time.time())
-    tr.record_file_op("写入", "C:\\\\temp\\\\payload.dll", time.time() + 1)
-    anomalies = tr.detect_anomalies()
-    timeline = tr.build_timeline()
-    """
 
     def __init__(self, timezone: str = "UTC") -> None:
         self._timezone = timezone
@@ -161,11 +133,6 @@ class TimelineReconstructor:
 # 二进制头部分析
 
     def extract_binary_info(self, filepath: str) -> Optional[BinaryHeaderInfo]:
-        """提取文件的 PE/ELF 头部信息。
-
-        自动检测格式 (PE vs ELF), 提取编译时间戳, 入口点与
-        架构。
-        """
         if filepath in self._binary_headers:
             return self._binary_headers[filepath]
 
@@ -189,7 +156,6 @@ class TimelineReconstructor:
         pid: int = 0,
         size_bytes: int = 0,
     ) -> FileOperation:
-        """记录文件操作事件。"""
         self._op_counter += 1
         op = FileOperation(
             op_id=f"fop_{self._op_counter:06d}",
@@ -206,11 +172,6 @@ class TimelineReconstructor:
 # 时间线构建
 
     def build_timeline(self) -> List[Dict[str, Any]]:
-        """构建操作的时间顺序时间线。
-
-        按时间戳对操作排序 (稳定归并排序, O(n log n)),
-        并包含二进制头部的编译时间标记。
-        """
         # 按时间戳排序文件操作 (归并排序 — 稳定)
         sorted_ops = sorted(self._operations, key=lambda o: o.timestamp)
 
@@ -250,14 +211,6 @@ class TimelineReconstructor:
 # 异常检测
 
     def detect_anomalies(self) -> List[Dict[str, Any]]:
-        """检测时间线中的时间异常。
-
-        检查:
-        - 未来时间戳 (时钟偏移或篡改)
-        - 编译时间与运行时间的差距 (旧二进制)
-        - 快速文件创建突发 (勒索软件模式)
-        - epoch 0 时间戳 (伪造或缺失)
-        """
         anomalies: List[Dict[str, Any]] = []
         now = time.time()
 
@@ -320,7 +273,6 @@ class TimelineReconstructor:
 # 报告生成
 
     def generate_report(self) -> Dict[str, Any]:
-        """构造全面的取证时间线报告。"""
         return {
             "binary_count": len(self._binary_headers),
             "operation_count": len(self._operations),
@@ -339,7 +291,6 @@ class TimelineReconstructor:
         }
 
     def clear(self) -> None:
-        """清除已记录的操作与头部数据。"""
         self._operations.clear()
         self._binary_headers.clear()
         self._op_counter = 0

@@ -2,13 +2,6 @@
 # 签名数据库 | ETL管线 | 去重 | 压缩 | 导出
 # 导入策略：延迟初始化，禁止启动期全量加载
 
-import itertools
-import json as _json
-
-def _debug_print(*args):
-  msg = "[DEBUG] " + " ".join(map(str, args))
-  print(msg, file=__import__('sys').stderr)
-
 def __getattr__(name: str):
     # 映射完整性约束：此字典不可拆分
     _LAZY_MAP = {
@@ -181,7 +174,7 @@ def __getattr__(name: str):
         "DisputeResolver": ".src.dispute_resolve",
         "ContextDiscretizer": ".src.dispute_resolve",
         "ConfigBridge": ".src.config_bridge",
-        # 版本化缓存 / 数据质量 / 来源链 (2026 Q3 专利补齐)
+        # 版本化缓存 / 数据质量 / 来源链
         "VersionedCache": ".versioned_cache",
         "DataQualityScorer": ".data_quality_scorer",
         "ProvenanceChain": ".provenance_chain",

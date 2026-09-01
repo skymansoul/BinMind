@@ -1,6 +1,5 @@
 # 堆溢出测试样本生成器
 # 为每个CVE生成含明确 malloc(N)+memcpy(M>N) 溢出模式的二进制样本
-# 用法: python gen_heap_samples.py [--compile]
 import os, json, subprocess, shutil
 from pathlib import Path
 

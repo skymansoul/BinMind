@@ -1,25 +1,9 @@
-"""
-Memory object 指针 graph reconstruction
-
-Capabilities:
-1. Scan core 转存 or memory 快照s for candidate object 引用s
-2. 重建 C++ object relationships vtable targets
-3. Surface UAF 类型混淆 indicators
-4. Emit object interaction graph
-
-Core methods:
-- Heuristic 指针 scan (对齐 + addressable range 校验)
-- Vtable 签名 matching (consecutive function 指针s + vtable inheritance)
-- 引用 graph construction
-- Risk scoring: dangling 指针s / type mismatches
-
-2025 升级: Transformer-based memory forensics
-参考: "Transformer-Based Memory Reverse Engineering for Malware
-Behavior Reconstruction"
-核心方法: 将原始内存字节视为"语言 token"，使用地址感知位置编码
-建立跨内存区域的长距离依赖关系。本模块实现简化版注意力机制,
-不使用完整 Transformer，而是用滑动窗口自注意力对内存区域评分
-"""
+# Transformer-based memory forensics
+# 参考: "Transformer-Based Memory Reverse Engineering for Malware
+# Behavior Reconstruction"
+# 核心方法: 将原始内存字节视为"语言 token"，使用地址感知位置编码
+# 建立跨内存区域的长距离依赖关系。本模块实现简化版注意力机制,
+# 不使用完整 Transformer，而是用滑动窗口自注意力对内存区域评分
 
 import logging
 import os
@@ -35,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class ObjectKind:
-    """内存扫描结果的对象类型分类"""
     UNKNOWN = "unknown"
     CP_OBJECT = "c++_object"
     CP_VTABLE = "c++_vtable"
@@ -46,7 +29,6 @@ class ObjectKind:
     KERNEL_OBJECT = "kernel_object"
 
 class CandidateObject:
-    """内存扫描识别的候选对象"""
     __slots__ = ('address', 'size', 'kind', 'vtable_ptr', 'inferred_type', 'refs', 'is_dangling', 'metadata')
 
     def __init__(self, address, size, kind, vtable_ptr=None, inferred_type="",
@@ -61,7 +43,6 @@ class CandidateObject:
         self.metadata = metadata if metadata is not None else dict()
 
 class ObjectReference:
-    """Inter-object 指针 引用 edge graph"""
     __slots__ = ('src', 'dst', 'field', 'kind')
 
     def __init__(self, src=0, dst=0, field="", kind="ptr"):
@@ -71,7 +52,6 @@ class ObjectReference:
         self.kind = kind
 
 class ObjectPointerGraph:
-    """捕获对象间指针关系的有向图"""
     __slots__ = ('objects', 'references', 'dangling', 'type_confusions', 'metadata', 'attention_scores',)
 
     def __init__(self, objects=None, references=None, dangling=None,
@@ -112,11 +92,8 @@ class ObjectPointerGraph:
 
 
 class MemoryAttentionScorer:
-    """基于滑动窗口自注意力的内存区域评分器
-    对每个 QWORD 计算其相对于窗口内其他 QWORD 的归一化注意力权重
-    高权重位置 → 被多指针引用的活跃对象
-    不使用完整 transformer 编码器以保持线性复杂度 O(n·w)
-    """
+    # 高权重位置 → 被多指针引用的活跃对象
+    # 不使用完整 transformer 编码器以保持线性复杂度 O(n·w)
 
     _TEMPERATURE = 8.0  # softmax 温度参数, 越高越平滑
 
@@ -124,7 +101,6 @@ class MemoryAttentionScorer:
         self._window = window_size  # QWORD 窗口大小
 
     def score_region(self, data: bytes, base_addr: int, ptr_size: int = 8) -> Dict[int, float]:
-        """逐QWORD计算注意力评分, 每个位置对其窗口内邻居的相关性加权和"""
         scores: Dict[int, float] = {}
         n_qwords = (len(data) - ptr_size) // ptr_size
         if n_qwords < 2:
@@ -159,7 +135,6 @@ class MemoryAttentionScorer:
 
 
 class PointerScanHeuristics:
-    """指针有效性启发式测试: 地址范围与对齐检查"""
 
     DEFAULT_RANGES = [
         (0x0000000000400000, 0x00007FFFFFFFFFFF),
@@ -199,11 +174,6 @@ class PointerScanHeuristics:
 
 
 class ObjectPointerReconstructor:
-    """
-    重建 object-指针 graphs raw memory 转存
-    Scans for vtables, identifies C++ objects, 构建 引用 edges
-    flags dangling 指针s 类型混淆s
-    """
 
     def __init__(self, *, ptr_size: int = 8, little_endian: bool = True,
                  addr_ranges: Optional[List[Tuple[int, int]]] = None,
@@ -320,15 +290,12 @@ class ObjectPointerReconstructor:
         return size
 
     def load_dump(self, path: str) -> Tuple[bytes, int]:
-        """读取 raw memory 快照 binary file (container 格式化)"""
         with open(path, 'rb') as f:
             data = f.read()
         return data, 0
 
 
-def reconstruct_from_dump(dump_path: str,
-                          base_addr: int = 0x400000) -> Dict[str, Any]:
-    """One-shot entry: 加载 转存 运行 full memory scan 流水线"""
+def reconstruct_from_dump(dump_path: str, base_addr: int = 0x400000) -> Dict[str, Any]:
     recon = ObjectPointerReconstructor()
     data, _ = recon.load_dump(dump_path)
     graph = recon.scan_memory(data, base_addr=base_addr)
@@ -336,7 +303,6 @@ def reconstruct_from_dump(dump_path: str,
 
 
 def find_uaf_evidence(graph: ObjectPointerGraph) -> List[Dict[str, Any]]:
-    """提取 UAF indicators 指针 graph: dangling refs 类型混淆s"""
     evidence = []
     for addr in graph.dangling:
         obj = graph.objects.get(addr)

@@ -134,7 +134,6 @@ class QualityScorer:
         reports.sort(key=lambda r: -r.composite)
         return reports
 
-# 各维度评分
     @staticmethod
     def _score_structural(source: str) -> float:
         """结构质量: 检查嵌套深度、函数长度、pass/... 占比。"""

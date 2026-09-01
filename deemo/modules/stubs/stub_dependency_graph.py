@@ -14,11 +14,9 @@ import ast as _ast
 import os as _os
 from collections import defaultdict as _dd, deque as _dq
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 from modules.stubs.stub_contract import (
     StubContractor as _StubContractor,
-    StubContract as _StubContract,
     ImplementationStatus as _Status,
 )
 
@@ -64,7 +62,6 @@ class ModuleDependencyGraph:
         # 已失效标记 — 节点被移除或源码变更时置位
         self._dirty: set[str] = set()
 
-# 图构造
     def build(self) -> 'ModuleDependencyGraph':
         """扫描 stubs/ 下全部 .py 文件，构造完整依赖图。"""
         self.nodes.clear()
@@ -113,7 +110,7 @@ class ModuleDependencyGraph:
                         node.imports_from.add(target)
 
     @staticmethod
-    def _resolve_module_name(full_dotted: str) -> _Opt[str]:
+    def _resolve_module_name(full_dotted: str) -> str | None:
         """modules.stubs.xxx 或 modules.core.compat.xxx → xxx。
         抽取最右段并检查是否对应已知 stub 模块。
         非 modules.* 路径的 import（如 os, json）返回 None。"""
@@ -123,7 +120,6 @@ class ModuleDependencyGraph:
         # 非框架内 import，不纳入依赖图
         return None
 
-# 拓扑深度
     def _compute_topo_depths(self) -> None:
         """BFS 计算各节点的拓扑深度（最长依赖链长度）。
 
@@ -182,7 +178,6 @@ class ModuleDependencyGraph:
             else:
                 self.nodes[name].downstream_closure_size = memo[name]
 
-# 增量更新
     def mark_dirty(self, module_name: str) -> None:
         """标记节点为脏（源码变更后调用）。下次查询时惰性重算。"""
         self._dirty.add(module_name)
@@ -210,7 +205,6 @@ class ModuleDependencyGraph:
         self._compute_downstream_closures()
         self._dirty.clear()
 
-# 查询接口
     def dependency_chain(self, module_name: str) -> list[str]:
         """返回该模块的完整依赖链（按拓扑序，最底层依赖在前）。"""
         if module_name not in self.nodes:

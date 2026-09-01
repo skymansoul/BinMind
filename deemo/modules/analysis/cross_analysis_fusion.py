@@ -47,11 +47,7 @@ class FusedFinding:
 class CrossAnalysisFusion:
     """跨分析结果融合器.
 
-    用法:
-      caf = CrossAnalysisFusion()
-      caf.add_findings('static', static_results)
-      caf.add_findings('dynamic', dynamic_results)
-      fused = caf.fuse()
+    按地址对齐多源发现, 加权合并置信度与严重性, 冲突标记人工审查.
     """
 
     def __init__(self):

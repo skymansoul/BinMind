@@ -84,7 +84,7 @@ _EVT_TYPES = {
 }
 
 # VFF 风格: 启动验证器函数的 BB 布局模式 — 识别固件中签名/哈希验证代码
-# 基本块指纹，别动 — BB fingerprinting for validator detection
+# BB 指纹 — 通过指令常量特征定位验证器函数
 _VALIDATOR_BB_SIGS = [
     (b'\x00\x28', "cmp_r0_zero", "ARM Thumb compare-zero pattern in validator return"),
     (b'\x00\xf0\x00\x80', "memcmp_branch", "memcmp result conditional in signature check"),
@@ -270,6 +270,7 @@ class SecureBootChecker:
                 "validators_detected": report.validators_detected,
                 "checked_at": report.checked_at}
 
+    # 暂留 — 旧版 PCR extend 逻辑，已被 _parse_tcg_event_log 取代
     #def _legacy_pcr_extend(digest, pcr_idx):
     #    """old PCR extend logic, replaced by _parse_tcg_event_log"""
     #    extended = bytes(a ^ b for a, b in zip(bytes.fromhex(digest), bytes(32)))
@@ -325,7 +326,7 @@ class SecureBootChecker:
         ok = True
         for pcr in pcr_measurements:
             cur = current_pcrs.get(pcr.pcr_index, "")
-          # PCR digest 比对 — 期望值与实际 TPM PCR 哈希对比
+            # PCR digest 比对 — 期望值与实际 TPM PCR 哈希对比
             if cur and pcr.expected_digest and cur.lower() != pcr.expected_digest.lower():
                 _logger.warning("PCR%d mismatch: expected %s, got %s", pcr.pcr_index, pcr.expected_digest, cur)
                 ok = False

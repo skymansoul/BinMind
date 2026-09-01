@@ -54,7 +54,7 @@ class FuzzerComparator:
     def add_run(self, fuzzer_name: str, run: FuzzerRun) -> None:
         self._runs[fuzzer_name].append(run)
 
-# 效应量
+    # 效应量
 
     @staticmethod
     def vargha_delaney_a12(sample_a: List[float], sample_b: List[float]) -> float:
@@ -150,7 +150,7 @@ class FuzzerComparator:
                 results.append(result)
         return results
 
-# 归一化积分指标
+    # 归一化积分指标
 
     def normalized_integral_index(self, fuzzer_name: str) -> Dict:
         """Ognev & Zegzhda (2025) 的归一化积分指标。
@@ -219,7 +219,7 @@ class FuzzerComparator:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
 
-# 逻辑状态覆盖
+    # 逻辑状态覆盖
 
 class LogicStateCoverage:
     """Bloom filter 基的逻辑状态覆盖 [Lee 2024, arXiv:2409.14987]。

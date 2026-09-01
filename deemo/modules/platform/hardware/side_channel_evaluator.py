@@ -94,7 +94,7 @@ class BandwidthCalculator:
         )
 
 
-# SideChannelEvaluator -- 主入口
+# SideChannelEvaluator 主入口 — 时序测量 / TVLA / CPA / 带宽估算
 
 class TimingMeasurer:
     """高分辨率时序测量辅助工具。"""
@@ -134,8 +134,7 @@ class SideChannelEvaluator:
     def __init__(self):
         self._measurer = TimingMeasurer()
 
-# 主入口
-
+    # 主入口：串联 TVLA → CPA → 带宽估算三类评估
     def evaluate(self, impl: Any, **kwargs) -> List[EvaluationResult]:
         """对给定实现运行所有相关测试。
 
@@ -173,8 +172,7 @@ class SideChannelEvaluator:
 
         return results
 
-# Welch t-test（TVLA）
-
+    # Welch t-test（TVLA 风格：固定 vs 随机）
     def _welch_ttest(self, op: Callable, trials: int = 500) -> EvaluationResult:
         """非特定（fixed vs. random）t-test。
 
@@ -234,8 +232,7 @@ class SideChannelEvaluator:
             },
         )
 
-# CPA
-
+    # CPA：基于汉明权重模型的相关功耗分析
     def _cpa(self, traces: np.ndarray, plaintexts: List[int],
              keys: Optional[List[int]] = None) -> EvaluationResult:
         """基于汉明权重模型的相关功耗分析。
@@ -298,10 +295,9 @@ class SideChannelEvaluator:
                 "n_key_candidates": len(key_candidates),
                 "cross_validation_folds": n_folds,
             },
-        )
+            )
 
-# 带宽估算
-
+    # 带宽估算：以固定/随机输入的时序分布差折算泄漏速率
     def _estimate_bandwidth(self, op: Callable, trials: int = 200) -> ChannelBandwidth:
         try:
             fixed = []
@@ -319,9 +315,7 @@ class SideChannelEvaluator:
         except Exception:
             return ChannelBandwidth()
 
-# 逐时点 SNR 估计
-    # 对每条 trace 的每个采样点估计信噪比，用于定位泄漏点。
-
+    # 逐时点 SNR 估计：对每条 trace 的每个采样点估计信噪比，用于定位泄漏点。
     @staticmethod
     def estimate_snr_per_sample(traces: np.ndarray, labels: List[int]) -> np.ndarray:
         """按时间采样点计算信噪比。

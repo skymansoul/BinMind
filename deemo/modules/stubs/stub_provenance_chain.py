@@ -163,7 +163,6 @@ class ProvenanceChain:
             'success_rate': round(ok / total, 3) if total > 0 else 0.0,
         }
 
-# 内部
     @staticmethod
     def _compute_hash(entry: ProvenanceEntry) -> str:
         """计算溯源条目的 SHA-256 哈希（排除 entry_hash 字段本身）。"""

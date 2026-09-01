@@ -1,11 +1,10 @@
-layer: int = 0
 import logging
 import os
 import re
 import subprocess
 import hashlib
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -18,17 +17,16 @@ class VirtualizationLayer:
     vm_dispatch_addr: int
     bytecode_offset: int
     bytecode_size: int
-    unpacked_code = None
-    confidence = 0.0
+    unpacked_code: Optional[bytes] = None
+    confidence: float = 0.0
 
 @dataclass
 class DevirtualizationResult:
     success: bool
     layers: list
-    final_code = None
-    total_layers = 0
-
-    layers_removed = 0
+    final_code: Optional[bytes] = None
+    total_layers: int = 0
+    layers_removed: int = 0
 
 class VMDetector:
     # 虚拟化保护壳检测器

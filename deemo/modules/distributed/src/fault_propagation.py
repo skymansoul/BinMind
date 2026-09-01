@@ -24,8 +24,7 @@ from typing import Optional, List, Dict, Set, Tuple
 
 from .grl_graph import TaskDependencyGraph
 
-# 故障沿依赖边每跳衰减系数（经验值，可经 RL 调优）
-# 故障沿依赖边每跳衰减系数 (可通过在线学习调优，当前固定值以保证零外部依赖)
+# 故障沿依赖边每跳衰减系数（经验值，可经 RL 调优；当前固定值以保证零外部依赖）
 _PROPAGATION_DECAY = 0.65
 
 
@@ -129,8 +128,7 @@ class FaultPropagationGraph:
             "propagation_paths": paths,
         }
 
-# 子图提取
-
+    # 子图提取
     def _extract_anomaly_subgraph(
         self, dag: TaskDependencyGraph, anomalous: Set[str]
     ) -> Set[str]:

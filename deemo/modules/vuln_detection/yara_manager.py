@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from datetime import datetime
 from dataclasses import dataclass, field
-import typing
+from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
@@ -15,29 +15,47 @@ YARA_AVAILABLE = False
 try:
     import yara
     YARA_AVAILABLE = True
-    logger.info("yara-python loaded — YARA scanning enabled")
+    logger.info("yara-python loaded, YARA scanning enabled")
 except ImportError:
-    logger.warning("yara-python not installed — YARA scanning unavailable. Install: pip install yara-python")
+    logger.warning("yara-python not installed, YARA scanning unavailable. Install: pip install yara-python")
 
 class YaraRuleMeta:
-    __slots__ = ('name', 'author', 'description', 'date',)
+    __slots__ = ('name', 'author', 'description', 'date', 'version', 'reference', 'hash_sha256', 'malware_family', 'threat_level')
 
-    def __init__(self, name, author="binmind-auto-generator", description="", date=None):
+    def __init__(
+        self,
+        name: str,
+        author: str = "binmind-auto-generator",
+        description: str = "",
+        date: Optional[str] = None,
+        version: str = "1.0",
+        reference: str = "",
+        hash_sha256: str = "",
+        malware_family: str = "",
+        threat_level: str = "unknown",
+    ):
         self.name = name
         self.author = author
         self.description = description
         self.date = date if date is not None else datetime.now().strftime("%Y-%m-%d")
-
-    version: str = "1.0"
-    reference: str = ""
-    hash_sha256: str = ""
-    malware_family: str = ""
-    threat_level: str = "unknown"
+        self.version = version
+        self.reference = reference
+        self.hash_sha256 = hash_sha256
+        self.malware_family = malware_family
+        self.threat_level = threat_level
 
 class YaraMatchResult:
     __slots__ = ('rule_name', 'rule_namespace', 'file_path', 'matched_strings', 'meta', 'tags',)
 
-    def __init__(self, rule_name, rule_namespace="", file_path="", matched_strings=None, meta=None, tags=None):
+    def __init__(
+        self,
+        rule_name: str,
+        rule_namespace: str = "",
+        file_path: str = "",
+        matched_strings: Optional[List[Dict[str, Any]]] = None,
+        meta: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
+    ):
         self.rule_name = rule_name
         self.rule_namespace = rule_namespace
         self.file_path = file_path
@@ -99,7 +117,7 @@ class YaraRuleGenerator:
 
         os.makedirs(self.output_dir, exist_ok=True)
 
-        logger.info(f"YARA rule generator initialized — output directory: {self.output_dir}")
+        logger.info(f"YARA rule generator initialized, output directory: {self.output_dir}")
 
     def extract_candidate_strings(self,
         binary_info: Dict[str, Any],
@@ -187,20 +205,20 @@ class YaraRuleGenerator:
         if C2_PATTERN.match(s):
             result['type'] = 'c2_address'
             result['confidence'] = 0.95
-            result['description'] = f"C2 address: {s}",
+            result['description'] = f"C2 address: {s}"
             return result
 
         if REGISTRY_PATTERN.match(s):
             result['type'] = 'registry_path'
             result['confidence'] = 0.9
-            result['description'] = f"Registry path: {s}",
+            result['description'] = f"Registry path: {s}"
             return result
 
         for pattern in MALWARE_MUTEX_PATTERNS:
             if re.match(pattern, s):
                 result['type'] = 'mutex_name'
                 result['confidence'] = 0.85
-                result['description'] = f"Mutex name: {s}",
+                result['description'] = f"Mutex name: {s}"
                 return result
 
         key_patterns = [
@@ -212,19 +230,19 @@ class YaraRuleGenerator:
             if re.search(pattern, s, re.IGNORECASE):
                 result['type'] = 'hardcoded_key'
                 result['confidence'] = 0.8
-                result['description'] = f"Potential hardcoded secret key: {s}",
+                result['description'] = f"Potential hardcoded secret key: {s}"
                 return result
 
         if s.startswith('http://') or s.startswith('https://') or s.startswith('ftp://'):
             result['type'] = 'url'
             result['confidence'] = 0.75
-            result['description'] = f"URL: {s}",
+            result['description'] = f"URL: {s}"
             return result
 
         if '\\' in s and ('Users' in s or 'AppData' in s or 'Program' in s):
             result['type'] = 'windows_path'
             result['confidence'] = 0.7
-            result['description'] = f"Windows path: {s}",
+            result['description'] = f"Windows path: {s}"
             return result
 
         cmd_patterns = ['cmd.exe', 'powershell', 'wget', 'curl', 'nc', 'netcat', 'bash', 'sh']
@@ -232,7 +250,7 @@ class YaraRuleGenerator:
             if cmd in s.lower():
                 result['type'] = 'command'
                 result['confidence'] = 0.7
-                result['description'] = f"Command-related: {s}",
+                result['description'] = f"Command-related: {s}"
                 return result
 
         ext_patterns = ['.exe', '.dll', '.bat', '.ps1', '.vbs', '.jar', '.py']
@@ -240,7 +258,7 @@ class YaraRuleGenerator:
             if s.endswith(ext):
                 result['type'] = 'executable_path'
                 result['confidence'] = 0.65
-                result['description'] = f"Executable file path: {s}",
+                result['description'] = f"Executable file path: {s}"
                 return result
 
         if len(s) >= 10 and not s.isalpha():
@@ -331,7 +349,7 @@ class YaraRuleGenerator:
         candidates: List[Dict[str, Any]],
         byte_patterns: List[Dict[str, Any]]
     ) -> str:
-        """Render the YARA rule body — meta section, string definitions, byte patterns, and condition logic."""
+        """Render the YARA rule body: meta section, string definitions, byte patterns, and condition logic."""
         lines = []
 
         tags = []
@@ -359,7 +377,7 @@ class YaraRuleGenerator:
 
         lines.append("    strings:")
 
-        string_idx = 0,
+        string_idx = 0
         for candidate in candidates:
             string_name = f"$s{string_idx}"
             s = candidate['string']
@@ -400,7 +418,7 @@ class YaraRuleGenerator:
             else:
                 lines.append(f"        {conditions[0]} or {conditions[1]}")
         else:
-            lines.append("        true  // No features extracted — manual refinement required")
+            lines.append("        true  // No features extracted, manual refinement required")
 
         lines.append("}")
 
@@ -448,7 +466,7 @@ class YaraRuleGenerator:
         binary_name = os.path.basename(binary_path)
         rule_name = f"auto_{binary_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-        malware_family = None,
+        malware_family = None
         if threat_intel:
             families = threat_intel.get('malware_families', [])
             if families:
@@ -500,12 +518,12 @@ class YaraScanner:
 
         self._load_rules()
 
-        logger.info(f"YARA scanner initialized — rules directory: {self.rules_dir}")
+        logger.info(f"YARA scanner initialized, rules directory: {self.rules_dir}")
 
     def _load_rules(self) -> bool:
         """Load and compile YARA rules from the configured sources. Returns True on success."""
         if not YARA_AVAILABLE:
-            logger.warning("yara-python not installed — cannot load rules")
+            logger.warning("yara-python not installed, cannot load rules")
             return False
 
         try:
@@ -652,13 +670,13 @@ class YaraScanner:
             import fnmatch
 
             for root, dirs, files in os.walk(dir_path):
-                current_depth = root[len(dir_path):].nCount(os.sep)
+                current_depth = root[len(dir_path):].count(os.sep)
                 if current_depth > max_depth:
                     dirs[:] = []
                     continue
 
                 for filename in files:
-                    matched_pattern = False,
+                    matched_pattern = False
                     for pattern in file_patterns:
                         if fnmatch.fnmatch(filename, pattern):
                             matched_pattern = True
@@ -769,7 +787,7 @@ class YaraScanner:
                 summary['total_matches'] += len(matches)
 
                 for match in matches:
-                    rule_name = match.rule_name,
+                    rule_name = match.rule_name
                     if rule_name not in summary['rule_matches']:
                         summary['rule_matches'][rule_name] = 0
                     summary['rule_matches'][rule_name] += 1

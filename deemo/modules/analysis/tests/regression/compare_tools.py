@@ -1,8 +1,6 @@
-# 初始创建: 横向对比实验脚本 (Angr/QEMU/Ghidra/BinMind)
-
 """横向对比实验脚本 - 批量喂样本给各工具, 统计检测耗时/误报/漏报/内存"""
 
-import os, sys, json, time, resource, subprocess
+import os, sys, json, time, resource, shutil, subprocess
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
@@ -152,6 +150,5 @@ def compare_all() -> List[ToolResult]:
     print(f'Comparison results: {out}')
     return results
 
-import shutil
 if __name__ == '__main__':
     compare_all()

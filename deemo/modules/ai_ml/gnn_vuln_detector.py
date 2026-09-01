@@ -217,6 +217,10 @@ class SimpleGNN:
             error=pred.vuln_prob-target; loss_total+=error**2
             if NUMPY_AVAILABLE:
                 grad=2*error*pred.vuln_prob*(1-pred.vuln_prob); self.W_out-=self.lr*grad*0.01
+            else:
+                grad=2*error*pred.vuln_prob*(1-pred.vuln_prob)
+                wi=0
+                while wi<len(self.W_out): self.W_out[wi][0]-=self.lr*grad*0.01; wi+=1
             i+=1
         return loss_total/max(1,len(graphs))
     def _serialize_weights(self):

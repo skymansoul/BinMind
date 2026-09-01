@@ -26,7 +26,6 @@
 import time as _time
 from dataclasses import dataclass as _dc, field as _field
 from enum import Enum as _Enum
-from typing import Optional as _Opt
 
 
 class AnomalyLevel(_Enum):
@@ -227,7 +226,6 @@ class FeedbackLoop:
         except ImportError:
             return {'generated': False, 'error': 'implementation engine unavailable'}
 
-# 辅助
     @staticmethod
     def _get_type_observations() -> dict:
         try:
@@ -256,7 +254,6 @@ class FeedbackLoop:
                     mismatches += 1
         return mismatches / total if total > 0 else 0.0
 
-# 报告与指标
     def metrics(self) -> dict:
         """闭环反馈指标。"""
         resolved = sum(1 for e in self._events if e.resolved)

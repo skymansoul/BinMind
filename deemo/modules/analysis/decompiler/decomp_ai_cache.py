@@ -184,12 +184,7 @@ def cache_api_response(api_key: str, response: Any) -> bool:
 
 
 def check_api_rate_limit() -> bool:
-    """
-    检查 API 调用速率限制
-
-    根据时间窗口和最大调用次数判断是否允许调用
-    简单实现：使用滑动窗口算法
-    """
+    # 滑动窗口速率限制，超限返回 False
     global _last_api_call_time, _api_call_count
 
     current_time = time.time()

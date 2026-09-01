@@ -13,25 +13,15 @@ from modules.analysis.static.binary_analysis.src.utils.errors import BinaryParse
 
 
 class BinaryFormatParser:
-    """二进制文件格式检测与头部解析器
-
-    策略: 采用分层解析——先 detect 格式，再 parse 头部。分离的好处是调用方
-    可以先做粗略的格式筛选，不需要完整解析就能判断文件类型
-
-    复杂度:
-    - 检测(): O(1) magic byte lookup
-    - parse_header(): O(1) 固定长度头部读取，~64-128 bytes
-    """
+    # 策略: 分层解析——先 detect 格式，再 parse 头部。调用方可先做粗略筛选
+    # 复杂度: detect() O(1) magic byte lookup; parse_header() O(1) 固定长度头部读取
 
     def __init__(self):
         self._last_result: Optional[dict] = None
 
     def detect(self, data: bytes) -> Optional[str]:
-        """检测二进制格式。返回 'elf', 'pe', 'mach_o', 'unknown', 或 None
-
-        数据不足 2 字节时返回 None 表明无法判断；
-        无法识别的数据统一归为 'unknown'，不返回 'raw'。
-        """
+        # 返回 'elf'/'pe'/'mach_o'/'unknown'/None; 数据不足2字节返回None
+        # 决策: 无法识别的统一归为 'unknown'，不返回 'raw'
         if not data or len(data) < 2:
             return None
         fmt = BinaryFormat.from_magic(data[:4])

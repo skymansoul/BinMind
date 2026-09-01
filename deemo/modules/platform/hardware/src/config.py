@@ -1,5 +1,5 @@
-# 硬件子模块统一配置管理
-# FIXME: 热重载未实现 -- 边界条件: 读取时文件删除
+# 硬件子模块统一配置管理：YAML 优先加载，失败回退内置默认值
+# 注意：配置加载失败时静默回退，不向上层抛错
 
 import os as _os
 from typing import Any, Dict, Optional
@@ -11,6 +11,7 @@ except ImportError:
     _HAS_YAML = False
 
 
+# 暂留 — 旧版 JSON 配置路径入口，迁移 YAML 后废弃，保留以兼容外部引用
 # JSON_PATH = None
 
 _DEFAULT_CONFIG: Dict[str, Any] = {

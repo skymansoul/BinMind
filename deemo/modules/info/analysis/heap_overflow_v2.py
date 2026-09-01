@@ -107,7 +107,7 @@ def _make_pairs(imports: Dict, checksec: Dict) -> List[Dict]:
                 "overflow_risk": round(min(risk, 1.0), 2),
                 "reason": reason, "same_dll": sd})
     pairs.sort(key=lambda p: p["overflow_risk"], reverse=True)
-    # TODO: 无源码的二进制路径仍为笛卡尔积配对, 后续可接入导入图做跨 DLL 关联
+    # 无源码的二进制路径仍为笛卡尔积配对, 可接入导入图做跨 DLL 关联
     return pairs
 
 # P0-fallback: 源码直接提取函数对 (无二进制导入时使用)

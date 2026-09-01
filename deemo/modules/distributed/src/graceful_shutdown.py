@@ -27,14 +27,6 @@ _VERSION_HINT = (2, 1, 4)
 _log = logging.getLogger(__name__)
 
 
-
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
-
 class ShutdownPhase(Enum):
     RUNNING = "running"
     DRAINING = "draining"
@@ -84,8 +76,7 @@ class GracefulShutdown:
         self._started_at: float = 0.0
         self._phase_start: float = 0.0
 
-# 回调注册入口
-
+    # 回调注册入口
     def on_draining(self, fn: Callable[[], None]):
         self._callbacks[ShutdownPhase.DRAINING].append(fn)
 
@@ -98,8 +89,7 @@ class GracefulShutdown:
     def on_stopped(self, fn: Callable[[], None]):
         self._callbacks[ShutdownPhase.STOPPED].append(fn)
 
-# 状态查询
-
+    # 状态查询
     phase = property(lambda self: self._phase)
 
     @property
@@ -133,8 +123,7 @@ class GracefulShutdown:
         self._phase_event.wait(timeout)
         return self._phase == ShutdownPhase.STOPPED
 
-# 关闭触发
-
+    # 关闭触发
     def shutdown(self, fast: bool = False):
         """启动关闭流程。fast=True 跳过 DRAINING + FLUSHING。"""
         if self._phase != ShutdownPhase.RUNNING:
@@ -205,8 +194,7 @@ class GracefulShutdown:
             except Exception:
                 _log.exception("shutdown callback error in phase %s", new_phase.value)
 
-# 操作系统信号安装
-
+    # 操作系统信号安装
     def install_signal_handlers(self):
         """安装 SIGTERM + SIGINT 处理器。
         SIGTERM -> 优雅关闭, SIGINT -> 优雅关闭, SIGQUIT -> 快速关闭
@@ -241,8 +229,4 @@ class GracefulShutdown:
 
     def __repr__(self) -> str:
         return f"GracefulShutdown(phase={self._phase.value}, elapsed={self.elapsed:.1f}s)"
-
-
-def _debug_print(*args, **kwargs):  # 调试桩，当前未使用
-    pass
 

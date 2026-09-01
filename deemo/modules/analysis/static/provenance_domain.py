@@ -47,15 +47,6 @@ def join_class(a: ProvClass, b: ProvClass) -> ProvClass:
 
 
 class ProvValue:
-    """携带边界信息的来源值.
-
-    字段:
-      cls: 来源类别.
-      expr: 线性符号表达式 (可为None, 表示无符号表示).
-      bound: 数值上界 (无静态上界时取None).
-      guard_upper: 守卫约束给出的上界 (GUARDED时有效).
-      note: 判定依据描述.
-    """
 
     __slots__ = ("cls", "expr", "bound", "guard_upper", "note")
 

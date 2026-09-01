@@ -8,6 +8,7 @@ from enum import Enum
 from datetime import datetime
 import re
 import base64
+import binascii
 
 
 class CertWeaknessSeverity(Enum):
@@ -137,10 +138,10 @@ def _read_string_value(data: bytes, tag: int, offset: int, length: int) -> str:
     if tag in (0x0C, 0x13, 0x16, 0x1E):  # UTF8String, Printable, IA5, BMP
         try:
             return _raw.decode('utf-8')
-        except UnicodeDecodeError:  # 修复: bare except → UnicodeDecodeError
+        except UnicodeDecodeError:
             try:
                 return _raw.decode('latin-1')
-            except UnicodeDecodeError:  # 修复: bare except → UnicodeDecodeError
+            except UnicodeDecodeError:
                 return _raw.hex()
     if tag == 0x02:  # INTEGER
         _v = 0
@@ -261,11 +262,11 @@ def _parse_tbscert(data: bytes, offset: int, length: int) -> dict:
                 _rest = _oid_next
 
                 # critical?
-                if _rest < _eno and data[_rest] == 0x01:  # BOOLEAN
+                if _rest < _enext and data[_rest] == 0x01:  # BOOLEAN
                     _btag, _blen, _bvo, _brest = _read_tag(data, _rest)
                     _rest = _brest
 
-                if _rest < _eno and data[_rest] == 0x04:  # OCTET STRING
+                if _rest < _enext and data[_rest] == 0x04:  # OCTET STRING
                     _otag, _olen, _ovo, _onext = _read_tag(data, _rest)
                     _oct_data = data[_ovo:_ovo + _olen]
 
@@ -331,7 +332,7 @@ def find_pem_certificates(data: bytes) -> List[bytes]:
         try:
             _der = base64.b64decode(_m.group(1))
             _out.append(_der)
-        except (ValueError, binascii.Error):  # 修复: bare except → base64 decode error
+        except (ValueError, binascii.Error):
             pass
     return _out
 
@@ -413,7 +414,7 @@ def check_weakness(cert: CertInfo) -> List[Tuple[CertWeaknessSeverity, str]]:
                         _w.append((CertWeaknessSeverity.CRITICAL, '证书已过期 ({})'.format(_s)))
                     elif _label == 'valid_from' and _dt > now:
                         _w.append((CertWeaknessSeverity.WARNING, '证书尚未生效 ({})'.format(_s)))
-        except ValueError:  # 修复: bare except → ValueError (datetime解析)
+        except ValueError:
             pass
 
     # SAN

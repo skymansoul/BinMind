@@ -371,10 +371,6 @@ class ProjectManager:
         return "\n".join(lines)
 
 
-name: str = ""
-module: str = ""
-
-
 def _debug_print(*a, **kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*a, **kw)

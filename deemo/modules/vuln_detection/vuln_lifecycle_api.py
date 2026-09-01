@@ -1,11 +1,12 @@
 import logging
 from typing import Dict, Any, List, Optional
 import time
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
 
-class VulnStatus:
+class VulnStatus(Enum):
     NEW = "new"
     CONFIRMED = "confirmed"
     TRIAGED = "triaged"
@@ -16,7 +17,7 @@ class VulnStatus:
     FALSE_POSITIVE = "false_positive"
 
 
-class VulnSeverity:
+class VulnSeverity(Enum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -50,7 +51,7 @@ class VulnRecord:
 
 
 class VulnerabilityLifecycleAPI:
-    """漏洞生命周期状态机——create→triage→fix→close，按严重级别强制执行SLA。"""
+    """漏洞生命周期状态机, create->triage->fix->close, 按严重级别强制执行SLA。"""
 
     VALID_TRANSITIONS = {
         VulnStatus.NEW: [VulnStatus.CONFIRMED, VulnStatus.FALSE_POSITIVE],
@@ -105,7 +106,7 @@ class VulnerabilityLifecycleAPI:
             return None
 
         if ns not in self.VALID_TRANSITIONS.get(record.status, []):
-            logger.warning(f"非法状态跃迁: {record.status.value} → {ns.value}")
+            logger.warning(f"invalid transition: {record.status.value} -> {ns.value}")
             return None
 
         record.status = ns

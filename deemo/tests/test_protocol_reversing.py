@@ -2,7 +2,6 @@
 import unittest
 import os
 _MOD_DEBUG = False
-import pytest
 import tempfile
 import shutil
 
@@ -56,6 +55,22 @@ class TestFieldInfo(unittest.TestCase):
         )
         self.assertEqual(field.sample_values, [])
 
+    def test_field_to_dict(self):
+        """测试序列化字典"""
+        field = FieldInfo(
+            name="magic", offset=0, size=2,
+            field_type="uint16", hypothesis="magic",
+            confidence=0.9, sample_values=[1, 2],
+        )
+        d = field.to_dict()
+        self.assertEqual(d["name"], "magic")
+        self.assertEqual(d["offset"], 0)
+        self.assertEqual(d["size"], 2)
+        self.assertEqual(d["field_type"], "uint16")
+        self.assertEqual(d["hypothesis"], "magic")
+        self.assertEqual(d["confidence"], 0.9)
+        self.assertEqual(d["sample_values"], [1, 2])
+
 
 class TestProtocolGrammar(unittest.TestCase):
     """ProtocolGrammar数据类测试"""
@@ -89,6 +104,38 @@ class TestProtocolGrammar(unittest.TestCase):
         self.assertIsNone(grammar.magic_bytes)
         self.assertIsNone(grammar.checksum_offset)
         self.assertEqual(grammar.checksum_size, 0)
+        self.assertEqual(grammar.endianness, "unknown")
+
+    def test_add_field(self):
+        """测试添加字段"""
+        grammar = ProtocolGrammar(name="p")
+        grammar.add_field(FieldInfo(name="len", offset=0, size=2, field_type="uint16"))
+        self.assertEqual(len(grammar.fields), 1)
+        self.assertEqual(grammar.fields[0].name, "len")
+
+    def test_get_total_size(self):
+        """测试计算报文总长度"""
+        grammar = ProtocolGrammar(name="p", fields=[
+            FieldInfo(name="hdr", offset=0, size=4, field_type="bytes"),
+            FieldInfo(name="payload", offset=4, size=8, field_type="bytes"),
+        ])
+        self.assertEqual(grammar.get_total_size(), 12)
+        empty = ProtocolGrammar(name="empty")
+        self.assertEqual(empty.get_total_size(), 0)
+
+    def test_to_dict(self):
+        """测试语法序列化"""
+        grammar = ProtocolGrammar(name="p", fields=[
+            FieldInfo(name="len", offset=0, size=2, field_type="uint16"),
+        ])
+        d = grammar.to_dict()
+        self.assertEqual(d["name"], "p")
+        self.assertEqual(d["endianness"], "unknown")
+        self.assertIsNone(d["magic_bytes"])
+        self.assertIsNone(d["checksum_offset"])
+        self.assertEqual(d["checksum_size"], 0)
+        self.assertEqual(len(d["fields"]), 1)
+        self.assertEqual(d["fields"][0]["name"], "len")
 
 
 class TestWiresharkDissector(unittest.TestCase):
@@ -164,7 +211,6 @@ class TestTypeInferrer(unittest.TestCase):
         self.assertEqual(result, "unknown")
 
     def test_infer_uint_little_endian(self):
-        # 优化待办——非紧急但值得关注
         """测试小端整数推断"""
         result = TypeInferrer.infer(b"\x10\x00")
         self.assertEqual(result, "uint16")
@@ -178,6 +224,17 @@ class TestTypeInferrer(unittest.TestCase):
         result = TypeInferrer.infer(b"\xff\xfe\xfd\xfc\xfb")
         self.assertEqual(result, "bytes")
 
+    def test_infer_with_size(self):
+        """测试指定偏移与大小的推断"""
+        raw = b"\x00\x02\x04hello"
+        self.assertEqual(TypeInferrer.infer(raw, 0, 2), "uint16")
+        self.assertEqual(TypeInferrer.infer(raw, 3, 5), "ascii_string")
+        self.assertEqual(TypeInferrer.infer(b"\x05", 0, 1), "uint8")
+        self.assertEqual(TypeInferrer.infer(raw, 0, 4), "uint32")
+        self.assertEqual(TypeInferrer.infer(b"\x00\x00\x00\x00\x00\x00\x00\x00", 0, 8), "padding")
+        self.assertEqual(TypeInferrer.infer(b"\x01\x00\x00\x00", 0, 4), "flags")
+        self.assertEqual(TypeInferrer.infer(raw, 100, 2), "unknown")
+
 
 class TestChecksumDetector(unittest.TestCase):
     """ChecksumDetector静态方法测试"""
@@ -188,7 +245,6 @@ class TestChecksumDetector(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_detect_crc(self):
-        # 优化待办——非紧急但值得关注
         """测试CRC检测"""
         # 6 bytes total, last 2 as checksum
         data = b"\x01\x02\x03\x04\x05\x06"
@@ -237,14 +293,6 @@ class TestProtocolReverser(unittest.TestCase):
         reverser = ProtocolReverser(test_file)
         self.assertEqual(reverser.binary_path, os.path.abspath(test_file))
 
-    def test_validate_path_empty(self):
-        """测试空路径"""
-        pytest.skip("ProtocolReverser does not validate paths — os.path.abspath('') succeeds")
-
-    def test_validate_path_nonexistent(self):
-        """测试不存在路径"""
-        pytest.skip("ProtocolReverser does not validate path existence — accepts any string")
-
     def test_reverse(self):
         """测试协议逆向"""
         test_file = os.path.join(self.m_tmp, 'test.bin')
@@ -268,104 +316,50 @@ class TestProtocolReverser(unittest.TestCase):
         self.assertIsInstance(reverser, ProtocolReverser)
 
 
-class TestLegacyProtocolFieldType(unittest.TestCase):
-    """旧版ProtocolFieldType测试（已移除）"""
-
-    def test_field_types(self):
-        pytest.skip("ProtocolFieldType removed — field_type is now a string returned by TypeInferrer.infer()")
-
-
-class TestLegacyProtocolField(unittest.TestCase):
-    """旧版ProtocolField测试（已重命名为FieldInfo）"""
-
-    def test_field_init(self):
-        pytest.skip("ProtocolField removed — use FieldInfo(name, offset, size, field_type)")
-
-    def test_field_to_dict(self):
-        pytest.skip("ProtocolField.to_dict removed")
-
-
-class TestLegacyProtocolMessage(unittest.TestCase):
-    """旧版ProtocolMessage测试（已重命名为ProtocolGrammar）"""
-
-    def test_message_init(self):
-        pytest.skip("ProtocolMessage removed — use ProtocolGrammar with FieldInfo list")
-
-    def test_add_field(self):
-        pytest.skip("ProtocolMessage.add_field removed — pass fields list to ProtocolGrammar constructor")
-
-    def test_get_total_size(self):
-        pytest.skip("ProtocolMessage.get_total_size removed")
-
-    def test_to_dict(self):
-        pytest.skip("ProtocolMessage.to_dict removed")
-
-
 class TestLegacyProtocolFormatInferrer(unittest.TestCase):
-    """旧版ProtocolFormatInferrer测试（已重命名为ProtocolReverser）"""
-
-    def test_validate_path(self):
-        pytest.skip("ProtocolFormatInferrer removed — use ProtocolReverser(binary_path, sample_data)")
+    """旧版ProtocolFormatInferrer测试（已并入真实API测试）"""
 
     def test_validate_path_empty(self):
-        pytest.skip("ProtocolFormatInferrer removed — use ProtocolReverser")
+        """空路径不抛异常，binary_path 为空串"""
+        reverser = ProtocolReverser("")
+        self.assertEqual(reverser.binary_path, "")
+        self.assertEqual(reverser.sample_data, b"")
 
     def test_validate_path_nonexistent(self):
-        pytest.skip("ProtocolFormatInferrer removed — use ProtocolReverser")
+        """不存在路径不抛异常，binary_path 归一化为绝对路径"""
+        reverser = ProtocolReverser("nonexistent_xxx.bin")
+        self.assertEqual(reverser.binary_path, os.path.abspath("nonexistent_xxx.bin"))
 
     def test_create_protocol_inferrer(self):
-        pytest.skip("create_protocol_inferrer removed — use create_protocol_reverser(binary_path)")
+        """create_protocol_reverser 无路径返回分析器字典"""
+        analyzers = create_protocol_reverser("")
+        self.assertIsInstance(analyzers, dict)
+        for key in ("boundary", "length_field", "checksum", "magic", "type_inferrer", "dissector_gen"):
+            self.assertIn(key, analyzers)
 
     def test_add_raw_sample(self):
-        pytest.skip("add_raw_sample removed — pass sample_data to ProtocolReverser constructor")
+        """构造时传入 sample_data 参与逆向"""
+        reverser = ProtocolReverser("", sample_data=b"\x00\x08\x01\x02hello")
+        self.assertEqual(reverser.sample_data, b"\x00\x08\x01\x02hello")
 
     def test_infer_protocol_basic(self):
-        pytest.skip("infer_protocol removed — use ProtocolReverser.reverse()")
+        """reverse() 返回成功结果"""
+        reverser = ProtocolReverser("", sample_data=b"\x00\x08\x01\x02hello")
+        result = reverser.reverse()
+        self.assertTrue(result.success)
+        self.assertIsNotNone(result.grammar)
+        self.assertIsNotNone(result.dissector)
 
     def test_generate_protocol_spec(self):
-        pytest.skip("generate_protocol_spec removed — use WiresharkGenerator.generate()")
-
-
-class TestLegacyProtocolFuzzGenerator(unittest.TestCase):
-    """旧版ProtocolFuzzGenerator测试（已移除）"""
-
-    def test_create_fuzz_generator(self):
-        pytest.skip("create_fuzz_generator removed — no replacement fuzz generator in module")
-
-    def test_generate_seed_cases(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_generate_mutation_cases(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_bit_flip_mutation(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_length_overflow(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_truncation(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_append_garbage(self):
-                pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_generate_harness(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_generate_afl_dict(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-    def test_get_all_cases(self):
-        pytest.skip("ProtocolFuzzGenerator removed")
-
-
-class TestLegacyPCAPParsing(unittest.TestCase):
-    """旧版PCAP解析测试（已移除）"""
-
-    def test_parse_pcap_manual_basic(self):
-        pytest.skip("add_pcap_sample removed — no PCAP parsing in current module")
-
+        """WiresharkGenerator.generate 生成 Lua 解析器"""
+        grammar = ProtocolGrammar(name="p", fields=[
+            FieldInfo(name="len", offset=0, size=2, field_type="uint16"),
+        ])
+        dissector = WiresharkGenerator.generate(grammar)
+        self.assertIsInstance(dissector, WiresharkDissector)
+        self.assertIn("Proto.new", dissector.lua_code)
+        self.assertIn("ProtoField.new", dissector.lua_code)
+        self.assertEqual(len(dissector.field_definitions), 1)
 
 
 if __name__ == '__main__':

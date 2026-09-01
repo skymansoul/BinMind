@@ -53,7 +53,7 @@ class CallStack:
 
 class CallStackReconstructor:
 
-    def __init__(self):
+    def __init__(self, memory: Optional[Dict[int, int]] = None):
         self.register_offsets = {
             'x86_64': {
                 'rbp': 0,
@@ -66,6 +66,8 @@ class CallStackReconstructor:
                 'r9': 72
             }
         }
+        # 栈内存快照：address -> 8 字节整数值，用于读取返回地址链
+        self.memory = memory if memory is not None else {}
 
     def reconstruct(self, crash_data: Dict[str, Any]) -> CallStack:
         frames = []
@@ -151,13 +153,38 @@ class CallStackReconstructor:
                     arguments=self._extract_arguments(registers))
 
                 frames.append(frame)
+
+                # 沿 rbp 链回溯：栈帧 [rbp] 存上一帧 rbp，[rbp+8] 存返回地址
+                current = rbp
+                depth = 0
+                while current and depth < 64:
+                    nxt = self._read_mem(current)
+                    ret = self._read_mem(current + 8)
+                    if ret == 0:
+                        break
+                    frames.append(StackFrame(
+                        function_name='unknown',
+                        address=nxt,
+                        return_address=ret,
+                        frame_type=FrameType.NORMAL))
+                    if nxt == 0 or nxt <= current:
+                        break
+                    current = nxt
+                    depth += 1
             except ValueError:
                 pass
 
         return frames
 
+    def _read_mem(self, address: int) -> int:
+        """读栈内存快照，未命中返回 0。"""
+        if address in self.memory:
+            return self.memory[address]
+        return 0
+
     def _get_return_address(self, rsp: int) -> int:
-        return rsp
+        """返回地址位于栈顶 [rsp]。"""
+        return self._read_mem(rsp)
 
     def _extract_arguments(self, registers: Dict[str, Any]) -> Dict[str, Any]:
         args = {}

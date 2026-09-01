@@ -311,7 +311,7 @@ def _dump_result(result: object, path: str):
 def main(argv: list[str] | None = None) -> int:
     """CLI 主入口 — 解析参数并分发到各子命令处理函数."""
 
-# 全局参数
+    # 全局参数
     p = argparse.ArgumentParser(
         prog="binmind-fuzzing",
         description="BinMind Fuzzing CLI — 故障注入 / 集群调度 / 覆盖率 / 字典 / Harness / 种子进化",
@@ -323,26 +323,26 @@ def main(argv: list[str] | None = None) -> int:
 
     sp = p.add_subparsers(dest="command", help="可用子命令")
 
-# fault-inject
+    # fault-inject
     p_fi = sp.add_parser("fault-inject", help="故障注入分析 (比特翻转/指令跳过)")
     p_fi.add_argument("--binary", "-b", required=True, help="目标二进制路径")
     p_fi.add_argument("--max-injections", type=int, default=300, help="最大注入点数 (默认300)")
     p_fi.add_argument("--quick", action="store_true", help="快速模式 (仅指令跳过 + NOP sled)")
     p_fi.add_argument("--output", "-o", default=None, help="结果 JSON 输出路径")
 
-# cluster
+    # cluster
     p_cl = sp.add_parser("cluster", help="集群自动伸缩控制")
     p_cl.add_argument("--daemon", action="store_true", help="以守护模式持续运行")
     p_cl.add_argument("--interval", type=float, default=5.0, help="tick 间隔(秒)")
 
-# coverage
+    # coverage
     p_cv = sp.add_parser("coverage", help="覆盖率可视化")
     p_cv.add_argument("--coverage-file", "-f", required=True, help="覆盖率 JSON 文件")
     p_cv.add_argument("--binary", "-b", default=None, help="关联的二进制路径")
     p_cv.add_argument("--html", action="store_true", help="输出 HTML 报告")
     p_cv.add_argument("--output-dir", "-o", default=None, help="输出目录")
 
-# dictionary
+    # dictionary
     p_dc = sp.add_parser("dictionary", help="AFL/LibFuzzer 字典生成")
     p_dc.add_argument("--binary", "-b", required=True, help="目标二进制路径")
     p_dc.add_argument("--format", "-f", default="json",
@@ -350,14 +350,14 @@ def main(argv: list[str] | None = None) -> int:
     p_dc.add_argument("--no-llm", action="store_true", help="禁用 LLM 增强")
     p_dc.add_argument("--output", "-o", default=None, help="输出文件路径")
 
-# harness
+    # harness
     p_hr = sp.add_parser("harness", help="C++ Fuzz Harness 生成")
     p_hr.add_argument("--binary", "-b", required=True, help="目标二进制路径")
     p_hr.add_argument("--func", "-f", required=True, help="目标函数名")
     p_hr.add_argument("--output", "-o", default=None, help="Harness 输出路径")
     p_hr.add_argument("--corpus-dir", default=None, help="语料种子输出目录")
 
-# evolve
+    # evolve
     p_ev = sp.add_parser("evolve", help="遗传算法种子进化")
     p_ev.add_argument("--seed-dir", "-s", default=None, help="初始种子目录")
     p_ev.add_argument("--generations", "-g", type=int, default=10, help="进化代数")
@@ -366,11 +366,11 @@ def main(argv: list[str] | None = None) -> int:
 
     args = p.parse_args(argv)
 
-# 日志初始化
+    # 日志初始化
     _setup_logging(args.verbose, args.debug, args.log_file)
     log = logging.getLogger("cli")
 
-# 配置加载
+    # 配置加载
     config = _load_config(args.config)
     if config:
         log.info("已加载配置: %s", args.config or _find_default_config())
@@ -379,7 +379,7 @@ def main(argv: list[str] | None = None) -> int:
         p.print_help()
         return 1
 
-# 子命令分发
+    # 子命令分发
     log.info("执行子命令: %s", args.command)
     _commands = {
         "fault-inject": _cmd_fault_inject,

@@ -22,18 +22,16 @@ class VulnSignature:
         raw = f"{self.func_name}:{self.vuln_type}:{self.address}:{self.constraint_hash}"
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
+@dataclass
 class MergedVuln:
-    __slots__ = ('vuln_id', 'vuln_type', 'func_name', 'severity', 'confidence', 'duplicate_count', 'source_analyzers', 'original_reports',)
-
-    def __init__(self, vuln_id, vuln_type, func_name, severity, confidence, duplicate_count=1, source_analyzers=field(default_factory=list), original_reports=field(default_factory=list)):
-        self.vuln_id = vuln_id
-        self.vuln_type = vuln_type
-        self.func_name = func_name
-        self.severity = severity
-        self.confidence = confidence
-        self.duplicate_count = duplicate_count
-        self.source_analyzers = source_analyzers
-        self.original_reports = original_reports
+    vuln_id: str = ""
+    vuln_type: str = ""
+    func_name: str = ""
+    severity: str = ""
+    confidence: float = 0.0
+    duplicate_count: int = 1
+    source_analyzers: list = field(default_factory=list)
+    original_reports: list = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -47,7 +45,7 @@ class MergedVuln:
         }
 
 class VulnDedupMerger:
-    """基于指纹的漏洞去重引擎——按signature hash分组，每簇选取最高置信度代表。"""
+    """基于指纹的漏洞去重引擎, 按signature hash分组, 每簇选取最高置信度代表。"""
 
     def __init__(self, similarity_threshold: float = 0.7):
         self.threshold = similarity_threshold

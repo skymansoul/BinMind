@@ -127,10 +127,8 @@ class ExceptionRecovery:
         return LSDAType.GCC
 
     def detect_double_fault_risk(self) -> List[str]:
-        """检测可能导致双重故障（double fault）的异常处理结构缺陷
-        若 catch(.) 块中调用了可能再次抛出异常的函数，且无嵌套 try 保护
-        则标记为潜在双重故障风险, 这在嵌入式/内核代码中可能导致三重故障重启
-        """
+        # 检测双重故障: catch(...)块调用可能再次抛出异常的函数且无嵌套try保护
+        # 嵌入式/内核代码中可能导致三重故障重启
         risks: List[str] = []
         for frame in self.exception_frames:
             for tb in frame.try_blocks:

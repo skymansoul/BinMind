@@ -2,39 +2,6 @@
 # 虚拟寄存器重命名: alpha-转换归一化到 %r0..%rN 的标准命名空间
 # 死代码消除: %r7(栈指针)标记为始终活跃, 防止栈操作被误删
 
-"""IR 归一化变换遍 - 编译器无关的中间表示规范化
-
-跨编译器二进制比较的根本困难: 不同编译器 (GCC/Clang/MSVC) 对相同源码
-产生不同指令序列。例如:
-  GCC -O2: lea rax, [rdi+1]; ret
-  Clang -O2: add rdi, 1; mov rax, rdi; ret
-  MSVC /O2: mov eax, edi; inc eax; ret
-
-这些序列语义等价但在指令级别不可直接比较
-本模块的解决方案: 将汇编提升到统一的归一化 IR, 应用以下变换:
-
-Pass 1 - 窥孔归约:
-  归约已知的编译器特有模式为统一形式
-  例如: lea rax, [rbx+C] -> add rax, rbx, C (当无内存引用时)
-        xor reg, reg -> mov reg, 0
-
-Pass 2 - 常量折叠:
-  在 IR 级别预计算常量表达式
-  例如: add r1, 10, 5 -> mov r1, 15
-
-Pass 3 - 死代码消除:
-  移除对后续指令无影响的操作
-  例如: 只写不读的寄存器赋值
-
-Pass 4 - alpha-转换 (虚拟寄存器重命名):
-  将架构特定的寄存器名归一化到 %r0..%rN
-  例如: rax(eax/ax/al) -> %r0, rbx -> %r1, ...
-  消除编译器寄存器分配的差异
-
-变换保证: 归一化后的 IR 对语义等价的代码产生完全相同的表示
-(在 alpha-等价意义下), 归约是汇合的 (Church-Rosser)
-"""
-
 from __future__ import annotations
 
 import re

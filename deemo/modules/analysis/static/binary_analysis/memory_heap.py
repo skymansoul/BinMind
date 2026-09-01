@@ -15,10 +15,8 @@ class Allocation:
 
 
 class HeapAnalyzer:
-    """堆分配生命周期分析。
-
-    按地址登记分配，跟踪释放状态，供 UAF 与 double-free 启发式判定使用。
-    """
+    # 堆分配生命周期分析
+    # 按地址登记分配，跟踪释放状态，供 UAF 与 double-free 启发式判定使用
 
     def __init__(self):
         self._allocations: Dict[int, Allocation] = {}

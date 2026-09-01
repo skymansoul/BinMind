@@ -147,8 +147,6 @@ class LayoutInferencer:
     # 单个输入可能无法触发所有字段访问，多输入的访问模式交集可以提高推断准确性
     @staticmethod
     def infer_from_multiple(all_accesses: List[List[Tuple[int, int, str]]]) -> StructLayout:
-        """从多个样本输入的访问记录中交叉验证字段布局
-        合并所有访问位置，去重后按偏移量排序，相邻偏移间的间隙指示对齐填充"""
         combined: Dict[int, int] = {}  # offset -> max_size
         for accesses in all_accesses:
             for offset, size, _ in accesses:
@@ -175,8 +173,6 @@ class LayoutInferencer:
 
 
 class DynamicStructProber:
-    """结构体布局动态探测 — 通过多输入Unicorn仿真追踪内存访问模式
-    推断结构体的字段偏移、大小和对齐方式"""
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)
@@ -207,9 +203,6 @@ class DynamicStructProber:
 # 新增: 对齐填充检测
     # 对推断的字段布局进行对齐分析，检测编译器可能插入的填充字节
     def detect_padding(self, layout: StructLayout) -> List[Dict[str, int]]:
-        """在推断的结构体布局中检测对齐填充
-        若相邻字段间存在间隙（field_i.offset + field_i.size < field_{+1}.offset）
-        则该间隙即为编译器插入的对齐填充字节"""
         pads = []
         sorted_fields = sorted(layout.fields, key=lambda f: f.offset)
         for i in range(len(sorted_fields) - 1):

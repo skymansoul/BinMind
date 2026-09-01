@@ -105,11 +105,13 @@ class NeedlemanWunschAligner:
                 else:
                     diag = dp[i - 1][j - 1] + self._mismatch
 
-                # 垂直/水平: 间隙
+                # 垂直/水平: 间隙。延伸判定基于上一跳是否为extend
                 vert = dp[i - 1][j] + (self._gap_extend
-                       if i > 1 and dp[i - 1][j] == dp[i - 1][j] else self._gap_open)
+                       if i > 1 and dp[i - 1][j] - dp[i - 2][j] == self._gap_extend
+                       else self._gap_open)
                 hori = dp[i][j - 1] + (self._gap_extend
-                       if j > 1 and dp[i][j - 1] == dp[i][j - 1] else self._gap_open)
+                       if j > 1 and dp[i][j - 1] - dp[i][j - 2] == self._gap_extend
+                       else self._gap_open)
 
                 dp[i][j] = max(diag, vert, hori)
 
@@ -134,8 +136,10 @@ class NeedlemanWunschAligner:
                     i -= 1
                     j -= 1
                     continue
-            if i > 0 and dp[i][j] == dp[i - 1][j] + (self._gap_extend
-                    if i > 1 else self._gap_open):
+            if i > 0 and dp[i][j] == dp[i - 1][j] + (
+                    self._gap_extend
+                    if i > 1 and dp[i - 1][j] - dp[i - 2][j] == self._gap_extend
+                    else self._gap_open):
                 aligned_a.append(a[i - 1])
                 aligned_b.append(-1)  # 间隙标记
                 i -= 1

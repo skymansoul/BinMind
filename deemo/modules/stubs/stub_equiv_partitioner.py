@@ -22,7 +22,6 @@
 import itertools as _it
 import re as _re
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 from modules.stubs.stub_contract import FuncContract as _FuncContract
 
@@ -53,7 +52,6 @@ _EQUIV_CLASSES = {
     'tuple': [('empty', ()), ('single', (0,)), ('pair', (0, 1))],
 }
 
-# BVA扩展: 对数值类的每个边界增加 ON/OFF/IN 三点
 _BVA_EXTENSIONS = {
     'int': {
         'zero':     {'on': 0, 'off': 1, 'in': -1},
@@ -71,7 +69,6 @@ _BVA_EXTENSIONS = {
     },
 }
 
-# MR引导的额外分区
 _MR_PARTITIONS = {
     'idempotence': [
         # f(f(x)) == f(x): 在f的值域边界处最可能违反
@@ -122,7 +119,6 @@ class EquivPartitioner:
         for p in params:
             base = self._simple_base(p.annotation)
             classes = list(_EQUIV_CLASSES.get(base, [('default', None)]))
-            # BVA扩展
             bva_map = _BVA_EXTENSIONS.get(base, {})
             for cname, cval in list(classes):
                 if cname in bva_map:

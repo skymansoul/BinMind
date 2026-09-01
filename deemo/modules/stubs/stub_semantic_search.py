@@ -14,6 +14,7 @@
 #   这捕获了"生态知识": 例如搜索"firmware"时自动关联"binary"，
 #   因为firmware_analyzer和binary_format_loader共享调用方。
 import math as _math
+import os as _os
 import re as _re
 from collections import Counter as _Ctr, defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field
@@ -49,8 +50,7 @@ class SemanticSearchEngine:
 
     def __init__(self, stubs_dir: str = None):
         if stubs_dir is None:
-            import os
-            stubs_dir = os.path.dirname(os.path.abspath(__file__))
+            stubs_dir = _os.path.dirname(_os.path.abspath(__file__))
         self.stubs_dir = stubs_dir
         self.contractor = _StubContractor(stubs_dir=stubs_dir)
         self._index: dict[str, dict] = {}  # {module: {term: tfidf}}
@@ -97,7 +97,6 @@ class SemanticSearchEngine:
         results.sort(key=lambda r: -r.score)
         return results[:top_k]
 
-# 索引构建
     def _build_index(self) -> None:
         contracts = self.contractor.scan_all()
         # 收集全部文档用于 IDF
@@ -238,7 +237,6 @@ class SemanticSearchEngine:
                 parts.append(p.name)
         return ' '.join(parts)
 
-# 相似度计算
     @staticmethod
     def _cosine_similarity(query_terms: list[str],
                            doc_tfidf: dict[str, float]) -> float:
@@ -278,7 +276,6 @@ class SemanticSearchEngine:
             return 0.0
         return len(q_types & param_types) / len(q_types | param_types)
 
-# 分词
     @staticmethod
     def _tokenize(text: str) -> list[str]:
         text = text.lower()
@@ -314,7 +311,6 @@ class SemanticSearchEngine:
         return sig
 
 
-# 便捷入口
 def find_stub(query: str, top_k: int = 5) -> list[SearchResult]:
     """一行式桩语义搜索。"""
     return SemanticSearchEngine().search(query, top_k)

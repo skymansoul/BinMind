@@ -21,7 +21,6 @@
 #   本模块针对桩实现的确定性质量信号设计门控维度。
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 
 class GateDecision:
@@ -134,7 +133,6 @@ class DeployGate:
         result.explanation = self._explain(result)
         return result
 
-# 信号采集
     def _signal_irl(self, module_name: str) -> GateSignal:
         sig = GateSignal(name='irl', weight=self.WEIGHTS['irl'],
                         source='QualityScorer')
@@ -347,7 +345,6 @@ class DeployGate:
         result.explanation = self._explain(result)
         return result
 
-# CI/CD 集成
     def ci_check(self, module_name: str, sequential: bool = False) -> tuple[int, dict]:
         """CI/CD gate check. sequential=True uses early-exit optimization."""
         result = self.evaluate_sequential(module_name) if sequential else self.evaluate(module_name)

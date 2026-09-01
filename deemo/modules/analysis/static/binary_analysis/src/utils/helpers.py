@@ -90,11 +90,9 @@ def atomic_open(path: str, mode: str = "w", encoding: str = "utf-8"):
 
 
 def atomic_write(path: str, data, mode: str = None, encoding: str = "utf-8") -> None:
-    """原子写入 data（bytes 或 str）。
-
-    内容类型决定落盘模式：bytes 走二进制，str 按 encoding 编码。
-    写入临时文件后 os.replace 一步到位，避免半写文件。
-    """
+    # 原子写入 data(bytes 或 str)
+    # 内容类型决定落盘模式: bytes 走二进制, str 按 encoding 编码
+    # 写入临时文件后 os.replace 一步到位，避免半写文件
     dirname = os.path.dirname(path) or "."
     fd, tmp_path = tempfile.mkstemp(dir=dirname, suffix=".tmp")
     try:
@@ -118,10 +116,8 @@ def atomic_write_sync(path: str, content: str, mode: str = "w") -> None:
 # //// dig -- 点号分隔的深层字典访问
 
 def dig(d, *keys, default=None):
-    """逐层下探嵌套 dict，安全返回 default。
-
-    兼容变参键与 'a.b.c' 点分串两种调用形式。
-    """
+    # 逐层下探嵌套 dict，安全返回 default
+    # 兼容变参键与 'a.b.c' 点分串两种调用形式
     if len(keys) == 1 and isinstance(keys[0], str) and '.' in keys[0]:
         keys = tuple(keys[0].split('.'))
     node = d

@@ -18,7 +18,6 @@
 import ast as _ast
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 from modules.stubs.stub_contract import (
     StubContract as _StubContract,
@@ -163,7 +162,6 @@ class DriftDetector:
         reports.sort(key=lambda r: -r.drift_score)
         return reports
 
-# 内部方法
     def _parse_impl(self, module_name: str) -> dict[str, dict]:
         """解析模块源码，提取所有顶层函数的基本信息。"""
         path = _os.path.join(self.stubs_dir, f'{module_name}.py')
@@ -304,7 +302,6 @@ class DriftDetector:
         ]
         return len(meaningful) == 0
 
-# 报告
     def drift_summary(self, reports: list[DriftReport] = None) -> str:
         """生成 Markdown 漂移摘要。"""
         if reports is None:
@@ -330,7 +327,6 @@ class DriftDetector:
         return '\n'.join(lines)
 
 
-# 便捷入口
 def detect_drift(module_name: str) -> DriftReport:
     """一行式漂移检测。"""
     return DriftDetector().detect(module_name)

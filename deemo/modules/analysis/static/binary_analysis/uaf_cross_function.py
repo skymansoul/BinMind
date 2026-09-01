@@ -14,30 +14,20 @@ class PointerEscape:
     target_function: str = ''      # 逃逸到的函数 (arg_pass) 或 '' (return/global)
 
 class CrossFunctionUAFDetector(UAFDetector):
-    """跨函数UAF检测 - 在函数内检测基础上增加跨函数指针追踪
-
-    场景: 函数A分配堆指针, 传递给函数B, B中free, A中继续使用
-    当前 uaf_detector.py 看不到B中的free→报告漏报
-    本模块通过调用图传播指针liveness信息
-
-    方法:
-      1. 在每函数内识别"指针逃逸点": return ptr / store global / pass as arg
-      2. 沿调用图传播逃逸信息: 若callee free了逃逸指针, 标记caller中的后续use
-      3. 对逃逸指针在caller中free之后的引用→UAF
-    """
+    # 跨函数 UAF 检测——在函数内检测基础上增加跨函数指针追踪
+    # 场景: 函数A分配堆指针传递给函数B, B中 free, A中继续使用
+    # 方法: 1.识别指针逃逸点(return/store global/pass as arg)
+    #       2.沿调用图传播逃逸信息
+    #       3.对逃逸指针在 caller 中 free 之后的引用→UAF
 
     def detect_cross_function(
         self,
         functions: Dict[str, List[Tuple[int, str]]],
         call_graph: Dict[str, List[str]],
     ) -> List[UAFFinding]:
-        """跨函数UAF检测
-
-        functions: {func_name: [(addr, asm_text)]}
-        call_graph: {caller: [callee]}
-
-        返回: 跨函数UAF发现列表
-        """
+        # functions: {func_name: [(addr, asm_text)]}
+        # call_graph: {caller: [callee]}
+        # 返回: 跨函数 UAF 发现列表
         findings: List[UAFFinding] = []
 
         for caller, callees in call_graph.items():
@@ -135,12 +125,8 @@ class CrossFunctionUAFDetector(UAFDetector):
     def _does_callee_free(
         self, asm_lines: List[Tuple[int, str]], ptr_reg: str,
     ) -> bool:
-        """检查callee中是否free了指定寄存器的指针
-
-        两种情况:
-          a) free前有显式 mov rdi, ptr_reg → 直接匹配
-          b) free前无rdi赋值 → rdi由调用者传入, 默认匹配
-        """
+        # 检查 callee 中是否 free 了指定寄存器的指针
+        # 两种情况: a) free 前有显式 mov rdi, ptr_reg  b) 无 rdi 赋值→默认匹配
         for addr, text in asm_lines:
             if not self._is_free_call(text):
                 continue

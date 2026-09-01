@@ -34,10 +34,7 @@ except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
 # 使用radare2的radiff2或radare2 diff命令进行函数级语义比较
 
 def _r2_function_diff(binary_a: str, binary_b: str) -> List[Dict[str, Any]]:
-    """使用radare2比较两个二进制文件的函数差异
-
-    返回差异度列表: [{func_name, similarity_pct, diff_type,.}]
-    """
+    # 使用radare2比较两个二进制文件的函数差异, 返回差异度列表
     if not _HAS_R2:
         return []
 
@@ -143,10 +140,8 @@ def _execute_and_capture(binary_path: str, args: List[str],
 
 
 class SemanticDiffFuzzer:
-    """基于语义相似度的差分 Fuzzing 引擎
-    每次运行收集轻量级执行迹特征（基本块直方图、syscall 频率、分配大小分位数）
-    使用余弦距离量化两次运行之间的语义差异
-    """
+    # 基于语义相似度的差分Fuzzing引擎, 收集轻量级执行迹特征
+    # 使用余弦距离量化两次运行之间的语义差异
 
     _FEATURE_KEYS = ['bb_count', 'syscall_count', 'alloc_total', 'crash', 'timeout']
 
@@ -155,7 +150,7 @@ class SemanticDiffFuzzer:
         self._runs: List[Dict[str, float]] = []
 
     def run_and_collect(self, args: List[str], timeout_s: int = 10) -> Dict[str, float]:
-        """执行一次并收集语义特征, 不依赖具体输入格式"""
+        # 执行一次并收集语义特征, 不依赖具体输入格式
         features = {k: 0.0 for k in self._FEATURE_KEYS}
         try:
             r = subprocess.run(
@@ -178,9 +173,8 @@ class SemanticDiffFuzzer:
 
     def semantic_distance(self, run_a: Dict[str, float],
                            run_b: Dict[str, float]) -> float:
-        """计算两次运行的语义距离（0=完全相同，1=完全不同）
-        使用加权余弦距离, crash/timeout 的权重高于 bb_count
-        """
+        # 计算两次运行的语义距离(0=完全相同, 1=完全不同)
+        # 加权余弦距离, crash/timeout权重高于bb_count
         weights = {'crash': 3.0, 'timeout': 3.0, 'bb_count': 1.0,
                    'syscall_count': 1.5, 'alloc_total': 1.0}
         dot = 0.0
@@ -200,9 +194,7 @@ class SemanticDiffFuzzer:
 
     def find_divergent_behaviors(self, args_list: List[List[str]],
                                   threshold: float = 0.3) -> List[Tuple[int, int, float]]:
-        """发现行为发散, 返回 (run_i, run_j, distance) 的差异列表
-        阈值 0.3 来源于实验校准
-        """
+        # 发现行为发散, 返回(run_i, run_j, distance)差异列表, 阈值0.3来源于实验校准
         divergences: List[Tuple[int, int, float]] = []
         for i, args in enumerate(args_list):
             self.run_and_collect(args)
@@ -246,16 +238,7 @@ class DifferentialFuzzer:
             return {'success': False, 'error': str(e)}
 
     def _run_cross_compiler_diff(self) -> Dict[str, Any]:
-        """跨编译器差分分析, v2.0真实实现
-
-        分析流程：
-        1. 解析二进制头→元信息（格式、架构、编译器指纹）
-        2. 提取代码段字节
-        3. capstone反汇编→指令指纹（直方图、SIMD/FP比率、prologue模式）
-        4. 代码块哈希多样性分析
-        5. 执行测试→比较输出和退出码
-        6. 编译器指纹检测（GCC vs Clang vs MSVC）
-        """
+        # 跨编译器差分分析: 解析二进制头→元信息→提取代码段→指令指纹→块哈希→执行测试
         meta = _parse_binary_meta(self.binary_path)
         compiler_hint = _detect_compiler_hints(self.binary_path, meta)
         meta.compiler_hint = compiler_hint
@@ -368,15 +351,7 @@ class DifferentialFuzzer:
         }
 
     def _run_cross_version_diff(self) -> Dict[str, Any]:
-        """跨版本差分分析, v2.0真实实现
-
-        分析流程：
-        1. 解析二进制头→元信息
-        2. 提取代码段，统计大小差异
-        3. 比较导入表（版本间API变化往往是漏洞源）
-        4. 执行测试并比较输出一致性
-        5. 符号表版本标记检测
-        """
+        # 跨版本差分分析: 元信息→代码段大小→导入表→执行行为→版本字符串检测
         meta = _parse_binary_meta(self.binary_path)
         compiler_hint = _detect_compiler_hints(self.binary_path, meta)
 
@@ -471,7 +446,7 @@ class DifferentialFuzzer:
         }
 
     def _scan_version_strings(self) -> List[str]:
-        """扫描二进制中的版本号字符串"""
+        # 扫描二进制中的版本号字符串
         version_strings: List[str] = []
         try:
             with open(self.binary_path, 'rb') as fh:
@@ -493,15 +468,7 @@ class DifferentialFuzzer:
         return version_strings
 
     def _run_cross_arch_diff(self) -> Dict[str, Any]:
-        """跨架构差分分析, v2.0真实实现
-
-        分析流程：
-        1. 从二进制头检测架构（x86/x86-64/ARM/ARM64）
-        2. 检测字节序（LE/）
-        3. capstone反汇编→指令集指纹（特有指令、寄存器宽度）
-        4. 数据段扫描→检测指针宽度（4 vs 8字节）
-        5. 架构特有的编译特征检测
-        """
+        # 跨架构差分分析: 架构检测→字节序→指令集指纹→指针宽度→编译特征
         meta = _parse_binary_meta(self.binary_path)
         compiler_hint = _detect_compiler_hints(self.binary_path, meta)
 
@@ -630,14 +597,7 @@ class DifferentialFuzzer:
     # 外部调用者可以传入参考二进制来进行真正的成对比较
 
     def diff_against_reference(self, reference_path: str) -> Dict[str, Any]:
-        """与此二进制的参考版本进行真实差分比较
-
-        执行：
-        - 二进制头比较
-        - 代码段块哈希Jaccard相似度
-        - r2函数级diff（若可用）
-        - 执行行为比较
-        """
+        # 与参考版本进行真实差分比较: 二进制头→块哈希Jaccard→r2函数diff→执行行为
         ref_meta = _parse_binary_meta(reference_path)
         my_meta = _parse_binary_meta(self.binary_path)
 

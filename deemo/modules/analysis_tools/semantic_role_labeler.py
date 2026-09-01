@@ -34,7 +34,7 @@ class VariableInfo:
 
 class SemanticRoleLabeler:
 
-    s_patterns = {
+    pattern_map = {
         SemanticRole.LOOP_COUNTER: ["inc", "dec", "cmp", "jmp"],
         SemanticRole.BUFFER_POINTER: ["mov", "lea", "offset"],
         SemanticRole.BUFFER_LENGTH: ["mov", "cmp", "length"],
@@ -42,10 +42,10 @@ class SemanticRoleLabeler:
         SemanticRole.FLAG: ["and", "or", "test"]
     }
 
-    def label_variables(self, variables):
+    def label_variables(self, variables: List[VariableInfo]) -> List[VariableInfo]:
         for var in variables:
             scores = {}
-            for role, ops in self.s_patterns.items():
+            for role, ops in self.pattern_map.items():
                 score = sum(1 for op in var.operations if any(o in op.lower() for o in ops))
 
                 score = score / len(var.operations) if var.operations else 0

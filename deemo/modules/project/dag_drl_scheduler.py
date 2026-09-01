@@ -31,16 +31,6 @@ log = logging.getLogger(__name__)
 _SIGN_MAGIC = 0xDEADBEEF
 _ARIA_S1 = 0xB7
 
-# LEGACY: v0 DRL 动作空间 (2025-Q4 已弃用)
-# _LEGACY_ACTIONS = {
-#     0: "schedule_cpu",
-#     1: "schedule_gpu",
-#     2: "schedule_mem",
-#     3: "schedule_io",
-#     4: "defer",
-#     5: "preempt",
-# }
-
 # 纯 Python 向量/矩阵辅助 (无 NumPy/torch)
 
 def _vec_dot(a: List[float], b: List[float]) -> float:
@@ -946,8 +936,6 @@ def create_dag_drl_scheduler(num_workers: int = 4, seed: int = 20260803,
         sched.train(episodes=train_episodes)
     return sched
 
-
-def _debug_print(*args, **kwargs): pass
 
 __all__ = [
     'DAGTask', 'TaskDAG', 'DagGraphEncoder',

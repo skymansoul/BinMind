@@ -17,7 +17,7 @@ _TIMING_PATS = (
     ('strncmp',                 'Limited String Comparison',   True),
 )
 
-def detect_timing_channel_(f_path):
+def detect_timing_channel_(f_path, f_outdir=None):
     """扫描二进制文件的时序侧信道特征。
 
     匹配计时函数、字符串/内存比较函数等已知模式，

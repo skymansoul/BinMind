@@ -7,7 +7,6 @@ import sqlite3
 import threading
 import uuid
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass, field, asdict
 from collections import defaultdict
 from enum import Enum
 
@@ -77,6 +76,23 @@ class VulnerabilityRecord:
         self.last_modified_clock = last_modified_clock
         self.last_modified_node = last_modified_node
         self.tombstone = tombstone
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'vuln_id': self.vuln_id,
+            'cve_id': self.cve_id,
+            'func_name': self.func_name,
+            'binary_path': self.binary_path,
+            'vuln_type': self.vuln_type,
+            'severity': self.severity,
+            'description': self.description,
+            'tags': self.tags,
+            'metadata': self.metadata,
+            'version': self.version,
+            'last_modified_clock': self.last_modified_clock,
+            'last_modified_node': self.last_modified_node,
+            'tombstone': self.tombstone
+        }
 
 
 class ConflictResolution:
@@ -227,7 +243,7 @@ class CRDTVulnDB:
                 clock_counter=counter,
                 timestamp=time.time(),
                 vuln_id=vuln.vuln_id,
-                payload=asdict(vuln)
+                payload=vuln.to_dict()
             )
             self._record_op(op)
             with self._conn() as c:
@@ -237,7 +253,7 @@ class CRDTVulnDB:
                      last_modified_node, tombstone)
                     VALUES (?,?,?,?,?,?)
                 """, (
-                    vuln.vuln_id, json.dumps(asdict(vuln)), 1,
+                    vuln.vuln_id, json.dumps(vuln.to_dict()), 1,
                     counter, self.node_id, 0
                 ))
         return op.op_id

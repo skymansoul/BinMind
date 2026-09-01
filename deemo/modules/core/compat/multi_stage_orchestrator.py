@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os, sys, importlib.util
 _mm_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'multimodal')
 if _mm_dir not in sys.path:

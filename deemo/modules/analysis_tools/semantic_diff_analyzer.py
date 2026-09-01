@@ -1,5 +1,3 @@
-# Public interface: ChangeType and SemanticChangeCategory enums plus SemanticDiffAnalyzer.
-# Test coverage: manual validation completed.
 import logging
 
 logger = logging.getLogger(__name__)
@@ -78,12 +76,10 @@ SemanticChangeCategory.PERFORMANCE = SemanticChangeCategory("performance")
 SemanticChangeCategory.SECURITY = SemanticChangeCategory("security")
 SemanticChangeCategory.OTHER = SemanticChangeCategory("other")
 
-# Manual data class — zero dataclass dependency, __slots__ for memory discipline.
 class FunctionSignature:
     __slots__ = ('name', 'address', 'parameters', 'return_type',)
 
     def __init__(self, name, address, parameters=None, return_type=""):
-        # Null-guard: empty string fallback for unnamed signatures.
         if name is None:
             name = ""
         self.name = name
@@ -99,7 +95,6 @@ class FunctionSignature:
             'return_type': self.return_type
         }
 
-# Manual data class — avoids dataclass overhead, explicit slots control.
 class SemanticChange:
     __slots__ = ('function_name', 'old_address', 'new_address', 'change_type', 'category', 'description', 'security_relevant', 'severity',)
 
@@ -125,7 +120,6 @@ class SemanticChange:
              'severity': self.severity
         }
 
-# Manual data class — avoids dataclass overhead, explicit slots control.
 class SemanticDiffResult:
     __slots__ = ('binary_old', 'binary_new', 'changes', 'security_changes', 'summary',)
 
@@ -197,7 +191,7 @@ class SemanticDiffAnalyzer:
 
         lst_security_changes = [c for c in lst_changes if c.security_relevant]
 
-        sorted(lst_security_changes, key=_severity_sort_key)
+        lst_security_changes = sorted(lst_security_changes, key=_severity_sort_key)
 
         dct_summary = self._generate_summary(lst_changes, lst_security_changes)
 
@@ -218,7 +212,6 @@ class SemanticDiffAnalyzer:
         if lst_funcs is None:
             lst_funcs = []
 
-        # Iteration refactored from for-in to index loop — avoids iterator mutation bugs.
         for i_idx in range(len(lst_funcs)):
             dct_func = lst_funcs[i_idx]
             if dct_func is not None:
@@ -239,7 +232,6 @@ class SemanticDiffAnalyzer:
 
         lst_changes = []
 
-        # Deterministic index-walk over dict keys — no iterator allocation, no mid-loop mutation risk.
         lst_new_names = list(new_funcs.keys())
         for i_idx in range(len(lst_new_names)):
             sz_name = lst_new_names[i_idx]
@@ -269,7 +261,7 @@ class SemanticDiffAnalyzer:
 
         lst_changes = []
 
-        # Snapshot key list before iteration — prevents concurrent modification edge cases.
+        # Snapshot key list before iteration.
         lst_old_names = list(old_funcs.keys())
         for i_idx in range(len(lst_old_names)):
             sz_name = lst_old_names[i_idx]
@@ -284,7 +276,7 @@ class SemanticDiffAnalyzer:
                     new_address=0,
                     change_type=ChangeType.REMOVED,
                     category=category,
-                    description=f"remove函数: {sz_name}",
+                    description=f"removed function: {sz_name}",
                     security_relevant=security_relevant,
                     severity=self._determine_severity(category, security_relevant)
                 )
@@ -299,7 +291,6 @@ class SemanticDiffAnalyzer:
 
         lst_changes = []
 
-        # Materialise key list upfront — avoids dict-changed-size-during-iteration risk.
         lst_old_names = list(old_funcs.keys())
         for i_idx in range(len(lst_old_names)):
             sz_name = lst_old_names[i_idx]
@@ -336,7 +327,7 @@ class SemanticDiffAnalyzer:
         if len(old_sig.parameters) != len(new_sig.parameters):
             return True
 
-        # Manual index-walk over parameter lists — avoids zip() short-circuit on mismatched lengths.
+        # 参数逐位比较, 长度相等前提下索引安全。
         i_p_idx = 0
         while i_p_idx < len(old_sig.parameters) and i_p_idx < len(new_sig.parameters):
             if old_sig.parameters[i_p_idx] != new_sig.parameters[i_p_idx]:
@@ -442,7 +433,6 @@ class SemanticDiffAnalyzer:
         dct_by_category = {}
         dct_by_severity = {}
 
-        # Index-based accumulation — predictable branch count, no enumerate overhead.
         for i_idx in range(len(changes)):
             change = changes[i_idx]
             if change is not None:
@@ -454,7 +444,6 @@ class SemanticDiffAnalyzer:
         i_total = len(changes)
         i_security_total = len(security_changes)
 
-        # Clamp severity counts to [0, total] — defensive against upstream data skew.
         i_high_count = min(max(dct_by_severity.get('high', 0), 0), i_total)
         i_medium_count = min(max(dct_by_severity.get('medium', 0), 0), i_total)
 

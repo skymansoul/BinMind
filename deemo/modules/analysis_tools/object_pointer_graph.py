@@ -60,10 +60,13 @@ class CandidateObject:
 
 class ObjectReference:
     """Inter-object pointer reference edge in the graph."""
-    src: int
-    dst: int
-    field: str = ""
-    kind: str = "ptr"
+    __slots__ = ('src', 'dst', 'field', 'kind')
+
+    def __init__(self, src, dst, field="", kind="ptr"):
+        self.src = src
+        self.dst = dst
+        self.field = field
+        self.kind = kind
 
 class ObjectPointerGraph:
     """Directed graph capturing object-to-object pointer relationships."""
@@ -279,9 +282,9 @@ class ObjectPointerReconstructor:
 def reconstruct_from_dump(dump_path: str,
                           base_addr: int = 0x400000) -> Dict[str, Any]:
     """One-shot entry: load dump and run full memory scan pipeline."""
-    re = ObjectPointerReconstructor()
-    data, _ = re.load_dump(dump_path)
-    graph = re.scan_memory(data, base_addr=base_addr)
+    recons = ObjectPointerReconstructor()
+    data, _ = recons.load_dump(dump_path)
+    graph = recons.scan_memory(data, base_addr=base_addr)
     return {
         'success': True,
         'graph': graph.to_dict()

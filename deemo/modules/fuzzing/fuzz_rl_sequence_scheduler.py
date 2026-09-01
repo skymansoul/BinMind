@@ -108,7 +108,7 @@ class SequenceScorer:
         self._pos: Dict[Tuple[str, int], float] = {}
         self._ctx: Dict[Tuple[str, int], float] = {}
 
-# 打分与概率计算
+    # 打分与概率计算
 
     def score_step(self, op: str, prev_op: Optional[str],
                    pos: int, ctx: Optional[List[float]]) -> float:
@@ -145,7 +145,7 @@ class SequenceScorer:
             prev = map_op_name(op)
         return lp
 
-# 自回归采样
+    # 自回归采样
 
     def sample_sequence(self, length: int, ctx: Optional[List[float]] = None,
                         temperature: float = 1.0,
@@ -160,7 +160,7 @@ class SequenceScorer:
             prev = seq[-1]
         return seq
 
-# REINFORCE + 熵正则化步进
+    # REINFORCE + 熵正则化步进
 
     def apply_update(self, seq: Sequence[str], ctx: Optional[List[float]],
                      advantage: float, lr: float, entropy_coef: float) -> None:
@@ -224,7 +224,7 @@ class SequenceScorer:
             self._ctx[k] = self._ctx.get(k, 0.0) + lr * (
                 advantage * g + entropy_coef * en4.get(k, 0.0))
 
-# 统计查询
+    # 统计查询
 
     def op_prior(self) -> Dict[str, float]:
         """unigram权重经softmax后的边际分布, 排除转/位/上下文影响。"""
@@ -295,7 +295,7 @@ class RLSequenceScheduler:
         self._total_updates = 0
         self._reward_history: List[float] = []
 
-# 序列选择入口
+    # 序列选择入口
 
     def select_sequence(self, context: Optional[List[float]] = None) -> List[str]:
         """按当前策略采样一条算子序列, 更新选择计数。"""
@@ -308,7 +308,7 @@ class RLSequenceScheduler:
         self._total_selections += 1
         return seq
 
-# 奖赏反馈与组触发更新
+    # 奖赏反馈与组触发更新
 
     def notify_reward(self, reward: float, seq: Sequence[str],
                       context: Optional[List[float]] = None) -> Optional[dict]:
@@ -352,7 +352,7 @@ class RLSequenceScheduler:
         self._pending = []
         return summary
 
-# 统计查询
+    # 统计查询
 
     def get_probabilities(self) -> Dict[str, float]:
         """unigram边际概率, 与GRPOScheduler.get_probabilities同接口形状。"""

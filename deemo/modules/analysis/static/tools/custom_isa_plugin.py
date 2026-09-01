@@ -117,9 +117,8 @@ class UART16550Emulator(CustomPeripheral):
 # SPI 外设仿真器
 # 用于 fuzzing 固件中与 SPI Flash/SD 卡交互的代码路径
 class SPIFlashEmulator(CustomPeripheral):
-    """SPI Flash 仿真器, 模拟 Winbond W25Q 系列闪存的命令集
-    实现 读取 (0x03)、FAST_READ (0x0B)、READ_JEDEC_ID (0x9F) 等核心命令
-    """
+    # SPI Flash 仿真器, 模拟 Winbond W25Q 系列闪存命令集
+    # 实现读取(0x03)/FAST_READ(0x0B)/READ_JEDEC_ID(0x9F)等核心命令
     _JEDEC_ID = b'\xEF\x40\x18'  # Winbond W25Q128 制造商ID
 
     def __init__(self, base=0x40003000, size=0x100):
@@ -157,9 +156,8 @@ class SPIFlashEmulator(CustomPeripheral):
 
 # SysTick 定时器仿真器
 class SysTickEmulator(CustomPeripheral):
-    """ARM Cortex-M SysTick 定时器仿真器, 固件中普遍用于 RTOS 节拍
-    每次 tick 递减当前值，归零时触发中断并重载
-    """
+    # ARM Cortex-M SysTick 定时器仿真器, 固件中普遍用于 RTOS 节拍
+    # 每次 tick 递减当前值，归零时触发中断并重载
     def __init__(self, base=0xE000E010, size=0x10):
         self.__base = base; self.__sz = size
         self.__reload = 0; self.__current = 0

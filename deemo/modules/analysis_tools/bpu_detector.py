@@ -15,7 +15,6 @@ class IndirectBranch:
 
     def __init__(self, address, instruction, target_register, spectre_risk):
         self.address = address
-        self.address = address
         self.instruction = instruction
         self.target_register = target_register
         self.spectre_risk = spectre_risk
@@ -55,7 +54,6 @@ class BranchScanner:
         self.binary_path = binary_path
 
     def scanBp(self) -> List[IndirectBranch]:
-# Validation passed. Requires deeper engineering; refactor pending.
         branches = []
         try:
             r = subprocess.run(
@@ -97,10 +95,10 @@ class BPUAnalyzer:
 
         for set_idx, addrs in set_map.items():
             if len(addrs) >= 2:
-                dwI = 0
+                # 同 set 内两两组合生成别名冲突，避免 O(n^2) 全笛卡尔积
                 nAddrsTotal = len(addrs)
-                while dwI < nAddrsTotal:
-                    for j in range(i + 1, len(addrs)):
+                for i in range(nAddrsTotal):
+                    for j in range(i + 1, nAddrsTotal):
                         conflicts.append(BPUConflict(
                             branch_a=addrs[i],
                             branch_b=addrs[j],
@@ -138,7 +136,7 @@ class BPUDetector:
         conflicts = self.analyzer.find_conflictsBp(branches)
         risk, rec = self.analyzer.assess_riskBp(branches, conflicts)
 
-        log.info(
+        logger.info(
             f"BPU analysis: {len(branches)} indirect branches, "
             f"{len(conflicts)} conflicts, risk={risk}"
         )

@@ -3,8 +3,13 @@
 # Aho-Corasick自动机O(N+M)完成全模式匹配，对比逐库逐模式
 # O(K*N*P)正则扫描，大二进制(>100MB)+密集指纹库场景加速比10-50x。
 # 令牌桶机制替代固定时间窗口实现OSV API限速。
+from __future__ import annotations
 
-import os, re, json, yaml, logging, asyncio, time, hashlib, requests
+import os, re, json, yaml, logging, asyncio, time, hashlib
+try:
+    import requests
+except ImportError:
+    requests = None
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta

@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 import struct
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,20 @@ class HardwareSecurityFeature:
     requirements: Any = None
     details: Any = None
 
+    def to_dict(self) -> Dict[str, Any]:
+        # 字段均为原生类型（str/list/bool），无需再做枚举解包
+        return {
+            'name': self.name,
+            'feature_type': self.feature_type,
+            'enabled': self.enabled,
+            'description': self.description,
+            'impact_on_exploitation': self.impact_on_exploitation,
+            'affected_attack_techniques': self.affected_attack_techniques,
+            'bypass_techniques': self.bypass_techniques,
+            'requirements': self.requirements,
+            'details': self.details
+        }
+
 
 # 动态二进制加固特征提取
 # 不依赖 pyelftools 即可检测的编译期加固：
@@ -88,7 +102,7 @@ class HardwareSecurityFeature:
 # 这些是编译期即可确认的防护，与运行时硬件特性互补。
 
 def _detect_stack_canary_candidate(binary_path: str) -> Tuple[bool, str]:
-    # 内联检测
+    # 直接读原始字节匹配 canary 符号，避免引入 pyelftools 依赖
     try:
         with open(binary_path, 'rb') as f:
             content = f.read()
@@ -100,7 +114,7 @@ def _detect_stack_canary_candidate(binary_path: str) -> Tuple[bool, str]:
 
 
 def _detect_relro(binary_path: str) -> Tuple[bool, str]:
-    # 内联检测
+    # 字节级匹配 RELRO 特征，Full 与 Partial 以 BIND_NOW 标志区分
     try:
         with open(binary_path, 'rb') as f:
             content = f.read()
@@ -117,7 +131,7 @@ def _detect_relro(binary_path: str) -> Tuple[bool, str]:
 
 
 def _detect_nx(binary_path: str) -> Tuple[bool, str]:
-    # 内联检测
+    # 字节级近似检测 GNU_STACK 可执行标志，无法精确解析时倾向保守放行
     try:
         with open(binary_path, 'rb') as f:
             content = f.read()
@@ -134,19 +148,6 @@ def _detect_nx(binary_path: str) -> Tuple[bool, str]:
     except Exception:
         return True, "默认 NX"
 
-
-def to_dict(self) -> Dict[str, Any]:
-        return {
-            'name': self.name,
-            'feature_type': self.feature_type.value,
-            'enabled': self.enabled,
-            'description': self.description,
-            'impact_on_exploitation': self.impact_on_exploitation.value,
-            'affected_attack_techniques': self.affected_attack_techniques,
-            'bypass_techniques': self.bypass_techniques,
-            'requirements': self.requirements,
-            'details': self.details
-        }
 
 class VulnerabilityExploitabilityAssessment:
     __slots__ = ('vulnerability_type', 'original_difficulty', 'adjusted_difficulty', 'difficulty_change', 'hardware_features', 'impacted_attack_techniques', 'suggested_bypass_techniques', 'information_leak_requirements', 'assessment_notes', 'risk_adjustment', 'epss_weighted_score',)
@@ -167,8 +168,8 @@ class VulnerabilityExploitabilityAssessment:
     def to_dict(self) -> Dict[str, Any]:
         return {
             'vulnerability_type': self.vulnerability_type,
-            'original_difficulty': self.original_difficulty.value,
-            'adjusted_difficulty': self.adjusted_difficulty.value,
+            'original_difficulty': self.original_difficulty,
+            'adjusted_difficulty': self.adjusted_difficulty,
             'difficulty_change': self.difficulty_change,
             'hardware_features': [f.to_dict() for f in self.hardware_features],
             'impacted_attack_techniques': self.impacted_attack_techniques,
@@ -277,7 +278,7 @@ class HardwareSecurityEvaluator:
             self._compile_hardening['nx'] = _detect_nx(self.binary_path)
 
     def evaluate(self) -> HardwareSecurityEvaluationReport:
-        # 内联执行
+        # 串联检测流水线：编译期加固 → 架构特性 → 漏洞难度评估 → 整体态势评级
         logger.info(f"start硬件security assessment: {self.binary_path}")
 
         report = HardwareSecurityEvaluationReport(
@@ -528,7 +529,7 @@ class HardwareSecurityEvaluator:
             feature_type=HardwareFeature.ARM_PAC,
             enabled=enabled,
             description="指针认证，使用 PACIABP/RETAA 等指令sign返回address和指针",
-            impact_on_exploitation=ExploitabilityImpact.EXTREMELY_HARD if enabled else ExploitabilityImpact.NO_IMPACT,
+            impact_on_exploitation=ExploitabilityImpact.BLOCKED if enabled else ExploitabilityImpact.NO_IMPACT,
             affected_attack_techniques=['ROP (需要伪造 PAC)', 'JOP (需要伪造 PAC)',
                                        'ret2libc (需要伪造 PAC)', 'Stack Pivot (需要伪造 PAC)'],
             bypass_techniques=['information disclosure PAC secret key', '利用 PAC sign算法弱点',
@@ -802,6 +803,14 @@ class HardwareSecurityEvaluator:
 def evaluate_hardware_security(binary_path: str, binary_info: Dict[str, Any] = None) -> HardwareSecurityEvaluationReport:
     """
     硬件安全评估快捷入口：实例化评估器并执行评估，返回报告对象。
+    """
+    evaluator = HardwareSecurityEvaluator(binary_path, binary_info)
+    return evaluator.evaluate()
+
+
+def format_hardware_security_report(report: HardwareSecurityEvaluationReport) -> str:
+    """
+    将评估报告渲染为文本形式，供 CLI 与日志直接输出。
     """
     lines = []
     lines.append("=" * 70)

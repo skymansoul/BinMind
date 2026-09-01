@@ -1,7 +1,7 @@
-# features.py：可解释特征提取（Interpretable 特征提取）
+# features.py：可解释特征提取（Interpretable Feature Extraction）
 #
 # 对应论文:
-# Beyond Embeddings: Interpretable 特征提取 for Binary Code
+# Beyond Embeddings: Interpretable Feature Extraction for Binary Code
 #   Similarity - [待验证]
 #
 # 设计意图:

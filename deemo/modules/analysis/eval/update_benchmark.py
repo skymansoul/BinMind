@@ -1,8 +1,5 @@
 """更新基准测试结果 - 将 PPA-HAV 实测数据与基线工具对比.
 
-使用:
-  python update_benchmark.py [--scan-results PATH] [--samples N]
-
 来源:
   - PPA-HAV: 实测 (testing/scan_results.json)
   - AAVSA: 历史基准 (40% FP reduction vs Angr)

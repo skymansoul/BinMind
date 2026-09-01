@@ -89,7 +89,7 @@ class RLSeedFuzz:
         self._cold_start_count = 0
         self._corpus = []
 
-# 冷启动与语料
+    # 冷启动与语料
 
     def run_cold_start(self, target_sites: Sequence[Any],
                        per_target: Optional[int] = None) -> List[bytes]:
@@ -122,7 +122,7 @@ class RLSeedFuzz:
         """返回累计语料的只读副本。"""
         return list(self._corpus)
 
-# 调度 (种子 + 变异序列)
+    # 调度 (种子 + 变异序列)
 
     def select_seed(self, seed_queue: list,
                     contexts: Optional[List[List[float]]] = None):
@@ -148,7 +148,7 @@ class RLSeedFuzz:
                 edge_count=seed_meta.get("edge_count", 0))
         return self._hybrid.select_mutation_sequence(ctx)
 
-# 反馈
+    # 反馈
 
     def notify_seed_reward(self, seed_id: str, is_new_find: bool,
                            crash_found: bool = False,
@@ -180,7 +180,7 @@ class RLSeedFuzz:
             reward = float(new_edges)
         return self._hybrid.notify_mutation_reward(reward, seq, context)
 
-# 统计
+    # 统计
 
     def get_stats(self) -> dict:
         stats = {

@@ -27,7 +27,6 @@ class HookEvent(Enum):
 
 @dataclass
 class HookContext:
-    """单次调用的分发上下文。"""
     api_name: str
     args: list = field(default_factory=list)
     module_name: str = ""
@@ -39,7 +38,6 @@ class HookContext:
 
 @dataclass
 class HookDescriptor:
-    """已注册 hook 的元数据与回调链。"""
     hook_id: str
     pattern: str
     pre: List[Callable] = field(default_factory=list)
@@ -51,10 +49,6 @@ class HookDescriptor:
 
 
 class HookRegistry:
-    """
-    管理所有 HookEntry 的注册/注销/查询
-    使用缓存加速匹配 (api_name + module_name)
-    """
 
     def __init__(self):
         self._hooks: List[HookDescriptor] = []
@@ -63,7 +57,6 @@ class HookRegistry:
     def register(self, hook_id: str, pattern: str, pre=None, post=None,
                  error=None, priority: int = 100,
                  module_filter: Optional[Union[Set[str], str]] = None) -> str:
-        """注册 hook，返回 hook_id。"""
         descriptor = HookDescriptor(
             hook_id=hook_id,
             pattern=pattern,
@@ -151,10 +144,6 @@ class HookRegistry:
 # 钩子 引擎
 
 class HookEngine:
-    """
-    API 拦截分发器
-    按优先级遍历匹配的 hook，按 action 决定后续行为
-    """
 
     def __init__(self):
         self.registry = HookRegistry()
@@ -163,7 +152,6 @@ class HookEngine:
 
     def dispatch_pre(self, api_name: str, args: Any,
                      module_name: str = "") -> HookContext:
-        """执行 pre 回调链，返回处理后的上下文。"""
         ctx = HookContext(api_name=api_name, args=list(args or []), module_name=module_name)
         self._stats['total_calls'] = self._stats.get('total_calls', 0) + 1
         hooks = self.registry.get_hooks_for_api(api_name, module_name)
@@ -184,7 +172,6 @@ class HookEngine:
         return ctx
 
     def dispatch_post(self, ctx: HookContext, return_value: Any = None) -> HookContext:
-        """执行 post 回调链。"""
         ctx.return_value = return_value
         hooks = self.registry.get_hooks_for_api(ctx.api_name, ctx.module_name)
         for descriptor in hooks:
@@ -196,7 +183,6 @@ class HookEngine:
         return ctx
 
     def dispatch_error(self, ctx: HookContext, exc: BaseException) -> HookContext:
-        """执行 error 回调链。"""
         ctx.error = exc
         hooks = self.registry.get_hooks_for_api(ctx.api_name, ctx.module_name)
         for descriptor in hooks:
@@ -209,7 +195,6 @@ class HookEngine:
 
     def dispatch(self, api_name: str, args: Any,
                  module_name: str = "") -> tuple:
-        """兼容入口：执行 pre 链并按 action 返回 (handled, result)。"""
         ctx = self.dispatch_pre(api_name, args, module_name)
         if ctx.action in (HookAction.SKIP_ORIGINAL, HookAction.DROP):
             return (True, ctx.return_value)
@@ -329,7 +314,6 @@ class HookEngine:
 # ---- 便捷回调工厂 ----
 
 def log_args_callback(prefix: str = "hook") -> Callable:
-    """生成记录调用参数的 pre 回调。"""
     def _cb(ctx: HookContext):
         _log.info("%s: %s(%r)", prefix, ctx.api_name, ctx.args)
         return HookAction.CONTINUE
@@ -337,7 +321,6 @@ def log_args_callback(prefix: str = "hook") -> Callable:
 
 
 def return_override_callback(value: Any) -> Callable:
-    """生成固定返回值回调。"""
     def _cb(ctx: HookContext):
         ctx.return_value = value
         return HookAction.SKIP_ORIGINAL
@@ -345,7 +328,6 @@ def return_override_callback(value: Any) -> Callable:
 
 
 def arg_mutator_callback(index: int, value: Any) -> Callable:
-    """生成修改指定参数的回调。"""
     def _cb(ctx: HookContext):
         if 0 <= index < len(ctx.args):
             ctx.args[index] = value
@@ -354,7 +336,6 @@ def arg_mutator_callback(index: int, value: Any) -> Callable:
 
 
 def conditional_skip(predicate: Callable, return_value: Any = None) -> Callable:
-    """predicate(ctx) 为真时跳过原始调用。"""
     def _cb(ctx: HookContext):
         if predicate(ctx):
             ctx.return_value = return_value
@@ -365,5 +346,4 @@ def conditional_skip(predicate: Callable, return_value: Any = None) -> Callable:
 
 # 便捷工厂
 def create_default_engine() -> HookEngine:
-    """创建预装全部内置 hook 的引擎"""
     return HookEngine()

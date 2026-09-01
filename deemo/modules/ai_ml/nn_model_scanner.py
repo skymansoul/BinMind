@@ -65,6 +65,11 @@ class ModelMetadata:
     opset_versions: List[int] = field(default_factory=list)
     graph_name: str = ""
     detected_magic: str = ""
+    # 解析器填充的扩展字段
+    entropy_score: float = 0.0
+    num_nodes: int = 0
+    num_initializers: int = 0
+    custom_ops: List[str] = field(default_factory=list)
 
 
 @dataclass

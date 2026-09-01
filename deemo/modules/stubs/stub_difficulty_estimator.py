@@ -28,9 +28,7 @@
 #   本模块的估计随项目经验自改进 — 每次实现尝试（成功/失败）
 #   更新Beta分布参数，使后续预估更准确。
 #   这是勘探-利用权衡在代码生成中的具体应用。
-import math as _math
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 from modules.stubs.stub_contract import (
     StubContract as _StubContract,
@@ -153,7 +151,6 @@ class DifficultyEstimator:
         est.recommended_strategy = self._recommend_strategy(est)
         return est
 
-# 先验因子
     @staticmethod
     def _complexity_factor(contract: _StubContract) -> float:
         if not contract.functions:
@@ -201,7 +198,6 @@ class DifficultyEstimator:
         except ImportError:
             return 0.5
 
-# 贝叶斯更新（似然）
     @staticmethod
     def _load_history(module_name: str) -> tuple[int, int]:
         """从ProvenanceChain加载该模块的历史实现结果。"""

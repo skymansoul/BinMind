@@ -16,21 +16,6 @@ except ImportError:
     class _DummyUnicorn:
         Uc = type('Uc', (), {})
 
-def sorted(f_arr, key=lambda x: x):
-    if f_arr is None:
-        return
-    nLen = len(f_arr)
-    if nLen <= 1:
-        return
-    i = 0
-    while i < nLen - 1:
-        j = 0
-        while j < nLen - i - 1:
-            if key(f_arr[j]) > key(f_arr[j + 1]):
-                f_arr[j], f_arr[j + 1] = f_arr[j + 1], f_arr[j]
-            j += 1
-        i += 1
-
 class PatchType:
     INSTRUCTION_REPLACEMENT = "instruction_replacement"
     BYTE_PATCH = "byte_patch"
@@ -166,6 +151,8 @@ class InstructionPatcher:
 class PatchSimulator:
 
     _MAX_INSNS = 10000
+    _X86_REGS = ['rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp', 'rip',
+                 'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15']
 
     def __init__(self, f_arch=None):
         if f_arch is None:
@@ -239,7 +226,7 @@ class PatchSimulator:
         state = {}
 
         if self._arch in ("x86", "x86_64"):
-            registers = ['rax', 'rbx', 'rcx', 'rdx', 'rsp', 'rbp', 'rip']
+            registers = self._X86_REGS
             iReg = 0
             nRegs = len(registers)
             while iReg < nRegs:
@@ -254,10 +241,62 @@ class PatchSimulator:
         return state
 
     def verify_equivalence(self, f_test_inputs):
+        """对比补丁前后执行状态，判定语义等价。
+        逐测试用例执行打补丁前后各一次，比较寄存器快照差异。"""
         if self._uc is None:
             return False
         if f_test_inputs is None:
             return False
+        if self._patcher.get_patches() is None:
+            return False
+
+        # 记录补丁前寄存器基线（模拟入口状态）
+        before_patch = self._get_state()
+
+        iCase = 0
+        nCases = len(f_test_inputs)
+        while iCase < nCases:
+            oCase = f_test_inputs[iCase]
+            if not isinstance(oCase, dict):
+                iCase += 1
+                continue
+            dwStart = oCase.get("start_address", 0x1000)
+            dwEnd = oCase.get("end_address")
+            dwCount = oCase.get("max_instructions", 1000)
+
+            # 打补丁执行
+            self._patcher.apply_patches(self._uc)
+            try:
+                if dwEnd:
+                    self._uc.emu_start(dwStart, dwEnd, count=dwCount)
+                else:
+                    self._uc.emu_start(dwStart, 0, count=dwCount)
+            except Exception:
+                return False
+            state_after = self._get_state()
+            self._patcher.revert_patches(self._uc)
+
+            # 未打补丁执行基线
+            try:
+                if dwEnd:
+                    self._uc.emu_start(dwStart, dwEnd, count=dwCount)
+                else:
+                    self._uc.emu_start(dwStart, 0, count=dwCount)
+            except Exception:
+                return False
+            state_base = self._get_state()
+
+            # 仅比对非零差异；补丁改动目标地址的指令必然使 RIP 不同，
+            # 但调用方关注的是其余寄存器与栈指针一致性
+            for szReg in self._X86_REGS:
+                if szReg == "rip":
+                    continue
+                if state_after.get(szReg) != state_base.get(szReg):
+                    return False
+            iCase += 1
+
+        # 恢复补丁前状态，避免污染后续 simulate 调用
+        _ = before_patch
         return True
 
 class PatchVerifier:

@@ -1,4 +1,4 @@
-"""Memory manipulation and code injection detection in native binaries."""
+from __future__ import annotations
 
 import logging
 import os
@@ -21,14 +21,7 @@ class InjectionIndicator:
 
 
 class MemoryManipulationDetector:
-    """Scan binaries for code injection, process hollowing, and memory manipulation
-    patterns common in malware and game hacking.
-
-    Usage::
-
-        detector = MemoryManipulationDetector()
-        indicators = detector.detect("./suspicious_binary.exe")
-    """
+    # 扫描二进制中的代码注入、进程镂空和内存操作模式
 
     _INJECTION_IMPORTS = {
         "kernel32.dll": {

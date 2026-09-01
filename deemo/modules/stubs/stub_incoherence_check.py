@@ -16,8 +16,11 @@
 #   (TemplateGenerator 规则引擎 vs LLMGenerator 神经引擎)，
 #   利用策略独立性增强不一致信号的检测效力。
 import ast as _ast
+import math as _math
+import re as _re
 import types as _types
 import sys as _sys
+from itertools import product as _product
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt, Callable
 
@@ -27,7 +30,6 @@ from modules.stubs.stub_contract import (
 )
 
 
-# 双策略实现对
 @_dc
 class DualImplementation:
     """同一合约的两条独立策略生成结果。"""
@@ -188,7 +190,6 @@ class IncoherenceChecker:
         func_results['__summary__'] = summary
         return func_results
 
-# 辅助方法
     def _compile(self, source: str, label: str):
         """编译源码为隔离的模块对象。"""
         try:
@@ -222,8 +223,7 @@ class IncoherenceChecker:
         if a is b:
             return True
         if isinstance(a, float) and isinstance(b, float):
-            import math
-            return math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12)
+            return _math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-12)
         try:
             return a == b
         except Exception:
@@ -236,10 +236,9 @@ class IncoherenceChecker:
         if not params:
             return [()]
 
-        import re
         def base_type(ann: str) -> str:
             a = (ann or '').strip().lower()
-            m = re.match(r'([a-z_][a-z0-9_]*)', a)
+            m = _re.match(r'([a-z_][a-z0-9_]*)', a)
             return m.group(1) if m else ''
 
         value_map = {
@@ -254,13 +253,10 @@ class IncoherenceChecker:
             'tuple': [(), (0,)],
         }
 
-        import itertools
         candidates = [value_map.get(base_type(p.annotation), [None])
                      for p in params]
 
-        # 笛卡尔积上限 16 组
-        from itertools import product
-        combos = list(product(*candidates))
+        combos = list(_product(*candidates))
         return combos[:16]
 
     @staticmethod
@@ -272,7 +268,6 @@ class IncoherenceChecker:
             return '<unrepresentable>'
 
 
-# 便捷入口
 def check_dual_implementation(contract: _StubContract,
                               source_template: str,
                               source_llm: str) -> dict:

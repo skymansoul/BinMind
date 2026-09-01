@@ -106,14 +106,9 @@ class ForensicRecord:
 
 
 class ForensicPathRecorder(BaseAnalyzer):
-    """
-    Reproducible vulnerability-discovery audit trail.
-
-    Captures full execution context — inputs, register file, memory maps,
-    symbolic constraints — as tamper-evident, replayable forensic records.
-    Designed to satisfy CVE submission evidentiary requirements with
-    independent third-party verifiability.
-    """
+    # 可复现的漏洞发现审计追踪
+    # 捕获完整执行上下文（输入、寄存器、内存映射、符号约束）作为防篡改可重放取证记录
+    # 用于满足 CVE 提交的证据要求与第三方独立可验证性
 
     def __init__(self, output_dir: str = "data/forensics"):
         self.output_dir = output_dir
@@ -129,7 +124,7 @@ class ForensicPathRecorder(BaseAnalyzer):
         return f"FOR_{timestamp}_{random_suffix}"
 
     def _generate_signature(self, record: ForensicRecord) -> str:
-        """Generate record signature for integrity verification."""
+        # 生成记录签名用于完整性校验
         record_data = json.dumps({
             "record_id": record.record_id,
             "created_at": record.created_at.isoformat(),
@@ -151,7 +146,7 @@ class ForensicPathRecorder(BaseAnalyzer):
         return record_id
 
     def add_snapshot(self, snapshot: ForensicSnapshot) -> None:
-        """Add forensic snapshot to current record."""
+        # 将取证快照添加到当前记录
         if not self._current_record:
             raise ValueError("No active forensic record, call create_new_record first")
 
@@ -420,7 +415,7 @@ class ForensicPathRecorder(BaseAnalyzer):
         return report
 
     def analyze(self, **kwargs) -> Dict[str, Any]:
-        """Execute forensic record analysis."""
+        # 执行取证记录分析
         action = kwargs.get("action", "create")
 
         try:

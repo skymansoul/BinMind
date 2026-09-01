@@ -128,7 +128,6 @@ class TimestampExtractor:
 
     @staticmethod
     def from_elf_header(elf_data: bytes) -> List[Dict[str, Any]]:
-        """提取 timestamps ELF header"""
         timestamps = []
         try:
             if len(elf_data) < 64 or elf_data[:4] != b'\x7fELF':
@@ -386,8 +385,6 @@ class AnomalyDetector:
     # 使用统计异常评分识别回溯/前向篡改的时间戳
     @staticmethod
     def detect_timestamp_tampering(events: List[TimelineEvent]) -> List[Dict[str, Any]]:
-        """检测可能的时间戳篡改：回溯日期（早于合理范围）、未来日期、
-        以及异常精确的间隔模式（正常操作的时间戳应有微小的自然抖动）"""
         findings = []
         timestamps = [e.timestamp for e in events if e.timestamp > 0]
         if len(timestamps) < 3:
@@ -468,7 +465,6 @@ class TimelineExporter:
 
 
 class ForensicTimelineReconstructor(BaseAnalyzer):
-    """取证时间线重建分析器"""
 
     def __init__(self):
         super().__init__()
@@ -574,8 +570,6 @@ class ForensicTimelineReconstructor(BaseAnalyzer):
 # 新增: MACB时间线支持
     # NTFS的MACB (Modified, Accessed, Created, Birth) 时间戳提供更丰富的取证信息
     def reconstruct_file_operations(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """从事件序列重建文件生命周期：create → modify → delete 的完整路径
-        按file_path分组，按timestamp排序，恢复每个文件的操作序列"""
         by_path: Dict[str, List[Dict]] = {}
         for ev in events:
             path = ev.get('file_path', '')

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# 硬件安全分析命令行工具
-# FIXME: 子命令补全未接入 -- 边界条件: 非法子命令静默忽略
+# 硬件安全分析命令行工具：子命令 fuzz / side-channel / spectre / hw-security / mte / pmc
+# 注意：argparse 未强制子命令必选，空参数时回退到帮助页并返回退出码 1
 
 import argparse as _ap
 import sys as _sys
@@ -10,6 +10,7 @@ from typing import Optional, Sequence
 SUBCMDS = ["fuzz", "side-channel", "spectre", "hw-security", "mte", "pmc"]
 
 def _debug_print(msg: str) -> None:
+    # 预留的调试输出钩子，默认静默，便于排查时临时接回 stderr
     pass
 
 
@@ -79,8 +80,7 @@ def build_parser() -> _ap.ArgumentParser:
     return parser
 
 
-# 处理器
-
+# 各子命令的业务处理器：具体实现在子包内，此处仅做参数分发
 
 def _handle_fuzz(args) -> int:
     from .gpu.fuzzer import GPUFuzzerService, GPUFramework, FuzzMode

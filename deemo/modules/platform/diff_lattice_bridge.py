@@ -186,7 +186,6 @@ class DiffLatticeBridge:
         }
         return sorted(fixed_blocks & introduced_blocks)
 
-    # 此段后续可微调，当前先保证正确性
     def _classify_diff(self, diff_entry: Any) -> ClassifiedDiff:
         """对单个DiffEntry做安全分类。
 

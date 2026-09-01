@@ -17,6 +17,8 @@ Strided Interval Domain — 带步长的区间抽象域.
   本模块的 stride 建模用于 malloc 大小推断, 不依赖指针分析结果.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import math

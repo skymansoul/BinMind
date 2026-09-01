@@ -262,7 +262,7 @@ class GaussianProcessRisk:
                     s -= L[i][k] * L[j][k]
                 if i == j:
                     if s <= 0:
-                        s = 1e-9  # jitter for numerical stability
+                        s = 1e-9  # 数值抖动: 非正定时防止sqrt域错误
                     L[i][j] = math.sqrt(s)
                 else:
                     L[i][j] = s / L[j][j]

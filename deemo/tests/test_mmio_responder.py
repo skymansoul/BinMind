@@ -185,84 +185,175 @@ class TestMMIOResponder(unittest.TestCase):
 
 
 class TestLegacyRegisterAccessType(unittest.TestCase):
-    """旧版RegisterAccessType测试（已重命名为RegisterType）"""
+    """旧版RegisterAccessType测试（重写为RegisterType枚举断言）"""
 
     def test_register_access_type_values(self):
-        pytest.skip("RegisterAccessType removed — replaced by RegisterType with different values (ro/wo/rw/reserved)")
+        # RegisterAccessType 更名 RegisterType：成员固定四个，取值 ro/wo/rw/reserved
+        self.assertEqual(
+            [m.name for m in RegisterType],
+            ["READ_ONLY", "WRITE_ONLY", "READ_WRITE", "RESERVED"],
+        )
+        self.assertIs(RegisterType("rw"), RegisterType.READ_WRITE)
 
 
 class TestLegacyRegisterFieldType(unittest.TestCase):
-    """旧版RegisterFieldType测试（已移除）"""
+    """旧版RegisterFieldType测试（功能并入RegisterSpec类型字段）"""
 
     def test_register_field_type_values(self):
-        pytest.skip("RegisterFieldType removed")
+        # RegisterFieldType 无对应新枚举：字段类型由 RegisterSpec.reg_type 表达
+        reg = RegisterSpec(
+            name="field", offset=0, size=4,
+            reg_type=RegisterType.READ_ONLY, reset_value=0,
+        )
+        self.assertIs(reg.reg_type, RegisterType.READ_ONLY)
 
 
 class TestLegacyAccessResult(unittest.TestCase):
-    """旧版AccessResult测试（已移除）"""
+    """旧版AccessResult测试（重写为StubResult成败语义断言）"""
 
     def test_access_result_values(self):
-        pytest.skip("AccessResult enum removed — StubResult.success used instead")
+        # AccessResult 由 StubResult.success 表达：失败时 code 为空、无外设
+        result = StubResult(success=False, code="", peripheral=None)
+        self.assertFalse(result.success)
+        self.assertEqual(result.code, "")
+        self.assertIsNone(result.peripheral)
 
 
 class TestLegacyRegisterField(unittest.TestCase):
-    """旧版RegisterField测试（已移除）"""
+    """旧版RegisterField测试（重写为RegisterSpec字段断言）"""
 
     def test_register_field_creation(self):
-        pytest.skip("RegisterField removed — fields are now part of RegisterSpec")
+        # RegisterField 并入 RegisterSpec：offset/size/reg_type 承载字段语义
+        reg = RegisterSpec(
+            name="field0", offset=0x10, size=4,
+            reg_type=RegisterType.WRITE_ONLY, reset_value=0,
+        )
+        self.assertEqual(reg.name, "field0")
+        self.assertEqual(reg.offset, 0x10)
+        self.assertIs(reg.reg_type, RegisterType.WRITE_ONLY)
 
 
 class TestLegacyRegister(unittest.TestCase):
-    """旧版Register测试（已重命名为RegisterSpec）"""
+    """旧版Register测试（重写为RegisterSpec完整构造断言）"""
 
     def test_register_creation(self):
-        pytest.skip("Register removed — use RegisterSpec with offset/size/reg_type fields")
+        # Register 更名 RegisterSpec：offset/size/reg_type/reset_value 全字段
+        reg = RegisterSpec(
+            name="DR", offset=0x04, size=4,
+            reg_type=RegisterType.READ_WRITE, reset_value=0xFF,
+        )
+        self.assertEqual(reg.offset, 0x04)
+        self.assertEqual(reg.size, 4)
+        self.assertEqual(reg.reset_value, 0xFF)
+        self.assertIs(reg.reg_type, RegisterType.READ_WRITE)
 
 
 class TestLegacyPeripheral(unittest.TestCase):
-    """旧版Peripheral测试（已重命名为PeripheralSpec）"""
+    """旧版Peripheral测试（重写为PeripheralSpec派生属性断言）"""
 
     def test_peripheral_creation(self):
-        pytest.skip("Peripheral removed — use PeripheralSpec with base_address/registers fields")
+        # Peripheral 更名 PeripheralSpec：base_addr 属性与按名查寄存器
+        regs = [
+            RegisterSpec(name="CR", offset=0x00, size=4, reg_type=RegisterType.READ_WRITE, reset_value=0),
+            RegisterSpec(name="SR", offset=0x04, size=4, reg_type=RegisterType.READ_ONLY, reset_value=0),
+        ]
+        peripheral = PeripheralSpec(name="SPI", base_address=0x40001000, registers=regs)
+        self.assertEqual(peripheral.base_addr, 0x40001000)
+        self.assertIs(peripheral.register_by_name("SR"), regs[1])
+        self.assertIsNone(peripheral.register_by_name("NOPE"))
 
 
 class TestLegacyMMIOResponder(unittest.TestCase):
-    """旧版MMIOResponder方法测试（已移除的API）"""
+    """旧版MMIOResponder方法测试（重写为真实新API断言）"""
 
     def test_add_peripheral(self):
-        pytest.skip("add_peripheral removed — use define_peripheral(PeripheralSpec)")
+        # add_peripheral 更名 define_peripheral：按名注册 PeripheralSpec
+        responder = MMIOResponder()
+        regs = [RegisterSpec(name="CR", offset=0, size=4, reg_type=RegisterType.READ_WRITE, reset_value=0)]
+        spec = PeripheralSpec(name="TIM", base_address=0x40002000, registers=regs)
+        responder.define_peripheral(spec)
+        self.assertIn("TIM", responder.peripherals)
+        self.assertIs(responder.peripherals["TIM"], spec)
 
     def test_read_register(self):
-        pytest.skip("read removed — MMIOResponder now generates stubs, not runtime simulation")
+        # read 移除——由生成存根中的 _read 函数承载读语义
+        regs = [
+            RegisterSpec(name="R0", offset=0x00, size=4, reg_type=RegisterType.READ_ONLY, reset_value=0),
+            RegisterSpec(name="R1", offset=0x04, size=4, reg_type=RegisterType.READ_WRITE, reset_value=0),
+        ]
+        periph = PeripheralSpec(name="READDEV", base_address=0x60000000, registers=regs)
+        code = StubGenerator.generate(periph)
+        self.assertIn("READDEV_read(", code)
+        self.assertIn("READDEV_BASE_ADDR + offset", code)
+        self.assertIn("uint32_t", code)
 
     def test_read_write_only_register(self):
-        pytest.skip("read removed")
+        # 读语义落在存根 _read 上；WRITE_ONLY 寄存器仍生成 OFFSET 宏
+        regs = [RegisterSpec(name="WO", offset=0x08, size=4, reg_type=RegisterType.WRITE_ONLY, reset_value=0)]
+        periph = PeripheralSpec(name="WODEV", base_address=0x60000000, registers=regs)
+        code = StubGenerator.generate(periph)
+        self.assertIn("WODEV_WO_OFFSET", code)
+        self.assertIn("WODEV_read(", code)
 
     def test_write_register(self):
-        pytest.skip("write removed")
+        # write 移除——存根中的 _write 函数承载写语义，写入基址加偏移
+        regs = [RegisterSpec(name="CR", offset=0x00, size=4, reg_type=RegisterType.READ_WRITE, reset_value=0)]
+        periph = PeripheralSpec(name="WRDEV", base_address=0x60000000, registers=regs)
+        code = StubGenerator.generate(periph)
+        self.assertIn("WRDEV_write(", code)
+        self.assertIn("WRDEV_BASE_ADDR + offset", code)
+        self.assertIn("= value", code)
 
     def test_write_read_only_register(self):
-        pytest.skip("write removed")
-
-    def test_write_one_to_clear(self):
-        pytest.skip("write_one_to_clear removed")
+        # 旧 write 语义由存根承载；READ_ONLY 寄存器照常进入 reset 写入段
+        regs = [RegisterSpec(name="SR", offset=0x04, size=4, reg_type=RegisterType.READ_ONLY, reset_value=0x01)]
+        periph = PeripheralSpec(name="RODEV", base_address=0x60000000, registers=regs)
+        code = StubGenerator.generate(periph)
+        self.assertIn("RODEV_SR_OFFSET", code)
+        self.assertIn("RODEV_SR_OFFSET) = 0x1;", code)
 
     def test_access_out_of_range(self):
-        pytest.skip("out_of_range check removed")
+        # 越界语义等价于运行未注册外设：run 返回 success=False
+        responder = MMIOResponder()
+        result = responder.run("OUT_OF_RANGE_DEV")
+        self.assertFalse(result.success)
+        self.assertEqual(result.code, "")
+        self.assertIsNone(result.peripheral)
 
     def test_load_from_template(self):
         # 改进标记——当前设计可简化
-        pytest.skip("load_from_template removed — use define_peripheral with manually constructed PeripheralSpec")
+        # load_from_template 移除——工厂函数 create_mmio_responder 承担模板化构造
+        regs = [
+            {"name": "CR", "offset": 0x00, "size": 4, "type": RegisterType.READ_WRITE, "reset": 0x00},
+            {"name": "SR", "offset": 0x04, "size": 4, "type": RegisterType.READ_ONLY, "reset": 0x01},
+        ]
+        responder = create_mmio_responder(registers=regs, base=0x40000000)
+        self.assertIn("custom", responder.peripherals)
+        code = responder.run("custom").code
+        self.assertIn("custom_CR_OFFSET", code)
+        self.assertIn("custom_SR_OFFSET", code)
 
     def test_generate_python_stub(self):
-        pytest.skip("generate_stub_code removed — StubGenerator.generate produces C code only")
+        # 存根仅生成 C 代码——断言 C 头包含与函数定义，无 Python 分支
+        regs = [RegisterSpec(name="CR", offset=0x00, size=4, reg_type=RegisterType.READ_WRITE, reset_value=0)]
+        periph = PeripheralSpec(name="CDEV", base_address=0x40000000, registers=regs)
+        code = StubGenerator.generate(periph)
+        self.assertIn("#include <stdint.h>", code)
+        self.assertIn("CDEV_reset(void)", code)
+        self.assertNotIn("def ", code)
 
     def test_reset(self):
-        pytest.skip("reset/access_log removed")
-
-    def test_generate_report(self):
-        pytest.skip("generate_report removed")
-
+        # reset/access_log 移除——复位语义由存根 reset() 函数承载
+        regs = [
+            RegisterSpec(name="CR", offset=0x00, size=4, reg_type=RegisterType.READ_WRITE, reset_value=0x12),
+            RegisterSpec(name="RSVD", offset=0x08, size=4, reg_type=RegisterType.RESERVED, reset_value=0xAA),
+        ]
+        periph = PeripheralSpec(name="RSTDEV", base_address=0x40000000, registers=regs)
+        code = StubGenerator.generate(periph)
+        self.assertIn("RSTDEV_reset(void)", code)
+        # RESERVED 寄存器不出现在复位写入段
+        self.assertNotIn("RSTDEV_RSVD_OFFSET) = 0xaa;", code)
+        self.assertIn("RSTDEV_CR_OFFSET) = 0x12;", code)
 
 
 if __name__ == '__main__':

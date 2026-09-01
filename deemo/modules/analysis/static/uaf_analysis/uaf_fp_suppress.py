@@ -268,44 +268,6 @@ class UafFpSuppressor:
                                        func: str) -> bool:
         """被调函数内 free 之后到 ret 之间 rax 是否被显式定义.
 
-        扫描被调函数的指令区间 (call 目标 → 下一函数起始),
-        而非调用点之后的调用者指令 - 调用者区间不包含函数体.
-        """
-        idx = self._addr_idx(call_addr)
-        if idx is None:
-            return False
-        ins = self._insns[idx]
-        target = self._jmp_target_of(ins)
-        if target is None:
-            return False
-        # 函数边界: 下一函数起始地址 (符号表) - 缺省为指令流末
-        # TODO: 剥离二进制的函数边界恢复, 当前退化为指令流末,
-        # 跨函数 rax 定义判定可能误扫到相邻函数
-        func_end = 0xFFFFFFFFFFFFFFFF
-        for start in sorted(self._func_map):
-            if start > target:
-                func_end = start
-                break
-        if func_end == 0xFFFFFFFFFFFFFFFF:
-            for x in self._insns:
-                if x.address > target:
-                    func_end = x.address
-                    break
-        saw_free = False
-        for ins in self._insns:
-            if ins.address < target or ins.address >= func_end:
-                continue
-            ops = " ".join(ins.operands)
-            if ins.mnemonic == "call":
-                if not saw_free and "free" in ops:
-                    saw_free = True
-                continue
-            if ins.mnemonic == "ret":
-                break
-    def _callee_defines_rax_after_free(self, call_addr: int,
-                                       func: str) -> bool:
-        """被调函数内 free 之后到 ret 之间 rax 是否被显式定义.
-
         扫描被调函数的指令区间 (call 目标 → 下一函数起始).
         与 free 位于互斥分支的 rax 定义不算逃逸证据 (normal 路径
         的继续使用, 非释放后逃逸).

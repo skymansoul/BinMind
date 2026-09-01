@@ -851,5 +851,7 @@ def select_ai_model(task_type, **kwargs):
     if task_type is None:
         return None
     selector = get_model_selector()
-    task_type_enum = TaskType[task_type.upper()]
+    task_type_enum = getattr(TaskType, task_type.upper(), None)
+    if task_type_enum is None:
+        return None
     return selector.select_model(task_type_enum)

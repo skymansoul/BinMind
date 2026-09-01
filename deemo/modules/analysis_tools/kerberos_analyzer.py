@@ -32,23 +32,30 @@ class KerberosTicket:
     pac_present: Any = None
     pac_signed: Any = None
     is_weak: Any = None
-@property
-def lifetime_hours(self) -> float:
+
+    @property
+    def lifetime_hours(self) -> float:
+        # 简单启发式：AS-REP/TGT 默认 10 小时，TGS 按票据生命周期推断
+        if self.validity_start and self.validity_end:
+            delta = (self.validity_end - self.validity_start).total_seconds()
+            if delta > 0:
+                return round(delta / 3600.0, 2)
         return 10.0
 
-def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
-            'ticket_type': self.ticket_type.value,
+            'ticket_type': self.ticket_type.value if self.ticket_type else None,
             'realm': self.realm,
             'service_name': self.service_name,
-            'encryption_type': self.encryption_type.name,
+            'encryption_type': self.encryption_type.name if self.encryption_type else None,
             'is_weak': self.is_weak
         }
+
 
 class KerberosFinding:
     __slots__ = ('finding_id', 'attack_type', 'severity', 'description', 'affected_account', 'spn', 'encryption_type', 'remediation', 'mitre_technique',)
 
-def __init__(self, finding_id, attack_type, severity, description, affected_account="", spn="", encryption_type="", remediation="", mitre_technique=""):
+    def __init__(self, finding_id, attack_type, severity, description, affected_account="", spn="", encryption_type="", remediation="", mitre_technique=""):
         self.finding_id = finding_id
         self.attack_type = attack_type
         self.severity = severity
@@ -59,8 +66,9 @@ def __init__(self, finding_id, attack_type, severity, description, affected_acco
         self.remediation = remediation
         self.mitre_technique = mitre_technique
 
-def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {k: v for k, v in self.__dict__.items()}
+
 
 class KerberosAnalyzer:
 
@@ -72,15 +80,15 @@ class KerberosAnalyzer:
         'exchange', 'ldap', 'gc', 'DNS',
     ]
 
-def __init__(self):
+    def __init__(self):
         self._findings: List[KerberosFinding] = []
         self._counter = 0
 
-def _next_id(self) -> str:
+    def _next_id(self) -> str:
         self._counter += 1
         return f"KRB-{self._counter:04d}"
 
-def detect_kerberoasting(self, tickets: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def detect_kerberoasting(self, tickets: List[Dict[str, Any]]) -> Dict[str, Any]:
         findings = []
         for ticket in tickets:
             etype = ticket.get('encryption_type', 23)
@@ -91,7 +99,7 @@ def detect_kerberoasting(self, tickets: List[Dict[str, Any]]) -> Dict[str, Any]:
                     severity='high',
                     description=f'Service {spn} uses weak encryption type ({etype}) -- offline crack feasible',
                     spn=spn, encryption_type=str(etype),
-                    mitigation='Rotate service account password to 25+ character random string',
+                    remediation='Rotate service account password to 25+ character random string',
                     mitre_technique='T1558.003'))
 
         high_value = [t for t in tickets
@@ -104,13 +112,13 @@ def detect_kerberoasting(self, tickets: List[Dict[str, Any]]) -> Dict[str, Any]:
                 else 'high',
                 description=f'High-value SPN: {ticket.get("service_name", "")}',
                 spn=ticket.get('service_name', ''),
-                mitigation='Audit service account privileges; consider gMSA',
+                remediation='Audit service account privileges; consider gMSA',
                 mitre_technique='T1558.003'))
 
         self._findings.extend(findings)
         return {'total_tickets': len(tickets), 'findings': [f.to_dict() for f in findings]}
 
-def detect_asrep_roasting(self, accounts: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def detect_asrep_roasting(self, accounts: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Detect AS-REP Roasting: accounts lacking Kerberos pre-authentication."""
         findings = []
         for account in accounts:
@@ -121,12 +129,12 @@ def detect_asrep_roasting(self, accounts: List[Dict[str, Any]]) -> Dict[str, Any
                     description=f"Account {account.get('name', '?')} does not require Kerberos pre-authentication -- "
                                f"AS-REP can be requested and cracked offline",
                     affected_account=account.get('name', ''),
-                    mitigation='Enable Kerberos pre-authentication (clear UF_DONT_REQUIRE_PREAUTH)',
+                    remediation='Enable Kerberos pre-authentication (clear UF_DONT_REQUIRE_PREAUTH)',
                     mitre_technique='T1558.004'))
         self._findings.extend(findings)
         return {'total_accounts': len(accounts), 'findings': [f.to_dict() for f in findings]}
 
-def detect_golden_silver_ticket(self, domain_info: Dict[str, Any]) -> Dict[str, Any]:
+    def detect_golden_silver_ticket(self, domain_info: Dict[str, Any]) -> Dict[str, Any]:
         findings = []
         if domain_info.get('krbtgt_password_age_days', 0) > 365:
             findings.append(KerberosFinding(
@@ -134,12 +142,12 @@ def detect_golden_silver_ticket(self, domain_info: Dict[str, Any]) -> Dict[str, 
                 severity='critical',
                 description=f"krbtgt account password unchanged for {domain_info.get('krbtgt_password_age_days', 0)} days",
                 affected_account='krbtgt',
-                mitigation='Reset krbtgt account password twice immediately',
+                remediation='Reset krbtgt account password twice immediately',
                 mitre_technique='T1558.001'))
         self._findings.extend(findings)
         return {'findings': [f.to_dict() for f in findings]}
 
-def analyze(self, tickets: Optional[List[Dict[str, Any]]] = None,
+    def analyze(self, tickets: Optional[List[Dict[str, Any]]] = None,
                 accounts: Optional[List[Dict[str, Any]]] = None,
                 domain_info: Optional[Dict[str, Any]] = None, **kwargs) -> Dict[str, Any]:
         results = {'success': True, 'findings': []}
@@ -151,11 +159,13 @@ def analyze(self, tickets: Optional[List[Dict[str, Any]]] = None,
             results['golden_ticket'] = self.detect_golden_silver_ticket(domain_info)
         return results
 
+
 def analyze_kerberos(tickets: Optional[List[Dict[str, Any]]] = None,
                      accounts: Optional[List[Dict[str, Any]]] = None,
                      domain_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     analyzer = KerberosAnalyzer()
     return analyzer.analyze(tickets=tickets, accounts=accounts, domain_info=domain_info)
+
 
 __all__ = ["KerberosAnalyzer", "KerberosTicket", "KerberosFinding",
            "TicketType", "EncryptionType", "analyze_kerberos"]

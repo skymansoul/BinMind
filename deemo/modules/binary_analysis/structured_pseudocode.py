@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict
@@ -33,52 +33,52 @@ class OperatorType(Enum):
 # 手工data类——__slots__声明完全可控
 @dataclass
 class Statement:
-    type
-    content = ""
-    condition = None
+    type: StructuredType
+    content: str = ""
+    condition: Optional[str] = None
     body: list = field(default_factory=list)
     else_body: list = field(default_factory=list)
     cases: dict = field(default_factory=dict)
     default_case: list = field(default_factory=list)
-    init_expr = None
-    loop_expr = None
-    update_expr = None
-    address = 0
-    indent_level = 0
+    init_expr: Optional[str] = None
+    loop_expr: Optional[str] = None
+    update_expr: Optional[str] = None
+    address: int = 0
+    indent_level: int = 0
     comments: list = field(default_factory=list)
 
 @dataclass
 class Variable:
     name: str
     original_name: str
-    inferred_type = "int"
-    size = 0
-    is_array = False
-    is_pointer = False
-    is_parameter = False
-    is_local = True
-    is_global = False
-    initial_value = None
-    scope = "local"
+    inferred_type: str = "int"
+    size: int = 0
+    is_array: bool = False
+    is_pointer: bool = False
+    is_parameter: bool = False
+    is_local: bool = True
+    is_global: bool = False
+    initial_value: Any = None
+    scope: str = "local"
 
 @dataclass
 class FunctionSignature:
     name: str
-    return_type = "int"
+    return_type: str = "int"
     parameters: list = field(default_factory=list)
-    is_static = False
-    is_inline = False
+    is_static: bool = False
+    is_inline: bool = False
 
 @dataclass
 class StructuredOutput:
-    original_pseudocode = ""
-    structured_code = ""
+    original_pseudocode: str = ""
+    structured_code: str = ""
     statements: list = field(default_factory=list)
     variables: list = field(default_factory=list)
-    function_signature = None
+    function_signature: Optional[FunctionSignature] = None
     control_flow_graph: dict = field(default_factory=dict)
     warnings: list = field(default_factory=list)
-    success = False
+    success: bool = False
 
 class ControlFlowAnalyzer:
     # control flowanalyzer

@@ -169,11 +169,6 @@ class ArchitectureProjector:
 
     实现: 轻量PCA-like投影 - 计算跨架构嵌入对的主成分差异方向，
     将嵌入减去这些方向上的投影分量。
-
-    使用方式:
-      projector = ArchitectureProjector()
-      projector.fit(embedding_pairs)  # 同函数不同架构的嵌入对
-      aligned = projector.project(embedding, arch)
     """
 
     def __init__(self, projection_dim: int = 128, shared_dim: int = 96):

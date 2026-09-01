@@ -1,11 +1,3 @@
-"""JIT 引擎指纹识别、喷射模式检测与漏洞利用引导。
-
-分析 JIT 引擎（V8/SpiderMonkey/JSC/LuaJIT）的二进制特征：
-- 引擎指纹：特征向量 + 加权评分，识别目标 JIT 引擎。
-- JIT 喷射模式：识别反汇编中的立即数序列模式。
-- 代码页年龄评估：通过序言密度推断 JIT 代码页的"新鲜度"。
-- 漏洞利用引导：针对已识别漏洞类型给出利用技术与前提条件。
-"""
 import re
 import struct
 import math as _math

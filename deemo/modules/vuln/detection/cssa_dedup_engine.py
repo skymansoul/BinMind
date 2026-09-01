@@ -53,13 +53,7 @@ class DedupResult:
 
 
 class CssaDedupEngine:
-    """崩溃语义去重引擎-嵌入+聚类+根因归类全链路。
-
-    使用示例:
-        engine = CssaDedupEngine()
-        result = engine.deduplicate(crashes=[CrashState(...), ...])
-        print(f"去重: {result.total_crashes}-{result.unique_root_causes}个根因")
-    """
+    """崩溃语义去重引擎-嵌入+聚类+根因归类全链路。"""
 
     def __init__(self,
                  similarity_threshold: float = 0.85,

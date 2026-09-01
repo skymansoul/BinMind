@@ -13,7 +13,7 @@ TARGET = vuln.exe
 all: $(TARGET)
 
 $(TARGET): vuln.c
-\t$ $(CFLAGS) vuln.c -o $(TARGET)
+\t$(CC) $(CFLAGS) vuln.c -o $(TARGET)
 
 clean:
 \trm -f $(TARGET)

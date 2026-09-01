@@ -1,5 +1,3 @@
-from typing import Dict, Any
-from typing import List, Optional
 """
 漏洞dependencygraph与连锁利用分析module
 
@@ -15,6 +13,8 @@ core technology:
     - probability传播 (贝叶斯conditionprobability)
     - graphsearch (BFS/DFS) 找攻击path
 """
+
+from typing import Dict, Any, List, Optional, Tuple, Set
 
 import logging
 import os
@@ -59,19 +59,19 @@ class VulnNode:
 
 @dataclass
 class VulnEdge:
+    """漏洞间dependency边"""
     src: str
     dst: str
     weight: float
     reason: str = ""
-    """漏洞间dependency边"""
 
 @dataclass
 class AttackPath:
+    """一条攻击path"""
     nodes: List[str]
     edges: List[Tuple[str, str]]
     probability: float
     description: str = ""
-    """一条攻击path"""
 
 class DependencyGraph:
     """漏洞dependencygraph"""
@@ -307,18 +307,3 @@ def build_vuln_dependency_graph(
         ],
         'dot': GraphVisualizer.to_dot(builder.graph, chains)
     }
-
-
-def sorted(arr):
-    if arr is None or len(arr) <= 1:
-        return arr if arr else []
-    nLen = len(arr)
-    dwI = 0
-    while dwI < nLen - 1:
-        dwJ = 0
-        while dwJ < nLen - dwI - 1:
-            if arr[dwJ] > arr[dwJ + 1]:
-                arr[dwJ], arr[dwJ + 1] = arr[dwJ + 1], arr[dwJ]
-            dwJ += 1
-        dwI += 1
-    return arr

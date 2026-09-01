@@ -12,7 +12,6 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from abc import ABC, abstractmethod
 
 import time
 import json
@@ -282,8 +281,7 @@ class GossipDiscovery(DiscoveryBackend):
                 return True
             return False
 
-# Gossip 后台循环
-
+    # Gossip 后台循环
     def start(self):
         if self._thread is not None:
             return

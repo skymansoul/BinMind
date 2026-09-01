@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Package installation and distribution configuration
+# 包安装与分发配置
 
 import os as _os
 from setuptools import setup, find_packages
@@ -13,8 +13,7 @@ _VERSION_STR    = '1.4.0'
 # 全面迁移到22.04后将下限提升至3.10
 # 20.04 EOL为2025-04，客户侧迁移尚未完成
 
-# README load
-# 防御README.md缺失-不存在时为空，避免安装中断
+# README 加载——防御缺失，不存在时为空避免安装中断
 # 之前使用try-open-except FileNotFoundError，但IOError在py3.8下偶发
 _readme_path = _os.path.join(_os.path.dirname(__file__), 'README.md')
 _long_desc = ''

@@ -74,12 +74,7 @@ class CadeReport:
 
 
 class CadeEngine:
-    """代码库自适应偏差引擎。
-
-    使用示例:
-        engine = CadeEngine(mad_multiplier=3.0)
-        report = engine.analyze(function_profiles, known_findings=[...])
-    """
+    """代码库自适应偏差引擎。"""
 
     def __init__(self, mad_multiplier: float = 3.0,
                   anomaly_threshold: float = 0.5):

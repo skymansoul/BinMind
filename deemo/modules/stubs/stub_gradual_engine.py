@@ -43,14 +43,9 @@ from modules.stubs.stub_contract import (
     FuncContract as _FuncContract,
     StubContractor as _StubContractor,
 )
-try:
-    from modules.stubs.stub_prioritizer import ImplementationPrioritizer as _Prioritizer
-    from modules.stubs.stub_health_monitor import StubHealthMonitor
-except ImportError:
-    from modules.stubs.stub_prioritizer import ImplementationPrioritizer as _Prioritizer
-    from modules.stubs.stub_health_monitor import StubHealthMonitor
+from modules.stubs.stub_prioritizer import ImplementationPrioritizer as _Prioritizer
+from modules.stubs.stub_health_monitor import StubHealthMonitor
 
-# 配置
 @_dc
 class GradualConfig:
     """渐进引擎配置。远端模型为可选依赖；llm_enabled=False 时纯规则降级。"""
@@ -321,7 +316,6 @@ class LLMGenerator:
 
 
 def _re_search_block(content: str) -> _Opt[str]:
-    import re as _re
     m = _re.search(r'```(?:python)?\s*\n(.*?)```', content, _re.DOTALL)
     return m.group(1).strip() if m else None
 
@@ -480,7 +474,6 @@ class ContractVerifier:
         return typ is None or isinstance(out, typ)
 
 
-# 渐进实现引擎
 class GradualEngine:
     """编排实现 → 验证 → 回溯闭环。失败记录持久化，供后续策略迭代。"""
 
@@ -506,7 +499,6 @@ class GradualEngine:
             return self.config.output_dir
         return _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '_gradual_out')
 
-    # 验证-回溯闭环
     def _attempt_generate(self, contract: _StubContract, strategy: str,
                           source: _Opt[str]) -> _Opt[VerificationResult]:
         if not source:
@@ -624,7 +616,6 @@ class GradualEngine:
         """失败记录快照 — 供人工 review 与策略改进。"""
         return [{'module_name': k, **v} for k, v in sorted(self._failures.items())]
 
-    # 批量执行
     def implement_top(self, n: int = 5) -> list:
         """按实现缺口优先级处理前 n 个模块（can_generate 内部再做安全判定）。"""
         backlog = self.prior.implementation_backlog()
@@ -651,7 +642,6 @@ class GradualEngine:
         return '\n'.join(lines)
 
 
-# 顶层便利入口
 def run_gradual_plan(top_n: int = 5, config: _Opt[GradualConfig] = None) -> GradualEngine:
     """一键渐进实现：契约扫描 → 优先级排序 → 增量实现 → 摘要。"""
     engine = GradualEngine(config=config)

@@ -1,7 +1,6 @@
 import logging
 import os
 import json
-from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
 
 from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
@@ -31,7 +30,6 @@ class RaceConditionType:
     DEADLOCK = "deadlock"
     RACE_CONDITION = "race_condition"
 
-# Manual class definition — __slots__ replaces @dataclass overhead.
 class BorrowInfo:
     __slots__ = ('variable_name', 'borrow_type', 'borrow_scope', 'owner', 'lifetime', 'is_unsafe',)
 
@@ -43,7 +41,6 @@ class BorrowInfo:
         self.lifetime = lifetime
         self.is_unsafe = is_unsafe
 
-# Plain class; avoids @dataclass for zero-allocation storage.
 class LockInfo:
     __slots__ = ('lock_name', 'lock_type', 'acquire_offset', 'release_offset', 'held_by',)
 
@@ -54,36 +51,36 @@ class LockInfo:
         self.release_offset = release_offset
         self.held_by = held_by
 
-# Explicit class; __slots__ prevents dict overhead per instance.
 class RaceWarning:
     __slots__ = ('race_type', 'description', 'location', 'severity', 'variables', 'trace',)
 
-    def __init__(self, race_type, description, location, severity="high", variables=field(default_factory=list), trace=field(default_factory=list)):
+    def __init__(self, race_type, description, location, severity="high", variables=None, trace=None):
         self.race_type = race_type
         self.description = description
         self.location = location
         self.severity = severity
-        self.variables = variables
-        self.trace = trace
+        self.variables = variables if variables is not None else []
+        self.trace = trace if trace is not None else []
 
-# Hand-rolled class; skips @dataclass for memory-tight containers.
 class OwnershipAnalysisResult:
     __slots__ = ('language', 'borrows', 'locks', 'warnings', 'unsafe_blocks', 'goroutine_points',)
 
-    def __init__(self, language, borrows=field(default_factory=list), locks=field(default_factory=list), warnings=field(default_factory=list), unsafe_blocks=field(default_factory=list), goroutine_points=field(default_factory=list)):
+    def __init__(self, language, borrows=None, locks=None, warnings=None, unsafe_blocks=None, goroutine_points=None):
         self.language = language
-        self.borrows = borrows
-        self.locks = locks
-        self.warnings = warnings
-        self.unsafe_blocks = unsafe_blocks
-        self.goroutine_points = goroutine_points
+        self.borrows = borrows if borrows is not None else []
+        self.locks = locks if locks is not None else []
+        self.warnings = warnings if warnings is not None else []
+        self.unsafe_blocks = unsafe_blocks if unsafe_blocks is not None else []
+        self.goroutine_points = goroutine_points if goroutine_points is not None else []
 
 class BorrowAnalyzer:
     # Base borrow analysis interface.
 
     def analyze(self, binary_data: bytes) -> List[BorrowInfo]:
         """Analyze borrow-checker semantics."""
-        pass
+        # 基类默认返回空结果，具体模式匹配由子类实现。
+        logger.debug("BorrowAnalyzer base class invoked; no-op analysis.")
+        return []
 
 class RustBorrowAnalyzer(BorrowAnalyzer):
     """Rust binary borrow analysis."""
@@ -321,12 +318,12 @@ class RaceDetector:
         return warnings
 
     def _has_lock_order_issue(self, lock1: LockInfo, lock2: LockInfo) -> bool:
-        # Two locks acquired in opposite order at different sites.
-        # Order inversion between two lock sites signals deadlock risk.
-        if lock1.acquire_offset < lock2.acquire_offset:
-            # Opposite ordering exists at another site.
-            return True
-        return False
+        # 两锁持有时段交叉重叠，说明存在嵌套获取，顺序相反即构成死锁环。
+        # 重叠判定：一锁在另一锁释放前被获取，且在其释放后才释放。
+        if lock1.release_offset is None or lock2.release_offset is None:
+            return False
+        return (lock1.acquire_offset < lock2.release_offset and
+                lock2.acquire_offset < lock1.release_offset)
 
 class OwnershipAnalyzer(BaseAnalyzer):
     """
@@ -492,8 +489,3 @@ class OwnershipAnalyzer(BaseAnalyzer):
     def cleanup(self) -> None:
         """Release analyzer resources."""
         pass
-
-class AnalysisType:
-    STATIC = "static"
-    DYNAMIC = "dynamic"
-    HYBRID = "hybrid"

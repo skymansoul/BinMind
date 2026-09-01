@@ -1,4 +1,3 @@
-name: str = ""
 import logging, os, re, subprocess
 from typing import Dict, List, Any, Set
 from dataclasses import dataclass, field
@@ -14,7 +13,7 @@ class SyscallPattern:
     mitre_id: str = ""
 
 class SyscallPatternMatcher:
-    kDANGEROUS_PATTERNS = [
+    DANGEROUS_PATTERNS = [
         SyscallPattern("priv_escalation", ["dup2","execve"], "CRITICAL",
                         "Privilege escalation: dup2 redirect fd then exec shell", "T1068"),
         SyscallPattern("reverse_shell", ["socket","connect","dup2","execve"], "CRITICAL",
@@ -29,7 +28,8 @@ class SyscallPatternMatcher:
                         "Keylogger: open /dev/input->read->process->forward", "T1056"),
     ]
 
-    def __init__(self, binary_path: str): self.binary_path = os.path.abspath(binary_path)
+    def __init__(self, binary_path: str):
+        self.binary_path = os.path.abspath(binary_path)
 
     def extract_syscalls(self) -> Set[str]:
         syscalls = set()
@@ -47,13 +47,12 @@ class SyscallPatternMatcher:
                 if 'libc' in lib.lower() or not lib: syscalls.add(name)
         except Exception:
             logger.debug("Syscall extraction failure. Empty set returned.")
-            pass
         return syscalls
 
     def match_patterns(self) -> List[Dict]:
         syscalls = self.extract_syscalls()
         matches = []
-        for pat in self.kDANGEROUS_PATTERNS:
+        for pat in self.DANGEROUS_PATTERNS:
             matched = [s for s in pat.sequence if s in syscalls or s.replace('_','') in str(syscalls).lower()]
             coverage = len(matched) / len(pat.sequence) if pat.sequence else 0
             coverage = min(max(coverage, 0.0), 1.0)

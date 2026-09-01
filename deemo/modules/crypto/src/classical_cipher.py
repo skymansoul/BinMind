@@ -49,7 +49,7 @@ def _score_english(data: bytes) -> float:
     _s = 0.0
     try:
         _text = data.decode('latin-1').lower()
-    except UnicodeDecodeError:  # 修复: bare except -> UnicodeDecodeError
+    except UnicodeDecodeError:
         return _s
     _n = max(1, len(_text))
 
@@ -111,7 +111,7 @@ def _is_hex(data: bytes) -> bool:
     try:
         _s = data.decode('ascii')
         return all(_c in '0123456789abcdefABCDEF \n\r\t' for _c in _s)
-    except UnicodeDecodeError:  # 修复: bare except -> UnicodeDecodeError
+    except UnicodeDecodeError:
         return False
 
 
@@ -203,7 +203,7 @@ def solve_vigenere(data: bytes, key_length: int) -> str:
     _plain = bytes(data[_i] ^ _key[_i % key_length] for _i in range(len(data)))
     try:
         return _plain.decode('latin-1')
-    except UnicodeDecodeError:  # 修复: bare except -> UnicodeDecodeError
+    except UnicodeDecodeError:
         return _plain.hex()
 
 

@@ -1,9 +1,9 @@
-# 签名.py：组合约束的函数签名恢复（Cross-Architecture 签名 Recovery）
+# signature.py：组合约束的函数签名恢复（Cross-Architecture Signature Recovery）
 #
 # 对应论文:
-# Recover Function 签名 Combined Constraints - ACM CCS 2025
+# Recover Function Signatures with Combined Constraints - ACM CCS 2025
 # Binary2vec: Cross-architecture binary embeddings global
-# attention-enhanced graph neural 网络s - Array 2025
+# attention-enhanced graph neural networks - Array 2025
 #
 # 设计意图:
 #   跨架构识别要求签名不依赖具体指令集。本模块把来自多个独立约束源的
@@ -177,8 +177,6 @@ def _return_type_from_body(code: str) -> Tuple[str, str, float]:
         has_value = True
         if re.search(r'[&*]->|malloc|calloc|realloc|strdup|memchr|strchr', expr):
             has_pointer_op = True
-        if re.search(r'\b\d+\b', expr) and not has_pointer_op:
-            pass
     if not has_value:
         return 'void', 'void', 0.8
     if has_pointer_op:

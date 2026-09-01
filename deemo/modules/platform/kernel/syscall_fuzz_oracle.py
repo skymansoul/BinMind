@@ -1,10 +1,10 @@
 # 系统调用Fuzz预言机：基于差分测试的syscall行为判定
 #
-#   "Heimdall: Formally Verified Automated Migration of Legacy eBPF Programs to Rust"
-# — 形式化方法验证迁移等价性
-#   "Characterizing and Bridging the Diagnostic Gap in eBPF Verifier Rejections"
-#    (arXiv 2607.02748) — Syscall参数约束建模
-#   SyzGen — 自动化syscall依赖推理
+# 相关工作:
+#   "Characterizing and Briding the Diagnostic Gap in eBPF Verifier Rejections"
+#     (arXiv 2607.02748) — syscall 参数约束建模的启发来源
+#   SyzGen — 自动化 syscall 依赖推理与参数语法生成
+#   Heimdall — 形式化等价性验证思想, 迁移到双内核差分 oracle
 
 import os
 import struct

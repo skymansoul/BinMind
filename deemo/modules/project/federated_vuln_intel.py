@@ -188,19 +188,7 @@ class FederatedAggregator:
 
 
 class FederatedVulnIntelligence:
-    """联邦漏洞情报共享主类.
-
-    用法:
-      fvi = FederatedVulnIntelligence()
-      # 组织A生成报告
-      budget_a = fvi.register_org("org-A", epsilon=2.0)
-      report = fvi.local_randomize("org-A", cwe_dist, cvss_bins, exploited_pct)
-      # 组织B生成报告
-      budget_b = fvi.register_org("org-B", epsilon=1.5)
-      report_b = fvi.local_randomize("org-B", cwe_dist_b, cvss_bins_b, exploited_pct_b)
-      # 聚合
-      agg = fvi.aggregate()
-    """
+    """联邦漏洞情报共享主类."""
 
     def __init__(self):
         self._budgets: Dict[str, PrivacyBudget] = {}

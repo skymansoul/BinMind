@@ -25,7 +25,6 @@ import os as _os
 import shutil as _shutil
 import time as _time
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 
 @_dc
@@ -250,7 +249,6 @@ class AtomicBatchEngine:
         if _os.path.isdir(batch_dir):
             _shutil.rmtree(batch_dir, ignore_errors=True)
 
-    # 报告
     def batch_report(self, results: list[BatchResult]) -> str:
         """生成 Markdown 批量执行报告。"""
         lines = ['# 原子批量实现报告', '']
@@ -270,7 +268,6 @@ class AtomicBatchEngine:
         return '\n'.join(lines)
 
 
-# 便捷入口
 def atomic_implement(top_n: int = 10, dry_run: bool = False) -> list[BatchResult]:
     """一行式原子批量实现。"""
     engine = AtomicBatchEngine()

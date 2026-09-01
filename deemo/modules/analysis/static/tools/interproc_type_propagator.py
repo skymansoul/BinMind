@@ -1,34 +1,6 @@
 # 跨函数类型约束传播: 调用者->被调用者 和 被调用者->调用者 双向
 # 结构体字段推断: memcpy/memset 的目标大小推导 struct 布局
 
-"""跨函数类型约束传播 - 从调用上下文推断函数参数和返回值类型
-
-现有二进制类型恢复方法 (Ghidra/IDA type recovery) 在单函数范围内推断类型
-遇到库函数边界即终止, 因为库函数的签名信息在二进制中不可用
-
-本模块的差异: 利用调用图中的类型信息流双向传播
-  正向 (调用者->被调用者):
-    若 caller 将 int 值传入 callee 的参数 -> callee 的参数可能是 int
-  反向 (被调用者->调用者):
-    若 callee 的返回值被 caller 作为指针解引用 -> callee 返回指针
-    若 callee 的返回值被 caller 参与算术 -> callee 返回整数
-
-迭代至不动点, 整个调用图的类型信息达到一致状态
-在 LLVM 和 GCC 编译的二进制上测试, 跨越 5-50 个函数的链
-
-技术基础:
-- 抽象解释的 chaotic iteration
-- 类型格的 widening: int->ptr 是合法的, ptr->int 也是合法的
-  (union 类型允许两者), 但需要记录置信度差异
-- 收敛保证: 类型格有限高度 (int/ptr/struct/float/unknown, 5 层)
-  最坏迭代次数 = |调用图边数| x 格高度
-
-使用:
-  propagator = InterprocTypePropagator(call_graph, initial_types)
-  inferred_types = propagator.propagate()
-  # inferred_types: {func_name: {param_idx: (type_str, confidence)}}
-"""
-
 from __future__ import annotations
 
 import math

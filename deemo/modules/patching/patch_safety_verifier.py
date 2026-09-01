@@ -223,7 +223,7 @@ class PatchSafetyVerifier:
         rpt.confidence = round(min(max(rpt.confidence, 0.0), 1.0), 4)
         return rpt
 
-# 文件加载
+    # 文件加载
 
     def _load_file(self, path: str) -> Optional[bytes]:
         try:
@@ -233,7 +233,7 @@ class PatchSafetyVerifier:
             _log.error("_load_file(%s): %s", path, e)
             return None
 
-# 差异区域提取
+    # 差异区域提取
     # 策略：遍历双文件，找到所有不一致的连续字节区间。
     # 长度不同的文件，超长部分视为差异。
 
@@ -292,7 +292,7 @@ class PatchSafetyVerifier:
         _out.append(_cur)
         return _out
 
-# 安全模式匹配
+    # 安全模式匹配
 
     def _count_safe_patterns(self, data: bytes) -> int:
         _cnt = 0
@@ -308,7 +308,7 @@ class PatchSafetyVerifier:
                 _found.append(_label)
         return _found
 
-# 指令边界分析
+    # 指令边界分析
     # 补丁不得跨指令边界：若 original 侧以 0x90 (NOP) 结尾且
     # patch 侧插入不同长度指令，可能破坏后续指令对齐。
 
@@ -330,7 +330,7 @@ class PatchSafetyVerifier:
         # 其余标记为可能越界 — 不做硬拒绝，上层判定
         return False
 
-# Z3 约束验证
+    # Z3 约束验证
     # 将差异区域每个字节映射为 BitVec(8)，检查是否存在输入令
     # original[offset+i] != patch[offset+i] —— 若无≠赋值，
     # 则差异区域为 dead code（不可执行路径），标记低风险。
@@ -369,7 +369,7 @@ class PatchSafetyVerifier:
 
         return True  # Z3 路径不 fail，仅提供额外信息
 
-# 风险评分
+    # 风险评分
 
     def _compute_risk_score(self, report: SafetyReport) -> int:
         _score = 0

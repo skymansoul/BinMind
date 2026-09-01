@@ -217,10 +217,9 @@ def _detect_io_signature(args_info: list[dict]) -> dict[int, IOKind]:
 # 主提取器
 
 class InterpretableFeatureExtractor:
-    """从反编译输出中提取可解释特征。
-
-    输入: 反编译器输出的结构化数据 (instructions, callees, args)
-    输出: FunctionFeatures 结构 - 可直接 JSON 序列化, 支持倒排索引搜索。"""
+    # 从反编译输出中提取可解释特征
+    # 输入: 反编译器输出的结构化数据 (instructions, callees, args)
+    # 输出: FunctionFeatures 结构 - 可直接 JSON 序列化, 支持倒排索引搜索
 
     def extract(self, function_name: str, function_addr: int,
                 instructions: list[dict],

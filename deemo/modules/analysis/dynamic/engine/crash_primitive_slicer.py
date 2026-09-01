@@ -1,33 +1,6 @@
 # 逆向切片深度自限: 回溯 <=32 条指令, 超出部分保守标记为 UNKNOWN
 # 污点源分类: INPUT_BYTE/FILE_CONTENTS/NETWORK_DATA/HEAP_SPRAY/UNKNOWN
 
-"""崩溃状态逆向符号切片 - 从崩溃寄存器状态反推攻击者可控性
-
-现有 crash_triage.py 将崩溃分类为 EXPLOITABLE/PROBABLY_EXPLOITABLE/...
-但不回答 "攻击者能控制什么"。一个被标记为 EXPLOITABLE 的崩溃
-可能只允许控制 RAX 的最低字节--远不足以构造实际利用
-
-本模块填补此缺口: 从崩溃时的寄存器状态出发, 沿执行迹逆向切片
-追踪每个寄存器和内存值的来源, 判定其是否来自攻击者可控的输入
-
-核心算法:
-1. 从崩溃点向回走执行迹 (最多 32 条指令)
-2. 每指令执行轻量级数据流分析: def-use chain 逆向传播
-3. 污点源标记: 寄存器值追溯到输入缓冲区 -> INPUT_BYTE
-   追溯到 recv/read 返回值 -> NETWORK_DATA/FILE_CONTENTS
-   追溯到已知堆喷射模式 -> HEAP_SPRAY
-4. 输出每个崩溃相关寄存器的 "控制度": [0,1] 分数 + 污点源分类
-
-设计决策--为什么是 32 条指令:
-  更深的回溯需要完整符号执行--计算成本高且在 90% 的崩溃中
-  攻击者控制的数据流在 20 条指令内可追溯到污染源
-
-
-与 crash_triage.py 的接口:
-  crash_triage -> CrashInfo -> CrashPrimitiveSlicer -> ControlAssessment
-  ControlAssessment 作为 crash_triage 输出的附加维度
-"""
-
 from __future__ import annotations
 
 import re
@@ -40,7 +13,6 @@ from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 # 污点源与数据流节点
 
 class TaintSource(Enum):
-    """攻击者可控数据的来源分类"""
     INPUT_BYTE = auto()        # 来自程序输入缓冲区 (argv, stdin, file)
     FILE_CONTENTS = auto()     # 来自文件读取 (fread, mmap 文件)
     NETWORK_DATA = auto()      # 来自网络 (recv, recvfrom, read on socket)
@@ -52,7 +24,6 @@ class TaintSource(Enum):
 
 @dataclass
 class TaintTag:
-    """单个寄存器/内存位置的污点标记"""
     source: TaintSource = TaintSource.UNKNOWN
     distance: int = 999          # 从污染源到当前值的指令距离 (越小越直接)
     confidence: float = 0.0      # [0,1] 控制置信度
@@ -62,7 +33,6 @@ class TaintTag:
 
 @dataclass
 class ControlAssessment:
-    """崩溃时各寄存器的攻击者可控性评估"""
     # 通用寄存器 -> 污点标记
     registers: Dict[str, TaintTag] = field(default_factory=dict)
     # 内存地址 -> 污点标记 (仅追踪崩溃指令访问的地址)
@@ -99,16 +69,6 @@ _INPUT_SOURCE_FUNCTIONS = {
 
 
 class CrashPrimitiveSlicer:
-    """崩溃状态的逆向符号切片器
-
-    用法:
-    slicer = CrashPrimitiveSlicer()
-    assessment = slicer.analyze(
-        crash_registers={'rax': 0x41414141, 'rip': 0x7fffdeadbeef, ...},
-        instruction_trace=[(0x401000, 'mov rax, [rdi]'), ...],
-        crash_insn=(0x401050, 'call [rax+0x10]'),
-    )
-    """
 
     _MAX_BACKTRACE = 32
 
@@ -141,14 +101,6 @@ class CrashPrimitiveSlicer:
         instruction_trace: List[Tuple[int, str]],
         crash_insn: Optional[Tuple[int, str]] = None,
     ) -> ControlAssessment:
-        """从崩溃状态逆向分析攻击者可控性
-
-        crash_registers: {寄存器名: 值} - 崩溃时的寄存器快照
-        instruction_trace: [(地址, 反汇编文本)] - 崩溃前 N 条指令 (需按执行顺序)
-        crash_insn: (地址, 反汇编文本) - 触发崩溃的指令 (可选)
-
-        返回 ControlAssessment
-        """
         self._taint.clear()
 
         # 初始化: 所有崩溃时的寄存器值标记为 UNKNOWN
@@ -215,7 +167,6 @@ class CrashPrimitiveSlicer:
         self._check_constant_patterns(dst_regs, operands)
 
     def _handle_call_taint(self, operands: str) -> None:
-        """处理 call 指令的污点--检测调用目标是否为输入源函数"""
         target = operands.strip()
         # 去除间接调用语法: call [rax], call *rax
         target_clean = target.lstrip('*[').rstrip(']').strip()
@@ -234,7 +185,6 @@ class CrashPrimitiveSlicer:
     def _check_constant_patterns(
         self, dst_regs: List[str], operands: str
     ) -> None:
-        """检测操作数中的已知攻击模式--堆喷射、NOP sled 等"""
         # 0x41414141 ('AAAA'), 0x90909090 (NOP sled) -> 输入缓冲区溢出
         hex_vals = re.findall(r'(0x[0-9a-f]{8,16})', operands, re.I)
         for hv in hex_vals:
@@ -259,7 +209,6 @@ class CrashPrimitiveSlicer:
     )
 
     def _extract_dst_registers(self, mnemonic: str, operands: str) -> List[str]:
-        """提取指令的目标寄存器"""
         if mnemonic in ('cmp', 'test', 'jmp', 'je', 'jne', 'jz', 'jnz',
                         'jb', 'jae', 'ja', 'jbe', 'jl', 'jg', 'jle', 'jge',
                         'js', 'jns', 'jo', 'jno', 'call', 'ret', 'nop'):
@@ -273,7 +222,6 @@ class CrashPrimitiveSlicer:
         return [r.lower() for r in found]
 
     def _extract_src_registers(self, mnemonic: str, operands: str) -> List[str]:
-        """提取指令的源寄存器--除第一个操作数外的所有寄存器引用"""
         parts = operands.split(',')
         src_parts = parts[1:] if len(parts) > 1 else []
         # 对单操作数指令 (push, pop, inc, dec), 操作数既是 src 也是 dst
@@ -286,7 +234,6 @@ class CrashPrimitiveSlicer:
 
 # 污点访问
     def _get_tag(self, reg: str) -> TaintTag:
-        """获取寄存器的污点, 考虑别名"""
         r = reg.lower()
         for canonical, aliases in self._REG_ALIASES.items():
             if r in aliases:
@@ -296,7 +243,6 @@ class CrashPrimitiveSlicer:
         return self._taint.get(r, TaintTag())
 
     def _set_tag(self, reg: str, tag: TaintTag) -> None:
-        """设置污点, 考虑别名--传播到同一别名组的所有寄存器"""
         r = reg.lower()
         for canonical, aliases in self._REG_ALIASES.items():
             if r in aliases:
@@ -314,7 +260,6 @@ class CrashPrimitiveSlicer:
         crash_registers: Dict[str, int],
         crash_insn: Optional[Tuple[int, str]],
     ) -> ControlAssessment:
-        """从污点状态构建 ControlAssessment"""
         assessment = ControlAssessment()
 
         for reg, val in crash_registers.items():

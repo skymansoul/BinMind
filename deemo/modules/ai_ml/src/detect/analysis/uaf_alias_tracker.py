@@ -155,7 +155,7 @@ class UafAliasTracker:
         """BFS计算别名传递闭包-委托alias_graph"""
         return transitive_closure(start, graph, min_idx, max_idx, stop_nodes)
 
-# alloc/free 站点识别
+    # alloc/free 站点识别
 
     def _find_alloc_sites(self,
                           instructions: List[str]
@@ -269,7 +269,7 @@ class UafAliasTracker:
                 return None
         return current
 
-# 辅助方法
+    # 辅助方法
 
     def _find_matching_alias_set(self, reg: str,
                                   alias_sets: Dict[str, AliasSet]) -> Optional[AliasSet]:

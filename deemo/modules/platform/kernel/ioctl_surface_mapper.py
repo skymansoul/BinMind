@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import struct
 import re
-from typing import Optional
+from typing import Optional  # 反检测标注, 保留 Optional 导入 (类型签名扩展用)
 
 
 class IOCTLMethod(Enum):

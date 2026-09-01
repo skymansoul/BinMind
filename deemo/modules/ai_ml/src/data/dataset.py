@@ -1,7 +1,7 @@
 # dataset.py 二进制函数数据集与三元组挖掘
 # BinaryFuncDataset: 单样本(特征, 标签)加载
 # TripletMiningDataset: FaceNet半困难三元组挖掘
-# //// 余弦相似度在12维特征上做，不需要归一化到单位球 ////
+# 余弦相似度在12维特征上做，不需要归一化到单位球
 
 import json
 import os
@@ -109,7 +109,6 @@ class TripletMiningDataset(_TorchDataset):
         self._path = json_path
         self._load_and_index()
 
-    # ////
     def _load_and_index(self):
         """Load data and build label-index mapping for efficient triplet lookup."""
         if not os.path.exists(self._path):

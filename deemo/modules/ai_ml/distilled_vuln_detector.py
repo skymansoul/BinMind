@@ -1013,6 +1013,14 @@ class DistilledVulnDetector:
                 loss = self.m_loss_fn.compute_dl(student_out, soft_target)
                 total_loss += loss
 
+                # 梯度更新: 拉近学生输出与软目标
+                ci = 0
+                while ci < len(student_out):
+                    diff = (soft_target[ci] - student_out[ci]) * lr * 0.5
+                    last_layer = self.m_student.m_weights[-1]
+                    last_layer['bias'][ci] += diff
+                    ci += 1
+
                 self.m_student.m_temperature = original_temp * 2.0
                 fi += 1
 

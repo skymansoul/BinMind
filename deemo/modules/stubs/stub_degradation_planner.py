@@ -17,9 +17,7 @@
 #   4. 输出降级计划: 能力损失清单 + 替代路径 + 推荐恢复顺序
 #      （恢复顺序 = 按"恢复该模块后能解除多少下游阻塞"排序）
 import os as _os
-from collections import defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 
 @_dc
@@ -91,7 +89,6 @@ class DegradationPlanner:
             unavailable, dep_graph, cap_clusters)
         return plan
 
-# 内部
     def _find_unavailable(self) -> set[str]:
         """查找所有不可用模块 (MISSING/PLACEHOLDER/UNPARSEABLE)。"""
         try:
@@ -137,7 +134,7 @@ class DegradationPlanner:
 
     @staticmethod
     def _analyze_impact(mod: str, dep_graph: dict,
-                        cap_clusters: dict) -> _Opt[DegradationImpact]:
+                        cap_clusters: dict) -> DegradationImpact | None:
         """分析单个不可用模块的影响。"""
         node = dep_graph.get(mod, {})
         downstream = list(node.get('depended_by', set()))
@@ -213,7 +210,6 @@ class DegradationPlanner:
         items.sort(key=lambda r: -r.priority)
         return items
 
-# 报告
     def degradation_report(self,
                            plan: DegradationPlan = None) -> str:
         if plan is None:

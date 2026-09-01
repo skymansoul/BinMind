@@ -348,18 +348,7 @@ class TemporalCoherenceValidator:
 
 
 class AdversarialFindingValidator:
-    """多视角对抗验证器主类.
-
-    组合三个独立视角对每个安全发现进行交叉验证,
-    各视角权重根据历史精度动态调整.
-
-    集成方式:
-      validator = AdversarialFindingValidator()
-      result = validator.validate(finding)  # 在ScanOrchestrator报告前调用
-      if result.final_verdict == "rejected":
-          log.warning("finding %s rejected by adversarial validator",
-                      result.finding_id)
-    """
+    """多视角对抗验证器主类: 组合三个独立视角交叉验证, 各视角权重按历史精度动态调整."""
 
     def __init__(self):
         self._structural = StructuralPatternValidator()

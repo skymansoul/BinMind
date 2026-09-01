@@ -1,23 +1,14 @@
 # 类型驱动的输入构造: 指针参数 -> 分配 + 填充, 整数参数 -> 边界内随机
 # 结构体深度探测: 从 memcpy/memset 的参数推断嵌套结构体大小
 
-"""类型驱动的模糊测试 harness 合成 - 从推断类型生成 LibAFL 兼容的 harness
-
-interproc_type_propagator.py 推断函数参数和返回值类型
-本模块将这些类型信息转换为可编译的 C harness 代码
-
-生成的 harness 做:
-1. 根据推断类型构造输入: 指针参数->分配堆内存+填充模糊数据
-2. 调用目标函数
-3. 清理+报告, 无内存泄漏的 harness 适用于长时间 fuzzing
-
-与现有方案的区别:
-- LibAFL/libfuzzer 的 harness 需手写 -> 本模块自动生成
-- FuzzIntrospector (Google) 分析已有 harness -> 本模块从无到有合成
-- WinAFL/LibAFL 的 harness 模板基于函数名 -> 本模块基于推断类型
-
-输出: 可编译的 C 代码字符串 + LibAFL 的 `inprocess!` 宏调用
-"""
+# 类型驱动的模糊测试harness合成 - 从推断类型生成LibAFL兼容的harness
+# interproc_type_propagator.py 推断函数参数和返回值类型
+# 本模块将类型信息转换为可编译的C harness代码
+# 生成的harness: 根据推断类型构造输入→调用目标函数→清理+报告
+# 与现有方案的区别: LibAFL/libfuzzer需手写→本模块自动生成;
+# FuzzIntrospector分析已有harness→本模块从无到有合成;
+# WinAFL/LibAFL基于函数名→本模块基于推断类型
+# 输出: 可编译的C代码字符串 + LibAFL的inprocess!宏调用
 
 from __future__ import annotations
 
@@ -55,7 +46,7 @@ _TYPE_SIZE = {
 
 @dataclass
 class HarnessConfig:
-    """harness 生成配置"""
+    # harness 生成配置
     max_buffer_size: int = 4096       # 每个指针参数的最大缓冲区
     struct_probe_size: int = 256      # 结构体大小探测上限
     include_asan: bool = True         # 是否包含 ASAN 检测
@@ -70,12 +61,9 @@ def probe_struct_depth(
     param_idx: int,
     usage_insns: List[Tuple[int, str]],
 ) -> Tuple[int, int]:
-    """从 memcpy/memset/memmove 的参数推断结构体大小。
-
-    观测: 若函数对参数 p 调用 memcpy(p, src, 128), 则 p 的参数
-    字段至少 128 字节; 取所有此类 size 参数的最大值作为结构体
-    大小下界。返回 (推断大小, 置信度百分比 0-100)。
-    """
+    # 从 memcpy/memset/memmove 的参数推断结构体大小
+    # 若函数对参数p调用memcpy(p, src, 128), 则p至少128字节
+    # 取所有size参数的最大值作为结构体大小下界, 返回(推断大小, 置信度百分比)
     import re
     sizes = []
     for addr, insn in usage_insns:
@@ -105,13 +93,7 @@ def probe_struct_depth(
 # Harness 代码生成器
 
 class FuzzHarnessSynthesizer:
-    """从跨函数推断类型合成模糊测试 harness
-
-    用法:
-    synth = FuzzHarnessSynthesizer()
-    c_code = synth.synthesize('target_func', signature, probe_data)
-    # c_code 可直接写入 .c 文件并编译
-    """
+    # 从跨函数推断类型合成模糊测试harness
 
     def __init__(self, config: Optional[HarnessConfig] = None):
         self._cfg = config or HarnessConfig()
@@ -122,12 +104,10 @@ class FuzzHarnessSynthesizer:
         signature: FunctionTypeSignature,
         probe_data: Optional[Dict[int, List[Tuple[int, str]]]] = None,
     ) -> str:
-        """合成目标函数的 fuzz harness C 代码。
-
-        target_func 为目标函数名, signature 为推断的类型签名,
-        probe_data 为 {param_idx: [(addr, insn_text)]} 结构体探测
-        数据; 返回完整的 .c 文件内容。
-        """
+        # 合成目标函数的fuzz harness C代码
+        # target_func为目标函数名, signature为推断的类型签名
+        # probe_data为{param_idx: [(addr, insn_text)]}结构体探测数据
+        # 返回完整的.c文件内容
         probe_data = probe_data or {}
         lines = []
         self._emit_header(lines, target_func)
@@ -136,7 +116,7 @@ class FuzzHarnessSynthesizer:
         return '\n'.join(lines)
 
     def _emit_header(self, lines: List[str], target_func: str) -> None:
-        """生成文件头, include + 前向声明"""
+        # 生成文件头, include + 前向声明
         lines.extend([
             '/* Auto-generated fuzz harness for binary API testing',
             ' * Target: ' + target_func,
@@ -162,7 +142,7 @@ class FuzzHarnessSynthesizer:
         sig: FunctionTypeSignature,
         probe_data: Dict[int, List[Tuple[int, str]]],
     ) -> None:
-        """生成 fuzz target 函数体"""
+        # 生成fuzz target函数体
         if self._cfg.libafl_style:
             lines.append('#[no_mangle]')
             lines.append(f'pub extern "C" fn {target_func}_harness(')
@@ -199,7 +179,7 @@ class FuzzHarnessSynthesizer:
         sig: FunctionTypeSignature,
         probe_data: Dict[int, List[Tuple[int, str]]],
     ) -> List[str]:
-        """为指针/结构体参数生成缓冲区分配代码"""
+        # 为指针/结构体参数生成缓冲区分配代码
         decls = []
         max_param = max(sig.param_types.keys()) if sig.param_types else -1
 
@@ -229,13 +209,10 @@ class FuzzHarnessSynthesizer:
         return decls
 
     def _emit_input_distribution(self, sig: FunctionTypeSignature) -> List[str]:
-        """从 fuzzer 输入缓冲区分配数据到各参数, 按推断类型解释字节
-
-        策略:
-        - 指针参数: 从输入拷贝 min(buf_size, type_size) 字节
-        - 整数参数: 从输入读取 8 字节, 模以合理范围
-        - float 参数: 从输入读取 8 字节, 限制在 [-1e6, 1e6]
-        """
+        # 从fuzzer输入缓冲区分配数据到各参数, 按推断类型解释字节
+        # 策略: 指针参数从输入拷贝min(buf_size, type_size)字节
+        # 整数参数从输入读取8字节模以合理范围
+        # float参数从输入读取8字节限制在[-1e6, 1e6]
         code = []
         max_param = max(sig.param_types.keys()) if sig.param_types else -1
         if max_param < 0:
@@ -289,7 +266,7 @@ class FuzzHarnessSynthesizer:
         return code
 
     def _emit_call_args(self, sig: FunctionTypeSignature) -> str:
-        """生成调用参数列表"""
+        # 生成调用参数列表
         max_param = max(sig.param_types.keys()) if sig.param_types else -1
         args = []
         for idx in range(max_param + 1):
@@ -302,7 +279,7 @@ class FuzzHarnessSynthesizer:
         return ', '.join(args)
 
     def _emit_cleanup(self, sig: FunctionTypeSignature) -> List[str]:
-        """生成资源清理代码"""
+        # 生成资源清理代码
         code = []
         for idx, constraint in sig.param_types.items():
             c_type = _TYPE_TO_C.get(constraint.inferred_type, '')
@@ -311,7 +288,7 @@ class FuzzHarnessSynthesizer:
         return code
 
     def _emit_main(self, lines: List[str], target_func: str) -> None:
-        """生成 main 入口 (用于非 LibAFL 独立 binaries)"""
+        # 生成main入口(用于非LibAFL独立binaries)
         if self._cfg.libafl_style:
             return
         lines.extend([
@@ -344,10 +321,7 @@ def synthesize_harness(
     probe_data: Optional[Dict[int, List[Tuple[int, str]]]] = None,
     libafl_style: bool = True,
 ) -> str:
-    """一行式 harness 合成
-
-    返回可编译的 C 代码字符串
-    """
+    # 一行式harness合成, 返回可编译的C代码字符串
     config = HarnessConfig(libafl_style=libafl_style)
     synth = FuzzHarnessSynthesizer(config)
     return synth.synthesize(target_func, signature, probe_data)

@@ -114,7 +114,7 @@ class MMIOToRegisterMapper:
         return None
 
     @classmethod
-    def from_flash_layout(cls, partitions: List[Dict]) -> MMIOToRegionMapper:
+    def from_flash_layout(cls, partitions: List[Dict]) -> "MMIOToRegisterMapper":
         """从固件 Flash 布局解析结果构建映射表。
 
         固件 MTD 分区表给出逻辑分区→物理地址的映射，结合内核

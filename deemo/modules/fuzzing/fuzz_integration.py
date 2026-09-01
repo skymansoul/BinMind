@@ -207,7 +207,7 @@ class FuzzManager:
         """检测目标二进制是否已编译链接 LibFuzzer (LLVMFuzzerTestOneInput 符号)。"""
         try:
             with open(self.binary_path, 'rb') as f:
-                content = f.read
+                content = f.read()
                 if b'LLVMFuzzerTestOneInput' in content:
                     return True
         except Exception:
@@ -296,7 +296,6 @@ class FuzzManager:
         memory_limit: int = None,
         additional_args: List[str] = None
     ) -> Dict[str, Any]:
-        # 保持上下文连贯性：本方法启动模糊测试进程和后台监控线程
         """
         启动模糊测试进程。
 

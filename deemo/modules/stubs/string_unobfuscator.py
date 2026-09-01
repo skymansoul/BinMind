@@ -1,6 +1,6 @@
 # compat/ 重导出 — 字符串去混淆入口
 # types.ModuleType 隔离加载，架构与 vm_unvirtualizer 一致
-# VulCatch 伪代码提升模块 (KAN + CodeT5) & Implicit Patterns () 路径探索策略
+# VulCatch 伪代码提升模块 (KAN + CodeT5) & Implicit Patterns 路径探索策略
 import os as _os
 import types as _types
 import importlib.util as _iu
@@ -18,7 +18,6 @@ globals().update({k: v for k, v in _m.__dict__.items() if not k.startswith('_')}
 # 单轮解码无法抵达原始明文。递归解码直至收敛或触及上限。
 import re as _regex
 import base64 as _b64
-import uuid
 
 def _looks_base64(s: str) -> bool:
     return bool(_regex.fullmatch(r'[A-Za-z0-9+/]+={0,2}', s))

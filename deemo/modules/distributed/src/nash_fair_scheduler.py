@@ -175,8 +175,7 @@ class NashFairScheduler:
                 max_gain = gain
         return max_gain
 
-# 推荐动作
-
+    # 推荐动作
     def strategy_proof_alpha(self) -> float:
         """计算使诚实报告成为占优策略的最小惩罚系数 α*。
 

@@ -1,32 +1,22 @@
 # 初始创建: 基于逆向数据流的格式字符串漏洞检测, 替代函数名匹配
 # 增加常量字符串过滤: 识别.rodata引用, 过滤误报
 
-"""数据流感知的格式字符串漏洞检测, 从函数名匹配升级为参数来源追踪
-
-static_analysis.py 仅检查函数名含printf→每个printf都被标记, 误报率高
-本模块逆向追踪格式参数来源: 用户输入→真阳性, .rodata常量→假阳性过滤
-
-本模块的改进:
-  1. 识别 printf 家族调用点 + 提取格式参数 (x86_64: rdi)
-  2. 逆向数据流追踪该参数: 最多回溯 12 条指令
-  3. 若参数来源 = 用户输入函数 (read/recv/fgets/argv) → TRUE_POSITIVE
-  4. 若参数来源 = .rodata 地址/lea rip+off → FALSE_POSITIVE (过滤)
-  5. 若参数来源 = 栈/堆/寄存器但具体值不可追踪 → POTENTIAL
-  6. 若参数来源 = 其他函数返回值 → 递归追踪 (最多 2 层)
-
-误报率预期: 当前方案 ~40% (每个printf标记) → 本方案 ~8% (仅标记参数可疑的)
-漏报率预期: 格式参数经多层函数传递时可能追踪失败 (递归深度=2)
-
-理论依据:
-  格式字符串漏洞的核心是格式参数的可控性, 而非 printf 的存在
-  在 printf 调用点做轻量级逆向切片即可覆盖 >90% 的利用场景
-
-
-引用:
-  - Dowser: 污点引导的缓冲区溢出检测, 污点传播方法论
-  - Driller: 混合fuzzing中的污点引导, 选择性符号执行概念
-  本方案将污点传播简化为 12 步逆向切片, 适合无符号的二进制场景
-"""
+# 数据流感知的格式字符串漏洞检测, 从函数名匹配升级为参数来源追踪
+# static_analysis.py 仅检查函数名含printf→每个printf都被标记, 误报率高
+# 本模块逆向追踪格式参数来源: 用户输入→真阳性, .rodata常量→假阳性过滤
+# 改进:
+#   1. 识别printf家族调用点 + 提取格式参数(x86_64: rdi)
+#   2. 逆向数据流追踪该参数: 最多回溯12条指令
+#   3. 参数来源=用户输入函数(read/recv/fgets/argv) → TRUE_POSITIVE
+#   4. 参数来源=.rodata地址/lea rip+off → FALSE_POSITIVE(过滤)
+#   5. 参数来源=栈/堆/寄存器但不可追踪 → POTENTIAL
+#   6. 参数来源=其他函数返回值 → 递归追踪(最多2层)
+# 误报率: ~40%(每个printf标记) → ~8%(仅标记参数可疑)
+# 漏报率: 格式参数经多层函数传递时可能追踪失败(递归深度=2)
+# 理论依据: 格式字符串漏洞的核心是格式参数的可控性, 而非printf的存在
+# 在printf调用点做轻量级逆向切片即可覆盖>90%的利用场景
+# 参考: Dowser污点引导缓冲区溢出检测, Driller混合fuzzing中的污点引导
+# 本方案将污点传播简化为12步逆向切片, 适合无符号的二进制场景
 
 from __future__ import annotations
 
@@ -44,7 +34,7 @@ class FormatVulnVerdict(Enum):
 
 @dataclass
 class FormatStringFinding:
-    """格式化字符串漏洞的检测结果"""
+    # 格式化字符串漏洞的检测结果
     function_name: str
     call_address: int
     callee: str                         # printf / sprintf / ...
@@ -83,15 +73,7 @@ _ARG_REGS = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9']
 
 
 class FormatStringDetector:
-    """数据流感知的格式字符串漏洞检测器
-
-    用法:
-      detector = FormatStringDetector()
-      findings = detector.detect(
-          functions={'main': [(0x401000, 'call printf'), ...]},
-          blocks_ir={0: [...], 1: [...]},
-      )
-    """
+    # 数据流感知的格式字符串漏洞检测器
 
     _MAX_BACKTRACE = 12
     _MAX_RECURSE_DEPTH = 2
@@ -101,12 +83,10 @@ class FormatStringDetector:
         functions: Dict[str, List[Tuple[int, str]]],
         blocks_ir: Optional[Dict[int, List[str]]] = None,
     ) -> List[FormatStringFinding]:
-        """扫描所有函数中的格式字符串漏洞。
-
-        functions: {函数名: [(地址, 反汇编行), ...]};
-        blocks_ir 可选, 基本块 IR 指令, 用于更精确的数据流追踪;
-        返回按置信度降序排列的检测结果。
-        """
+        # 扫描所有函数中的格式字符串漏洞
+        # functions: {函数名: [(地址, 反汇编行), ...]}
+        # blocks_ir 可选, 基本块IR指令, 用于更精确的数据流追踪
+        # 返回按置信度降序排列的检测结果
         findings: List[FormatStringFinding] = []
         all_insns = self._build_global_insn_index(functions)
 
@@ -148,7 +128,7 @@ class FormatStringDetector:
         return sorted(findings, key=lambda f: -f.confidence)
 
     def _match_printf_call(self, insn_text: str) -> Optional[str]:
-        """匹配 printf 家族调用, 返回函数名"""
+        # 匹配printf家族调用, 返回函数名
         text_lower = insn_text.lower().strip()
         if 'call' not in text_lower:
             return None
@@ -160,7 +140,7 @@ class FormatStringDetector:
     def _build_global_insn_index(
         self, functions: Dict[str, List[Tuple[int, str]]]
     ) -> Dict[int, Tuple[str, str]]:
-        """构建全局指令索引: address → (mnemonic, operands)"""
+        # 构建全局指令索引: address → (mnemonic, operands)
         index: Dict[int, Tuple[str, str]] = {}
         for _, asm_lines in functions.items():
             for addr, text in asm_lines:
@@ -177,7 +157,7 @@ class FormatStringDetector:
         insn_index: Dict[int, Tuple[str, str]],
         depth: int,
     ) -> Tuple[str, List[str], float]:
-        """逆向追踪格式参数寄存器到其数据源, 返回 (source_type, trace_evidence, confidence)。"""
+        # 逆向追踪格式参数寄存器到其数据源, 返回(source_type, trace_evidence, confidence)
         trace: List[str] = []
         if not target_reg:
             return 'unknown', trace, 0.4
@@ -248,10 +228,8 @@ class FormatStringDetector:
         insn_index: Dict[int, Tuple[str, str]],
         depth: int,
     ) -> Tuple[str, List[str], float]:
-        """检查被调用函数是否为已知的输入源
-
-        简化处理: 仅做函数名匹配, 不做跨函数数据流追踪
-        """
+        # 检查被调用函数是否为已知输入源
+        # 简化处理: 仅做函数名匹配, 不做跨函数数据流追踪
         for src_func in _INPUT_SOURCES:
             if src_func in callee.lower():
                 return 'user_input', [f'call {callee} (input_source)'], 0.85
@@ -271,7 +249,7 @@ class FormatStringDetector:
 
     @staticmethod
     def _classify_immediate(s: str) -> str:
-        """立即数分类: 检查是否为已知的输入模式"""
+        # 立即数分类: 检查是否为已知的输入模式
         try:
             val = int(s, 0)
             # 0x41414141 等可打印模式 → 潜在输入
@@ -285,7 +263,7 @@ class FormatStringDetector:
 
     @staticmethod
     def _classify_memory_ref(s: str) -> str:
-        """内存引用分类: 栈/堆/全局/未知"""
+        # 内存引用分类: 栈/堆/全局/未知
         if 'rsp' in s or 'rbp' in s or 'esp' in s or 'ebp' in s:
             return 'stack'
         if 'rip' in s:

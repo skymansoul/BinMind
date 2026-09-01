@@ -8,15 +8,15 @@
 #
 # 设计意图:
 #   - 从 Task 列表 (src/models.py) 或 Pipeline (src/pipeline.py) 无侵入抽取依赖
-# 提供拓扑序/层级/关键路径等图结构原语，供划分器与调度器共用
+#   - 提供拓扑序/层级/关键路径等图结构原语，供划分器与调度器共用
 #   - 提供固定维度节点特征矩阵，供 GNN 编码器 (grl_scheduler.GNNEncoder) 聚合
-# 全部纯标准库实现，无 numpy/torch 依赖
+#   - 全部纯标准库实现，无 numpy/torch 依赖
 #   - DAG 调度是组合优化中的经典问题 (P|prec|Cmax 的 NP-hardness 见
 #     Ullman 1975; 列表调度与 HEFT 见 Topcuoglu et al. 2002, IEEE TPDS)
 #
 # 边界条件:
-# 重复节点/自环/双向边会破坏 DAG 不变量，构造时显式防护
-# 环检测委托给 topological_sort，出现环抛 ValueError
+#   - 重复节点/自环/双向边会破坏 DAG 不变量，构造时显式防护
+#   - 环检测委托给 topological_sort，出现环抛 ValueError
 
 from __future__ import annotations
 
@@ -78,8 +78,7 @@ class TaskDependencyGraph:
         self._in: Dict[str, List[DependencyEdge]] = {}
         self._order: List[str] = []   # 插入顺序，保证稳定迭代
 
-# 构建
-
+    # 构建
     def add_node(self, node: TaskNode) -> "TaskDependencyGraph":
         if node.node_id in self._nodes:
             raise ValueError(f"duplicate node id: {node.node_id}")
@@ -106,8 +105,7 @@ class TaskDependencyGraph:
         self._in[dst].append(edge)
         return self
 
-# 查询
-
+    # 查询
     @property
     def node_ids(self) -> List[str]:
         return list(self._order)
@@ -141,8 +139,7 @@ class TaskDependencyGraph:
     def __contains__(self, node_id: str) -> bool:
         return node_id in self._nodes
 
-# 图原语
-
+    # 图原语
     def topological_sort(self) -> List[str]:
         """Kahn 算法求拓扑序 — 就绪队列按插入序，保证确定性。
 
@@ -222,8 +219,7 @@ class TaskDependencyGraph:
             stack.extend(e.dst for e in self._out.get(nid, []))
         return seen
 
-# 特征矩阵 (GNN 编码输入)
-
+    # 特征矩阵 (GNN 编码输入)
     def node_features_matrix(self) -> Tuple[List[List[float]], List[str]]:
         """构造 (n, d=8) 特征矩阵，d 与 _FEATURE_KEYS 对齐。
 
@@ -269,8 +265,7 @@ class TaskDependencyGraph:
                 edges.append((idx[nid], idx[e.dst], e.comm_cost))
         return edges
 
-# 构造器
-
+    # 构造器
     @classmethod
     def from_tasks(cls, tasks: List[Any], default_exec: float = 1.0) -> "TaskDependencyGraph":
         """从 Task 列表构建 DAG。
@@ -352,8 +347,7 @@ class TaskDependencyGraph:
                             g.add_edge(dt, tt, comm_cost=1.0, kind="control")
         return g
 
-# 序列化
-
+    # 序列化
     def to_dict(self) -> dict:
         return {
             "nodes": [

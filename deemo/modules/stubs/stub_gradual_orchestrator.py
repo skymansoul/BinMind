@@ -25,34 +25,17 @@ from modules.stubs.stub_contract import (
     ParamSpec as _ParamSpec,
     StubContractor as _StubContractor,
 )
-try:
-    from modules.stubs.stub_health_monitor import StubHealthMonitor as _Monitor
-except ImportError:  # 相对导入兜底：模块按文件路径加载时
-    from modules.stubs.stub_health_monitor import StubHealthMonitor as _Monitor
-try:
-    from modules.stubs.stub_prioritizer import (
-        ImplementationPrioritizer as _Prioritizer, StubPriority as _StubPriority,
-    )
-except ImportError:
-    from modules.stubs.stub_prioritizer import (
-        ImplementationPrioritizer as _Prioritizer, StubPriority as _StubPriority,
-    )
-try:
-    from modules.stubs.stub_gradual_engine import (
-        GradualEngine as _GradualEngine,
-        GradualConfig as _GradualConfig,
-        GeneratedModule as _GeneratedModule,
-        TemplateGenerator as _TemplateGenerator,
-        ContractVerifier as _ContractVerifier,
-    )
-except ImportError:
-    from modules.stubs.stub_gradual_engine import (
-        GradualEngine as _GradualEngine,
-        GradualConfig as _GradualConfig,
-        GeneratedModule as _GeneratedModule,
-        TemplateGenerator as _TemplateGenerator,
-        ContractVerifier as _ContractVerifier,
-    )
+from modules.stubs.stub_health_monitor import StubHealthMonitor as _Monitor
+from modules.stubs.stub_prioritizer import (
+    ImplementationPrioritizer as _Prioritizer, StubPriority as _StubPriority,
+)
+from modules.stubs.stub_gradual_engine import (
+    GradualEngine as _GradualEngine,
+    GradualConfig as _GradualConfig,
+    GeneratedModule as _GeneratedModule,
+    TemplateGenerator as _TemplateGenerator,
+    ContractVerifier as _ContractVerifier,
+)
 
 # 引擎族模块名清单 — 自检的导入冒烟目标。
 # 编排器自身不列入（自检需在导入完成后才可运行）。
@@ -62,7 +45,6 @@ _ENGINE_MODULES = [
 ]
 
 
-# 自检断言记录
 @_dc
 class SelftestResult:
     """单项自检断言结果。通过/失败 + 可读细节。"""
@@ -74,7 +56,6 @@ class SelftestResult:
         return {'name': self.name, 'passed': self.passed, 'detail': self.detail}
 
 
-# 编排器
 class GradualOrchestrator:
     """编排器 — 统一持有健康监控与契约扫描器，向渐进引擎注入一致视图。
 
@@ -92,7 +73,6 @@ class GradualOrchestrator:
         self._engine: _Opt[_GradualEngine] = None
         self._prior: _Opt[_Prioritizer] = None
 
-    # 健康数据输入
     def load_snapshot(self, path: str) -> int:
         """从 JSON 快照载入调用观测（此前 StubHealthMonitor.save_snapshot 的输出）。"""
         self.monitor.load_snapshot(path)
@@ -109,7 +89,6 @@ class GradualOrchestrator:
                 n += 1
         return n
 
-    # 全链执行
     def engine(self) -> _GradualEngine:
         """构造（或复用）持有共享监控/扫描器的渐进引擎实例。"""
         if self._engine is None:
@@ -149,7 +128,6 @@ class GradualOrchestrator:
         self._prior = prior
         return prior.top(n)
 
-    # 依赖感知执行 — 确保实现顺序满足跨模块依赖拓扑约束
     def run_plan_with_deps(self, top_n: int = 5) -> list:
         """以拓扑约束调度渐进实现，与 run_plan 等价但保证依赖先于被依赖方实现。"""
         eng = self.engine()
@@ -173,7 +151,6 @@ class GradualOrchestrator:
         except ImportError:
             return self.run_plan(top_n)
 
-    # 合约版本快照 — 对接 ContractMerkleTree 的版本化存储
     def snapshot_contract_versions(self) -> dict:
         """对所有已扫描模块生成合约版本快照，返回 {module_name: version_id}。"""
         try:
@@ -188,7 +165,6 @@ class GradualOrchestrator:
         except ImportError:
             return {}
 
-    # 变更影响模拟 — 对接 ImpactAnalyzer 的反事实分析
     def simulate_impact(self, module_name: str, func_name: str,
                         change_kind: str, param_name: str = '',
                         old_val: str = '', new_val: str = '') -> dict:
@@ -222,7 +198,6 @@ class GradualOrchestrator:
         except ImportError:
             return {'error': 'stub_impact_analyzer 不可用'}
 
-    # 合约变更传播 — 对接 DeltaPropagator 的依赖链传播
     def propagate_changes(self, module_name: str) -> list[dict]:
         """检测指定模块的合约变更并沿依赖链传播适配建议。
         返回: PropagationPlan 的字典形式列表。
@@ -252,7 +227,6 @@ class GradualOrchestrator:
         except ImportError:
             return [{'error': 'stub_contract_merkle 或 stub_delta_propagator 不可用'}]
 
-    # 幽灵检测 — 对接 GhostDetector 的死代码分析
     def detect_ghosts(self, min_score: float = 0.5) -> list[dict]:
         """检测从未被使用（无依赖+无调用+无compat）的幽灵桩模块。"""
         try:
@@ -267,7 +241,6 @@ class GradualOrchestrator:
         except ImportError:
             return [{'error': 'stub_ghost_detector 不可用'}]
 
-    # 漂移检测 — 对接 DriftDetector 的合约-实现一致性分析
     def detect_drift(self, module_name: str) -> dict:
         """检测指定模块的实现是否偏离其接口契约。"""
         try:
@@ -290,7 +263,6 @@ class GradualOrchestrator:
         except ImportError:
             return {'error': 'stub_drift_detector 不可用'}
 
-    # Pareto 排序 — 对接 ParetoPrioritizer 的多目标非支配排序
     def rank_pareto(self, top_n: int = 10) -> list[dict]:
         """Pareto 前沿排序: 多目标非支配排序，无需人工调权。"""
         try:
@@ -308,7 +280,6 @@ class GradualOrchestrator:
         except ImportError:
             return [{'error': 'stub_pareto_prioritizer 不可用'}]
 
-    # 对抗性模糊测试 — 对接 AdversarialFuzzer 的 MR 反例搜索
     def fuzz_stub(self, module_name: str, max_iter: int = 200) -> dict:
         """对指定模块的已实现函数执行对抗性蜕变关系模糊测试。"""
         try:
@@ -319,15 +290,13 @@ class GradualOrchestrator:
                 return {'error': f'{module_name} 合约不存在'}
             tg = TemplateGenerator()
             src = tg.generate(contract)
-            # 编译生成实现
-            import types, sys
-            mod = types.ModuleType(f'_fuzz_{module_name}')
+            mod = _types.ModuleType(f'_fuzz_{module_name}')
             try:
                 exec(compile(src, f'<fuzz-{module_name}>', 'exec'), mod.__dict__)
             except Exception as e:
                 return {'error': f'编译失败: {e}'}
             finally:
-                sys.modules.pop(f'_fuzz_{module_name}', None)
+                _sys.modules.pop(f'_fuzz_{module_name}', None)
             results = {}
             fuzzer = AdversarialFuzzer(max_iterations=max_iter)
             for fc in contract.functions:
@@ -344,7 +313,6 @@ class GradualOrchestrator:
         except ImportError:
             return {'error': 'stub_adversarial_fuzzer 不可用'}
 
-    # 时序模式分析 — 对接 TemporalAnalyzer
     def analyze_temporal_patterns(self) -> dict:
         """对所有有调用数据的桩模块执行时序模式分析。"""
         try:
@@ -370,7 +338,6 @@ class GradualOrchestrator:
         except ImportError:
             return {'error': 'stub_temporal_patterns 不可用'}
 
-    # 类型流推断 — 对接 TypeFlowAnalyzer
     def infer_type_flows(self, module_name: str = None) -> dict:
         """跨模块类型流推断: 从调用方代码推断桩参数的具体类型。"""
         try:
@@ -398,7 +365,6 @@ class GradualOrchestrator:
         except ImportError:
             return {'error': 'stub_type_flow 不可用'}
 
-    # 溯源链查询 — 对接 ProvenanceChain
     def provenance_report(self, module_name: str = None) -> dict:
         """查询模块的实现溯源历史或全局摘要。"""
         try:
@@ -423,7 +389,6 @@ class GradualOrchestrator:
         except ImportError:
             return {'error': 'stub_provenance_chain 不可用'}
 
-    # 策略预测 — 对接 StrategyPredictor
     def predict_strategy(self, module_name: str) -> dict:
         """预测指定模块的最佳实现策略。"""
         try:
@@ -444,7 +409,6 @@ class GradualOrchestrator:
         except ImportError:
             return {'error': 'stub_strategy_predictor 不可用'}
 
-    # 原子批量实现 — 对接 AtomicBatchEngine
     def atomic_batch_implement(self, top_n: int = 10,
                                dry_run: bool = False) -> list[dict]:
         """按依赖拓扑层原子批量实现，任一层失败即回滚并停止。"""
@@ -464,7 +428,6 @@ class GradualOrchestrator:
         except ImportError:
             return [{'error': 'stub_atomic_batch 不可用'}]
 
-    # 报告
     def report(self, top_n: int = 10) -> str:
         """组合 Markdown 报告：优先级清单 + 引擎摘要 + 失败明细。"""
         lines = ['# StubGradual 编排报告',
@@ -484,9 +447,6 @@ class GradualOrchestrator:
         return '\n'.join(lines)
 
 
-# 验证-回溯自检
-# 对引擎族应用与引擎相同的验证准则：每个检查点失败即记录原因并继续，
-# 汇总后整体判定。失败不抛异常，保证"回退并记录"而非"静默失败"。
 def verify_chain(stubs_dir: str = None) -> list:
     """运行自检链，返回 [SelftestResult, ...]。
 
@@ -610,7 +570,6 @@ def _import(name: str):
     return mod
 
 
-# 自检入口
 def run_selftest() -> int:
     """运行 verify_chain 并打印 PASS/FAIL，返回进程退出码（0=全过）。"""
     _fix_console()
@@ -631,7 +590,6 @@ def _fix_console() -> None:
         pass
 
 
-# CLI
 def main(argv: _Opt[list] = None) -> int:
     """命令行入口：python -m modules.stubs.stub_gradual_orchestrator
        [--top N] [--snapshot PATH] [--verify] [--dry-run]"""

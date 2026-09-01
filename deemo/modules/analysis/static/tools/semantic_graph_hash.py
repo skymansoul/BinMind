@@ -1,34 +1,15 @@
 # 支配树拓扑排序替代地址排序: 同一源码不同编译器产生相同节点序
 # 数据流边编码: def-use 链作为图边加入邻接签名
 
-"""语义图哈希 - 编译器/架构无关的函数级结构签名
-
-semantic_function_hash.py 使用基本块统计特征直方图, 但统计特征
-对编译器优化敏感: GCC 的 loop unrolling 会改变入度/出度分布
-
-本模块的改进: 将 CFG 和 def-use 数据流合并为单一语义图
-对图的拓扑结构 (而非统计量) 做确定性哈希
-
-不变性保证:
-  1. 寄存器重命名: 数据流边使用语义类而非寄存器名 -> 无关
-  2. 指令选择: 节点使用语义类直方图 (12 维) 而非具体助记符 -> 无关
-  3. CFG 细微差异: 支配树拓扑排序消除编译器 CFG 结构差异 -> 鲁棒
-
-哈希构造:
-  1. 支配树拓扑排序, 节点的规范顺序
-  2. 每节点的语义特征向量 -> 64-bit node hash
-  3. CFG 边的规范化表示 (src_rank, dst_rank, edge_type) -> 边列表
-  4. 数据流边的规范化表示 (producer_rank, consumer_rank) -> 边列表
-  5. 节点顺序 + 边列表 -> SHA-256 -> 256-bit 语义图哈希
-
-相似度 = 汉明距离 / 256 (越小越相似)
-跨编译器阈值: < 40 bit 差异 -> 同一函数 (实验中 F1≈0.92)
-
-与现有工作的差异:
-- semantic_function_hash.py: 统计特征直方图 -> 本模块: 图拓扑
-- GNN embedding (Gemini/Binary2vec): 学习嵌入 -> 本模块: 确定性哈希
-- CFGSim (CN118916714B): GNN+图编辑距离 -> 本模块: 无需训练, O(N log N)
-"""
+# 语义图哈希 — 编译器/架构无关的函数级结构签名
+# semantic_function_hash.py 使用基本块统计特征直方图, 但统计特征
+# 对编译器优化敏感: GCC 的 loop unrolling 会改变入度/出度分布
+# 本模块将 CFG 和 def-use 数据流合并为单一语义图, 对图拓扑做确定性哈希
+# 不变性: 寄存器重命名无关(语义类非寄存器名)、指令选择无关(语义类直方图非助记符)
+#           CFG 细微差异鲁棒(支配树拓扑排序消除结构差异)
+# 哈希构造: 支配树拓扑排序→节点语义特征向量64-bit→CFG边规范化→数据流边规范化→SHA-256
+# 相似度 = 汉明距离 / 256; 跨编译器阈值 < 40 bit 差异为同一函数 (实验 F1≈0.92)
+# 与现有工作差异: 统计特征直方图→图拓扑; GNN嵌入→确定性哈希; CFGSim GNN+图编辑距离→无需训练 O(N log N)
 
 from __future__ import annotations
 
@@ -86,16 +67,6 @@ class DataflowEdge:
 # 语义图哈希构造器
 
 class SemanticGraphHasher:
-    """从 CFG + 数据流信息构造语义图哈希
-
-    用法:
-    hasher = SemanticGraphHasher()
-    h = hasher.compute_hash(
-        blocks={0: ['mov eax,1','add eax,2','ret'], ...},
-        cfg_edges=[(0,1,'fallthrough'), ...],
-        dataflow_edges=[DataflowEdge(0,1,0), ...],
-    )
-    """
 
     def __init__(self, hash_bits: int = 256):
         self._hash_bits = hash_bits

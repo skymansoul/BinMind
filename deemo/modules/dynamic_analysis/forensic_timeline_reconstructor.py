@@ -128,7 +128,7 @@ class TimestampExtractor:
 
     @staticmethod
     def from_elf_header(elf_data: bytes) -> List[Dict[str, Any]]:
-        """Extract timestamps from ELF header."""
+        # 从 ELF 头提取时间戳
         timestamps = []
         try:
             if len(elf_data) < 64 or elf_data[:4] != b'\x7fELF':
@@ -433,7 +433,7 @@ class TimelineExporter:
 
 
 class ForensicTimelineReconstructor(BaseAnalyzer):
-    """Forensic timeline reconstruction analyzer."""
+    # 取证时间线重建分析器
 
     def __init__(self):
         super().__init__()

@@ -25,10 +25,6 @@ class IntOverflowGuardMixin:
     """溢出守卫识别, 由 IntegerOverflowDetector 继承."""
 
     def apply_guard(self, mnem: str, ins: dict, ops) -> bool:
-        """识别单条指令是否为溢出守卫, 标记 pending 中对应溢出已检查.
-
-        返回 True 表示该指令是守卫跳转 (已处理).
-        """
         # a) shr/sar 回除: 标记最近乘法或涉及寄存器
         if mnem in ("shr", "sar") and len(ops) >= 2:
             return self._apply_shr_guard(ins, ops)
@@ -145,10 +141,6 @@ class IntOverflowGuardMixin:
 
     @staticmethod
     def _extract_jump_target(ins: dict) -> Optional[int]:
-        """从条件跳转指令提取目标地址.
-
-        objdump 格式: '140001796 <func+0x36>' -> 剥离注释后解析.
-        """
         ops = ins.get("operands", [])
         if not ops:
             return None

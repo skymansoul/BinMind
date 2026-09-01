@@ -99,10 +99,10 @@ class SandboxExecutor:
         self.sandbox_type = sandbox_type
 
     def execute(self, command: List[str], input_data: Optional[bytes] = None, timeout: int = 300, working_dir: Optional[str] = None) -> Dict[str, Any]:
-        pass
+        raise NotImplementedError
 
     def is_available(self) -> bool:
-        pass
+        raise NotImplementedError
 
 
 class GvisorExecutor(SandboxExecutor):
@@ -323,7 +323,7 @@ class LLMDataSanitizer:
                 parsed = json.loads(data)
                 sanitized = self._sanitize_dict(parsed)
                 return json.dumps(sanitized)
-            except:
+            except Exception:
                 return data
         else:
             return data

@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""系统调用表恢复与安全分析。
-
-从二进制中恢复系统调用表条目，解析参数原型，评估系统调用的
-安全等级，并对一次执行序列做风险汇总。
-"""
+# 系统调用表恢复与安全分析: 从二进制中恢复系统调用表条目, 解析参数原型, 评估安全等级, 对执行序列做风险汇总
 import re
 from enum import Enum
 from typing import Any, Dict, List, Optional

@@ -58,11 +58,6 @@ ExploitabilityScore.HIGH = ExploitabilityScore(
 class PMCSideChannelEvaluator:
     """Collect hardware performance counters during cryptographic operations
     and correlate them with secret data.
-
-    Usage::
-
-        eval = PMCSideChannelEvaluator()
-        score = eval.evaluate(crypto_op, secrets=[b"\\x00", b"\\xFF"])
     """
 
     _COUNTER_NAME = {

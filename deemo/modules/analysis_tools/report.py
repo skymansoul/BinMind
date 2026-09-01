@@ -1,7 +1,6 @@
 # Compatibility alias: re-exports core.report under modules.report
 from core.report import *
-from typing import Dict, Any
-from typing import List, Optional
+from typing import Dict, Any, List, Optional
 
 
 class ReportGenerator:
@@ -11,14 +10,14 @@ class ReportGenerator:
         self.output_dir = output_dir
         self._steps = []
 
-    def add_step_rp(self, name, data, result):
+    def add_step(self, name, data, result):
         self._steps.append({
             'name': name,
             'data': data,
             'result': result,
         })
 
-    def generate_markdown_report_rp(self):
+    def generate_markdown_report(self):
         lines = ["# Analysis Report", ""]
         for s in self._steps:
             lines.append(f"## {s['name']}")
@@ -29,12 +28,12 @@ class ReportGenerator:
             lines.append("")
         return "\n".join(lines)
 
-    def generate_json_report_rp(self):
+    def generate_json_report(self):
         import json
-        return json.dumps(self._steps, indent=2)
+        return json.dumps({'steps': self._steps}, indent=2)
 
     def generate_report(self, findings, binary_info, output_format='markdown'):
-        return write_report(findings, binary_info, output_format=output_format)
+        return write_report(findings, binary_info, fmt=output_format)
 
     def generate_markdown(self, findings, binary_info):
         return generate_markdown(findings, binary_info)

@@ -134,7 +134,6 @@ class AnalysisPipeline:
         return sr
 
 def create_default_pipeline(): return AnalysisPipeline()
-module: str = ""
 
 
 def _debug_print(*a, **kw):

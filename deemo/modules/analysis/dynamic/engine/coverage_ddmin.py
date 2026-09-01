@@ -31,7 +31,6 @@ from dataclasses import dataclass, field
 
 @dataclass
 class CoverageMinimizationResult:
-    """覆盖率引导最小化的产出"""
     original: bytes
     minimized: bytes
     original_size: int
@@ -48,12 +47,6 @@ class CoverageMinimizationResult:
 
 
 class CoverageGuidedMinimizer:
-    """以覆盖率边集等价为 oracle 的 ddmin 变体
-
-    与现有 DeltaDebugger 的关系：DeltaDebugger 处理"崩溃/非崩溃"二值 oracle；
-    本模块处理"覆盖率边集等价"的多值 oracle。两者互补——DeltaDebugger 用于
-    崩溃输入的最终缩减，本模块用于非崩溃 PoC 和种子最小化
-    """
 
     def __init__(self,
                  executor: Callable[[bytes], Set[int]],
@@ -61,13 +54,6 @@ class CoverageGuidedMinimizer:
                  max_iterations: int = 200,
                  timeout_seconds: float = 300.0,
                  granularity: int = 2):
-        """
-        executor: f(data) → {edge_id,.} — 返回覆盖率边集
-        jaccard_threshold: 缩减后边集与目标边集的 Jaccard 相似度下限
-        max_iterations: ddmin 最大迭代轮数
-        timeout_seconds: 总时间限制
-        granulari: ddmin 初始分块数（经典值为 2）
-        """
         self._exec = executor
         self._threshold = jaccard_threshold
         self._max_iter = max_iterations
@@ -75,16 +61,6 @@ class CoverageGuidedMinimizer:
         self._granularity = granularity
 
     def minimize(self, data: bytes) -> CoverageMinimizationResult:
-        """对输入执行覆盖率引导的最小化
-
-        流程：
-        1. 执行原始输入，记录目标边集 → pinned_edges
-        2. 自适应调节 Jaccard 阈值（基于覆盖率密度）
-        3. ddmin 主循环——每轮尝试删除 n/granulari 字节
-        4. 缩减判定：edge_set(reduced) ∩ pinned_edges 的 Jaccard ≥ threshold
-        5. 若判定失败且 pinned edge 丢失 → edge-pinning 回退
-        6. 重复直至无法进一步缩减或超时
-        """
         import time
         t0 = time.time()
 
@@ -174,11 +150,6 @@ class CoverageGuidedMinimizer:
 
     @staticmethod
     def _jaccard(edge_set: Set[int], pinned: frozenset) -> float:
-        """计算边集与目标集的 Jaccard 相似度
-
-        J(A,B) = |A ∩ B| / |A ∪ B|
-        用 pinned 作为全集 B——因为我们不需要超出 pinned 的边
-        """
         if not pinned:
             return 0.0
         intersection = len(edge_set & pinned)
@@ -193,11 +164,6 @@ class CoverageGuidedMinimizer:
 # 这些区间在后续缩减中应被优先尝试
 
 class ByteImportanceRanker:
-    """基于覆盖率反馈的字节重要性排序器
-
-    用于加速 CoverageGuidedMinimizer——提前标记"安全删除区"
-    使 ddmin 优先尝试这些区间而非均匀分块
-    """
 
     def __init__(self):
         # 每个字节位置的"安全删除计数"——被删除后覆盖率仍达标的次数
@@ -206,7 +172,6 @@ class ByteImportanceRanker:
 
     def record_trial(self, removed_range: Tuple[int, int],
                      jaccard_ok: bool):
-        """记录一次删除尝试的结果"""
         start, end = removed_range
         for pos in range(start, end):
             self._total_trials[pos] = self._total_trials.get(pos, 0) + 1

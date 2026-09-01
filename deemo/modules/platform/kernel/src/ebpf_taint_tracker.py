@@ -259,7 +259,7 @@ class EBPFTaintTracker:
                 result.sinks.append((idx, sink.kind, f"{sink.description} at insn {idx}"))
                 path = TaintPath(); path.sink_insn = idx
                 path.hops.append(f"call to {sink.kind}")
-                result.taint_paths.append(key)
+                result.taint_paths.append(path)
 
         elif imm == BPF_MAP_UPDATE:
             if self._taint.get(2):
@@ -382,7 +382,7 @@ def _find_branch_dominator_end(branch_idx: int, insns: list) -> int:
         insn_j = insns[j] if isinstance(insns[j], dict) else None
         if insn_j is None: continue
         op = insn_j.get("opcode", 0) if isinstance(insn_j, dict) else 0
-        if (op & 0x07) == BPF_JMP and (op & 0xF0) in (BPF_OP_JMP.JEQ, BPF_OP_JMP.JNE):
+        if (op & 0x07) == BPF_JMP and (op & 0xF0) in (0x10, 0x50):
             return j + 1
     return min(branch_idx + 8, n)
 

@@ -46,7 +46,7 @@ class PMCAnalyzer:
         self._l3_latency: float = 14.0
         self._dram_latency: float = 70.0
 
-# 计时校准
+    # 计时校准：测出 perf_counter 本身开销，供后续延迟归一化
     def _time_calibration(self) -> float:
         """自旋循环校准 — 测量单次perf_counter调用的开销"""
         _samples: list[float] = []
@@ -56,8 +56,7 @@ class PMCAnalyzer:
             _samples.append((_t1 - _t0) / 2.0)
         return statistics.median(_samples)
 
-# 缓存层级校准
-    # 通过不同工作集大小的指针追逐，推断 L1/L2/L3 容量边界。
+    # 缓存层级校准：通过不同工作集大小的指针追逐，推断 L1/L2/L3 容量边界。
     # 原理：当工作集超过某级缓存容量时，平均延迟跳升。
     def calibrate_cache_hierarchy(self) -> Dict[str, float]:
         """返回推断的 L1/L2/L3 容量（字节）和延迟（ns）。
@@ -140,10 +139,8 @@ class PMCAnalyzer:
             samples.append((t1 - t0) / 4.0)
         return statistics.median(samples) if samples else 0.0
 
-# 预取器行为检测
-    # GoFetch 的核心发现：DMP 预取器会根据内存内容
+    # 预取器行为检测 — GoFetch 的核心发现：DMP 预取器会根据内存内容
     # （指针值）决定是否预取。可通过正向/反向指针追逐的延迟差异来检测。
-
     def detect_prefetcher_behavior(self) -> Dict[str, float]:
         """检测数据预取器是否正在活跃影响缓存驻留。
 
@@ -181,8 +178,7 @@ class PMCAnalyzer:
             "asymmetry_ratio": round(ratio, 3),
         }
 
-# 缓存缺失率估算
-    # 通过不同步长的指针追逐测量各级缓存延迟
+    # 缓存缺失率估算：通过不同步长的指针追逐测量各级缓存延迟
     def _estimate_cache_miss_ratio(self, working_set_size: int) -> float:
         _buf = array.array("Q", [0]) * (working_set_size // 8)
         # 建立指针链 — 随机排列以击败预取
@@ -215,8 +211,7 @@ class PMCAnalyzer:
                 return _ratio
         return 0.01
 
-# 软件PMC估算
-    # Windows平台: 自旋+缓存探测+分支模拟
+    # 软件PMC估算：Windows 无 perf_event_open，以自旋+缓存探测+分支模拟折算
     def software_estimate(self, duration_sec: float = 1.0) -> dict:
         _tick_ns = self._time_calibration()
         _end = time.perf_counter() + duration_sec
@@ -328,7 +323,7 @@ class PMCAnalyzer:
 
         return indicators
 
-# 缓存层级分析
+    # 缓存层级分析：各级缺失率折算 + 自然语言解读
     def analyze_cache_miss_ratio(self, pmc_data: dict) -> dict:
         _l1d = pmc_data.get("L1D_CACHE_MISS", 0)
         _l1i = pmc_data.get("L1I_CACHE_MISS", 0)
@@ -356,7 +351,7 @@ class PMCAnalyzer:
             "interpretation": _interpretation,
         }
 
-# 双剖面比较
+    # 双剖面比较：基准 vs 目标逐指标比值，2σ 外标记异常
     def compare_profiles(self, baseline: dict, target: dict) -> dict:
         result: dict = {}
         _metrics = [

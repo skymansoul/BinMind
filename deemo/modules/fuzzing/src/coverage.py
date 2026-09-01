@@ -227,6 +227,8 @@ def encode_edge_id(src_bb: int, dst_bb: int) -> int:
     return (src_bb >> 1) ^ dst_bb
 
 
-    """Internal debug output stub."""
-    pass  # 调试桩，当前未使用
+# 调试输出桩
+def _debug_stub() -> None:
+    """调试输出桩 -- 当前未被调用，保留定义以避免潜在导入点失败。"""
+    pass
 

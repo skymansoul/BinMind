@@ -44,7 +44,7 @@ class VulnPathMinimizer:
         minimal_blocks.append(new_blocks[0])
         visited.add(new_blocks[0])
       except Exception:
-          logger.debug("suppressed", exc_info=True)
+          logger.debug("r2disasmfailed", exc_info=True)
      cond = "直接崩溃"
      if len(minimal_blocks) > 1:
         cond = f"触发condition位于 0x{minimal_blocks[-1]:x}"
@@ -72,7 +72,7 @@ class VulnPathMinimizer:
         if r.stdout is not None  and r.stdout.strip():
            first_line = r.stdout.strip().split('\n')[0][:100]
         report_lines.append(f"  [{i}] {first_line}")
-       except:
+       except Exception:
         report_lines.append(f"  [{i}] 0x{bb:x}")
        i = i + 1
      crit = path.critical_condition  if path is not None  else ""

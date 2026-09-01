@@ -105,7 +105,7 @@ class EmpiricalLikelihoodInference:
         hi = self._find_boundary(x_bar, 3.0 * s / math.sqrt(n),
                                  chisq_critical, direction=1)
 
-# 2log ELR at μ = x_bar (应接近 0)
+        # -2log ELR at μ = x_bar (应接近 0)
         elr_at_mean = self._neg2_log_elr(x_bar)
 
         return ELCIResult(

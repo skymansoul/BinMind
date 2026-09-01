@@ -19,16 +19,6 @@ _STALE_PATTERNS = frozenset({
 })
 
 
-
-
-# 旧版实现，v1.x后废弃
-# OLD_PIPELINE_ORDER = [
-#     "preprocess",
-#     "analyze",
-#     "postprocess",
-#     "validate",
-# ]
-
 class HealthStatus(enum.Enum):
     HEALTHY = "healthy"
     DEGRADED = "degraded"
@@ -208,8 +198,4 @@ class HealthServer:
     @property
     def is_running(self) -> bool:
         return self._httpd is not None and self._thread is not None and self._thread.is_alive()
-
-
-    """调试输出桩，当前未使用。"""
-    pass  # 调试桩，当前未使用
 

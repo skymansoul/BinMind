@@ -50,8 +50,8 @@ class BranchInfo:
         if not isinstance(other, BranchInfo):
             return False
         return (self.address == other.address and
-                self.true_target == other.true_target and
-                self.false_target == other.false_target)
+                self.true_branch_target == other.true_branch_target and
+                self.false_branch_target == other.false_branch_target)
 
     # 调试时快速查看分支关键属性
     def __repr__(self):
@@ -87,10 +87,11 @@ class LLMBranchScore:
     enqueue_count: int = 0
 
     def __lt__(self, other):
-        return self.score < other.score
+        return self.true_branch_score < other.true_branch_score
 
     def to_priority_tuple(self) -> Tuple[int, float]:
-        return (-self.priority, -self.score)
+        return (-self.true_branch_priority.value.__hash__() if hasattr(self.true_branch_priority.value, '__hash__') else 0,
+                -self.true_branch_score)
 
     # 快速定位高价值分支，辅助人工审查
     def __repr__(self):
@@ -240,7 +241,7 @@ class LLMGuidedSymbolicExecutor:
             name="LLMGuidedSymbolicExecutor",
             type=_AnalyzerType.SYMBOLIC_EXECUTOR,
             version="1.0.0",
-            description="LLM引导的符号执行引擎，用于分支优先级调度与路径探索",
+            description="LLM 引导的符号执行引擎，用于分支优先级调度与路径探索",
             dependencies=["openai", "angr"],
             supported_platforms=["x86", "x86_64", "arm64"],
         )
@@ -248,7 +249,7 @@ class LLMGuidedSymbolicExecutor:
     def validate_input(self, binary_path: str = "") -> Tuple[bool, Optional[str]]:
         """校验输入参数。"""
         if not binary_path:
-            return False, "binary_path是必需参数"
+            return False, "binary_path 是必需参数"
         if not isinstance(binary_path, str):
             return False, "binary_path 必须是字符串"
         return True, None

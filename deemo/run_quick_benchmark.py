@@ -1,4 +1,4 @@
-"""Quick benchmark: BinMind pipeline on heap overflow samples → real metrics."""
+# BinMind pipeline 堆溢出样本快速基准测试
 import sys, os, json, time, subprocess
 
 sys.path.insert(0, '.')
@@ -10,7 +10,7 @@ HEAP_SAMPLES_DIR = "tests/heap_overflow_samples"
 OUTPUT_FILE = "eval/results/benchmark_summary.json"
 RESULTS_FILE = "eval/results/benchmark_results.json"
 
-# Expected verdict per sample (name → should_detect)
+# 各样本预期判定（名称→是否应检出）
 EXPECTED = {
     'ho_01': True,   # CVE-2021-3156: malloc without escape expansion
     'ho_02': True,   # likely overflow
@@ -30,7 +30,7 @@ EXPECTED = {
 }
 
 def scan_sample(sample_dir, sample_name):
-    """Scan one sample with BinMind."""
+    # 用 BinMind 扫描单个样本
     vuln_c = os.path.join(sample_dir, 'vuln.c')
     if not os.path.exists(vuln_c):
         return None
@@ -91,7 +91,7 @@ def main():
         else:
             print("SKIP (no vuln.c)")
 
-    # Compute metrics
+    # 计算指标
     tp = fp = fn = tn = 0
     for r in results:
         name = r['sample']

@@ -110,7 +110,8 @@ class InputMinimizer:
             size_history=size_hist,
         )
 
-# 逐字节贪心删除
+    # 逐字节贪心删除
+
     def _minimize_bytewise(self, data: bytes, ref_cov: Set[int],
                            hist: List[Tuple[int, int]],
                            start_time: float) -> bytes:
@@ -143,7 +144,8 @@ class InputMinimizer:
 
         return bytes(raw)
 
-# 二分区间压缩
+    # 二分区间压缩
+
     def _minimize_binary(self, data: bytes, ref_cov: Set[int],
                          hist: List[Tuple[int, int]],
                          start_time: float) -> bytes:
@@ -184,7 +186,8 @@ class InputMinimizer:
         _bisect(0, len(raw))
         return bytes(raw)
 
-# 按行最小化（文本输入）
+    # 按行最小化（文本输入）
+
     def _minimize_linewise(self, data: bytes, ref_cov: Set[int],
                            hist: List[Tuple[int, int]],
                            start_time: float) -> bytes:
@@ -219,7 +222,8 @@ class InputMinimizer:
 
         return '\n'.join(lines).encode('utf-8')
 
-# 按 token 最小化
+    # 按 token 最小化
+
     def _minimize_tokenwise(self, data: bytes, ref_cov: Set[int],
                             hist: List[Tuple[int, int]],
                             start_time: float) -> bytes:

@@ -308,7 +308,7 @@ class TimingSideChannelDetector:
                         break
         return results
 
-# 指针追踪缓存驻留检测
+    # 指针追踪缓存驻留检测
     # 基于 GoFetch 的 DMP 侧信道思路：
     # 通过测量指针追踪延迟探测数据是否驻留缓存。
 
@@ -383,10 +383,9 @@ _COVERT_PATTERNS = (
 )
 
 
-# FIXME: detect_timing_channel_in_binary(f_path, f_outdir=None) — 签名损坏
-# 第二个参数在 054bc7b 提交中从 out_dir 重命名为 f_outdir，
-# 但 microarch_validator 中的调用方仍传 `out_dir=`。
-# 需兼容 shim 或调用方侧更新。
+# detect_timing_channel_in_binary 的 out_dir 参数为旧调用方兼容入口:
+# 054bc7b 提交将参数重命名为 f_outdir, microarch_validator 仍传 out_dir=,
+# 此处保留双参数并优先采用 out_dir, 待调用方全量迁移后移除。
 
 
 def detect_timing_channel_in_binary(f_path=None, f_outdir=None, out_dir=None):
@@ -463,4 +462,5 @@ def _shannon_entropy(data: bytes) -> float:
 
 
 def _debug_print(msg: str) -> None:
+	# 调试输出占位, 发布版保持静默避免污染stdout
 	pass

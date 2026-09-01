@@ -16,7 +16,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_TIMEOUT = 30000
@@ -269,11 +269,7 @@ class ConstraintSolverManager:
     def _simulate_solver_call(
         self, solver: SolverConfig, constraint: str
     ) -> SolverResult:
-        """Simulated solver call. Replace with subprocess/API calls in production.
-
-        Returns 'sat' with a category-appropriate synthetic model unless
-        'unsat' appears in the constraint text. Times out when constraint
-        length exceeds SIMULATED_TIMEOUT_THRESHOLD."""
+        """模拟求解器调用，按约束类别生成合成模型。"""
         start = time.time()
 
         simulated_satisfiable = "unsat" not in constraint.lower()

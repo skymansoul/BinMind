@@ -86,7 +86,6 @@ class SiblingInferrer:
 
         return results
 
-# 分类
     @staticmethod
     def _classify_functions(source: str,
                             contract: _StubContract) -> tuple[list, list]:
@@ -126,7 +125,6 @@ class SiblingInferrer:
 
         return implemented, placeholders
 
-# 模式提取
     @staticmethod
     def _extract_patterns(implemented: list[tuple],
                           source: str) -> dict:
@@ -223,7 +221,6 @@ class SiblingInferrer:
             return exc.id
         return None
 
-# 应用推断
     def apply_to_contract(self, module_name: str) -> _Opt[_StubContract]:
         """将姐妹推断结果应用到合约，返回精化后的合约副本。"""
         inferences = self.infer(module_name)

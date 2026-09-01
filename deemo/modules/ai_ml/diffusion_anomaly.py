@@ -63,6 +63,7 @@ class DiffusionSimulator:
         self.n_steps = diffusion_steps
         self.diff_rate = diffusion_rate
         self.noise_scale = noise_scale
+        self._sim_counter = 0
 
     def simulate(self, features: List[List[float]],
                  adjacency: List[List[int]]) -> List[List[List[float]]]:
@@ -78,7 +79,8 @@ class DiffusionSimulator:
         current = [f[:] for f in features]
         trajectories.append([f[:] for f in current])
 
-        rng = random.Random(42)
+        self._sim_counter += 1
+        rng = random.Random(42 + self._sim_counter)
 
         for step in range(self.n_steps):
             next_state = []

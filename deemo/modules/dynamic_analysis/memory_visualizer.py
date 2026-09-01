@@ -555,7 +555,7 @@ class MemoryVisualizer:
                 return handler(**kwargs)
             return {"success": False, "error": f"Unknown command: {command}"}
         except Exception as e:
-            logger.error(f"Analysis failed: {e}")
+            log.error(f"Analysis failed: {e}")
             return {"success": False, "error": str(e)}
 
     def parse_memory_map(self, maps_content: str = "",

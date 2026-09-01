@@ -51,15 +51,7 @@ class ClassificationResult:
 
 
 class AdversarialRobustClassifier:
-    """对抗鲁棒的在线流量分类器.
-
-    用法:
-      arc = AdversarialRobustClassifier(n_classes=5)
-      arc.partial_fit(features, label)  # 在线学习
-      result = arc.predict(features)
-      if result.is_adversarial_suspected:
-          logger.warning(f'Adversarial input: {result.suspicion_reason}')
-    """
+    """对抗鲁棒的在线流量分类器."""
 
     def __init__(self, n_classes: int = 5,
                  header_weight: float = 0.70,

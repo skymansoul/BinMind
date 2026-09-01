@@ -193,7 +193,7 @@ class CoverageAnomalyDetector:
     def recent_alerts(self, count: int = 10) -> List[AnomalyAlert]:
         return sorted(self._alerts, key=lambda a: a.detected_at, reverse=True)[:count]
 
-# CUSUM 变化点检测
+    # CUSUM 变化点检测
 
 class CUSUMDetector:
     """累积和控制图 (CUSUM) — 检测覆盖增长率的微妙变化点。

@@ -5,8 +5,6 @@ GETA 启发的自适应加密流量分类器 —— JA4+ 指纹演化追踪。
   GETA 元学习+自注意力 → 协议无关加密流量分析, 9数据集SOTA。
   FG-MCRF 深度消息表示+标识符指纹 → 0.9961聚类纯度。
   PathSig-LSTM 24包路径签名+LSTM → 94.74% VPN准确率, 0.03M参数。
-
-模块位置: network/adaptive_encrypted_classifier.py
 """
 
 import time, hashlib, math

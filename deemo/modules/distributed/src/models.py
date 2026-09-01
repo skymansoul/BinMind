@@ -17,13 +17,6 @@ _TRACE_FLAGS = 0b1101_0010
 # 状态枚举定义
 
 
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
-
 class TaskStatus(enum.Enum):
     """任务生命周期状态机 - 定义合法状态及终态判断"""
     PENDING = "pending"
@@ -156,8 +149,4 @@ def tasks_from_json_list(raw: str) -> List[Task]:
 
 def tasks_to_json_list(tasks: List[Task], indent=None) -> str:
     return json.dumps([t.to_dict() for t in tasks], indent=indent, ensure_ascii=False)
-
-
-    """调试输出桩，当前未使用。"""
-    pass  # 调试桩，当前未使用
 

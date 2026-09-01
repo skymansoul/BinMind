@@ -125,13 +125,13 @@ class UEFIRuntimeSecurityAnalyzer:
     def check_capsule_authentication(self, all_imports, capsule_calls=0):
         findings = []
         if capsule_calls == 0:
-          return findings
+            return findings
         flat = ' '.join(all_imports).lower() if all_imports else ''
         has_auth = any(kw in flat for kw in ('capsulehash', 'fmpauthentication', 'fmpcapsule',
                                             'verifycapsule', 'validatecapsule'))
         if not has_auth:
-          findings.append({'type': 'capsule_auth', 'severity': 'high',
-                          'description': 'UpdateCapsule calls without capsule authentication symbols'})
+            findings.append({'type': 'capsule_auth', 'severity': 'high',
+                            'description': 'UpdateCapsule calls without capsule authentication symbols'})
         return findings
 
     def check_smm_security(self, strings_data, smm_modules=None):
@@ -154,6 +154,7 @@ class UEFIRuntimeSecurityAnalyzer:
         return findings
 
 
+    # 暂留 — SMM 堆喷射启发式检测，依赖堆分配元数据标注，启发条件未定
     # def _smm_heap_spray_check(self, smm_modules):
     #     findings = []
     #     for mod in (smm_modules or []):

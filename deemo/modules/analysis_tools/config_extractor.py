@@ -1,4 +1,3 @@
-logger=None
 #!/usr/bin/env python3
 import os
 import re
@@ -8,7 +7,7 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
-__log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ConfigType(str, Enum):

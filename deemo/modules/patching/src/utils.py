@@ -329,6 +329,7 @@ def generate_nop_slide(length: int, arch: str = "x86_64") -> bytes:
 
 
 # 生产未使用，保留供调试
+def dump_debug(label, obj):
     print(f"--- {label} ---")
     if hasattr(obj, '__dict__'):
         for k, v in obj.__dict__.items():

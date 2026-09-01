@@ -107,15 +107,6 @@ class SprayDetectionReport:
 # 检测器
 
 class HeapSprayDetector:
-    """多分辨率堆喷射熵检测器
-
-    用法:
-    detector = HeapSprayDetector()
-    report = detector.scan(
-        memory_chunks=[(0x1000000, bytes_of_region_1), ...],
-        baseline_regions=[(0x2000000, bytes_of_normal_heap)],
-    )
-    """
 
     # 喷射阈值
     _SPRAY_THRESHOLD = 0.60        # spray_score > 此值->标记为喷射区域

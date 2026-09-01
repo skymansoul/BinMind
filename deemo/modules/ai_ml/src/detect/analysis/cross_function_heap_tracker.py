@@ -136,7 +136,7 @@ class CrossFunctionHeapTracker:
                     'copy_func': ws.copy_func, 'evidence': ev})
         return findings
 
-# 指令解析辅助
+    # 指令解析辅助
     @staticmethod
     def _detect_syntax(instrs: List[str]) -> bool:
         return any('%' in i for i in instrs[:min(15, len(instrs))]

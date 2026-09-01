@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict
 
-__log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ResourceProfile(Enum):

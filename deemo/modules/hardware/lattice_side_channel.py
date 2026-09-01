@@ -62,11 +62,6 @@ class LatticeSideChannelAnalyzer:
 
     Focuses on polynomial multiplication, NTT/INTT transforms, and coefficient-
     dependent branching commonly found in Kyber, Dilithium, and similar schemes.
-
-    Usage::
-
-        analyzer = LatticeSideChannelAnalyzer()
-        result = analyzer.analyze(ntt_implementation, n=256, q=3329)
     """
 
     # -- public API -----------------------------------------------------------

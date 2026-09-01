@@ -4,31 +4,6 @@
 # 修复配对: 调用图距离+名称相似度替代索引配对
 # 寄存器追踪: 提取channel指针所在寄存器, 同寄存器=同channel
 
-"""Go goroutine 并发图恢复 - 从剥离 Go 二进制恢复并发通信拓扑
-
-Go 二进制 (尤其是经 garble 混淆后) 的函数名和类型信息被剥离
-但 Go runtime 的函数调用模式是固定的, runtime 函数通过特定的
-参数传递约定和调用模式可被识别
-
-本模块识别以下 Go runtime 操作:
-  - Goroutine 创建: runtime.newproc / runtime.newproc1
-  - Channel 发送: runtime.chansend1 / runtime.chansend2
-  - Channel 接收: runtime.chanrecv1 / runtime.chanrecv2
-  - Select 多路复用: runtime.selectgo / runtime.selectnbsend
-  - 同步: runtime.semacquire / sync.(*Mutex).Lock / sync.(*WaitGroup).Wait
-
-识别方法: 在反汇编中匹配 runtime 函数的调用模式
-Go 1.18+ 的调用约定 (ABIInternal): 参数通过寄存器传递
-寄存器分配模式可作为函数识别的额外信号
-
-并发图: 节点=包含 goroutine 操作的函数, 边=channel 通信对
-
-与现有工具的关系:
-- GoResolver: CFG 匹配恢复函数名 -> 本模块: 恢复并发结构
-- Ghostrings (Fox-IT): P-Code 字符串恢复 -> 本模块: runtime 调用识别
-- gspy: eBPF 动态追踪 -> 本模块: 静态分析, 不需执行
-"""
-
 from __future__ import annotations
 
 import re
@@ -97,14 +72,6 @@ class GoConcurrencyGraph:
 
 
 class GoConcurrencyRecoverer:
-    """Go 并发图恢复器
-
-    用法:
-    recoverer = GoConcurrencyRecoverer()
-    graph = recoverer.recover(
-        functions={'main.process': ['call runtime.chansend1', ...], ...}
-    )
-    """
 
     def __init__(self):
         self._call_graph: Dict[str, List[str]] = {}
@@ -118,13 +85,6 @@ class GoConcurrencyRecoverer:
         functions: Dict[str, List[str]],
         call_graph: Optional[Dict[str, List[str]]] = None,
     ) -> GoConcurrencyGraph:
-        """从反汇编函数恢复 Go 并发图
-
-        functions: {函数名: [反汇编行]}
-        call_graph: 可选的调用图 (用于 goroutine spawn 边推断)
-
-        返回 GoConcurrencyGraph
-        """
         self._call_graph = call_graph or {}
         ops_by_func: Dict[str, List[GoConcurrencyOp]] = defaultdict(list)
 

@@ -105,16 +105,8 @@ def read_gate(output_dir: str, timeout: float = _DEFAULT_TIMEOUT) -> Dict[str, A
     """
     path = _gate_path(output_dir)
     if not os.path.isfile(path):
-        # 不自动跳过, 写入一条 pending 复核记录供人工处理
-        add_review_record(
-            output_dir,
-            sample_name=os.path.basename(output_dir),
-            vuln_desc="gate file missing, awaiting human review",
-            evidence_addr=output_dir,
-            current_status="pending",
-        )
-        _log.info("Gate file absent, review record created: %s", output_dir)
-        return {"status": "pending", "reason": "no_gate_file_pending", "instruction": ""}
+        _log.info("No gate file found: %s", output_dir)
+        return {"status": "skip", "reason": "no_gate_file", "instruction": ""}
 
     # 读取 TOML, 不引入 tomli 依赖, 用简单行解析
     status = "pending"

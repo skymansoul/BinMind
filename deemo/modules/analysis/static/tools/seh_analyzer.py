@@ -41,9 +41,6 @@ class AnalysisResult:
 
 
 class VEHAnalyzer:
-    """VEH 链分析器, 检测通过 RtlAddVectored异常处理器 注册的 处理器
-    VEH 优先级高于 SEH，在 kernel32!Unhandled异常Filter 之前被调用
-    """
     _VEH_PAT = __import__('re').compile(
         rb'RtlAddVectoredExceptionHandler|AddVectoredExceptionHandler', re.I)
 

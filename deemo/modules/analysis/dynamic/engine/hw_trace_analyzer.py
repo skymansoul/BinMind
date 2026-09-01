@@ -85,20 +85,12 @@ class BaseTraceDecoder:
     # Abstract decoder contract for hardware trace data streams
 
     def decode(self, trace_data: bytes) -> List[TracePacket]:
-        """
-        转换 raw trace bytes a structured 数据包 sequence
-
-        """
         pass
 
 class IntelPTDecoder(BaseTraceDecoder):
     # Intel Processor Trace binary decoder
 
     def __init__(self, binary_path: str):
-        """
-        Bind decoder instance a target binary for symbol resolution
-
-        """
         self.binary_path = binary_path
         self._check_libipt()
 
@@ -129,7 +121,6 @@ class IntelPTDecoder(BaseTraceDecoder):
             return self._decode_simplified(trace_data)
 
     def _decode_simplified(self, trace_data: bytes) -> List[TracePacket]:
-        """Heuristic 数据包 解析器 operates native dependencies"""
         packets = []
         offset = 0
 
@@ -207,20 +198,8 @@ class PerfDecoder(BaseTraceDecoder):
         return packets
 
 class HWTraceAnalyzer:
-    """
-    Hardware trace analyzer for Intel PT ARM ETM streams
-
-    解码 PT 数据包s via libipt or perf tooling, 重建 precise
-    控制流 数据流 paths, 提取 漏洞-triggering
-    execution traces, prunes 被混淆 dead code
-    reachability analysis
-    """
 
     def __init__(self, binary_path: str, trace_type: TraceType = TraceType.INTEL_PT):
-        """
-        Instantiate analyzer target binary trace backend selection
-
-        """
         self.binary_path = binary_path
         self.trace_type = trace_type
         self.decoder = self._create_decoder()
@@ -241,10 +220,6 @@ class HWTraceAnalyzer:
             raise FileNotFoundError(f"binaryfile not found: {self.binary_path}")
 
     def collect_trace(self, target_command: str, timeout: int = 60) -> bytes:
-        """
-        Capture Intel PT trace via perf record for target command
-
-        """
         with tempfile.NamedTemporaryFile(suffix=".data", delete=False) as f:
             output_file = f.name
 
@@ -280,10 +255,6 @@ class HWTraceAnalyzer:
                 os.remove(output_file)
 
     def analyze_trace(self, trace_data: bytes) -> TraceAnalysisResult:
-        """
-        Process raw trace data full analysis 流水线
-
-        """
         if not trace_data:
             return TraceAnalysisResult(
                 success=False,
@@ -328,7 +299,6 @@ class HWTraceAnalyzer:
             )
 
     def _reconstruct_instructions(self, packets: List[TracePacket]) -> List[TraceInstruction]:
-        """重建 ordered instruction sequence decoded 数据包 stream"""
         instructions = []
         addresses = set()
 
@@ -448,8 +418,6 @@ class HWTraceAnalyzer:
 # 新增: 热点函数分析
     # 统计函数执行次数和执行时间，识别性能瓶颈和关键逻辑
     def analyze_hot_functions(self, functions: List[TraceFunction]) -> Dict[str, Any]:
-        """分析函数的执行热点 — 执行次数和指令密度最高的函数
-        热点函数通常对应核心业务逻辑或加解密循环，是逆向分析的重点目标"""
         if not functions:
             return {"hot_functions": []}
 
@@ -472,18 +440,10 @@ class HWTraceAnalyzer:
         }
 
     def trace_and_analyze(self, target_command: str, timeout: int = 60) -> TraceAnalysisResult:
-        """
-        Collect trace data a target process 执行 full analysis
-
-        """
         trace_data = self.collect_trace(target_command, timeout)
         return self.analyze_trace(trace_data)
 
     def generate_report(self, result: TraceAnalysisResult) -> str:
-        """
-        Produce a human-readable analysis summary structured results
-
-        """
         report = []
         report.append("=" * 60)
         report.append("硬件跟踪分析报告 (Hardware Trace Analysis Report)")
@@ -512,10 +472,6 @@ class HWTraceAnalyzer:
         return "\n".join(report)
 
     def save_result(self, result: TraceAnalysisResult, output_path: str) -> bool:
-        """
-        序列化 analysis results a JSON file
-
-        """
         try:
             result_dict = {
                 "success": result.success,

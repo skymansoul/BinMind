@@ -20,6 +20,7 @@
 #          crashed, timed_out, dangerous_calls)
 import ast as _ast
 import os as _os
+import re as _re
 import subprocess as _sp
 import sys as _sys
 import tempfile as _tmp
@@ -121,7 +122,6 @@ class SandboxExecutor:
                 source, module_name, func_name, payload))
         return results
 
-# 代码审查
     @classmethod
     def _scan_dangerous(cls, source: str) -> list[str]:
         """AST 扫描检测危险调用。"""
@@ -149,13 +149,11 @@ class SandboxExecutor:
             return func.attr
         return ''
 
-# 载荷生成
     @staticmethod
     def _generate_payloads(param_types: list[str]) -> list[tuple]:
         """为参数类型列表生成安全载荷组合。"""
-        import re
         def base(t: str) -> str:
-            m = re.match(r'([a-z_][a-z0-9_]*)', (t or '').strip().lower())
+            m = _re.match(r'([a-z_][a-z0-9_]*)', (t or '').strip().lower())
             return m.group(1) if m else ''
 
         payloads_per_param = {

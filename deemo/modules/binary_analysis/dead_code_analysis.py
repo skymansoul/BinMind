@@ -5,7 +5,7 @@ import json
 import subprocess
 import hashlib
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Set, Tuple
 from typing import List, Optional
 
 logger = logging.getLogger(__name__)

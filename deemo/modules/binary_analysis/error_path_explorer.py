@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from typing import Optional
+from typing import Optional, Dict, List, Any
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ class Severity(str, Enum):
 class SystemCallInfo:
     name: str
     return_code: int
-    error_code: typing.Optional[int] = None
+    error_code: Optional[int] = None
     arguments: Dict = field(default_factory=dict)
 
 
@@ -49,11 +51,11 @@ class ErrorPathFinding:
     severity: Severity
     confidence: float
     description: str
-    system_call: typing.Optional[str] = None
-    error_code: typing.Optional[int] = None
-    address: typing.Optional[int] = None
-    affected_function: typing.Optional[str] = None
-    suggested_fix: typing.Optional[str] = None
+    system_call: Optional[str] = None
+    error_code: Optional[int] = None
+    address: Optional[int] = None
+    affected_function: Optional[str] = None
+    suggested_fix: Optional[str] = None
     evidence: List = field(default_factory=list)
 
 

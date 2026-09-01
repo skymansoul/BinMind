@@ -112,8 +112,7 @@ class LatticeSideChannelAnalyzer:
         result = analyzer.analyze(ntt_implementation, n=256, q=3329)
     """
 
-# 公开接口
-
+    # 公开接口
     def analyze(self, impl: Any, n: int = 256, q: int = 3329,
                 trials: int = 500, **kwargs) -> List[SideChannelVulnerability]:
         """分析实现。
@@ -135,7 +134,7 @@ class LatticeSideChannelAnalyzer:
         """对可调用对象进行随机系数集的时序泄漏检测。"""
         vulns: List[SideChannelVulnerability] = []
 
-# 时序采集
+        # 时序采集：随机系数全量计时 + 单非零系数逐位计时
         all_samples: List[float] = []
         coeff_timings: Dict[int, List[float]] = defaultdict(list)
 
@@ -155,7 +154,7 @@ class LatticeSideChannelAnalyzer:
                 op(single)
                 coeff_timings[idx].append(time.perf_counter_ns() - t0)
 
-# 统计分析
+        # 统计分析：均值/方差与逐系数中位数偏离度
         mean_t = statistics.mean(all_samples)
         std_t = statistics.stdev(all_samples) if len(all_samples) > 1 else 0.0
 
@@ -209,7 +208,7 @@ class LatticeSideChannelAnalyzer:
                 evidence=[result],
             ))
 
-# NTT 专项检测
+        # NTT 专项检测：全零 vs 饱和系数时序对比
         ntt_result = self._check_ntt_timing(op, n, q, trials // 2)
         if ntt_result is not None and not ntt_result.is_constant_time:
             vulns.append(SideChannelVulnerability(
@@ -220,7 +219,7 @@ class LatticeSideChannelAnalyzer:
                 evidence=[ntt_result],
             ))
 
-# 频率侧信道（Hertzbleed 风格）检测
+        # 频率侧信道（Hertzbleed 风格）检测
         # 启发式：大时序方差 + 小样本亦稳定 → DVFS 相关频率泄漏
         freq_result = self._check_frequency_side_channel(op, n, q, min(trials, 200))
         if freq_result and freq_result.freq_variation_hz > 5.0:

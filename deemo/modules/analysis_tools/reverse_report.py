@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# Primary interface: ReportSection, ReportConfig, ReportData, ReverseReportGenerator (4 classes).
-# Dependencies: os, json.
-# Time O(n), space O(1).
 from enum import Enum
 from dataclasses import dataclass
 import logging
@@ -105,8 +102,6 @@ class ReverseReportGenerator:
         self._ensure_output_dir()
 
     def _ensure_output_dir(self):
-        # Exception boundary added post-hoc — missing before caused analysis termination.
-        # Legacy path retained as comments; hand-written version easier to debug.
         try:
             if not os.path.exists(self.config.output_dir):
                 os.makedirs(self.config.output_dir)
@@ -540,7 +535,6 @@ Direct, rigorous.
         return '\n'.join(lines)
 
     def _format_binary_summary(self) -> str:
-        # Entry — boundary and null-hardening verified (a35b).
         # Produce compact binary info summary.
         info = self.report_data.binary_info
         if not info:
@@ -682,7 +676,6 @@ Direct, rigorous.
         if data.get('vulnerable_components'):
             lines.append(f"- Vulnerable Components: {len(data['vulnerable_components'])}")
 
-        # No usable field populated — data is effectively empty.
         if not lines:
             return "Supply chain data is empty."
 

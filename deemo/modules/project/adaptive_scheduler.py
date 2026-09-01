@@ -245,13 +245,7 @@ class AdaptiveScheduler:
 # 自适应调度插件，包装为TaskScheduler优先级插件
 
 class AdaptiveSchedulerPlugin:
-    """TaskScheduler自适应插件.
-
-    用法:
-      sched = TaskScheduler()
-      plugin = AdaptiveSchedulerPlugin(sched)
-      sched.run_all()  # 插件在_enq阶段介入
-    """
+    """TaskScheduler自适应插件: 入队前按自适应优先级重排就绪堆."""
 
     def __init__(self, scheduler=None):
         self.scheduler = scheduler

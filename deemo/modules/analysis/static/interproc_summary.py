@@ -89,10 +89,6 @@ class InterprocSummaryBuilder:
         return self._summaries.get(func_name)
 
     def rewrite_reg(self, func_name: str, reg: str) -> Optional[int]:
-        """查询函数摘要: 输出寄存器对应哪个输入参数索引.
-
-        返回 None 表示无摘要信息.
-        """
         summary = self._summaries.get(func_name)
         if summary is None:
             return None

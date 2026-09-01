@@ -65,7 +65,7 @@ class CorpusOptimizer:
         self._historical_edge_freq: Dict[int, int] = defaultdict(int)
         self._campaign_count: int = 0
 
-# 注册种子评分
+    # 注册种子评分
 
     def register_seed(self, seed_id: str, coverage: Set[int],
                       exec_time_ms: float = 0.0, file_size: int = 0,
@@ -104,7 +104,7 @@ class CorpusOptimizer:
             rarity_sum += 1.0 / (1.0 + freq)
         return rarity_sum / len(coverage)
 
-# 贪心覆盖规约 (afl-cmin 算法)
+    # 贪心覆盖规约 (afl-cmin 算法)
 
     def greedy_minimize(self, seed_ids: List[str]) -> List[str]:
         """选择最小种子子集, 使并集覆盖等价于全集。
@@ -144,7 +144,7 @@ class CorpusOptimizer:
 
         return selected
 
-# 随机化规约
+    # 随机化规约
 
     def randomized_minimize(self, seed_ids: List[str],
                             target_ratio: float = 0.15) -> List[str]:
@@ -185,7 +185,7 @@ class CorpusOptimizer:
 
         return kept
 
-# KRAKEN-FUZZ 飞行中修剪
+    # KRAKEN-FUZZ 飞行中修剪
 
     def inflight_prune(self, threshold_ratio: float = 0.1) -> int:
         """淘汰综合评分最低的种子。
@@ -220,7 +220,7 @@ class CorpusOptimizer:
 
         return len(to_remove)
 
-# 多样性度量
+    # 多样性度量
 
     def diversity_score(self, seed_ids: List[str],
                         metric: DiversityMetric = DiversityMetric.JACCARD) -> float:
@@ -282,7 +282,7 @@ class CorpusOptimizer:
 
         return 0.0
 
-# 综合优化报告
+    # 综合优化报告
 
     def optimize_report(self, seed_ids: List[str]) -> Dict:
         """对语料库执行一轮完整优化并生成报告。"""

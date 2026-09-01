@@ -47,6 +47,11 @@ def _read_pe_header(data):
 
     magic = struct.unpack_from('<H', data, opt_off)[0]
     pe32plus = (magic == 0x20B)
+    # PE32+ ImageBase 在 opt_off+24(8字节), PE32 在 opt_off+28(4字节)
+    if pe32plus:
+        info['image_base'] = struct.unpack_from('<Q', data, opt_off + 24)[0]
+    else:
+        info['image_base'] = struct.unpack_from('<I', data, opt_off + 28)[0]
     num_rva_sizes = struct.unpack_from('<I', data, opt_off + (108 if pe32plus else 92))[0]
     dir_base = opt_off + (112 if pe32plus else 96)
 
@@ -471,8 +476,18 @@ class BinaryContractVerifier:
                     'message': f'DEP/NX: expected {expected}, got {actual}'
                 })
 
-        img_base_field = ('opt_header' not in info)
-        if 'minimum_image_base' in self._contract or 'maximum_image_base' in self._contract:
-            pass
+        img_base = info.get('image_base', 0)
+        if 'minimum_image_base' in self._contract and img_base < self._contract['minimum_image_base']:
+            violations.append({
+                'type': 'image_base_too_low', 'expected_min': self._contract['minimum_image_base'],
+                'actual': img_base,
+                'message': f'Image base {hex(img_base)} below minimum {hex(self._contract["minimum_image_base"])}'
+            })
+        if 'maximum_image_base' in self._contract and img_base > self._contract['maximum_image_base']:
+            violations.append({
+                'type': 'image_base_too_high', 'expected_max': self._contract['maximum_image_base'],
+                'actual': img_base,
+                'message': f'Image base {hex(img_base)} above maximum {hex(self._contract["maximum_image_base"])}'
+            })
 
         return violations

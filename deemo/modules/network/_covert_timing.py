@@ -14,8 +14,6 @@ from ._covert_types import (
 
 
 class TimingChannelDetector:
-    # 时序隐蔽信道检测器 —— 分析包间到达时间(IAT)的统计异常。
-    # 检测原理：IAT分布的熵 + 抖动比 + 自相关
     @staticmethod
     def shannon_entropy(values: List[float], bins: int = 20) -> float:
         if not values:

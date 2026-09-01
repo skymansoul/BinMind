@@ -1,7 +1,5 @@
-# ROP/JOP/COP/SROP -- most of the real logic has been rewritten in binary_analyzer
-import os
+# ROP/JOP/COP/SROP gadget -- 真实 API 断言驱动测试
 import unittest
-import pytest
 
 from modules.gadget_composer import (
     ComposeResult,
@@ -26,23 +24,28 @@ class TestGadgetType(unittest.TestCase):
 
 
 class TestGadgetTemplate(unittest.TestCase):
+    """Template 对象 -- preconditions + effect + constraints"""
+
     def test_template_creation(self):
-        """Template object -- preconditions + effect"""
         template = GadgetTemplate(
             gadget_type=GadgetType.ROP,
             preconditions=["pop rdi", "ret"],
             effect="set rdi to controlled value",
         )
-        if template is None:
-            self.fail("GadgetTemplate creation returned None")
+        self.assertIsNotNone(template)
         self.assertEqual(template.gadget_type, GadgetType.ROP)
         self.assertEqual(len(template.preconditions), 2)
         self.assertEqual(template.effect, "set rdi to controlled value")
 
+    def test_template_defaults(self):
+        template = GadgetTemplate(GadgetType.JOP)
+        self.assertEqual(template.preconditions, [])
+        self.assertEqual(template.effect, "")
+        self.assertEqual(template.constraints, {})
+
 
 class TestGadgetChain(unittest.TestCase):
     def test_chain_creation(self):
-        """Chain with two gadgets, 0.85 success probability"""
         chain = GadgetChain(
             gadgets=[0x1000, 0x1002],
             gadget_type=GadgetType.ROP,
@@ -55,106 +58,127 @@ class TestGadgetChain(unittest.TestCase):
 
 
 class TestComposeResult(unittest.TestCase):
-    """ComposeResult: success and failure variants"""
-
     def test_success_result(self):
         chain = GadgetChain(
-            gadgets=[0x1000],
-            gadget_type=GadgetType.ROP,
-            effects=["test"],
-            success_probability=0.5,
+            gadgets=[0x1000], gadget_type=GadgetType.ROP,
+            effects=["test"], success_probability=0.5,
         )
         result = ComposeResult(success=True, chain=chain)
         self.assertTrue(result.success)
         self.assertIsNotNone(result.chain)
 
     def test_failure_result(self):
-        """Failure result -- chain should be None"""
         result = ComposeResult(success=False, chain=None)
         self.assertFalse(result.success)
         self.assertIsNone(result.chain)
 
 
+class TestGadgetDatabase(unittest.TestCase):
+    """GadgetDatabase.scan：r2 缺失/二进制缺失时返回空列表，不抛异常"""
+
+    def test_scan_missing_binary_returns_empty(self):
+        db = GadgetDatabase("/nonexistent/gadget.bin")
+        self.assertEqual(db.scan(), [])
+
+
+class TestTemplateEngine(unittest.TestCase):
+    """match_gadgets：gadget_type 过滤 + precondition 子串匹配"""
+
+    def test_match_by_type_and_precondition(self):
+        gadgets = [
+            (0x1000, "pop rdi; ret", GadgetType.ROP),
+            (0x2000, "pop rdi; jmp rax", GadgetType.JOP),
+            (0x3000, "mov rax, rdi; ret", GadgetType.ROP),
+        ]
+        template = GadgetTemplate(GadgetType.ROP, preconditions=["pop rdi"])
+        matched = TemplateEngine.match_gadgets(gadgets, template)
+        self.assertEqual(matched, [(0x1000, "pop rdi; ret")])
+
+    def test_match_ignores_other_type(self):
+        # 同地址同指令，JOP 模板只匹配 JOP 条目
+        gadgets = [
+            (0x1000, "xchg rax, rsp; ret", GadgetType.ROP),
+            (0x1000, "xchg rax, rsp; ret", GadgetType.JOP),
+        ]
+        template = GadgetTemplate(GadgetType.JOP, preconditions=["xchg"])
+        matched = TemplateEngine.match_gadgets(gadgets, template)
+        self.assertEqual(matched, [(0x1000, "xchg rax, rsp; ret")])
+
+    def test_match_precondition_substring(self):
+        # precondition 为子串：code 同时包含全部前置条件才命中
+        gadgets = [
+            (0x5000, "pop rdi; ret", GadgetType.ROP),
+            (0x5001, "pop rax; ret", GadgetType.ROP),
+        ]
+        template = GadgetTemplate(GadgetType.ROP, preconditions=["rdi", "ret"])
+        matched = TemplateEngine.match_gadgets(gadgets, template)
+        self.assertEqual(matched, [(0x5000, "pop rdi; ret")])
+
+    def test_match_srop_template(self):
+        template = GadgetTemplate(GadgetType.SROP, preconditions=["syscall"])
+        gadgets = [
+            (0x6000, "syscall; ret", GadgetType.SROP),
+            (0x6001, "syscall; ret", GadgetType.ROP),
+        ]
+        matched = TemplateEngine.match_gadgets(gadgets, template)
+        self.assertEqual(matched, [(0x6000, "syscall; ret")])
+
+
 class TestGadgetComposer(unittest.TestCase):
-    """GadgetComposer -- needs a real binary on disk, so skip for now"""
+    """GadgetComposer：真实行为断言，无需真实二进制"""
 
     def test_composer_init(self):
-        pytest.skip("GadgetComposer requires a real binary file on disk")
+        composer = GadgetComposer("/nonexistent/binary")
+        self.assertIsNotNone(composer.db)
+        self.assertIsNotNone(composer.engine)
+        self.assertEqual(composer.bad_bytes, set())
 
     def test_create_gadget_composer(self):
-        pytest.skip("create_gadget_composer requires a real binary file on disk")
+        composer = create_gadget_composer("/nonexistent/binary")
+        self.assertIsInstance(composer, GadgetComposer)
 
+    def test_run_missing_binary_does_not_raise(self):
+        # scan 无结果时 success=False，chain 为空链（真实实现不返回 None）
+        composer = GadgetComposer("/nonexistent/binary")
+        template = GadgetTemplate(GadgetType.ROP, preconditions=["pop rdi"])
+        result = composer.run(template)
+        self.assertIsInstance(result, ComposeResult)
+        self.assertFalse(result.success)
+        self.assertEqual(result.chain.gadgets, [])
 
-class TestGadgetScanner(unittest.TestCase):
-    """Old GadgetScanner, replaced by GadgetDatabase"""
+    def test_score_gadget_leave_penalty(self):
+        composer = GadgetComposer("/nonexistent/binary")
+        base = composer._score_gadget(0x1000, "pop rax; ret")
+        leave = composer._score_gadget(0x1000, "leave; ret")
+        self.assertLess(leave, base)
 
-    def test_scanner_init(self):
-        pytest.skip("GadgetScanner removed -- replaced by GadgetDatabase")
+    def test_score_gadget_xchg_bonus(self):
+        composer = GadgetComposer("/nonexistent/binary")
+        base = composer._score_gadget(0x1000, "pop rax; ret")
+        xchg = composer._score_gadget(0x1000, "xchg rax, rsp; ret")
+        self.assertGreater(xchg, base)
 
-    def test_scan_memory_empty(self):
-        pytest.skip(
-            "GadgetScanner.scan_memory removed -- replaced by GadgetDatabase.scan"
-        )
+    def test_bad_bytes_penalty(self):
+        composer = GadgetComposer("/nonexistent/binary")
+        composer.bad_bytes = {0x0a}
+        plain = composer._score_gadget(0x1000, "pop rax; ret")
+        poisoned = composer._score_gadget(0x100a, "pop rax; ret")
+        self.assertLess(poisoned, plain)
 
-    def test_scan_memory_with_ret(self):
-        pytest.skip(
-            "GadgetScanner.scan_memory removed -- replaced by GadgetDatabase.scan"
-        )
+    def test_chain_syscall_gadgets(self):
+        composer = GadgetComposer("/nonexistent/binary")
+        gadgets = [
+            (0x1000, "pop rdi; ret"),
+            (0x1001, "pop rsi; ret"),
+            (0x1002, "pop rdx; ret"),
+            (0x1003, "syscall; ret"),
+        ]
+        chain = composer._chain_syscall_gadgets(gadgets)
+        self.assertEqual(chain, [0x1000, 0x1001, 0x1002, 0x1003])
 
-    def test_scan_memory_pop_rdi_ret(self):
-        pytest.skip(
-            "GadgetScanner.scan_memory removed -- replaced by GadgetDatabase.scan"
-        )
-
-
-class TestLegacyGadgetComposer(unittest.TestCase):
-    """Legacy GadgetComposer -- most APIs removed"""
-
-    def test_composer_init_legacy(self):
-        pytest.skip(
-            "Legacy GadgetComposer(list) removed -- constructor now takes binary_path"
-        )
-
-    def test_find_gadget_by_type(self):
-        pytest.skip("find_gadget removed -- replaced by TemplateEngine.match_gadgets")
-
-    def test_find_gadget_by_description(self):
-        pytest.skip("find_gadget removed -- replaced by TemplateEngine.match_gadgets")
-
-    def test_compose_chain_simple(self):
-        pytest.skip(
-            "compose_chain removed -- replaced by GadgetComposer.run with GadgetTemplate"
-        )
-
-    def test_compose_chain_complex(self):
-        pytest.skip(
-            "compose_chain removed -- replaced by GadgetComposer.run with GadgetTemplate"
-        )
-
-    def test_find_srop_chain(self):
-        pytest.skip(
-            "find_srop_chain removed -- SROP now handled via GadgetType.SROP template"
-        )
-
-    def test_generate_shellcode_chain(self):
-        pytest.skip("generate_shellcode_chain removed")
-
-    def test_calculate_probability(self):
-        pytest.skip(
-            "calculate_probability removed -- now computed internally in ComposeResult"
-        )
-
-
-class TestConvenienceFunctions(unittest.TestCase):
-    """Convenience functions -- old API, all removed"""
-
-    def test_scan_gadgets(self):
-        pytest.skip("scan_gadgets removed -- use GadgetDatabase(binary_path).scan()")
-
-    def test_create_gadget_chain(self):
-        pytest.skip(
-            "create_gadget_chain removed -- use GadgetComposer(binary_path).run(template)"
-        )
+    def test_find_stack_pivot_missing_binary_empty(self):
+        composer = GadgetComposer("/nonexistent/binary")
+        self.assertEqual(composer._find_stack_pivot(), [])
 
 
 if __name__ == "__main__":

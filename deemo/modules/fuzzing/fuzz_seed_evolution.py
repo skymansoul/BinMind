@@ -160,7 +160,7 @@ class GeneticMutator:
         child = parent1[:crossover_point] + parent2[crossover_point:]
         return child
 
-# 结构感知交叉
+    # 结构感知交叉
 
     def structure_aware_crossover(
         self, parent1: bytes, parent2: bytes,
@@ -255,7 +255,7 @@ class CoverageEvaluator:
     def reset(self):
         self._coverage_map.clear()
 
-# 字节级覆盖贡献权重
+    # 字节级覆盖贡献权重
 
     def byte_importance_weights(
         self, seed: bytes, prev_seeds: List[bytes]
@@ -364,7 +364,7 @@ class SeedPopulation:
         mutation_bonus = seed.mutations * 0.05
         return base_fitness - age_penalty + mutation_bonus
 
-# 适应度共享
+    # 适应度共享
 
     def apply_fitness_sharing(self, sigma_share: float = 5.0):
         """适应度共享: 用Jaccard不相似度度量个体间距离。
@@ -401,14 +401,14 @@ class SeedPopulation:
                     niche_count += max(0.0, 1.0 - distance / sigma_share)
             seed_i.fitness /= (1.0 + niche_count)
 
-# 多样性指数
+    # 多样性指数
 
     def diversity_index(self) -> float:
         """唯一条指纹占群体比例。低于0.3触发精英回注。"""
         fps = {s.fingerprint for s in self._population}
         return len(fps) / max(1, len(self._population))
 
-# 语料蒸馏
+    # 语料蒸馏
 
     def distill_corpus(self, target_size: int = 30) -> List[Seed]:
         """覆盖贪心语料蒸馏: 选出保持完整覆盖的最小子集。"""
@@ -444,7 +444,7 @@ class SeedPopulation:
                 selected.append(s)
         return selected
 
-# 选择
+    # 选择
 
     def select(self, strategy: SelectionStrategy = SelectionStrategy.TOURNAMENT) -> List[Seed]:
         if strategy == SelectionStrategy.TOURNAMENT:
@@ -499,7 +499,7 @@ class SeedPopulation:
         ) if n > elite_count else []
         return elites + remaining
 
-# 演化主循环
+    # 演化主循环
 
     def evolve(self, generations: int = 10,
                selection: SelectionStrategy = SelectionStrategy.TOURNAMENT,
@@ -623,7 +623,7 @@ class SeedPopulation:
         sorted_seeds = sorted(self._population, key=lambda s: s.fitness, reverse=True)
         return sorted_seeds[:count]
 
-# 蒸馏后最优种子
+    # 蒸馏后最优种子
 
     def get_distilled_best(self, count: int = 10) -> List[Seed]:
         """先蒸馏再按适应度降序截取, 兼顾覆盖与种子质量。"""

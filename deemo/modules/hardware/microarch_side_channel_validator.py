@@ -1,6 +1,7 @@
 """Microarchitectural side-channel validator -- cache timing, Spectre/Meltdown patterns."""
 
 import logging
+import os
 import statistics
 import time
 import platform
@@ -36,11 +37,6 @@ class VerificationResult:
 class MicroarchSideChannelValidator:
     """Test whether a given implementation leaks information through microarchitectural
     covert or side channels.
-
-    Usage::
-
-        v = MicroarchSideChannelValidator()
-        result = v.validate(binary_or_impl, trials=1000)
     """
 
     def __init__(self, cache_line_size: int = 64, calibrate: bool = True):
@@ -187,9 +183,16 @@ class MicroarchSideChannelValidator:
         if elapsed == 0:
             return 0.0
         accuracy = correct / trials
-        info_per_trial = 0.0
-        if 0 < accuracy < 1:
-            info_per_trial = -(accuracy * (accuracy and 1) or 0)
+        import math
+        if accuracy <= 0:
+            info_per_trial = 0.0
+        elif accuracy >= 1:
+            info_per_trial = float(secret_bits)
+        else:
+            # 二进制对称信道互信息近似：k - H(误码率)
+            err = 1.0 - accuracy
+            h_err = -(err * math.log2(err) + accuracy * math.log2(accuracy))
+            info_per_trial = secret_bits - h_err
         bitrate = trials * info_per_trial / elapsed
         return max(0.0, bitrate)
 

@@ -213,7 +213,6 @@ class PluginManager:
         self._resolve()
 
 def get_plugin_manager(dirs=None): return PluginManager(dirs)
-name: str = ""; module: str = ""
 
 
 def _debug_print(*a, **kw):

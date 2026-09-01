@@ -1,5 +1,4 @@
-"""Dynamic taint tracking with byte-level taint maps for binary analysis."""
-
+# 动态污点追踪，字节级污点图用于二进制分析
 import array
 import logging
 import os
@@ -27,11 +26,8 @@ TaintSource = TaintTag  # backwards-compat alias
 
 
 class TaintMap:
-    """Per-register / per-memory-byte taint tracking.
-
-    Each byte tracks a bitmask of TaintTag values. A byte tagged with
-    USER_INPUT | NETWORK_RECV means it is influenced by both.
-    """
+    # 寄存器/内存字节级污点追踪
+    # 每个字节追踪 TaintTag 位掩码，USER_INPUT|NETWORK_RECV 表示受两者影响
 
     def __init__(self):
         self._registers: Dict[str, int] = defaultdict(int)
@@ -65,14 +61,14 @@ class TaintMap:
         return self._memory.get(addr, 0)
 
     def get_memory_range(self, addr: int, size: int) -> int:
-        """Union of all tags in [addr, addr+size)."""
+        # 返回 [addr, addr+size) 范围内所有标签的并集
         combined = 0
         for off in range(size):
             combined |= self._memory.get(addr + off, 0)
         return combined
 
     def propagate(self, dst_addr: int, src_addr: int, size: int) -> None:
-        """Copy taint from src range to dst range (e.g. memcpy)."""
+        # 将 src 范围的污点拷贝到 dst 范围（如 memcpy）
         for off in range(size):
             self._memory[dst_addr + off] = self._memory.get(src_addr + off, 0) | TaintTag.DERIVED
 
@@ -82,7 +78,7 @@ class TaintMap:
             self._memory[addr + off] |= tag
 
     def propagate_binary_op(self, dst_reg: str, src_regs: List[str]) -> None:
-        """Merge taint from source registers into dst."""
+        # 将源寄存器的污点合并到 dst
         merged = TaintTag.DERIVED
         for r in src_regs:
             merged |= self._registers.get(r, 0)
@@ -169,11 +165,7 @@ _SINK_SIGNATURES = {
 
 
 class FridaTaintTracker:
-    """Taint tracking using Frida instrumentation.
-
-    Requires a Frida-capable environment. For headless use,
-    consider the QBDI backend instead.
-    """
+    # 基于 Frida 插桩的污点追踪，需要 Frida 环境；无头模式可用 QBDI 后端
 
     def __init__(self, taint_map: Optional[TaintMap] = None):
         self._taint = taint_map or TaintMap()
@@ -183,7 +175,7 @@ class FridaTaintTracker:
         self._script = None
 
     def track(self, binary: str) -> List[DynamicVulnerability]:
-        """Hook binary with Frida and track taint flows."""
+        # 用 Frida hook 二进制并追踪污点流
         try:
             import frida
         except ImportError:
@@ -238,7 +230,7 @@ class FridaTaintTracker:
         """
 
     def _on_message(self, message: Dict, data: Any) -> None:
-        """Callback from Frida hook."""
+        # Frida hook 回调
         payload = message.get("payload", {})
         msg_type = payload.get("type", "")
         if msg_type in ("memcpy",):
@@ -268,10 +260,7 @@ class FridaTaintTracker:
 
 
 class QBDITaintTracker:
-    """Taint tracking using QBDI (QuarkslaB Dynamic binary Instrumentation).
-
-    Works entirely in-process, no external daemon needed.
-    """
+    # 基于 QBDI 的污点追踪，全进程内运行无需外部守护进程
 
     def __init__(self, taint_map: Optional[TaintMap] = None):
         self._taint = taint_map or TaintMap()
@@ -304,7 +293,7 @@ class QBDITaintTracker:
         self._taint.tag_memory(0x7F000100, 128, TaintTag.USER_INPUT)
 
     def _qbdi_callback(self, vm, gpr, fpr, data) -> int:
-        """QBDI pre-instruction callback: propagate taint."""
+        # QBDI 指令前回调：传播污点
         inst = vm.getInstAnalysis()
         if inst is None:
             return qbdi.CONTINUE

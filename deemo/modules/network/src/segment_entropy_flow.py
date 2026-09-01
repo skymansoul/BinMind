@@ -82,6 +82,8 @@ class SegmentEntropyTracker:
         # 条件熵基线: (src,dst) → EWMA of H(dst|src)
         self._entropy_baseline: Dict[Tuple[str, str], float] = {}
         self._entropy_var: Dict[Tuple[str, str], float] = {}
+        # 字节量基线: (src,dst) → EWMA of byte_count(数据外泄检测)
+        self._bytes_baseline: Dict[Tuple[str, str], float] = {}
         # 历史段对(用于检测"新段对")
         self._known_pairs: Set[Tuple[str, str]] = set()
         # 每个段的流统计
@@ -169,12 +171,27 @@ class SegmentEntropyTracker:
                                 f"——疑似横向移动"),
                 ))
 
-            # 流量比突增: 检查字节量比例
+            # 流量比突增: 字节量相对基线激增→数据外泄
             flow_stats = segment_flows.get(key, {})
             byte_count = flow_stats.get("byte_count", 0)
-            if byte_count > 0 and new_base > 0:
-                # 字节量激增+熵变→数据外泄
-                pass  # 由调用方在更高层做流量比分析
+            prev_bytes = self._bytes_baseline.get(key, byte_count)
+            new_bytes = (self._alpha * byte_count +
+                        (1 - self._alpha) * prev_bytes)
+            self._bytes_baseline[key] = new_bytes
+            if byte_count > 0 and prev_bytes > 0:
+                ratio = byte_count / prev_bytes
+                if ratio > self._min_flow_ratio:
+                    new_alerts.append(EntropyFlowAlert(
+                        alert_type="data_exfil",
+                        src_segment=src, dst_segment=dst,
+                        condition_entropy=round(ent, 4),
+                        baseline_entropy=round(new_base, 4),
+                        deviation_sigma=round(ratio, 2),
+                        confidence=round(min(ratio / (2 * self._min_flow_ratio), 1.0), 3),
+                        description=(f"{src}→{dst}字节量激增{ratio:.1f}倍"
+                                    f"(基线{prev_bytes:.0f}→当前{byte_count})"
+                                    f"——疑似数据外泄"),
+                    ))
 
         self._alerts.extend(new_alerts)
         return new_alerts

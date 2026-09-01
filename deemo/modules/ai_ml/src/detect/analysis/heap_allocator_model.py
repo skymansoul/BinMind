@@ -119,7 +119,7 @@ class HeapAllocatorModel:
         usable = self.usable_size(alloc_requested)
         return copy_bytes - usable
 
-# 多分配函数支持
+    # 多分配函数支持
 
     def usable_size_for_func(self, alloc_func: str,
                               args: list[int]) -> int:

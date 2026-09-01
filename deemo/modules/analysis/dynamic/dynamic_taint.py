@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""
-动态污点追踪模块
-
-提供基于 Frida 和 QBDI 的动态污点分析功能：
-- FridaTaintTracker: 使用 Frida 进行进程注入和动态污点追踪
-- QBDITaintTracker: 使用 QBDI 动态二进制插桩进行污点分析
-- 沙箱环境执行二进制并注入追踪器
-- 自动化生成 Frida 脚本模板
-- 输出兼容现有 Static漏洞 的 TaintFlow 数据
-"""
 
 import logging
 import os
@@ -44,9 +34,6 @@ except ImportError:
 
 @dataclass
 class DynamicTaintSource:
-    """
-    动态污点源定义
-    """
     name: str
     address: int
     type: str
@@ -58,9 +45,6 @@ class DynamicTaintSource:
 
 @dataclass
 class DynamicTaintSink:
-    """
-    动态污点汇点定义
-    """
     name: str
     address: int
     type: str
@@ -71,10 +55,6 @@ class DynamicTaintSink:
 
 @dataclass
 class DynamicTaintFlow:
-    """
-    动态污点传播路径
-    与现有静态漏洞结构兼容
-    """
     source: DynamicTaintSource
     sink: DynamicTaintSink
     path: List[int] = field(default_factory=list)
@@ -86,10 +66,6 @@ class DynamicTaintFlow:
 
 @dataclass
 class DynamicVulnerability:
-    """
-    动态检测到的漏洞
-    与现有静态漏洞结构保持兼容
-    """
     type: str
     function_name: str
     address: int
@@ -102,14 +78,6 @@ class DynamicVulnerability:
 
 
 class DynamicTaintTracker(ABC):
-    """
-    动态污点追踪器抽象基类
-
-    定义动态污点分析的统一接口：
-    1. 标记输入数据为污点（read/recv 等）
-    2. 追踪污点传播到危险函数（system/strcpy 等）
-    3. 输出 TaintFlow 数据
-    """
 
     DEFAULT_TAINT_SOURCES = [
         ('read', 'input', '标准输入读取'),
@@ -150,10 +118,6 @@ class DynamicTaintTracker(ABC):
     ]
 
     def __init__(self, binary_path: str):
-        """初始化动态污点追踪器。
-
-        参数: binary_path 目标二进制文件路径。
-        """
         self.binary_path = binary_path
         self.taint_sources: List[DynamicTaintSource] = []
         self.taint_sinks: List[DynamicTaintSink] = []
@@ -162,9 +126,6 @@ class DynamicTaintTracker(ABC):
         self._setup_default_sources_sinks()
 
     def _setup_default_sources_sinks(self) -> None:
-        """
-        设置默认的污点源和汇点
-        """
         for name, source_type, desc in self.DEFAULT_TAINT_SOURCES:
             self.taint_sources.append(DynamicTaintSource(
                 name=name,
@@ -184,7 +145,6 @@ class DynamicTaintTracker(ABC):
 
     @abstractmethod
     def is_available(self) -> bool:
-        """检查追踪器是否可用"""
         pass
 
     @abstractmethod
@@ -194,36 +154,25 @@ class DynamicTaintTracker(ABC):
         timeout: int = 60,
         input_data: bytes = None
     ) -> Dict[str, Any]:
-        """运行动态污点分析。
-
-        参数: args 传递给目标程序的命令行参数, timeout 分析超时
-        时间（秒）, input_data 要发送到目标程序的输入数据;
-        返回包含分析结果的字典。
-        """
         pass
 
     @abstractmethod
     def get_taint_flows(self) -> List[DynamicTaintFlow]:
-        """获取所有检测到的污点传播路径"""
         pass
 
     @abstractmethod
     def get_vulnerabilities(self) -> List[DynamicVulnerability]:
-        """获取所有检测到的漏洞"""
         pass
 
     def add_custom_taint_source(self, source: DynamicTaintSource) -> None:
-        """添加自定义污点源"""
         self.taint_sources.append(source)
         logger.info(f"添加自定义污点源: {source.name}")
 
     def add_custom_taint_sink(self, sink: DynamicTaintSink) -> None:
-        """添加自定义污点汇点"""
         self.taint_sinks.append(sink)
         logger.info(f"添加自定义污点汇点: {sink.name}")
 
     def to_compatible_format(self) -> Dict[str, Any]:
-        """转换为与现有系统兼容的格式"""
         result = {
             'taint_flows': [],
             'vulnerabilities': [],
@@ -263,7 +212,6 @@ class DynamicTaintTracker(ABC):
         return result
 
     def _validate_binary_path(self) -> bool:
-        """验证二进制文件路径有效性"""
         if not self.binary_path:
             logger.error("未指定二进制文件路径")
             return False
@@ -280,15 +228,6 @@ class DynamicTaintTracker(ABC):
 
 
 class FridaTaintTracker(DynamicTaintTracker):
-    """
-    Frida 动态污点追踪器
-
-    使用 Frida 进行进程注入和动态污点追踪：
-    1. 在目标进程中注入 Frida 脚本
-    2. Hook read/recv 等输入函数，标记返回缓冲区为污点
-    3. Hook system/strcpy 等危险函数，检查参数是否被污染
-    4. 收集污点传播路径和执行追踪
-    """
 
     FRIDA_TAINT_SCRIPT_TEMPLATE = """
 /*
@@ -408,10 +347,6 @@ class FridaTaintTracker(DynamicTaintTracker):
 """
 
     def __init__(self, binary_path: str):
-        """初始化 Frida 污点追踪器
-
-        参数: binary_path 目标二进制文件路径。
-        """
         super().__init__(binary_path)
         self.session = None
         self.script = None
@@ -424,7 +359,6 @@ class FridaTaintTracker(DynamicTaintTracker):
         }
 
     def is_available(self) -> bool:
-        """检查 Frida 是否可用"""
         frida_in_modules = sys.modules.get('frida')
         # sys.modules 中的显式 None 表示测试/运行时禁用，优先于缓存标记
         if frida_in_modules is None:
@@ -438,7 +372,6 @@ class FridaTaintTracker(DynamicTaintTracker):
         return True
 
     def generate_frida_script(self) -> str:
-        """生成 Frida 污点追踪脚本"""
         sources_json = json.dumps([
             {'name': s.name, 'type': s.type, 'description': s.description}
             for s in self.taint_sources
@@ -464,10 +397,6 @@ class FridaTaintTracker(DynamicTaintTracker):
         return script
 
     def save_frida_script(self, output_path: str = None) -> str:
-        """保存 Frida 脚本到文件
-
-        参数: output_path 输出文件路径（可选）; 返回保存的文件路径。
-        """
         if output_path is None:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             base_name = os.path.splitext(os.path.basename(self.binary_path))[0]
@@ -483,7 +412,6 @@ class FridaTaintTracker(DynamicTaintTracker):
         return output_path
 
     def _on_message(self, message, data):
-        """Frida 消息回调处理"""
         if message['type'] == 'send':
             payload = message.get('payload', {})
             msg_type = payload.get('type', '')
@@ -504,12 +432,6 @@ class FridaTaintTracker(DynamicTaintTracker):
         timeout: int = 60,
         input_data: bytes = None
     ) -> Dict[str, Any]:
-        """使用 Frida 运行动态污点分析。
-
-        参数: args 传递给目标程序的命令行参数, timeout 分析超时
-        时间（秒）, input_data 要发送到目标程序的输入数据;
-        返回包含分析结果的字典。
-        """
         logger.info(f"[Frida] 开始动态污点分析: {self.binary_path}")
 
         result = {
@@ -591,7 +513,6 @@ class FridaTaintTracker(DynamicTaintTracker):
         return result
 
     def _process_collected_data(self) -> None:
-        """处理收集到的数据，生成污点流和动态漏洞"""
         for flow_data in self._collected_data['taint_flows']:
             sink_name = flow_data.get('sink', 'unknown')
             sink_type = flow_data.get('sink_type', 'unknown')
@@ -654,7 +575,6 @@ class FridaTaintTracker(DynamicTaintTracker):
             self.vulnerabilities.append(vuln)
 
     def _determine_severity(self, sink_type: str) -> str:
-        """根据汇点类型确定严重程度"""
         severity_map = {
             'system': 'Critical',
             'execve': 'Critical',
@@ -666,7 +586,6 @@ class FridaTaintTracker(DynamicTaintTracker):
         return severity_map.get(sink_type, 'Medium')
 
     def _map_sink_to_vuln_type(self, sink_type: str) -> str:
-        """将汇点类型映射到漏洞类型"""
         type_map = {
             'system': 'command_injection',
             'execve': 'command_injection',
@@ -678,15 +597,12 @@ class FridaTaintTracker(DynamicTaintTracker):
         return type_map.get(sink_type, 'tainted_sink')
 
     def get_taint_flows(self) -> List[DynamicTaintFlow]:
-        """获取所有检测到的污点传播路径"""
         return self.taint_flows
 
     def get_vulnerabilities(self) -> List[DynamicVulnerability]:
-        """获取所有检测到的漏洞"""
         return self.vulnerabilities
 
     def cleanup(self) -> None:
-        """清理资源"""
         try:
             if self.script:
                 self.script.unload()
@@ -702,20 +618,8 @@ class FridaTaintTracker(DynamicTaintTracker):
 
 
 class QBDITaintTracker(DynamicTaintTracker):
-    """
-    QBDI 动态污点追踪器
-
-    使用 QBDI 动态二进制插桩进行污点分析：
-    1. 使用 QBDI 虚拟机执行目标程序
-    2. 在指令级别跟踪数据流动
-    3. 标记和追踪污点数据的传播
-    """
 
     def __init__(self, binary_path: str):
-        """初始化 QBDI 污点追踪器
-
-        参数: binary_path 目标二进制文件路径。
-        """
         super().__init__(binary_path)
         self.vm = None
         self.state = None
@@ -726,7 +630,6 @@ class QBDITaintTracker(DynamicTaintTracker):
         }
 
     def is_available(self) -> bool:
-        """检查 QBDI 是否可用"""
         qbdi_in_modules = sys.modules.get('pyqbdi')
         # sys.modules 中的显式 None 表示测试/运行时禁用，优先于缓存标记
         if qbdi_in_modules is None:
@@ -745,16 +648,6 @@ class QBDITaintTracker(DynamicTaintTracker):
         timeout: int = 60,
         input_data: bytes = None
     ) -> Dict[str, Any]:
-        """使用 QBDI 运行污点分析。
-
-        注意：QBDI 的 Python 绑定有限，本实现退化为子进程执行 +
-        输出模式分析（崩溃/危险字符串识别）；指令级污点追踪需要
-        QBDI C++ API。
-
-        参数: args 传递给目标程序的命令行参数, timeout 分析超时
-        时间（秒）, input_data 要发送到目标程序的输入数据;
-        返回包含分析结果的字典。
-        """
         logger.info(f"[QBDI] 开始动态污点分析: {self.binary_path}")
 
         result = {
@@ -817,7 +710,6 @@ class QBDITaintTracker(DynamicTaintTracker):
         return result
 
     def _analyze_execution_output(self, stdout: bytes, stderr: bytes) -> None:
-        """分析程序执行输出，检测潜在的污点传播迹象"""
         output = (stdout + stderr).decode('utf-8', errors='ignore')
 
         dangerous_patterns = {
@@ -843,11 +735,9 @@ class QBDITaintTracker(DynamicTaintTracker):
                 logger.warning(f"[QBDI] 检测到潜在漏洞: {vuln_type}")
 
     def get_taint_flows(self) -> List[DynamicTaintFlow]:
-        """获取所有检测到的污点传播路径"""
         return self.taint_flows
 
     def get_vulnerabilities(self) -> List[DynamicVulnerability]:
-        """获取所有检测到的漏洞"""
         return self.vulnerabilities
 
 
@@ -855,12 +745,6 @@ def create_dynamic_taint_tracker(
     binary_path: str,
     engine: str = 'frida'
 ) -> Optional[DynamicTaintTracker]:
-    """创建动态污点追踪器实例
-
-    参数: binary_path 目标二进制文件路径, engine 追踪引擎类型
-    ('frida' 或 'qbdi'); 返回 DynamicTaintTracker 实例，如果
-    不可用则返回 None。
-    """
     engine_lower = engine.lower()
 
     if engine_lower == 'frida':
@@ -892,13 +776,6 @@ def run_dynamic_taint_analysis(
     timeout: int = 60,
     input_data: bytes = None
 ) -> Dict[str, Any]:
-    """便捷函数：运行动态污点分析
-
-    参数: binary_path 目标二进制文件路径, engine 追踪引擎类型
-    ('frida' 或 'qbdi'), args 传递给目标程序的命令行参数,
-    timeout 分析超时时间（秒）, input_data 要发送到目标程序的
-    输入数据; 返回包含分析结果的字典。
-    """
     tracker = create_dynamic_taint_tracker(binary_path, engine)
 
     if tracker is None:

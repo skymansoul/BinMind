@@ -28,13 +28,6 @@ except ImportError:
 # 幂等键生成
 
 
-# class _DeprecatedWrapper:
-#     """v0.x wrapper, kept for reference"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
-
 def idempotency_key(task_type: str, *args, **kwargs) -> str:
     """确定性幂等键 - 对排序后的 JSON 串取 SHA256。
 
@@ -117,8 +110,4 @@ class IdempotencyGuard:
         with self._lock:
             self._local.pop(key, None)
         return ok
-
-
-def _debug_print(*args, **kwargs):  # 调试桩，当前未使用
-    pass
 

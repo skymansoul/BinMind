@@ -119,7 +119,7 @@ class StringExtractor:
         return strings
 
 
-# 多编码字符串检测
+    # 多编码字符串检测
 
 class MultiEncodingExtractor:
     """扫描原始字节流，识别 UTF‑16LE/BE、UTF‑32 和 Shift‑JIS 编码段。
@@ -175,7 +175,7 @@ class MultiEncodingExtractor:
         return list(set(all_strings))
 
 
-# 熵基令牌边界检测
+    # 熵基令牌边界检测
 
 class EntropyBoundaryDetector:
     """基于字节熵的滑动窗口检测字段/令牌边界。
@@ -224,7 +224,7 @@ class EntropyBoundaryDetector:
         return positions
 
 
-# TLV 模式推断
+    # TLV 模式推断
 
 class TLVParser:
     """轻量 TLV (Type‑Length‑Value) 结构探测。
@@ -404,7 +404,7 @@ class LLMBasedGenerator:
         return result
 
 
-# 基于执行反馈的变异回收
+    # 基于执行反馈的变异回收
 
 class FeedbackMutationRecycler:
     """从运行时覆盖反馈中提取高价值字节序列并回注到字典。
@@ -500,7 +500,7 @@ class DictionaryGenerator:
         ]
         return specials
 
-# 魔数检测
+    # 魔数检测
 
     def _extract_magic_signatures(self, binary_path: str) -> List[DictEntry]:
         entries: List[DictEntry] = []

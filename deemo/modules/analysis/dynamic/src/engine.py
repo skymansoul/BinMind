@@ -1,18 +1,3 @@
-"""动态分析引擎 — 沙箱执行模拟, API 调用轨迹收集,
-MITRE ATT&CK 行为模式匹配。
-
-干净的 facade, 封装 engine/dynamic_analysis_engine.py, 提供
-稳定的公共 API, engine 内部实现可独立演化。
-
-Pass 流水线架构 (angr 风格):
-EntropyScanPass -> PatternMatchPass -> RiskScoringPass -> ImportAnalysisPass
-每个 pass 声明 inputs/输出, 支持 drop-in 替换, 重排 pass
-无需改动引擎核心。
-
-注: 归并排序 O(n log n) / O(n) 空间 — 优于快排, 因为沙箱
-轨迹数据到达时已接近有序。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -124,7 +109,6 @@ _MITRE_TACTIC_MAP: Dict[str, str] = {
 
 @dataclass
 class AnalysisContext:
-    """在 analysis pass 间传递的共享状态。"""
     binary_path: str = ""
     traces: List[RuntimeTrace] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -133,18 +117,12 @@ class AnalysisContext:
 
 
 class AnalysisPass(ABC):
-    """angr 风格 analysis pass 的基类。
-
-    pass 通过 `requires`/`provides` 类属性声明所需输入与产出
-    输出, 引擎在执行 pass 流水线前解析依赖。
-    """
 
     requires: List[str] = []
     provides: List[str] = []
 
     @abstractmethod
     def run(self, ctx: AnalysisContext) -> AnalysisContext:
-        """对上下文执行 analysis pass。"""
         ...
 
     @property
@@ -153,13 +131,6 @@ class AnalysisPass(ABC):
 
 
 class EntropyScanPass(AnalysisPass):
-    """扫描二进制节区的内存区域以寻找高熵数据。
-
-    高熵区域通常指示加壳/加密代码、嵌入载荷或反分析桩。
-
-    requires: []
-    提供: ["entropy_report"]
-    """
 
     requires: List[str] = []
     provides: List[str] = ["entropy_report"]
@@ -210,14 +181,6 @@ class EntropyScanPass(AnalysisPass):
 
 
 class PatternMatchPass(AnalysisPass):
-    """将 API 调用序列与 MITRE ATT&CK 行为模式匹配。
-
-    使用滑动窗口算法在轨迹流中匹配恶意序列。子序列匹配
-    容忍间隔, 即使良性调用穿插其间也能命中。
-
-    requires: ["traces"]
-    提供: ["mitre_matches"]
-    """
 
     requires: List[str] = ["traces"]
     provides: List[str] = ["mitre_matches"]
@@ -245,7 +208,6 @@ class PatternMatchPass(AnalysisPass):
 
     @staticmethod
     def _subsequence_match(haystack: List[str], needle: List[str]) -> bool:
-        """检查 needle 是否为 haystack 的子序列 (容忍间隔)。"""
         n_idx = 0
         for item in haystack:
             if n_idx < len(needle) and needle[n_idx].lower() == item.lower():
@@ -254,14 +216,6 @@ class PatternMatchPass(AnalysisPass):
 
 
 class RiskScoringPass(AnalysisPass):
-    """基于收集到的 findings 计算综合风险评分。
-
-    权重基于 VirusTotal 的 10k+ 恶意样本数据校准。每个
-    finding 类型贡献一个加权子分; 最终分封顶 1.0。
-
-    requires: ["findings"]
-    提供: ["risk_score"]
-    """
 
     requires: List[str] = ["findings"]
     provides: List[str] = ["risk_score"]
@@ -296,14 +250,6 @@ class RiskScoringPass(AnalysisPass):
 
 
 class ImportAnalysisPass(AnalysisPass):
-    """分析导入函数中的可疑模式。
-
-    标记 VirtualAlloc, CreateRemoteThread 等常见恶意指标;
-    检查暗示加壳或混淆的导入表异常。
-
-    requires: []
-    提供: ["import_report"]
-    """
 
     requires: List[str] = []
     provides: List[str] = ["import_report"]
@@ -344,20 +290,6 @@ _DEFAULT_TIMEOUT = 300  # 秒，全管线超时上限
 
 
 class DynamicAnalysisEngine:
-    """支持 pass 流水线的高层动态分析引擎。
-
-    模拟沙箱执行, 收集 API 调用轨迹, 运行可配置的 analysis
-    pass 序列, 产出全面的行为报告。
-
-    用法::
-
-    engine = DynamicAnalysisEngine({"analysis": {"timeout_seconds": 120}})
-    engine.add_pass(EntropyScanPass())
-    engine.add_pass(ImportAnalysisPass())
-    engine.add_pass(PatternMatchPass())
-    engine.add_pass(RiskScoringPass())
-    report = engine.analyze("malware.exe")
-    """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         self._config = config or {}
@@ -366,20 +298,13 @@ class DynamicAnalysisEngine:
         self._timeout = analysis_cfg.get("timeout_seconds", _DEFAULT_TIMEOUT)
 
     def add_pass(self, analysis_pass: AnalysisPass) -> None:
-        """向流水线注册 analysis pass。"""
         self._passes.append(analysis_pass)
         log.debug("Registered pass: %s", analysis_pass.name)
 
     def remove_pass(self, pass_name: str) -> None:
-        """按名称移除 pass。"""
         self._passes = [p for p in self._passes if p.name != pass_name]
 
     def _resolve_pass_order(self) -> List[AnalysisPass]:
-        """基于 requires/provides 对 pass 做拓扑排序。
-
-        使用简单贪心: 维护可用输出集合, 反复挑选第一个
-        requires 已被满足的 pass。
-        """
         available: set = set()
         remaining = list(self._passes)
         ordered: List[AnalysisPass] = []
@@ -401,13 +326,6 @@ class DynamicAnalysisEngine:
         binary_path: str,
         trace_count: int = 50,
     ) -> Dict[str, Any]:
-        """对二进制运行完整 analysis 流水线。
-
-        参数: binary_path 要分析的二进制路径, trace_count 要
-        构造的模拟轨迹条目数;
-        返回字典, 键为 risk_score, findings, traces, metadata,
-        pass_count, duration_seconds。
-        """
         log.info("Starting dynamic analysis of: %s", binary_path)
         start = time.time()
 
@@ -437,14 +355,6 @@ class DynamicAnalysisEngine:
     def _generate_simulated_traces(
         self, binary_path: str, count: int
     ) -> List[RuntimeTrace]:
-        """构造用于测试/演示的合成 API 调用轨迹。
-
-        生产环境中替换为真实沙箱执行: 通过 Frida 或 DLL 注入
-        钩取 API 以收集真实轨迹。
-
-        注意: 轨迹生成若过慢, 超时会在分析中途触发,
-        100 条轨迹需控制在 50ms 内。
-        """
         traces: List[RuntimeTrace] = []
         simulated_apis = [
             ("NtCreateFile", "file_create"),
@@ -484,7 +394,6 @@ class DynamicAnalysisEngine:
 
     @staticmethod
     def lookup_mitre(technique_id: str) -> Optional[Dict[str, Any]]:
-        """查询 MITRE ATT&CK 技术 ID。"""
         if technique_id in _MITRE_SIGNATURES:
             return {
                 "technique": technique_id,
@@ -497,7 +406,6 @@ class DynamicAnalysisEngine:
     def enrich_traces_with_severity(
         traces: List[RuntimeTrace]
     ) -> List[RuntimeTrace]:
-        """基于行为类型为轨迹分配严重级别。"""
         severity_map = {
             "process_inject": BehaviorSeverity.CRITICAL,
             "privilege_escalate": BehaviorSeverity.CRITICAL,
@@ -518,7 +426,6 @@ class DynamicAnalysisEngine:
 # Easy-access function
 
 def quick_scan(binary_path: str) -> Dict[str, Any]:
-    """使用默认 pass 流水线的一次性动态分析。"""
     engine = DynamicAnalysisEngine()
     engine.add_pass(EntropyScanPass())
     engine.add_pass(ImportAnalysisPass())

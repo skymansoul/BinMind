@@ -40,23 +40,14 @@ class RecoveryResult:
 
 
 class HierarchicalGraphEncoder:
-    """将虚表关系编码为层次化图文本表示
-    HELIOS 论文证明：将 CFG/FCG 编码为结构化文本比平面代码表示
-    能让 LLM 更好地进行类型推理和函数边界识别
-    此处将此方法论应用于虚表恢复
-    """
+    # 将虚表关系编码为层次化图文本表示, HELIOS方法论应用于虚表恢复
     __slots__ = ()
 
     @staticmethod
     def encode_vtable_graph(vtables: List[VTable],
                              calls: List[VTableCall],
                              constructors: Dict[int, str]) -> str:
-        """构造三层图结构的文本编码：
-        L1: 类节点（虚表地址→类名）
-        L2: 虚函数边（虚表→虚表条目目标地址）
-        L3: 调用点边（调用点→虚表偏移→目标函数）
-        输出格式为 LLM 友好的结构化文本
-        """
+        # 三层图结构: L1类节点 L2虚函数边 L3调用点边, 输出LLM友好结构化文本
         lines = ["<vtgraph>"]
         # L1: 类节点
         lines.append("  <classes>")
@@ -87,9 +78,7 @@ class HierarchicalGraphEncoder:
 
     @staticmethod
     def infer_inheritance(vtables: List[VTable]) -> Dict[str, List[str]]:
-        """从虚表条目重叠推断继承关系, 若类 B 的虚表前 N 条与类 A 完全匹配
-        则 B 可能是 A 的子类（重用了父类的前 N 个虚函数）
-        """
+        # 从虚表条目重叠推断继承关系, 前N条匹配则可能是子类
         hierarchy: Dict[str, List[str]] = {}
         vt_entries: Dict[str, Set[int]] = {}
         for vt in vtables:

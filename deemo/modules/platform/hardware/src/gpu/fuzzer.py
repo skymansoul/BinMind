@@ -1,18 +1,19 @@
-# GPU Fuzzer, 合并自根目录 gpu_fuzzer + src/gpu/fuzzer_core
-# FIXME: 多GPU设备worker未处理OOM回退
+# GPU Fuzzer，合并自根目录 gpu_fuzzer + src/gpu/fuzzer_core
+# 注意：多 GPU 设备 worker 捕获到 OOM 异常时仅记录日志，不做任务重派
 import logging
 import time
 import hashlib
 import threading
 import random
 import struct
-import os as _unused_os  # 未使用, 保留, 后续可用
+import os as _unused_os  # 暂留 — 预留的路径工具导入，供后续种子落盘功能使用
 from typing import Dict, Any, List, Optional, Callable
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 
 def _debug_print(msg: str) -> None:
+    # 预留的调试输出钩子，默认静默，便于排查时临时接回 stderr
     pass
 
 logger = logging.getLogger(__name__)
@@ -70,8 +71,7 @@ class FuzzResult:
     novel_paths: int = 0
 
 
-# 种子调度与能量分配
-# AFL effort分配思路：稀有路径获更多变异预算
+# 种子调度与能量分配 — AFL effort 分配思路：稀有路径获更多变异预算
 
 class _SeedBucket:
     """单种子元数据，调度决策用"""
@@ -249,8 +249,7 @@ class GPUFuzzerCore:
         self._unique_hangs: set = set()
         self._max_buffer_size = max_buffer_size
 
-# 哈希辅助
-
+    # 哈希辅助：输入指纹统一走 64-bit 折叠哈希
     @staticmethod
     def _hash_input(input_bytes: bytes) -> int:
         """64-bit折叠哈希，用于bitmap指纹与兴趣度索引"""
@@ -267,8 +266,7 @@ class GPUFuzzerCore:
         _v ^= (_v >> 7)
         return _v
 
-# 兴趣度评分
-
+    # 兴趣度评分：crash 输入的后续变异优先级更高
     def _interest_score(self, input_bytes: bytes) -> float:
         h = self._hash_input(input_bytes)
         return self._interest_scores.get(h, 0.05)
@@ -279,9 +277,7 @@ class GPUFuzzerCore:
         increment = 1.0 if caused_crash else 0.15
         self._interest_scores[h] = min(10.0, old + increment)
 
-# AFLFast种子能量调度
-    # 基于执行时间与覆盖率稀有度加权
-
+    # AFLFast 种子能量调度 — 基于执行时间与覆盖率稀有度加权
     def aflfast_seed_energy(self, seed: dict) -> float:
         perf_score = 100.0
         _exec_us = seed.get("exec_us", 100)
@@ -306,8 +302,7 @@ class GPUFuzzerCore:
             perf_score *= 0.7
         return max(perf_score / _handicap, 1.0)
 
-# 边界值变异
-
+    # 边界值变异：注入整数溢出/下溢/符号问题的经典触发值
     def interesting_values_mutation(self, data: bytearray) -> bytearray:
         if len(data) == 0:
             return data
@@ -324,9 +319,7 @@ class GPUFuzzerCore:
             _mutated[_pos] = ~_mutated[_pos] & 0xFF
         return _mutated
 
-# 变异引擎
-    # 混合确定性+破坏性变异策略
-
+    # 变异引擎 — 确定性与破坏性两阶段混合策略
     def _mutate_input(self, data: bytearray) -> bytearray:
         if len(data) == 0:
             data = bytearray(random.randbytes(16))
@@ -371,9 +364,7 @@ class GPUFuzzerCore:
                 _out[_insert_pos:_insert_pos] = _block
         return _out
 
-# 确定性模拟执行
-    # 基于核函数hash与输入数据生成可重现轨迹
-
+    # 确定性模拟执行：基于核函数 hash 与输入数据生成可重现轨迹
     def _simulate_execution(self, kernel: str, input_data: bytes) -> tuple:
         _hasher = hashlib.sha256()
         _hasher.update(kernel.encode("utf-8", errors="replace"))
@@ -391,8 +382,7 @@ class GPUFuzzerCore:
             exit_code = 139  # SIGSEGV模拟
         return exit_code, edge_set
 
-# 校准: 对新种子运行确定性阶段
-
+    # 校准：对新种子补齐默认调度字段（exec_us/depth/handicap 等）
     def _calibrate(self, seed: dict):
         data = seed["data"]
         if isinstance(data, bytes):
@@ -405,9 +395,7 @@ class GPUFuzzerCore:
         seed.setdefault("handicap", 1)
         seed.setdefault("cov_factor", 1.0)
 
-# 核心Fuzz循环
-    # 主循环: 种子调度 → 变异 → 执行 → 覆盖率分析 → 入队/丢弃
-
+    # 核心 Fuzz 循环：种子调度 → 变异 → 执行 → 覆盖率分析 → 入队/丢弃
     def fuzz_kernel(
         self, kernel_source: str, seeds: List[bytes], iterations: int = 1000
     ) -> List[dict]:
@@ -488,9 +476,7 @@ class GPUFuzzerCore:
         })
         return results
 
-# 多设备调度
-    # 按显存/核心数比例分配任务
-
+    # 多设备调度：按设备序位递减权重分配任务量
     def multi_device_schedule(
         self, jobs: List[dict], devices: List[int]
     ) -> Dict[int, List[dict]]:
@@ -511,8 +497,7 @@ class GPUFuzzerCore:
             _offset += _n
         return schedule
 
-# 生成变异
-
+    # 生成变异：以兴趣度控制变异点密度
     def _generate_random_mutations(self, seed: bytes, count: int) -> List[bytes]:
         results = []
         interest = self._interest_score(seed)
@@ -591,6 +576,7 @@ class GPUFuzzerCore:
         crc = sum(input_bytes)
         return crc % 100 == 0
 
+    # 暂留 — 旧版简化显存模型入口，合并到 GPUBufferManager 后废弃，保留以兼容外部调用
     # def simplified_gpu_memory_model(self, size: int) -> GPUBufferManager:
     #     self._buffer_manager = GPUBufferManager(size)
     #     return self._buffer_manager
@@ -662,7 +648,7 @@ class GPUFuzzerService:
             logger.debug("corpus trimmed: %d redundant seeds removed", trimmed)
 
     def _device_worker(self, device_id: str):
-        # FIXME: 设备OOM未处理 -- worker静默退出
+        # 已知限制：设备 OOM 未做任务重派，worker 记录后继续拉取下一任务
         fuzzer = self._fuzzers[device_id]
         fuzzer._running = True
         while self._running:

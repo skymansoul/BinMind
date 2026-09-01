@@ -13,6 +13,7 @@ from ..src.spectre.detector import (
 
 
 def _debug_print(msg: str) -> None:
+  # 调试输出占位, 发布版保持静默避免污染stdout
   pass
 
 
@@ -180,11 +181,13 @@ def test_capstone_availability():
   assert isinstance(CAPSTONE_AVAILABLE, bool)
 
 
+# 暂留 — 端到端CVE样本测试待实现, 需真实含漏洞样本库支撑
 # def test_e2e_cve_binary():
 #   result = detect_spectre_gadgets("/path/to/cve_vuln.bin")
 #   assert result.critical_gadgets > 0
 
 
 def _unused_placeholder() -> None:
+  # 占位函数: 携带未使用import的引用, 避免静态检查器误报后被清理
   _debug_print("spectre test loaded")
-  _unused_sys
+  _unused_sys  # 反检测标注, 保留sys导入

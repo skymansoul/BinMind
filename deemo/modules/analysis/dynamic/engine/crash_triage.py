@@ -43,7 +43,6 @@ class ExploitabilityRating(Enum):
 
 @dataclass
 class ExploitabilityAssessment:
-    """单项崩溃的可利用性评估结果。"""
     rating: ExploitabilityRating = ExploitabilityRating.UNKNOWN
     confidence: float = 0.0
     ruling_reasons: List[str] = field(default_factory=list)
@@ -89,10 +88,6 @@ _WINDOWS_EXCEPTION_TO_CRASH_TYPE = {
 
 
 class CrashClassifier:
-    """
-    基于.exploitable 规则的崩溃分类器
-    每种崩溃类型对应一个可利用性评分和置信度
-    """
 
     @classmethod
     def from_signal(cls, signal: int, fault_addr: int = 0) -> CrashType:
@@ -183,10 +178,6 @@ class CrashClassifier:
 # 崩溃分析器
 
 class CrashAnalyzer:
-    """
-    综合崩溃分析器
-    分类 + 评估 + 缓解 + 报告生成
-    """
 
     _RATING_BY_TYPE = {
         CrashType.ASSERTION_FAILURE: ExploitabilityRating.NOT_EXPLOITABLE,
@@ -206,7 +197,6 @@ class CrashAnalyzer:
         self._classifier = CrashClassifier()
 
     def assess_exploitability(self, crash_info: Optional[CrashInfo] = None) -> ExploitabilityAssessment:
-        """评估崩溃可利用性，返回结构化结果。"""
         ci = crash_info or self.crash_info
         if ci is None:
             return ExploitabilityAssessment()
@@ -270,9 +260,6 @@ class CrashAnalyzer:
             assessment.is_aslr_bypass_possible = True
 
     def generate_report(self) -> str:
-        """
-        生成人类可读的崩溃分析报告
-        """
         assessment = self.assess_exploitability()
         ci = self.crash_info
         if ci is None:
@@ -299,7 +286,6 @@ class CrashAnalyzer:
 
 
 class CrashReport:
-    """崩溃报告的字典序列化。"""
 
     @staticmethod
     def generate(crash_info: CrashInfo, assessment: ExploitabilityAssessment) -> Dict[str, Any]:
@@ -320,10 +306,6 @@ class CrashReport:
 # 崩溃解析器 —— 支持 WinDbg / GDB 输出与转储文件
 
 class CrashParser:
-    """
-    从不同调试器/格式中解析崩溃信息
-    支持 WinDbg!分析 -v、GDB backtrace、minidump/core 转存
-    """
 
 # 解析 WinDbg!分析 -v 输出
     @staticmethod
@@ -421,19 +403,15 @@ class CrashParser:
 # 这避免了单个bug产生数百个变体时分析资源的浪费
 
 class CrashDeduplicator:
-    """FrameShift风格的崩溃去重器。堆栈哈希分组减少冗余分析"""
 
     @staticmethod
     def stack_hash(frames: List[int]) -> str:
-        """调用栈标准化哈希 —— 页对齐去噪后SHA256
-        同一函数的不同偏移量调用被归入同一bucket"""
         normalized = [f & 0xFFFFFFFFFFFFF000 for f in frames]
         return hashlib.sha256(
             b''.join(f.to_bytes(8, 'little') for f in normalized)).hexdigest()
 
     @staticmethod
     def similarity(a: List[int], b: List[int]) -> float:
-        """计算两个调用栈的相似度（基于公共前缀长度的Jaccard系数）"""
         min_len = min(len(a), len(b))
         if min_len == 0:
             return 0.0
@@ -443,7 +421,6 @@ class CrashDeduplicator:
 
     @classmethod
     def cluster(cls, crashes: List[Dict[str, Any]]) -> Dict[str, List[int]]:
-        """将崩溃列表按堆栈相似度聚类。返回cluster_id -> [crash_indices]的映射"""
         clusters: Dict[str, List[int]] = {}
         for i, crash in enumerate(crashes):
             frames = crash.get('stack', [])

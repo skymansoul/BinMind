@@ -93,11 +93,10 @@ class SummaryBasedAnalyzer:
     def _derive_binary_marker() -> str:
         return hashlib.sha1(str(_time.time()).encode()).hexdigest()[:12]
 
-# 改进1: 风险趋势追踪 & 模式学习
-    # 之前的 _risk_cache 和 _pattern_db 空有其表，现在让它们真正干活。
-    # 记录每次分析的分数变化，识别"坏模式"自动加权。
+    # 风险趋势追踪与模式学习
+    # 记录每次分析的分数变化，识别坏模式自动加权。
     def _record_risk_snapshot(self, name: str, score: float) -> None:
-        """存入缓存并检查是否新高风险，写历史记录供趋势回放"""
+        """记录风险分数快照并追加历史条目，供趋势回放"""
         previous = self._risk_cache.get(name)
         self._risk_cache[name] = score
         entry = {
@@ -133,11 +132,11 @@ class SummaryBasedAnalyzer:
                 matched.append(lbl)
         return boost, matched
 
-# 改进2: SBOM/漏洞报告兼容导出
-    # Syft/Grype/Trivy 生态，把函数级风险摘要导出为可被
-    # 漏洞扫描器下游消费的格式（minimal CycloneDX-style vulnerability item）
+    # SBOM/漏洞报告兼容导出
+    # 面向 Syft/Grype/Trivy 生态，把函数级风险摘要导出为下游
+    # 漏洞扫描器可消费的条目（minimal CycloneDX-style vulnerability item）。
     def export_vulnerability_items(self) -> List[Dict[str, Any]]:
-        """每一高危函数映射为一条漏洞条目，方便喂给聚合引擎。"""
+        """高危函数映射为漏洞条目，供聚合引擎消费。"""
         items: List[Dict[str, Any]] = []
         for summ in self.function_summaries.values():
             if not summ.security_relevant or summ.risk_score < 0.25:
@@ -185,11 +184,11 @@ class SummaryBasedAnalyzer:
             tips.append("Manual code review recommended for this function")
         return '; '.join(tips)
 
-# 改进3: 统计仪表盘 & 聚合分析
-    # 不仅看单个函数，还要鸟瞰全局--哪些 API 是最大地雷，
-    # 风险分布是否符合长尾分布（理应如此），帮助 triage 时间分配
+    # 统计仪表盘与聚合分析
+    # 除单函数视角外提供全局鸟瞰：哪些 API 是最大地雷、
+    # 风险分布是否符合长尾，帮助 triage 时间分配。
     def aggregate_statistics(self) -> Dict[str, Any]:
-        """返回一个可直接序列化的字典，前端或报告直接消费。"""
+        """返回可直接序列化的字典，供前端或报告消费。"""
         if not self.function_summaries:
             return {'error': 'No summaries available', 'count': 0}
 
@@ -284,7 +283,7 @@ class SummaryBasedAnalyzer:
         summary.data_flow_summary = self._summarize_data_flow(pseudocode)
         summary.raw_summary = self._generate_raw_summary(summary)
 
-        # 改进1集成: 记录趋势 & 应用学习到的模式
+        # 集成风险快照: 记录趋势并应用学习到的模式
         learned_boost, learned_labels = self._apply_learned_patterns(pseudocode)
         if learned_boost > 0:
             summary.risk_score = min(summary.risk_score + learned_boost, 1.0)
@@ -541,7 +540,7 @@ class SummaryBasedAnalyzer:
         lines.append("=" * 60)
         return '\n'.join(lines)
 
-# 改进3配套: 统计报告生成器
+    # 统计报告生成器
     def generate_stats_report(self) -> str:
         stats = self.aggregate_statistics()
         if 'error' in stats:

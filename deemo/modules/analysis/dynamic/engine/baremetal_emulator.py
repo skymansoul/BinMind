@@ -1,5 +1,3 @@
-"""裸机固件仿真器，基于 Unicorn 引擎
-Qiling 风格 rootfs 抽象：文件系统映射、系统调用分发表、外设寄存器映射加载自 JSON 配置"""
 import logging, os, struct, time, json
 from enum import Enum
 _log = logging.getLogger(__name__)
@@ -66,13 +64,6 @@ class FirmwareAnalysisResult:
         self.vulnerabilities = list(vulnerabilities) if vulnerabilities is not None else []
 
 class BareMetalEmulator:
-    """裸机固件仿真引擎，基于 Unicorn
-    实现 MMIO 读写分发、NVIC 中断向量表解析、外设 hook 注册及执行追踪
-    不依赖操作系统抽象层，直接操作物理地址空间的加载与执行
-
-    舍入2：Qiling 风格 rootfs 抽象，JSON 配置描述内存布局、外设寄存器映射、
-    中断向量表，解耦硬件配置与仿真器核心，支持新 MCU 家族零代码改动接入
-    """
 
     # 配置文件搜索路径 — 按顺序查找固件平台描述文件
     _PROFILE_SEARCH = [".", "profiles", "data/profiles", "/opt/binmind/profiles"]

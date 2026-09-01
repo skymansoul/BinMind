@@ -77,7 +77,7 @@ class UAFStateMachine:
             # 分配检测: mov reg, call malloc → reg状态=ALLOCATED
             alloc_m = self._alloc_pattern.search(instr)
             if alloc_m and 'call' in instr:
-                    # 查找前一条指令-通常将返回值mov到寄存器
+                # 查找前一条指令-通常将返回值mov到寄存器
                 if i > 0:
                     prev = instructions[i-1].strip().lower()
                     m_mov = re.match(r'mov\s+(\w+),\s*rax', prev) if 'call' in instr else None

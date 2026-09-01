@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os, importlib.util
 _r = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'multimodal', 'multi_stage_orchestrator.py')
 _m = importlib.util.module_from_spec(importlib.util.spec_from_file_location('mso', _r))

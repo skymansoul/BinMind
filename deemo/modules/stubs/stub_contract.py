@@ -15,7 +15,7 @@ import os as _os
 import re as _re
 from dataclasses import dataclass as _dc, field as _field
 from enum import Enum as _Enum
-from typing import Any as _Any, Optional as _Opt
+from typing import Optional as _Opt
 
 # 实现状态枚举 — 渐进引擎只对 PLACEHOLDER / MISSING 构造实现体，
 # RE_EXPORT / MIXED / IMPLEMENTED 保持只读，不覆盖已有实现。

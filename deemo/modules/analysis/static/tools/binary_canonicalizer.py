@@ -122,15 +122,6 @@ class CrossCompilerComparison:
 
 
 class BinaryCanonicalizer:
-    """二进制归一化器, 跨编译器比较的主入口
-
-    用法:
-    canon = BinaryCanonicalizer()
-    result = canon.compare(
-        binary_a={'func1': ['mov eax,1','add eax,2','ret'], ...},
-        binary_b={'func1': ['lea rax,[rdi+2]','ret'], ...},
-    )
-    """
 
     def normalize_function(
         self,
@@ -170,10 +161,6 @@ class BinaryCanonicalizer:
         arch: str = 'x86_64',
         similarity_threshold: float = 0.60,
     ) -> CrossCompilerComparison:
-        """通过归一化 IR 签名比较两个二进制。
-
-        binary_a/binary_b: {func_name: [asm_lines]}; 返回 CrossCompilerComparison。
-        """
         # 归一化两个二进制
         norm_a = self.normalize_binary(binary_a, arch)
         norm_b = self.normalize_binary(binary_b, arch)

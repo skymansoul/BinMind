@@ -1,4 +1,4 @@
-"""Bare-metal firmware emulator using Unicorn Engine."""
+# 基于 Unicorn Engine 的裸机固件模拟器
 import logging, os, struct
 _log = logging.getLogger(__name__)
 UNICORN_AVAILABLE = False

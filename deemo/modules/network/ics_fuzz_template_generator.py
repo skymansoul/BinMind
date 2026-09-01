@@ -1,4 +1,5 @@
 import logging, time, uuid, struct, random, math
+from enum import Enum
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple
@@ -6,15 +7,15 @@ from core.plugin_manager import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 
 _log = logging.getLogger(__name__)
 
-class MutationType:
+class MutationType(str, Enum):
     OVERFLOW_LENGTH = "overflow_length"; INVALID_FUNC_CODE = "invalid_func_code"
     NEGATIVE_VALUE = "negative_value"; NULL_BYTE = "null_byte"
     FRAGMENTED_PACKET = "fragmented_packet"; INVALID_CRC = "invalid_crc"
     LARGE_OBJECT = "large_object"; WRONG_ENUM_VALUE = "wrong_enum_value"
     OVERFLOW_ARRAY = "overflow_array"; BIT_FLIP = "bit_flip"; REPLAY = "replay"
-    FORMAT_STRING = "format_string"; INTEGER_OVERFLOW = "c"
+    FORMAT_STRING = "format_string"; INTEGER_OVERFLOW = "integer_overflow"
 
-class ICSProtocol:
+class ICSProtocol(str, Enum):
     MODBUS = "Modbus"; DNP3 = "DNP3"; S7COMM = "S7comm"
     ETHERNET_IP = "EtherNetIP"; BACNET = "BACnet"; PROFINET = "PROFINET"
     OPC_UA = "OPC_UA"; IEC_61850 = "IEC_61850"

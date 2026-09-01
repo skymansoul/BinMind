@@ -1,16 +1,15 @@
-"""Utilities that span multiple subsystems without a clear single owner."""
-
+# 跨子系统通用工具函数
 import hashlib, os, random, re, string
 from typing import Optional
 
 
 def rand_str(n: int = 8) -> str:
-    """Quick random ASCII string for temp file names. Not crypto-safe."""
+    # 生成临时文件名用的随机 ASCII 串，非密码学安全
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=n))
 
 
 def sha256_file(path: str) -> Optional[str]:
-    """Return SHA-256 hex digest of a file, or None on failure."""
+    # 返回文件 SHA-256 摘要，失败返回 None
     h = hashlib.sha256()
     try:
         with open(path, 'rb') as f:
@@ -22,7 +21,7 @@ def sha256_file(path: str) -> Optional[str]:
 
 
 def hexdump(data: bytes, offset: int = 0, width: int = 16) -> str:
-    """Classic hexdump + ASCII view. Useful for debugging payloads."""
+    # 经典十六进制+ASCII 转储，调试 payload 用
     lines = []
     for i in range(0, len(data), width):
         chunk = data[i:i + width]
@@ -33,7 +32,7 @@ def hexdump(data: bytes, offset: int = 0, width: int = 16) -> str:
 
 
 def is_printable_ascii(data: bytes) -> bool:
-    """True if all bytes are printable ASCII or common whitespace."""
+    # 判断字节是否全为可打印 ASCII 或常见空白符
     return all(0x20 <= b < 0x7f or b in (0x0a, 0x0d, 0x09) for b in data)
 
 

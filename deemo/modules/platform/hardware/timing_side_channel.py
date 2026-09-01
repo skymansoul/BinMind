@@ -72,7 +72,7 @@ class _PreciseTimer:
         return float(statistics.median(times))
 
 
-# 统计辅助函数
+# 统计辅助函数：效应量 / 自相关 / 散度三类泄漏量化指标
 
 def _cohens_d(a: List[float], b: List[float]) -> float:
     """Cohen's d 效应量。"""
@@ -308,10 +308,8 @@ class TimingSideChannelDetector:
                         break
         return results
 
-# 指针追逐缓存驻留检测
-    # 基于 GoFetch 的 DMP 侧信道思路：
+    # 指针追逐缓存驻留检测 — 基于 GoFetch 的 DMP 侧信道思路：
     # 通过测量指针追踪延迟来探测数据是否在缓存中驻留。
-
     @staticmethod
     def detect_cache_residency(probe_addrs: List[int],
                                 iterations: int = 500) -> List[TimingAnalysisResult]:

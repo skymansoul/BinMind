@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
-"""
-后量子密码检测与迁移评估器
-
-检测二进制文件中的密码学原语，评估其后量子安全性
-并根据 NIST PQC 标准化进程给出迁移
-
-参考标准：
-- NIST SP 800-208 (Stateful Hash-Based 签名s)
-- NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA)
-- BSI TR-02102-1 (Cryptographic Mechanisms: Recommendations Key Lengths)
-- 的密码学审计框架
-"""
+# 后量子密码检测与迁移评估器
+# 参考: NIST SP 800-208 (Stateful Hash-Based 签名), FIPS 203 (ML-KEM),
+# FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA), BSI TR-02102-1
 
 import logging
 import re
@@ -25,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class SecurityLevel(Enum):
-    """NIST 安全等级"""
     LEVEL1 = 1   # ≥ AES-128 (128-bit classical)
     LEVEL2 = 2   # ≥ SHA256 collision
     LEVEL3 = 3   # ≥ AES-192
@@ -35,7 +25,6 @@ class SecurityLevel(Enum):
 
 
 class PQThreat(str, Enum):
-    """量子威胁级别"""
     VULNERABLE = "vulnerable"        # Shor/Simon 算法可完全破解
     WEAKENED = "weakened"             # Grover 算法平方根加速
     RESISTANT = "resistant"           # 已知量子算法无明显优势
@@ -44,7 +33,6 @@ class PQThreat(str, Enum):
 
 @dataclass
 class CryptoPrimitive:
-    """检测到的密码学原语"""
     name: str
     category: str  # 'asymmetric', 'symmetric', 'hash', '签名', 'kem', 'rng'
     algorithm: str  # 标准化名称
@@ -59,7 +47,6 @@ class CryptoPrimitive:
 
 @dataclass
 class PQAssessment:
-    """后量子安全评估结果"""
     primitive: CryptoPrimitive
     pq_threat: PQThreat
     nist_security_level: SecurityLevel
@@ -69,12 +56,6 @@ class PQAssessment:
 
 
 class CryptoFingerprintDB:
-    """
-    密码学指纹数据库
-
-    维护已知密码学实现的特征签名
-    用于二进制文件中的原语识别
-    """
 
     # 非对称密码的量子脆弱性 (Shor 算法可破解)
     _QUANTUM_VULNERABLE = {
@@ -241,7 +222,6 @@ class CryptoFingerprintDB:
 
 
 def evaluate_pq_threat(primitive: CryptoPrimitive) -> PQThreat:
-    """评估单个原语的后量子威胁级别"""
     category = primitive.category.lower()
     name_upper = primitive.algorithm.upper()
 
@@ -262,12 +242,6 @@ def evaluate_pq_threat(primitive: CryptoPrimitive) -> PQThreat:
 
 
 class PostQuantumDetector:
-    """
-    后量子密码检测器
-
-    扫描二进制中的密码学原语，评估其后量子安全性
-    融合 [SoK 2026] 的系统化分类框架
-    """
 
     def __init__(self):
         self.db = CryptoFingerprintDB()
@@ -280,12 +254,6 @@ class PostQuantumDetector:
         imports: Optional[Dict[str, List[str]]] = None,
         binary_data: Optional[bytes] = None
     ) -> Dict[str, Any]:
-        """执行后量子安全评估。
-
-        strings 为二进制中提取的字符串列表, imports 为导入函数
-        表 {module: [func_names]}, binary_data 为原始二进制数据;
-        返回评估结果字典。
-        """
         primitives = []
 
         # 1. 从字符串检测
@@ -338,7 +306,6 @@ class PostQuantumDetector:
         }
 
     def _from_strings(self, strings: List[str]) -> List[CryptoPrimitive]:
-        """从字符串中检测密码学原语"""
         found = []
 
         for db, pq_category in [
@@ -362,7 +329,6 @@ class PostQuantumDetector:
         return found
 
     def _from_imports(self, imports: Dict[str, List[str]]) -> List[CryptoPrimitive]:
-        """从导入表中检测"""
         found = []
 
         all_funcs = []
@@ -390,7 +356,6 @@ class PostQuantumDetector:
         return found
 
     def _from_constants(self, data: bytes) -> List[CryptoPrimitive]:
-        """从二进制常量中检测（大整数、曲线参数）"""
         found = []
 
         # RSA 常见公钥指数
@@ -426,7 +391,6 @@ class PostQuantumDetector:
         return found
 
     def _deduplicate(self, primitives: List[CryptoPrimitive]) -> List[CryptoPrimitive]:
-        """去重：保留首次出现的原语"""
         seen = set()
         unique = []
         for p in primitives:
@@ -437,7 +401,6 @@ class PostQuantumDetector:
         return unique
 
     def _assess_primitive(self, p: CryptoPrimitive) -> PQAssessment:
-        """评估单个原语的后量子安全性"""
         threat = evaluate_pq_threat(p)
         nist_level = SecurityLevel.UNKNOWN
 
@@ -480,7 +443,6 @@ class PostQuantumDetector:
         )
 
     def _compute_risk(self, assessments: List[PQAssessment]) -> Dict[str, Any]:
-        """计算综合风险评分"""
         if not assessments:
             return {'score': 0, 'level': 'none'}
 
@@ -505,7 +467,6 @@ class PostQuantumDetector:
         return {'score': score, 'level': level}
 
     def _build_migration_plan(self, assessments: List[PQAssessment]) -> List[Dict[str, Any]]:
-        """构建迁移计划（按紧急程度排序）"""
         ordered = sorted(
             assessments,
             key=lambda a: (
@@ -544,10 +505,5 @@ def audit_pq_readiness(
     imports: Optional[Dict[str, List[str]]] = None,
     data: Optional[bytes] = None
 ) -> Dict[str, Any]:
-    """
-    便捷函数：后量子密码就绪审计
-
-    参考 NIST PQC 标准化进程和 BSI 迁移
-    """
     detector = PostQuantumDetector()
     return detector.analyze(strings=strings, imports=imports, binary_data=data)

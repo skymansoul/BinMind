@@ -1,11 +1,3 @@
-source: str = ""
-description: str = ""
-severity: str = ""
-start_address: str = ""
-trigger_condition: str = ""
-from_state: str = ""
-size: int = 0
-cve_id: str = ""
 import os
 import re
 import json
@@ -24,18 +16,14 @@ try:
     AHO_AVAILABLE = True
 except ImportError:
     AHO_AVAILABLE = False
-    logger.warning("pyahocorasick not installed — falling back to naive string matching")
+    logger.warning("pyahocorasick not installed, falling back to naive string matching")
 
 
+@dataclass
 class LibraryComponent:
-    __slots__ = ('name', 'version', 'version_parts',)
-
-    def __init__(self, name, version, version_parts=field(default_factory=lambda: (0, 0, 0))):
-        self.name = name
-        self.version = version
-        self.version_parts = version_parts
-
-
+    name: str = ""
+    version: str = ""
+    version_parts: tuple = (0, 0, 0)
     purl: str = ""
     detected_by: str = ""
     confidence: float = 0.0
@@ -44,29 +32,24 @@ class LibraryComponent:
 
 @dataclass
 class VulnerabilityMatch:
-    cve_id
-    severity
-    description
-    source
-    published_date = None
-    affected_versions = None
+    cve_id: str = ""
+    severity: str = ""
+    description: str = ""
+    source: str = ""
+    published_date: str = None
+    affected_versions: str = None
 
+@dataclass
 class SoftwareBillOfMaterials:
-    __slots__ = ('binary_path', 'components', 'vulnerabilities', 'generated_at',)
-
-    def __init__(self, binary_path, components=field(default_factory=list), vulnerabilities=field(default_factory=dict), generated_at=field(default_factory=datetime.now)):
-        self.binary_path = binary_path
-        self.components = components
-        self.vulnerabilities = vulnerabilities
-        self.generated_at = generated_at
-
+    binary_path: str = ""
+    components: List[LibraryComponent] = field(default_factory=list)
+    vulnerabilities: Dict[str, List[VulnerabilityMatch]] = field(default_factory=dict)
+    generated_at: datetime = field(default_factory=datetime.now)
 
     def add_component(self, component: LibraryComponent) -> None:
-        # 将库组件注册至物料清单
         self.components.append(component)
 
     def add_vulnerabilities(self, component_name: str, vulns: List[VulnerabilityMatch]) -> None:
-        # 将漏洞匹配列表绑定至指定组件
         self.vulnerabilities[component_name] = vulns
 
     def get_total_vulnerabilities(self) -> int:
@@ -83,13 +66,13 @@ class SoftwareBillOfMaterials:
         return nCount
 
 class SupplyChainAnalyzer:
-    """供应链安全分析器——识别二进制中的第三方库并关联已知漏洞。
+    """供应链安全分析器, 识别二进制中的第三方库并关联已知漏洞。
 
-    能力：
+    能力:
     - 通过特征模式匹配检测静态链接库
     - 从嵌入版本字符串解析版本信息
     - 查询OSV与NVD漏洞数据库
-    - 生成软件物料清单（SBOM）
+    - 生成软件物料清单(SBOM)
     """
 
     DEFAULT_FINGERPRINTS_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'library_fingerprints.yaml')
@@ -103,14 +86,7 @@ class SupplyChainAnalyzer:
         self.last_osv_request = None
 
     def _load_fingerprints(self) -> None:
-        """从YAML文件加载库指纹数据库。
-
-        指纹文件结构：
-        - 库名称
-        - 字符串模式列表
-        - 版本匹配正则
-        - 已知版本列表（有序）
-        """
+        """从YAML文件加载库指纹数据库。"""
         try:
             if os.path.exists(self.fingerprints_path):
                 with open(self.fingerprints_path, 'r', encoding='utf-8') as f:
@@ -359,7 +335,7 @@ class SupplyChainAnalyzer:
             return results
 
         except Exception as e:
-            logger.warning(f"Aho-Corasick matching failed — falling back to regex: {e}")
+            logger.warning(f"Aho-Corasick matching failed, falling back to regex: {e}")
             return []
 
     def analyze_binary(self, binary_path: str) -> List[LibraryComponent]:
@@ -405,7 +381,7 @@ class SupplyChainAnalyzer:
             time_since_last = (now - self.last_osv_request).total_seconds()
             if time_since_last < self.osv_rate_period / self.osv_rate_limit:
                 wait_time = (self.osv_rate_period / self.osv_rate_limit) - time_since_last
-                logger.debug(f"OSV API rate limit — waiting {wait_time:.1f}s")
+                logger.debug(f"OSV API rate limit, waiting {wait_time:.1f}s")
                 import time
                 time.sleep(wait_time)
 
@@ -436,7 +412,7 @@ class SupplyChainAnalyzer:
                         'affected_versions': ', '.join(vuln.get('affected', []))
                     })
 
-            logger.debug(f"OSV query complete: {library_name} v{version} — {len(results)} vulnerabilities found")
+            logger.debug(f"OSV query complete: {library_name} v{version}, {len(results)} vulnerabilities found")
 
         except Exception as e:
             logger.warning(f"OSV query failed for {library_name} v{version}: {e}")
@@ -487,7 +463,7 @@ class SupplyChainAnalyzer:
                         'affected_versions': None
                     })
 
-            logger.debug(f"Local cache query complete: {library_name} v{version} — {len(results)} vulnerabilities found")
+            logger.debug(f"Local cache query complete: {library_name} v{version}, {len(results)} vulnerabilities found")
 
         except Exception as e:
             logger.warning(f"Local cache query failed for {library_name} v{version}: {e}")
@@ -541,7 +517,7 @@ class SupplyChainAnalyzer:
             vulnerabilities = asyncio.run(self._async_check_vulnerabilities(components, vuln_db))
 
         except Exception as e:
-            logger.warning(f"Async query failed — falling back to synchronous mode: {e}")
+            logger.warning(f"Async query failed, falling back to synchronous mode: {e}")
             vulnerabilities = {}
 
             for comp in components:
@@ -574,7 +550,7 @@ class SupplyChainAnalyzer:
 
         total_vulns = sum(len(vulns) for vulns in vulnerabilities.values())
 
-        logger.info(f"Vulnerability query complete — {total_vulns} known vulnerabilities found")
+        logger.info(f"Vulnerability query complete, {total_vulns} known vulnerabilities found")
 
         return vulnerabilities
 
@@ -592,7 +568,7 @@ class SupplyChainAnalyzer:
         for comp_name, vulns in vulnerabilities.items():
             sbom.add_vulnerabilities(comp_name, vulns)
 
-        logger.info(f"SBOM generation complete — {len(sbom.components)} components, {sbom.get_total_vulnerabilities()} vulnerabilities")
+        logger.info(f"SBOM generation complete, {len(sbom.components)} components, {sbom.get_total_vulnerabilities()} vulnerabilities")
 
         return sbom
 

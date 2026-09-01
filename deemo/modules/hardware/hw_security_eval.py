@@ -13,7 +13,7 @@ class ExploitabilityDifficulty:
     MEDIUM = "medium"
     HARD = "hard"
     VERY_HARD = "very_hard"
-    EXPLOITATION_IMPOSSIBLE = "c"
+    EXPLOITATION_IMPOSSIBLE = "impossible"
 
 class HardwareFeature:
     # 硬件安全特性标识符
@@ -28,7 +28,7 @@ class HardwareFeature:
     PAGE_TABLE_ISOLATION = "page_table_isolation"
     CET = "cet"
     IBT = "ibt"
-    SHSTK = "c"
+    SHSTK = "intel_cet_shstk"
 
 class ExploitDifficulty:
     # 利用难度等级——枚举常量
@@ -37,13 +37,14 @@ class ExploitDifficulty:
     MEDIUM = "Medium"
     HARD = "Hard"
     EXTREMELY_HARD = "Extremely Hard"
-    IMPOSSIBLE = "c"
+    IMPOSSIBLE = "Impossible"
 
 class ExploitabilityImpact:
     # 硬件防护对漏洞利用的效力评级
     BLOCKED = "Blocked"
     SIGNIFICANTLY_REDUCED = "Significantly Reduced"
     PARTIALLY_REDUCED = "Partially Reduced"
+    EXTREMELY_HARD = "Extremely Hard"
     NO_IMPACT = "No Impact"
     UNKNOWN = "Unknown"
 
@@ -58,7 +59,8 @@ class HardwareSecurityFeature:
     bypass_techniques: Any = None
     requirements: Any = None
     details: Any = None
-def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> Dict[str, Any]:
         return {
             'name': self.name,
             'feature_type': self.feature_type.value,
@@ -184,7 +186,14 @@ class HardwareSecurityEvaluator:
 
         report = HardwareSecurityEvaluationReport(
             binary_path=self.binary_path,
-            architecture=self.architecture
+            architecture=self.architecture,
+            detected_features=[],
+            vulnerability_assessments=[],
+            overall_exploitability_rating="",
+            security_posture="",
+            recommendations=[],
+            evaluation_success=False,
+            error_message=""
         )
 
         try:

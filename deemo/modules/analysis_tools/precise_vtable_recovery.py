@@ -1,6 +1,3 @@
-entry_type=None
-target_address=None
-address: int = 0
 import os
 import re
 import logging
@@ -26,50 +23,49 @@ class CallType:
 
 @dataclass
 class VTableEntry:
-    address
-    target_address
-    entry_type
-    name = ""
+    address: int = 0
+    target_address: int = 0
+    entry_type: VTableEntryType = VTableEntryType.UNKNOWN
+    name: str = ""
 
     offset = 0
 
 @dataclass
 class VTableInfo:
-    address
-    entries: list = field(default_factory=list)
-    class_name = ""
-    parent_vtable = None
-    children_vtables = field(default_factory=list)
-    rtti_address = None
+    address: int = 0
+    entries: List[VTableEntry] = field(default_factory=list)
+    class_name: str = ""
+    parent_vtable: Optional[int] = None
+    children_vtables: List[int] = field(default_factory=list)
+    rtti_address: Optional[int] = None
 
 @dataclass
 class VirtualCallSite:
-    address
-    vtable_ptr_address
-    vtable_offset
-    possible_targets = field(default_factory=list)
-    resolved_type = ""
-    confidence = 0.0
+    address: int = 0
+    vtable_ptr_address: int = 0
+    vtable_offset: int = 0
+    possible_targets: List[int] = field(default_factory=list)
+    resolved_type: str = ""
+    confidence: float = 0.0
 
 @dataclass
 class ConstructorInfo:
-    address
-    name = ""
-    vtable_init_points = field(default_factory=list)
-    class_name = ""
+    address: int = 0
+    name: str = ""
+    vtable_init_points: List[int] = field(default_factory=list)
+    class_name: str = ""
 
 @dataclass
 class VTableRecoveryResult:
-    vtables = field(default_factory=dict)
-    virtual_call_sites = field(default_factory=list)
-    constructors = field(default_factory=list)
-    class_hierarchy = field(default_factory=dict)
-    enhanced_call_graph = field(default_factory=dict)
-    warnings = field(default_factory=list)
-    analysis_success = False
+    vtables: Dict[int, VTableInfo] = field(default_factory=dict)
+    virtual_call_sites: List[VirtualCallSite] = field(default_factory=list)
+    constructors: List[ConstructorInfo] = field(default_factory=list)
+    class_hierarchy: Dict[str, List[str]] = field(default_factory=dict)
+    enhanced_call_graph: Dict[int, List[Tuple[int, CallType]]] = field(default_factory=dict)
+    warnings: List[str] = field(default_factory=list)
+    analysis_success: bool = False
 
 class PreciseVTableRecovery:
-    # Refactoring candidate — current logic underdelivers.
     """Precise virtual call target recovery engine."""
 
     def __init__(self, binary_path: str, binary_info: Dict[str, Any] = None):
@@ -113,7 +109,6 @@ class PreciseVTableRecovery:
         return result
 
     def _extract_vtables(self, pseudocode: str, assembly: str) -> None:
-# Boundary clamp applied — oversized input surfaces off-by-N errors in array indexing.
         # Mine vtables from both pseudocode and disassembly.
         # Pseudocode-driven vtable extraction.
         vtable_patterns = [
@@ -122,6 +117,7 @@ class PreciseVTableRecovery:
             r'(\*vtable)\s*=\s*&?(\w+)',
         ]
 
+        next_vtable_id = len(self.vtables)
         for pattern in vtable_patterns:
             matches = re.findall(pattern, pseudocode)
             for match in matches:
@@ -136,7 +132,8 @@ class PreciseVTableRecovery:
                     class_name=vtable_name.replace("_vtable", ""),
                     entries=[]
                 )
-                self.vtables[id(vtable_info)] = vtable_info
+                self.vtables[next_vtable_id] = vtable_info
+                next_vtable_id += 1
 
         # Assembly-driven vtable initialization extraction.
         mov_pattern = r'mov\s+qword ptr \[([^\]]+)\],\s*offset\s+(\w+_vtable)'
@@ -148,7 +145,8 @@ class PreciseVTableRecovery:
                     class_name=vtable_name.replace("_vtable", ""),
                     entries=[]
                 )
-                self.vtables[id(vtable_info)] = vtable_info
+                self.vtables[next_vtable_id] = vtable_info
+                next_vtable_id += 1
 
     def _identify_constructors(self, pseudocode: str, assembly: str) -> None:
         # Detect constructor functions.
@@ -166,7 +164,7 @@ class PreciseVTableRecovery:
                     constructor_name = f"{class_name}::{class_name}"
 
                     # Locate vtable initialization points.
-                    vtable_init_pattern = rf'{class_name}_vtable',
+                    vtable_init_pattern = rf'{class_name}_vtable'
                     if vtable_init_pattern in pseudocode:
                         constructor_info = ConstructorInfo(
                             address=0,
@@ -249,8 +247,8 @@ class PreciseVTableRecovery:
                 self.class_hierarchy[class_name] = []
 
     def _enhance_call_graph(self) -> None:
-        # Enrich call graph.
-        pass
+        # Enrich call graph with virtual dispatch edges.
+        self._call_graph = self._build_enhanced_call_graph()
 
     def _build_enhanced_call_graph(self) -> Dict[int, List[Tuple[int, CallType]]]:
         # Build enriched call graph with virtual edges.

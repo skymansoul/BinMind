@@ -79,23 +79,10 @@ _COMPILER_PADDING: Set[str] = {
 
 
 class CompilerAwareNormalizer:
-    """编译器感知的函数名归一化器
-
-    用法:
-      normalizer = CompilerAwareNormalizer()
-      normalized = normalizer.normalize_function_calls(
-          [(0x401000, 'call __libc_malloc'), (0x401100, 'call __printf_chk')]
-      )
-      # → [(0x401000, 'call malloc'), (0x401100, 'call printf')]
-    """
 
     def normalize_function_calls(
         self, asm_lines: List[Tuple[int, str]]
     ) -> List[Tuple[int, str]]:
-        """归一化所有函数调用名。
-
-        asm_lines: [(地址, 反汇编行)]; 返回归一化后的列表 (地址不变)。
-        """
         result = []
         for addr, text in asm_lines:
             text_lower = text.lower().strip()

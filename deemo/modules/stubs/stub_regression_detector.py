@@ -120,7 +120,6 @@ class RegressionDetector:
 
         return report
 
-# 各维度检查
     def _check_bloat(self, module_name: str) -> RegressionCheck:
         """检查源码体积是否膨胀。"""
         old_src = self._read_old_source(module_name)
@@ -252,7 +251,6 @@ class RegressionDetector:
                 pass
         return None
 
-# 报告
     def regression_report(self, report: RegressionReport) -> str:
         """生成 Markdown 回归检测报告。"""
         lines = [

@@ -1,36 +1,4 @@
 # 长度字段变异 + 覆盖引导 + LCA 三角化
-"""
-崩溃变体生成器 — 从单个 PoC 输入变异出多个相关崩溃以三角化根因。
-
-单一崩溃输入可能不足以精确定位根因——不同的崩溃变体
-(同一 bug 的不同触发方式) 提供交叉验证信号。
-
-策略:
-  1. 受控变异: 仅改变输入中不影响崩溃可达性的字节
-     (如 padding/填充字节、长度字段的低位)
-  2. 覆盖引导: 保留触发崩溃的核心路径, 探索临近分支
-  3. 堆布局扰动: 改变分配大小/顺序以暴露堆相关的时序 bug
-  4. 环境扰动: 改变环境变量、文件内容、网络数据以暴露环境依赖
-
-应用:
-  - 根因三角化: 多个变体崩溃 → 共同祖先 → 根因
-  - 补丁验证: 修复后所有变体不再崩溃 → 补丁正确
-  - 可利用性评估: 变体中有 RIP 可控 → 可利用性提升
-
-为什么需要变体生成而非仅用原始 PoC:
-  原始 PoC 只能展示一种崩溃路径。如果根因是"无符号整数下溢",
-  那么任何触发此下溢的输入都会崩溃——变体生成探索了"其他触发方式"。
-  多个变体共享同一最近公共祖先 → 祖先即根因。
-
-ref: Kumushi — AFL++ crash exploration generating variant
-     crash traces for fault localization, 本项目简化 AFL++ 为
-     受控变异 + 覆盖引导
-ref: Crash exploration mode (AFL++) — 探索同一崩溃的不同路径,
-     本项目取其理念但使用确定性变异 (非随机 havoc)
-ref: Veritas — crash variant triangulation
-     用于根因验证, 本项目的变体生成器即其 triangulation 输入
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -42,7 +10,6 @@ from typing import Optional, Callable
 
 @dataclass
 class CrashVariant:
-    """崩溃变体——原始 PoC 的变异版本 + 崩溃信息。"""
     variant_id: str = ''       # SHA-256(input) 前 8 字符
     original_input: bytes = b''
     mutated_input: bytes = b''
@@ -55,7 +22,6 @@ class CrashVariant:
 
 @dataclass
 class TriangulationResult:
-    """根因三角化结果——变体集合 + 最近公共祖先。"""
     variants: list[CrashVariant] = field(default_factory=list)
     common_ancestor_bb: int = 0   # 所有变体共享的基本块
     root_cause_hypothesis: str = ''
@@ -67,7 +33,6 @@ class TriangulationResult:
 def mutate_length_field(input_bytes: bytes,
                         offset: int, size: int,
                         delta: int) -> bytes:
-    """变异长度字段 (1/2/4/8 字节) — 常用于触发整数溢出变体。"""
     if offset + size > len(input_bytes):
         return bytes(input_bytes)
     arr = bytearray(input_bytes)
@@ -84,7 +49,6 @@ def mutate_length_field(input_bytes: bytes,
 
 def mutate_padding_bytes(input_bytes: bytes,
                          padding_ranges: list[tuple[int, int]]) -> bytes:
-    """变异填充/对齐字节——不应影响崩溃可达性但可能改变内存布局。"""
     arr = bytearray(input_bytes)
     import random
     rng = random.Random(42)
@@ -97,7 +61,6 @@ def mutate_padding_bytes(input_bytes: bytes,
 def mutate_environment_context(input_bytes: bytes,
                                env_vars: dict[str, str],
                                seed: int = 0) -> tuple[bytes, dict[str, str]]:
-    """扰动环境上下文——保持输入不变, 改变环境。"""
     import random
     rng = random.Random(seed)
     perturbed = dict(env_vars)
@@ -115,10 +78,6 @@ def coverage_guided_variants(
     executor: Callable[[bytes], tuple[int, bytearray]],  # → (crash_addr, bitmap)
     max_variants: int = 10,
 ) -> list[CrashVariant]:
-    """生成保留崩溃核心路径但探索临近分支的变体。
-
-    对输入的每个字节逐一翻转——若翻转后仍崩溃在同一地址,
-    则视为变体; 若崩溃地址不同或未崩溃, 则丢弃。"""
     variants = []
     arr = bytearray(input_bytes)
     base_hash = hashlib.sha256(input_bytes).hexdigest()[:8]
@@ -156,10 +115,6 @@ def coverage_guided_variants(
 # 根因三角化
 
 def triangulate_root_cause(variants: list[CrashVariant]) -> TriangulationResult:
-    """从崩溃变体集合中三角化根因。
-
-    找到所有变体共用栈帧中的最近公共祖先 (LCA) 基本块——
-    此块最可能是根因所在。"""
     result = TriangulationResult(variants=variants)
 
     if not variants:
@@ -193,7 +148,6 @@ def triangulate_root_cause(variants: list[CrashVariant]) -> TriangulationResult:
 # 变体驱动机
 
 class CrashVariantGenerator:
-    """崩溃变体生成器——组合多种变异策略 + 三角化。"""
 
     __slots__ = ('_variants', '_original_input', '_target_crash_pc')
 

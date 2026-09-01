@@ -100,14 +100,6 @@ class VulnerabilitySlicer:
     the minimal set of instructions and basic blocks that influence the
     vulnerability.  Tracks taint through register def-use chains and
     memory operands.
-
-    Usage::
-
-        slicer = VulnerabilitySlicer()
-        taint_sources, blocks = slicer.slice_from(
-            crash_point=0x401234,
-            binary_path="/path/to/binary",
-        )
     """
 
     _WRITE_MNEMONICS: Set[str] = {
@@ -412,15 +404,6 @@ class VulnerabilityReporter:
     Extracts the minimum meaningful context around a vulnerability and
     generates human-readable reports suitable for sharing with developers
     or writing into audit documents.
-
-    Usage::
-
-        reporter = VulnerabilityReporter()
-        ctx = reporter.extract_context(
-            crash_point=0x401234,
-            binary_path="/path/to/binary",
-        )
-        report_md = reporter.generate_report(ctx, title="Use-After-Free in foo()")
     """
 
     def __init__(self):
@@ -579,14 +562,6 @@ class VulnerabilityReasoner:
     Maintains a knowledge graph of vulnerability observations and applies
     forward-chaining inference rules to suggest exploitation paths or
     impact chains.
-
-    Usage::
-
-        reasoner = VulnerabilityReasoner()
-        reasoner.add_node(VulnerabilityKnowledgeNode("VULN-1", "buffer-overflow", {...}))
-        reasoner.add_rule("buffer-overflow", "arbitrary-write", confidence=0.8)
-        paths = reasoner.infer(["VULN-1"])
-        results = reasoner.query("buffer")
     """
 
     def __init__(self):
@@ -786,13 +761,6 @@ class ExposureAnalyzer:
     Traces sensitive data flow to detect exposure through logging,
     network transmission, or file writes. Supports both heuristic
     (objdump-based) and source-code (regex-based) analysis.
-
-    Usage::
-
-        ea = ExposureAnalyzer()
-        ea.tag_sensitive(0x402000, DataTag.SECRET_KEY)
-        exposed = ea.check_all(0x402000, binary_path="/path/to/binary")
-        print(ea.generate_exposure_report())
     """
 
     LOG_SINKS: Set[str] = {
@@ -992,17 +960,6 @@ class CodeLocator:
     """
     Searches a binary (or its extracted strings/symbols) for code
     patterns associated with a CVE, library, or vulnerability class.
-
-    Usage::
-
-        locator = CodeLocator()
-        locator.register_cve_pattern("CVE-2023-1234", {
-            "function_names": ["vuln_parse"],
-            "code_patterns": [r"memcpy\\(.*,\\s*0\\)"],
-            "version_strings": ["1.2.3"],
-        })
-        footprint = locator.find_affected_code("/bin/target", "CVE-2023-1234")
-        all_impacts = locator.assess_impact("/bin/target")
     """
 
     def __init__(self):
@@ -1199,13 +1156,6 @@ class ThreatIntelClient:
     """
     Unified client for threat-intelligence lookups against MISP,
     AlienVault OTX, and NVD.
-
-    Usage::
-
-        client = ThreatIntelClient()
-        client.configure_misp(url="https://misp.local", api_key="...")
-        result = client.lookup_hash("d41d8cd98f00b204e9800998ecf8427e")
-        cve = client.lookup_cve("CVE-2023-1234")
     """
 
     _USER_AGENT = "BinMind/2.0"
@@ -1543,12 +1493,6 @@ class VersionExtractor:
     Extracts library and component version information from a binary
     using heuristic pattern matching on the ``strings`` output and
     symbol table analysis.
-
-    Usage::
-
-        ve = VersionExtractor()
-        versions = ve.extract(binary_path="/bin/target")
-        # -> {"openssl": "1.1.1q", "zlib": "1.2.11", ...}
     """
 
     _LIB_PATTERNS: List[Tuple[str, re.Pattern, int]] = [
@@ -1669,13 +1613,6 @@ class VersionedVulnChecker:
     """
     Given a library name and version, queries OSV.dev and NVD to
     determine whether any known vulnerabilities apply.
-
-    Usage::
-
-        checker = VersionedVulnChecker()
-        vulns = checker.check("openssl", "1.1.1q")
-        for v in vulns:
-            print(v["cve_id"], v["severity"])
     """
 
     _OSV_QUERY_URL = "https://api.osv.dev/v1/query"
@@ -1843,16 +1780,6 @@ class SBOMGenerator:
     """
     Generates Software Bill of Materials (SBOM) in CycloneDX and SPDX
     formats from component data extracted during binary analysis.
-
-    Usage::
-
-        gen = SBOMGenerator()
-        gen.add_component("openssl", "1.1.1q", "library")
-        gen.add_component("zlib", "1.2.11", "library")
-        gen.add_component("myapp", "2.0.0", "application")
-        spdx_json = gen.export_spdx()
-        cyclonedx_json = gen.export_cyclonedx()
-        gen.write("sbom.spdx.json", format="spdx")
     """
 
     def __init__(self):

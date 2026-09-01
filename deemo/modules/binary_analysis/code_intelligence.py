@@ -235,6 +235,13 @@ class StructArrayBoundsChecker:
 
 
 
+@dataclass
+class DangerousSyscallSequence:
+    name: str
+    syscalls: List[str]
+    description: str = ""
+
+
 class SyscallPatternMatcher:
 
     def __init__(self):
@@ -754,9 +761,28 @@ class FunctionEntropyAnalyzer:
         total = float(len(data))
         return -sum((c / total) * math.log2(c / total) for c in counts.values())
 
-    def analyze_function_entropy(self, function_addr: int) -> Tuple[float, List[int]]:
-        avg = self.entropy_cache.get(function_addr, 0.0)
-        return avg, []  # high-entropy region extraction requires function bytes
+    def analyze_function_entropy(self, function_addr: int,
+                                  function_bytes: Optional[bytes] = None) -> Tuple[float, List[int]]:
+        """计算函数字节熵值，并定位高熵区段起始偏移。
+        function_bytes 为 None 时仅返回缓存或估算值。"""
+        if function_bytes is None:
+            avg = self.entropy_cache.get(function_addr, 0.0)
+            return avg, []
+        # 按 64 字节窗口逐块计算香农熵，超过 7.0 视为高熵区段
+        window = 64
+        high_regions: List[int] = []
+        entropies: List[float] = []
+        for off in range(0, len(function_bytes), window):
+            chunk = function_bytes[off:off + window]
+            if len(chunk) < 8:
+                break
+            ent = self.calculate_entropy(chunk)
+            entropies.append(ent)
+            if ent >= 7.0:
+                high_regions.append(off)
+        avg = sum(entropies) / len(entropies) if entropies else 0.0
+        self.entropy_cache[function_addr] = avg
+        return avg, high_regions
 
     def is_likely_packed(self, function_addr: int) -> bool:
         return self.entropy_cache.get(function_addr, 0.0) > 7.2
@@ -907,9 +933,32 @@ class InstructionSemanticClusterer:
             ))
         return self.clusters
 
-    def find_similar_functions(self, function_addr: int) -> List[Tuple[int, float]]:
-        # 需要预构建函数向量索引；占位
-        return []
+    def find_similar_functions(self, function_addr: int,
+                                all_function_blocks: Optional[Dict[int, bytes]] = None
+                                ) -> List[Tuple[int, float]]:
+        """按语义向量余弦相似度检索与指定函数最接近的候选。
+        all_function_blocks: {addr: basic_block_bytes} 字典，供即时向量提取。"""
+        if all_function_blocks is None or function_addr not in all_function_blocks:
+            return []
+        target_blocks = [all_function_blocks[function_addr]]
+        target_vec = self.extract_semantic_vector(target_blocks[0])
+        results: List[Tuple[int, float]] = []
+        norm_t = math.sqrt(sum(x * x for x in target_vec))
+        if norm_t == 0:
+            return []
+        for faddr, blocks in all_function_blocks.items():
+            if faddr == function_addr:
+                continue
+            vec = self.extract_semantic_vector(blocks if isinstance(blocks, bytes) else blocks[0])
+            dot = sum(a * b for a, b in zip(target_vec, vec))
+            norm_v = math.sqrt(sum(x * x for x in vec))
+            if norm_v == 0:
+                continue
+            sim = dot / (norm_t * norm_v)
+            if sim >= 0.85:
+                results.append((faddr, sim))
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:20]
 
 
 

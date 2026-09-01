@@ -5,7 +5,7 @@
 #       Ahmad & Luo "Unsupervised Binary Code Translation with Application to Code Similarity Detection"
 #       Yang et al. "Towards Practical Binary Code Similarity Detection: Vuln Verification via Patch Semantic Analysis"
 #       Zhou "Vulnerability Detection Through Binary Function Matching based on Lifting and Re-optimization"
-import hashlib, json, logging, os, struct, time, re
+import hashlib, json, logging, os, struct, time, re, math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple, Callable
 from collections import defaultdict, Counter
@@ -65,7 +65,7 @@ def _byte_entropy(data: bytes) -> float:
     freq = [0] * 256; n = len(data)
     for b in data:
         freq[b] += 1
-    return -sum((c / n) * (__import__('math').log2(c / n)) for c in freq if c > 0)
+    return -sum((c / n) * (math.log2(c / n)) for c in freq if c > 0)
 
 def _instruction_density_heuristic(data: bytes) -> float:
     """常见x86/ARM指令前缀频率统计，不替代反汇编，仅排序依据."""

@@ -38,11 +38,6 @@ class CallSite:
 
 
 class InterProcCorrelator:
-    """跨函数分配-写入关联分析器.
-
-    输入: 函数摘要表 + 调用图.
-    输出: 每个调用点的分配→写入安全判定.
-    """
 
     MAX_DEPTH = 2  # 跨越层数: 当前函数 → caller → caller's caller
 
@@ -65,15 +60,6 @@ class InterProcCorrelator:
                       write_size_operand: str,
                       ptr_operand: str,
                       depth: int = 0) -> Tuple[bool, str]:
-        """跨函数判断: 对某指针的写入是否安全.
-
-        write_site_addr: 写入操作发生的地址.
-        write_size_operand: 写入大小的来源操作数(寄存器或立即数).
-        ptr_operand: 指针所在的寄存器.
-        depth: 当前递归深度.
-
-        返回: (是否安全, 判断依据).
-        """
         if depth >= self.MAX_DEPTH:
             return False, f"depth_limit_exceeded:{depth}"
 

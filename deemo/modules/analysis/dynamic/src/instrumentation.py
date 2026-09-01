@@ -1,12 +1,3 @@
-"""插桩门面 — 基于 Frida 的钩子脚本生成, 快照持久化的检查点
-管理, 插桩失败的自动恢复策略。
-
-封装 engine/插桩.py 与 engine/breakpoint_recovery.py。
-
-注: 使用注册表模式而非继承 — 类型安全性略低, 但避免深类
-层次损害可读性。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -43,20 +34,6 @@ class HookSpec:
 
 
 class FridaInstrumentation:
-    """基于 Frida 的钩子脚本模板生成器。
-
-    为 Frida 的 interceptor API 构造 JavaScript 钩子脚本,
-    支持常见模式: 反调试绕过, 返回值修改, 系统调用监控,
-    API 追踪, 内存访问监控。
-
-    用法::
-
-    frida = FridaInstrumentation()
-    script = frida.generate_hook_script([
-    frida.anti_debug_hook("IsDebuggerPresent")
-    frida.return_value_hook("CheckRemoteDebuggerPresent", 0)
-    ], output_format="javascript")
-    """
 
     def __init__(self, device: str = "local") -> None:
         self._device = device
@@ -65,7 +42,6 @@ class FridaInstrumentation:
 # 钩子工厂方法
 
     def anti_debug_hook(self, function_name: str) -> HookSpec:
-        """创建绕过反调试检查的钩子 spec。"""
         return HookSpec(
             name=f"bypass_{function_name}",
             target=function_name,
@@ -83,7 +59,6 @@ class FridaInstrumentation:
     def return_value_hook(
         self, function_name: str, forced_value: Any
     ) -> HookSpec:
-        """创建修改函数返回值的钩子 spec。"""
         return HookSpec(
             name=f"modify_ret_{function_name}",
             target=function_name,
@@ -98,7 +73,6 @@ class FridaInstrumentation:
     def syscall_monitor_hook(
         self, syscall_number: int, log_args: bool = True
     ) -> HookSpec:
-        """创建系统调用监控的钩子 spec。"""
         return HookSpec(
             name=f"syscall_{syscall_number}",
             target=f"syscall_{syscall_number}",
@@ -112,7 +86,6 @@ class FridaInstrumentation:
         )
 
     def api_trace_hook(self, function_name: str) -> HookSpec:
-        """创建 API 调用追踪的钩子 spec。"""
         return HookSpec(
             name=f"trace_{function_name}",
             target=function_name,
@@ -130,7 +103,6 @@ class FridaInstrumentation:
     def memory_monitor_hook(
         self, address_range: Tuple[int, int], access_type: str = "rw"
     ) -> HookSpec:
-        """创建内存访问监控的钩子 spec。"""
         start, end = address_range
         return HookSpec(
             name=f"mem_monitor_{start:#x}_{end:#x}",
@@ -146,12 +118,6 @@ class FridaInstrumentation:
         hooks: Optional[List[HookSpec]] = None,
         output_format: str = "javascript",
     ) -> str:
-        """由钩子 spec 列表构造完整的 Frida 钩子脚本。
-
-        参数: hooks 钩子 spec 列表, None 则使用累积的钩子,
-        output_format "javascript" (Frida script) 或 "python"
-        (frida-python); 返回包含完整 Frida 钩子脚本的字符串。
-        """
         if hooks is None:
             hooks = self._hooks
 
@@ -164,7 +130,6 @@ class FridaInstrumentation:
             return self._generate_python_script(hooks)
 
     def _generate_js_script(self, hooks: List[HookSpec]) -> str:
-        """根据钩子列表构造 JavaScript Frida 脚本。"""
         lines: List[str] = [
             "// Auto-generated Frida hook script",
             f"// Generated at {time.ctime()}",
@@ -193,7 +158,6 @@ class FridaInstrumentation:
         return "\n".join(lines)
 
     def _generate_python_script(self, hooks: List[HookSpec]) -> str:
-        """构造 frida-python 脚本。"""
         lines: List[str] = [
             "#!/usr/bin/env python3",
             "# Auto-generated Frida instrumentation script",
@@ -236,15 +200,12 @@ class FridaInstrumentation:
 # 钩子管理
 
     def add_hook(self, hook: HookSpec) -> None:
-        """添加钩子 spec。"""
         self._hooks.append(hook)
 
     def clear_hooks(self) -> None:
-        """移除全部钩子 spec。"""
         self._hooks.clear()
 
     def list_hooks(self) -> List[HookSpec]:
-        """列出已注册的钩子。"""
         return list(self._hooks)
 
 
@@ -269,17 +230,6 @@ class Checkpoint:
 
 
 class CheckpointManager:
-    """动态分析状态的快照持久化。
-
-    支持保存/恢复执行状态、内存快照与寄存器文件。使用 JSON
-    manifest 追踪检查点谱系, 支持检查点间增量 diff。
-
-    用法::
-
-    cm = CheckpointManager("checkpoints/")
-    cm.save("after_init", {"registers": {"eax": 0, "ebx": 1}})
-    state = cm.restore("after_init")
-    """
 
     def __init__(self, snapshot_dir: str) -> None:
         self._snapshot_dir = snapshot_dir
@@ -293,7 +243,6 @@ class CheckpointManager:
         state_data: Dict[str, Any],
         parent: Optional[str] = None,
     ) -> Checkpoint:
-        """保存检查点。"""
         checkpoint_id = f"{name}_{int(time.time())}"
         snapshot_path = os.path.join(self._snapshot_dir, f"{checkpoint_id}.json")
         snapshot_data = {
@@ -324,7 +273,6 @@ class CheckpointManager:
         return cp
 
     def restore(self, checkpoint_id: str) -> Dict[str, Any]:
-        """恢复检查点。"""
         if checkpoint_id not in self._checkpoints:
             raise KeyError(f"Checkpoint not found: {checkpoint_id}")
 
@@ -341,7 +289,6 @@ class CheckpointManager:
         return data.get("state_data", {})
 
     def list_checkpoints(self) -> List[Dict[str, Any]]:
-        """列出已保存的检查点。"""
         return [
             {
                 "id": cp.checkpoint_id,
@@ -353,7 +300,6 @@ class CheckpointManager:
         ]
 
     def delete_checkpoint(self, checkpoint_id: str) -> None:
-        """删除检查点及其快照文件。"""
         if checkpoint_id not in self._checkpoints:
             return
         cp = self._checkpoints[checkpoint_id]
@@ -386,23 +332,6 @@ class RecoveryDecision:
 
 
 class RecoveryStrategy:
-    """插桩失败的自动恢复策略。
-
-    插桩失败时 (如进程崩溃、钩子冲突、沙箱检测), 该类决定
-    重试、跳过当前步骤、回滚到先前检查点, 还是直接中止。
-
-    用法::
-
-    rs = RecoveryStrategy(max_retries=3)
-    for attempt in range(rs.max_retries):
-        try:
-            run_instrumentation()
-            break
-        except InstrumentationError as e:
-            decision = rs.on_error(e, attempt)
-            if decision.action == RecoveryAction.ABORT:
-                raise
-    """
 
     def __init__(self, max_retries: int = 3, checkpoint_manager: Optional[CheckpointManager] = None) -> None:
         self.max_retries = max_retries
@@ -410,7 +339,6 @@ class RecoveryStrategy:
         self._error_history: List[Tuple[Exception, float]] = []
 
     def on_error(self, error: Exception, attempt: int) -> RecoveryDecision:
-        """基于错误类型和尝试次数决定恢复动作。"""
         self._error_history.append((error, time.time()))
 
         # 清理过期错误历史
@@ -457,12 +385,10 @@ class RecoveryStrategy:
         )
 
     def should_abort(self) -> bool:
-        """检查错误率是否过高，过高则建议中止分析。"""
         if len(self._error_history) >= 10:
             return True
         recent = [t for _, t in self._error_history if t > time.time() - 60]
         return len(recent) >= 5
 
     def reset(self) -> None:
-        """清除错误历史。"""
         self._error_history.clear()

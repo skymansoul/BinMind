@@ -3,7 +3,8 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from typing import Optional
+from typing import Optional, Any, Dict, Tuple, List
+import typing
 logger = logging.getLogger(__name__)
 
 class BreakpointType(StrEnum):
@@ -81,7 +82,7 @@ class BreakpointFinding:
         }
 
 class DebugRegisterMonitor:
-    """Monitors debug register reads and writes to detect hardware breakpoint instrumentation."""
+    # 监控调试寄存器读写以检测硬件断点插桩
 
     def __init__(self):
         self._dr_regs: dict[str, DrRegister] = {}
@@ -175,11 +176,8 @@ class ExceptionHandlerDetector:
     # Exception handler chain analysis exposes anti-hardware-breakpoint techniques through SEH/VEH inspection.
 
     def detect_seh_chain_tampering(self, instructions: list[Tuple[int, str]]) -> List[Dict[str, Any]]:
-        """Detect Structured Exception Handler chain manipulation via FS:[0] access patterns on Windows."""
-
-
-
-
+        # 通过 Windows FS:[0] 访问模式检测 SEH 链操纵
+        findings = []
 
 
 

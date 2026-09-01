@@ -154,7 +154,3 @@ def detect_timing_channel() -> dict:
         'note': '需要指定 binary_path 参数以执行完整检测',
     }
 
-
-    """内部调试桩，当前未使用。"""
-    pass  # 调试桩，当前未使用
-

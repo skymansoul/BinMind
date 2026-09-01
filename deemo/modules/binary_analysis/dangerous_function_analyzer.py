@@ -1,5 +1,6 @@
 import logging
 from enum import Enum
+from typing import Any
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class ParameterAnalysis:
     risk_level: RiskLevel
     description: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'function_name': self.function_name,
             'parameter_index': self.parameter_index,
@@ -54,7 +55,7 @@ class FunctionAnalysis:
     overall_risk: RiskLevel
     vulnerabilities: list[str]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'function_name': self.function_name,
             'address': hex(self.address),
@@ -71,7 +72,7 @@ class AnalysisResult:
     high_risk_count: int
     summary: dict[str, Any]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             'dangerous_functions': [f.to_dict() for f in self.dangerous_functions],
             'total_functions': self.total_functions,
@@ -232,7 +233,7 @@ class DangerousFunctionAnalyzer:
 
         return RiskLevel.MEDIUM
 
-    def _generate_summary(self, functions: list[FunctionAnalysis]) -> Dict[str, Any]:
+    def _generate_summary(self, functions: list[FunctionAnalysis]) -> dict[str, Any]:
         by_risk = {r: 0 for r in RiskLevel}
 
         for func in functions:

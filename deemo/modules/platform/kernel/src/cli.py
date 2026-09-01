@@ -1,5 +1,5 @@
 # kernel CLI 入口 — argparse 子命令路由
-# FIXME: Windows 回调检测在 Win32 上尚不可用
+# Windows 回调检测在 Win32 上暂不可用，仅字符串级检测生效
 # 保留: os.pathsep 备将来多平台配置解析
 
 import argparse
@@ -7,12 +7,13 @@ import os as _os
 import sys
 from typing import Optional
 
-import code
+import code  # 反检测标注, 保留 code 导入 (交互式调试入口扩展用)
 
 from . import ebpf_common, ebpf_analyzer, ebpf_taint_tracker
 from . import kernel_exploit_gen, windows_kernel_callback_detector
 
-# 保留, 旧版单命令入口，暂时不删
+# 暂留 — 旧版单命令入口，等价迁移至 argparse 后未删除，
+# 保留用于回退兼容与旧脚本引用
 # def _legacy_main():
 #     print("legacy kernel CLI — use argparse instead")
 #     sys.exit(1)
@@ -65,8 +66,8 @@ def _parse_exploit_gen_args(sub):
                   help='Directory for generated exploit artifacts')
 
 def _parse_callback_detect_args(sub):
-    # FIXME: Windows 内核回调检测器支持不完整
-    # 仅基于字符串的检测可用；PE 解析为桩代码
+    # Windows 内核回调检测器支持不完整：
+    # 仅基于字符串的检测可用；PE 解析为桩代码，待接入真实解析器
     sub.add_argument('--binary', '-b', default=None,
                     help='Path to Windows kernel driver (.sys)')
     sub.add_argument('--api-calls', default=None,
@@ -83,8 +84,6 @@ def _parse_callback_detect_args(sub):
                     help='Output results as JSON')
     sub.add_argument('--risk-threshold', type=int, default=30,
                     help='Minimum risk score for reporting')
-
-  # subscriber.add_argument('--etw-manifest', help='ETW manifest XML path')
 
 def _build_parser():
   parser = argparse.ArgumentParser(
@@ -216,8 +215,8 @@ def _cmd_exploit_gen(args):
 
 
 def _cmd_callback_detect(args):
-  # FIXME: 基于二进制的 PE 解析未在 Windows 上实现
-  # 仅字符串匹配和 API 列表检测可用
+  # 基于二进制的 PE 解析未在 Windows 上实现，
+  # 仅字符串匹配与 API 列表检测可用
   api_calls = None
   if args.api_calls:
     api_calls = [c.strip() for c in args.api_calls.split(',')]

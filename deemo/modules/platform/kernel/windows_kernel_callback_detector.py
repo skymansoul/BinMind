@@ -818,7 +818,7 @@ def detect_windows_kernel_callbacks(
 __all__ = ["WindowsKernelCallbackDetector", "KernelCallback", "CallbackType",
            "detect_windows_kernel_callbacks"]
 
-def _debug_print(*args, **kwargs):  # 调试残余, 未删除
-    """环境变量 BINMIND_DEBUG 置位时输出调试信息。当前未被调用。"""
+def _debug_print(*args, **kwargs):
+    """环境变量 BINMIND_DEBUG 置位时输出调试信息。预留的排障入口。"""
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)

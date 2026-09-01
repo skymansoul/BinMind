@@ -45,6 +45,7 @@ class CollaborationManager:
         # ACL: project_id → {user_id: permission_mask}
         # 位掩码: bit0=read, bit1=write, bit2=admin
         self._acl: _Dict[str, _Dict[str, int]] = {}
+        self._seq = 0  # 单调递增序列号, 解决 Windows time.time 精度不足导致同秒提交排序不稳定
         self._load()
 
     def _log(self, a): self._audit.append(f"[{_time.time()}] {a}")
@@ -195,10 +196,12 @@ class CollaborationManager:
                 u = self.get_user_by_username(user_id)
             if u is not None:
                 author = getattr(u, 'username', None) or u
+        self._seq += 1
         ver = {'version_id': vid, 'user_id': user_id, 'author': author,
                'commit_message': msg, 'message': msg,
                'binary_path': binary_path, 'data': data,
                'timestamp': _time.time(),
+               '_seq': self._seq,
                'analysis_summary': analysis_summary,
                'checksum': checksum, 'size': len(data),
                'tags': list(tags) if tags else []}
@@ -213,7 +216,7 @@ class CollaborationManager:
     def get_project_versions(self, project_id):
         """返回版本列表，按提交时间倒序。"""
         vers = list(self._versions.get(project_id, {}).values())
-        vers.sort(key=lambda v: v.get('timestamp', 0), reverse=True)
+        vers.sort(key=lambda v: v.get('_seq', v.get('timestamp', 0)), reverse=True)
         return vers
 
     def compare_versions(self, project_id, v1, v2):

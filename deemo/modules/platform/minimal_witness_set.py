@@ -107,8 +107,7 @@ class SubmodularCoverageFunction:
         augmented = selected | {candidate}
         return self.coverage(augmented) - current
 
-# 内部
-
+    # 内部：节点覆盖计算与候选预生成
     def _compute_node_coverage(self, selected: Set[Tuple[str, str]]
                                ) -> Dict[str, float]:
         """S 在每个节点上的最高可达置信度。"""

@@ -188,13 +188,6 @@ class FuzzingSeedBanditScheduler:
     """模糊测试种子Bandit能量调度器.
 
     集成: 包装在AFL++/libFuzzer的能量调度钩子中.
-
-    使用模式:
-      scheduler = FuzzingSeedBanditScheduler()
-      # 每轮fuzz前
-      alloc = scheduler.allocate(seeds, total_energy=500)
-      # fuzz完成后反馈
-      scheduler.feedback(seed_id, coverage_gain=12, crashes=1, exec_time_ms=45)
     """
 
     def __init__(self):

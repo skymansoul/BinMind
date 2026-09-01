@@ -1,4 +1,3 @@
-import typing
 """Fingerprint compiler toolchain and optimization level from binary artifacts."""
 
 import re
@@ -150,11 +149,18 @@ class CompilerOptAnalyzer:
                 pe_offset = struct.unpack_from('<I', self._sample, 0x3c)[0]
                 if self._sample[pe_offset:pe_offset+4] == b'PE\0\0':
                     # Inspect debug directory for compiler-specific GUIDs
-                    pass
+                    rsds = self._sample.find(b'RSDS')
+                    if rsds != -1:
+                        # CodeView RSDS: compiler GUID precedes PDB path
+                        self._indicators['rsds_guid'] += 1
             except (struct.error, IndexError):
                 pass
 
         total = sum(scores.values()) or 1
+        if not scores:
+            # 无任何签名命中：判定为 unknown，置信度 0
+            self._confidence = 0.0
+            return CompilerType.UNKNOWN
         best_compiler, best_score = scores.most_common(1)[0]
         self._confidence = min(best_score / total, 1.0)
 
@@ -164,8 +170,25 @@ class CompilerOptAnalyzer:
         # Extract code sections via heuristic sampling
         code_regions = []
         if self._binary_data[:2] == b'MZ':
-            # PE: locate .text section
-            pass
+            # PE: parse section headers to locate .text
+            try:
+                pe_offset = struct.unpack_from('<I', self._binary_data, 0x3c)[0]
+                if self._binary_data[pe_offset:pe_offset+4] == b'PE\0\0':
+                    num_sections = struct.unpack_from('<H', self._binary_data, pe_offset + 6)[0]
+                    opt_size = struct.unpack_from('<H', self._binary_data, pe_offset + 20)[0]
+                    sec_table = pe_offset + 24 + opt_size
+                    for i in range(num_sections):
+                        sec_off = sec_table + i * 40
+                        sec_name = self._binary_data[sec_off:sec_off+8].rstrip(b'\0')
+                        if sec_name == b'.text':
+                            vsize = struct.unpack_from('<I', self._binary_data, sec_off + 8)[0]
+                            raw_ptr = struct.unpack_from('<I', self._binary_data, sec_off + 20)[0]
+                            raw_size = struct.unpack_from('<I', self._binary_data, sec_off + 16)[0]
+                            chunk = self._binary_data[raw_ptr:raw_ptr+min(raw_size, vsize)]
+                            code_regions.append(chunk)
+                            break
+            except (struct.error, IndexError):
+                pass
         elif self._binary_data[:4] == b'\x7fELF':
             # ELF: sample fixed offsets in lieu of full section header parse
             for offset in [0x1000, 0x2000, 0x4000, 0x8000, 0x10000, 0x20000]:

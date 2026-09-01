@@ -69,13 +69,13 @@ class MTEReport:
 
 
 class TagSpace:
-    """??????"""
+    """4 位标签分配器，轮转发放并回收标签"""
 
     def __init__(self, max_tag: int = 15):
         self.max_tag = max_tag
         self._counter = 0
         self._lock = threading.Lock()
-        # tag 0 ?????/????
+        # tag 0 保留给未映射/默认访问
         self._used: Set[int] = {0}
         # 标签猜测计数：tag -> 连续猜测次数
         self._guess_counts: Dict[int, int] = {}
@@ -89,7 +89,7 @@ class TagSpace:
                 if self._counter not in self._used:
                     self._used.add(self._counter)
                     return self._counter
-            # ????, ????
+            # 全部标签已占用，强制复用当前轮转值
             self._counter = (self._counter + 1) & self.max_tag
             if self._counter == 0:
                 self._counter = 1
@@ -115,9 +115,9 @@ class TagSpace:
 
 
 class MTEState:
-    """MTE ??"""
+    """MTE 内存标签状态机"""
 
-    TAG_GRANULE = 16  # ? 16 ??????
+    TAG_GRANULE = 16  # 每 16 字节一个标签粒度
 
     def __init__(self):
         self.tag_space = TagSpace()
@@ -275,7 +275,7 @@ class MTEState:
 
 
 class UnicornMTEHook:
-    """Unicorn ?? MTE ??"""
+    """Unicorn 引擎 MTE 钩子"""
 
     def __init__(self, uc, mte_state: MTEState):
         self.uc = uc
@@ -283,7 +283,7 @@ class UnicornMTEHook:
         self._installed = False
 
     def install(self):
-        """??? Unicorn ??"""
+        """安装 Unicorn 内存访问钩子"""
         if self._installed:
             return
         try:
@@ -295,7 +295,7 @@ class UnicornMTEHook:
                 self._hook_mem_invalid,)
             self._installed = True
         except Exception as e:
-            logger.warning(f"?? MTE ????: {e}")
+            logger.warning(f"安装 MTE 钩子失败: {e}")
 
     def _hook_mem_access(self, uc, access, address, size, value, user_data):
         is_write = bool(access & unicorn.UC_HOOK_MEM_WRITE)
@@ -308,7 +308,7 @@ class UnicornMTEHook:
         self.mte.check_access(address, size, is_write, pc=pc)
 
     def _hook_mem_invalid(self, uc, access, address, size, value, user_data):
-        logger.debug(f"???????: 0x{address:x}, size={size}")
+        logger.debug(f"未映射内存访问: 0x{address:x}, size={size}")
 
 
 try:
@@ -319,7 +319,7 @@ except ImportError:
 
 
 class MTEViolationClassifier:
-    """MTE ?????"""
+    """MTE 违规分类器"""
 
     HEAP_ALLOC_FUNCS = {"malloc", "calloc", "realloc", "operator new", "_Znwm", "_Znam"}
     HEAP_FREE_FUNCS = {"free", "operator delete", "_ZdlPv", "_ZdaPv"}
@@ -336,7 +336,7 @@ class MTEViolationClassifier:
 
 
 class MTEAnalyzer:
-    """MTE ??? (???)"""
+    """MTE 分析器（运行时模拟）"""
 
     def __init__(self):
         self.state = MTEState()
@@ -371,9 +371,9 @@ class MTEAnalyzer:
         return self.state.check_access(addr, size, is_write, pc=pc)
 
     def attach_unicorn(self, uc) -> Optional[UnicornMTEHook]:
-        """??? Unicorn ??"""
+        """挂载 Unicorn 引擎钩子"""
         if not _UNICORN_AVAILABLE:
-            logger.warning("unicorn ???")
+            logger.warning("unicorn 不可用")
             return None
         hook = UnicornMTEHook(uc, self.state)
         hook.install()
@@ -385,7 +385,7 @@ class MTEAnalyzer:
             accesses: List[Dict[str, Any]],
             frees: List[Dict[str, Any]]
         ) -> MTEReport:
-        """?????"""
+        """按时间线重放分配/访问/释放事件"""
         timeline: List[Tuple[float, str, Dict[str, Any]]] = []
         for a in allocs:
             timeline.append((a.get("ts", 0), "alloc", a))
@@ -426,7 +426,7 @@ class MTEAnalyzer:
             violations=list(violations),
             by_type=dict(by_type),
             coverage=min(1.0, total_allocs / 100.0),
-            notes=f"??? {total_allocs} ?, ??? {total_frees} ?",)
+            notes=f"分配 {total_allocs} 次, 释放 {total_frees} 次",)
 
     def enable(self, on: bool = True):
         with self._lock:

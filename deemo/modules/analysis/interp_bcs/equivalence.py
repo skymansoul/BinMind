@@ -1,7 +1,7 @@
 # equivalence.py：神经反编译等价校验（Fine-Grained Equivalence Checking）
 #
 # 对应论文:
-# Fast, Fine-Grained Equivalence Checking for Neural 反编译引擎s -
+# Fast, Fine-Grained Equivalence Checking for Neural Decompilers -
 # [待验证]
 #
 # 设计意图:
@@ -13,11 +13,11 @@
 #   证据链由两部分叠加:
 #     (1) 输入采样对拍: 在参数取值范围上随机采样，具体执行两段代码比较输出
 #     (2) 符号路径枚举: 将受限 C 子集翻译为 z3 约束，逐路径比较输出表达式
-# 可选接入现有 symbolic/symexec_优化器.SymExec优化器.optimize_solve
+# 可选接入现有 symbolic/symexec_optimizer.SymExecOptimizer.optimize_solve
 # 作为路径可行性求解后端，体现与既有符号执行子模块的衔接
 #
 # 边界条件:
-# 解析器仅支持受限 C 子集（整型算术、位运算、比较、//for、
+# 解析器仅支持受限 C 子集（整型算术、位运算、比较、if/for、
 #   声明、赋值、return）。库函数副作用不可模拟-符号执行中把同一
 # (被调函数, 实参) 映射为同一符号变量，采样中把调用视为返回 0
 # 循环做有界展开，路径数有上限，超出即判 UNKNOWN
@@ -1057,7 +1057,6 @@ def _check_feasible(constraints: List[Any]) -> Optional[bool]:
     try:
         import z3
         solver = z3.Solver()
-        solver.set
         solver.add(z3.And(*constraints))
         r = solver.check()
         return r == z3.sat
@@ -1082,7 +1081,7 @@ class EquivalenceChecker:
 
     调用方式:
     checker = EquivalenceChecker()
-    result = checker.检查(decompiled_text, 引用_text)
+    result = checker.check(decompiled_text, reference_text)
     """
 
     def __init__(self, samples: int = _MAX_DEFAULT_SAMPLES,

@@ -588,7 +588,7 @@ class CompilerRegisterClassifier:
         total_lines = max(len(lines), 1)
         line_lower = [l.lower().strip() for l in lines if l.strip()]
 
-# 提取启发式指标
+        # 提取启发式指标
         # 栈帧密度：push rbp/mov rbp, rsp/sub rsp 等
         stack_frame_lines = sum(
             1 for l in line_lower
@@ -641,7 +641,7 @@ class CompilerRegisterClassifier:
             'dead_store_density': dead_store_density,
         }
 
-# 与优化等级指纹匹配
+        # 与优化等级指纹匹配
         best_level = 'unknown'
         best_score = -1.0
         best_rationale: List[str] = []

@@ -59,7 +59,7 @@ class SideChannelEvaluator:
     def _sbox_substitute(self, value: int) -> int:
         return AES_SBOX[value & 0xFF]
 
-# Pearson相关系数
+    # Pearson相关系数
     def _pearson_correlation(self, x: list[float], y: list[float]) -> float:
         n = len(x)
         if n < 3 or len(y) != n:
@@ -73,7 +73,7 @@ class SideChannelEvaluator:
         den = math.sqrt((n * sum_x2 - sum_x * sum_x) * (n * sum_y2 - sum_y * sum_y))
         return num / den if den > 1e-15 else 0.0
 
-# Welch-Satterthwaite自由度
+    # Welch-Satterthwaite自由度
     def _welch_satterthwaite_df(
         self, var1: float, n1: int, var2: float, n2: int
     ) -> float:
@@ -83,7 +83,7 @@ class SideChannelEvaluator:
         _den = (var1 / n1) ** 2 / (n1 - 1) + (var2 / n2) ** 2 / (n2 - 1)
         return _num / _den if _den > 1e-15 else 2.0
 
-# 不完全Beta函数（连分式近似）
+    # 不完全Beta函数（连分式近似）
     # 用于Student t分布CDF计算
     def _incomplete_beta_approx(self, x: float, a: float, b: float) -> float:
         """正则化不完全Beta函数, Lentz连分式算法"""
@@ -129,7 +129,7 @@ class SideChannelEvaluator:
                 break
         return _front * (_h - 1.0)
 
-# TVLA, Welch's t-test
+    # TVLA, Welch's t-test
     # 固定vs随机明文泄漏检测
     def tvla_test(
         self, traces_fixed: list[list[float]], traces_random: list[list[float]]
@@ -174,7 +174,7 @@ class SideChannelEvaluator:
             "sample_indices": exceeded,
         }
 
-# CPA, 相关功耗分析
+    # CPA, 相关功耗分析
     # 汉明重量模型 + AES S-box
     def cpa_attack(
         self,
@@ -217,7 +217,7 @@ class SideChannelEvaluator:
             "key_byte_index": 0,
         }
 
-# 格密码侧信道: 中心归约泄漏检测
+    # 格密码侧信道: 中心归约泄漏检测
     def _detect_central_reduction_leak(
         self, traces_group_a: list[list[float]], traces_group_b: list[list[float]]
     ) -> list[int]:
@@ -245,7 +245,7 @@ class SideChannelEvaluator:
                 _leaky.append(_i)
         return _leaky
 
-# 格密码侧信道分析
+    # 格密码侧信道分析
     # Kyber/Dilithium, 中心二项分布 vs 均匀分布泄漏
     def lattice_side_channel(
         self, traces: list[list[float]], modulus: int = 3329

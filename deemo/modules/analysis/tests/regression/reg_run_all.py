@@ -1,5 +1,4 @@
 # 回归测试一键入口 - 编译 → 扫描 → 对比
-# 用法: python reg_run_all.py [--skip-compile]
 # 输出: results/scan_results_v2.json + regression_compare.json + CSV
 
 import sys

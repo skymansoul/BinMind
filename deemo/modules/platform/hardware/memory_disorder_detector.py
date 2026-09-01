@@ -107,10 +107,10 @@ class MemoryDisorderDetector:
         load_pat  = re.compile(r'(?:mov|ld|ldr|ldur|lw)\s', re.IGNORECASE)
         fence_pat = re.compile(r'(?:mfence|lfence|sfence|dmb|dsb|fence|barrier)',
                                re.IGNORECASE)
-        for i in range(len(instrs) - 3):
-            current = instrs[i].strip()
-            nxt     = instrs[i+1].strip() if i+1 < len(instrs) else ""
-            nx2     = instrs[i+2].strip() if i+2 < len(instrs) else ""
+        for i in range(len(instr_lines) - 3):
+            current = instr_lines[i].strip()
+            nxt     = instr_lines[i+1].strip() if i+1 < len(instr_lines) else ""
+            nx2     = instr_lines[i+2].strip() if i+2 < len(instr_lines) else ""
             if store_pat.search(current) and load_pat.search(nxt):
                 # 中间无 fence
                 if not fence_pat.search(current) and not fence_pat.search(nxt):
@@ -138,15 +138,15 @@ class MemoryDisorderDetector:
         import re
         ld_pat = re.compile(r'(?:ldr|ldur|mov\s+\w+,\s*\[)', re.IGNORECASE)
         ld_count = 0; window = 5
-        for i in range(len(instrs) - 1):
-            if ld_pat.search(instrs[i].strip()):
+        for i in range(len(instr_lines) - 1):
+            if ld_pat.search(instr_lines[i].strip()):
                 ld_count += 1
                 if ld_count >= 2:
                     self.findings.append(ReorderFinding(
                         finding_id="MD-LL-001", severity="Low",
                         architecture=self.arch, reorder_type="load-load",
                         code_location=f"line ~{i+1}",
-                        description="Multiple independent loads within {window} instrs — "
+                        description=f"Multiple independent loads within {window} instrs — "
                                     "observer may see them in reversed order",
                         bandwidth_estimate_bps=ld_count * 2,
                         mitigation=self._arch_info.get("mitigation", "fence"),

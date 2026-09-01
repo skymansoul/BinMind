@@ -1,14 +1,3 @@
-fix_suggestion: str = ""
-severity: str = ""
-description: str = ""
-location: str = ""
-vuln_type: str = ""
-semantics: str = ""
-constraints: list = None
-side_effects: list = None
-outputs: list = []
-inputs: dict = None
-name: str = ""
 import logging
 import os
 import re
@@ -53,25 +42,34 @@ class RewriteStrategy(Enum):
     SYNTHESIS = "synthesis"
 @dataclass
 class FunctionSummary:
-    name
-    inputs
-    outputs
-    side_effects
-    constraints
-    semantics
+    name: str
+    inputs: List[str] = field(default_factory=list)
+    outputs: List[str] = field(default_factory=list)
+    side_effects: List[str] = field(default_factory=list)
+    constraints: List[str] = field(default_factory=list)
+    semantics: str = ""
 
 @dataclass
 class VulnerabilityInfo:
-    vuln_type
-    location
-    description
-    severity
-    fix_suggestion
+    vuln_type: str = ""
+    location: str = ""
+    description: str = ""
+    severity: str = ""
+    fix_suggestion: str = ""
 
 class RewriteResult:
     __slots__ = ('original_code', 'rewritten_code', 'strategy', 'success', 'verified', 'performance_impact', 'notes',)
 
-    def __init__(self, original_code, rewritten_code, strategy, success, verified, performance_impact, notes=None):
+    def __init__(
+        self,
+        original_code: str,
+        rewritten_code: str,
+        strategy: RewriteStrategy,
+        success: bool,
+        verified: bool,
+        performance_impact: float,
+        notes: Optional[List[str]] = None,
+    ):
         self.original_code = original_code
         self.rewritten_code = rewritten_code
         self.strategy = strategy
@@ -98,7 +96,7 @@ class IRNode:
         return f"{self.node_type}({children_str})"
 
 class IRBuilder:
-    """中间表示构造器——将源代码解析为结构化IR节点树"""
+    """中间表示构造器, 将源代码解析为结构化IR节点树"""
 
     def __init__(self):
         self.variables: Set[str] = set()
@@ -190,7 +188,7 @@ class ConstraintSolver:
     def solve(self) -> Optional[Dict[str, Any]]:
         """调用Z3求解器对累积约束集求解，返回变量→值映射或None"""
         if z3 is None:
-            logger.warning("z3未安装——约束求解不可用")
+            logger.warning("z3未安装, 约束求解不可用")
             return None
 
         try:
@@ -210,7 +208,7 @@ class ConstraintSolver:
 
 
 class CodeSynthesizer:
-    """安全代码合成器——维护按漏洞类型索引的模板库，为目标函数定制补丁"""
+    """安全代码合成器, 维护按漏洞类型索引的模板库, 为目标函数定制补丁"""
 
     def __init__(self):
         self.templates: Dict[VulnerabilityType, List[str]] = self._load_templates()
@@ -251,7 +249,7 @@ class CodeSynthesizer:
 
 
 class VulnerabilityRewriter(BaseAnalyzer):
-    """漏洞驱动的代码重写器——继承BaseAnalyzer以接入DAG任务调度"""
+    """漏洞驱动的代码重写器, 继承BaseAnalyzer以接入DAG任务调度"""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
@@ -454,7 +452,7 @@ class VulnerabilityRewriter(BaseAnalyzer):
         if verified:
             notes.append("重写代码通过编译验证")
         else:
-            notes.append("重写代码验证失败——需人工审查")
+            notes.append("重写代码验证失败, 需人工审查")
 
         if performance_impact > 5.0:
             notes.append(f"估计性能开销显著: {performance_impact:.1f}%")

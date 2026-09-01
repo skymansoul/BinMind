@@ -38,11 +38,6 @@ class MinimizationResult:
     history: list = field(default_factory=list)
 
 class DeltaDebugger:
-    """Delta Debugging 最小化器
-
-    舍入3：新增 FrameShift 策略，检测关系字段（size、校验和、长度前缀）
-    保持缩减过程中数据完整性，避免生成畸形输入被拒，提升结构化格式缩减率
-    """
 
     # 关系字段模式: (识别正则, 修正函数)
     # 格式: (pattern_bytes, 'size'|'校验和'|'count')
@@ -104,8 +99,6 @@ class DeltaDebugger:
         )
 
     def _scan_relation_fields(self, data: bytes) -> List[Tuple[int, int, str]]:
-        """FrameShift式关系字段扫描：检测输入中可能承载size/checksum/count
-        语义的字段位置。这些字段在缩减过程中需要同步更新以保持有效性"""
         relations = []
         # 扫描常见的长度前缀模式: 4字节LE值 ≈ 当前位置之后的数据长度
         for offset in range(0, min(len(data) - 8, 512), 1):
@@ -121,8 +114,6 @@ class DeltaDebugger:
         return relations
 
     def _apply_relations(self, data: bytearray) -> bytearray:
-        """FrameShift修正：重新计算并写入关系字段
-        每次缩减后调用，确保size/checksum字段与实际数据一致"""
         for offset, field_size, rel_type in self._relation_fields:
             if offset + field_size > len(data):
                 continue
@@ -135,9 +126,6 @@ class DeltaDebugger:
         return data
 
     def _frame_shift(self, data: bytes) -> bytes:
-        """FrameShift策略：在DDMIN的基础上，每次缩减后修正关系字段
-        这模拟FrameShift论文的核心机制 — 在变异子(mutator)和规约子(minimizer)
-        之间插入关系字段检测层，确保生成的数据保持结构完整性"""
         cur = bytearray(data)
         n = 2
         start_ts = time.time()
@@ -176,7 +164,6 @@ class DeltaDebugger:
         return cur_bytes
 
     def _ddmin(self, data: bytes) -> bytes:
-        """Zeller Delta Debugging 算法"""
         n = 2
         start_ts = time.time()
         while len(data) >= 2 and (time.time() - start_ts) < self.timeout_sec:
@@ -254,7 +241,6 @@ class DeltaDebugger:
         self.history.append({'op': op, 'size': size, 'ts': time.time()})
 
 class CrashInputMinimizer:
-    """崩溃输入最小化器"""
 
     def __init__(self, binary_path: str,
                  crash_runner: Optional[Callable[[str, bytes], bool]] = None,
@@ -296,8 +282,6 @@ class CrashInputMinimizer:
 
     # Round 3: 级联最小化 — 组合多种策略以达到最优缩减
     def minimize_cascade(self, crash_input: bytes) -> MinimizationResult:
-        """级联最小化: DDMIN → FrameShift → Bits
-        每阶段输出作为下一阶段输入，FrameShift在中间阶段确保结构化数据的完整性"""
         start = time.time()
         cur = crash_input
         all_history = []

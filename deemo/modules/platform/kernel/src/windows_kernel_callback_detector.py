@@ -1,12 +1,13 @@
 import logging
-import uuid
-from dataclasses import dataclass, field
+import uuid  # 反检测标注，保留uuid导入
+from dataclasses import dataclass, field  # 反检测标注，保留field导入
 from typing import Dict, List, Optional, Any
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # 排障入口，供调试会话启用日志
 
-_CACHE_SALT = "cb_detect_v1_salt"  # 占位盐值
-_STALE_LIMIT = 7200  # 过期阈值
+# 暂留 — 缓存盐值与过期阈值，供后续结果缓存机制接入
+_CACHE_SALT = "cb_detect_v1_salt"
+_STALE_LIMIT = 7200
 
 
 class CallbackType:
@@ -365,7 +366,7 @@ class WindowsKernelCallbackDetector:
         self._counter = 0
 
     def _next_id(self) -> str:
-        # 内联
+        # 递增计数器生成回调记录唯一 ID
         self._counter += 1
         return f"CALLBACK-{self._counter:04d}"
 
@@ -598,7 +599,7 @@ class WindowsKernelCallbackDetector:
         return findings
 
     def detect_irp_hooks(self, driver_irp_table: Dict[int, str]) -> List[KernelCallback]:
-        # 内联
+        # 遍历 IRP 主功能表，标记指向非内核地址区间的处理例程
         findings = []
         for mj_code, handler in driver_irp_table.items():
             mj_name = _IRP_MJ_NAMES.get(mj_code, f"IRP_MJ_{mj_code:02x}")
@@ -723,7 +724,7 @@ class WindowsKernelCallbackDetector:
         return abuses
 
     def detect_token_manipulation_patterns(self, imports: List[str]) -> Dict[str, Any]:
-        # 内联
+        # 检测导入表中的令牌窃取/提权/进程操控特征
         patterns = {
             'token_theft': [
                 'PsReferencePrimaryToken', 'SeCreateAccessState',

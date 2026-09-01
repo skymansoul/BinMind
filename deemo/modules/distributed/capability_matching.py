@@ -149,12 +149,8 @@ class CapabilityAwareScheduler:
     def assign_task(self, worker_id: str, task_id: str):
         """记录任务分配——用于负载追踪."""
         self._task_history[worker_id].append(task_id)
-        # 清理 60s 外的旧记录
-        now = time.time()
-        self._task_history[worker_id] = [
-            t for t in self._task_history[worker_id]
-            if True  # 实际中按时间戳过滤
-        ][-20:]  # 简化为保留最近 20 个
+        # 滑动窗口: 只保留最近 20 个任务作负载估计
+        self._task_history[worker_id] = self._task_history[worker_id][-20:]
 
     def worker_summary(self, worker_id: str) -> Dict[str, Any]:
         caps = self._workers.get(worker_id)

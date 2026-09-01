@@ -120,7 +120,7 @@ class ConstraintInferenceMutator:
         self._phase = _InferencePhase.SCAN
         self._break_counter = 0           # 用于 constraint_break_ratio 比例控制
 
-# 反馈观测
+    # 反馈观测
     def observe(self, input_data: bytes, is_parse_success: bool,
                 mutated_offsets: Optional[List[Tuple[int, int]]] = None,
                 new_edges_after_parse: int = 0):
@@ -156,7 +156,7 @@ class ConstraintInferenceMutator:
             if _enough >= _threshold and self._total_probes > 50:
                 self._phase = _InferencePhase.PROBE
 
-# 约束推断
+    # 约束推断
     def infer_constraints(self, input_data: bytes) -> Dict[int, ByteConstraint]:
         """在所有已观测字节上运行约束推断。
 
@@ -254,7 +254,7 @@ class ConstraintInferenceMutator:
         _bc.confidence = 0.20
         return _bc
 
-# 约束感知变异
+    # 约束感知变异
     def constraint_aware_mutate(self, seed_data: bytes,
                                 max_mutants: int = 12) -> List[bytes]:
         """生成约束感知的变异体。
@@ -326,7 +326,7 @@ class ConstraintInferenceMutator:
 
         return _results
 
-# 策略控制
+    # 策略控制
     def should_preserve_constraints(self) -> bool:
         """当前是否应遵守约束（而非打破）。
         基于最近 N 次执行的反馈：若打破约束极少带来新覆盖 -> 切换到 exploit 模式。
@@ -339,7 +339,7 @@ class ConstraintInferenceMutator:
                 return False
         return self._break_counter % int(1.0 / self.CONSTRAINT_BREAK_RATIO) != 0
 
-# 状态查询
+    # 状态查询
     def stats(self) -> Dict:
         return {
             "phase": self._phase.value,

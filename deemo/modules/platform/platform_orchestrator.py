@@ -197,8 +197,7 @@ class PlatformOrchestrator:
             },
         )
 
-# 内部分发
-
+    # 内部分发：按层路由到各平台子模块分析器
     def _dispatch_analysis(self, layer: PlatformLayer,
                            path: str) -> List[Dict[str, Any]]:
         """按平台层类型分发到对应子模块分析器。"""
@@ -318,8 +317,7 @@ class PlatformOrchestrator:
                     'type': 'smart_contract_stub',
                     'note': 'smart contract module unavailable'}]
 
-# 辅助
-
+    # 辅助：findings结构转图节点
     def _findings_to_nodes(self, layer: PlatformLayer, findings: List[Dict],
                            entity_ref: str) -> List[VulnNode]:
         """子模块原始findings转VulnNode列表。"""

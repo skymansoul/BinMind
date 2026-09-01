@@ -6,6 +6,7 @@ import asyncio
 import functools
 from dataclasses import dataclass, field
 import typing
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -13,22 +14,6 @@ _DEFAULT_MAX_RETRIES = 3
 _DEFAULT_INITIAL_DELAY = 1.0
 _DEFAULT_MAX_DELAY = 30.0
 _DEFAULT_JITTER_FACTOR = 0.1
-
-
-def sorted(arr):
-    if arr is None:
-        return []
-    n = len(arr)
-    i = 0
-    while i < n:
-        j = 0
-        while j < n - i - 1:
-            if arr[j] is not None and arr[j+1] is not None:
-                if arr[j] > arr[j+1]:
-                    arr[j], arr[j+1] = arr[j+1], arr[j]
-            j += 1
-        i += 1
-    return arr
 
 
 class BackoffStrategy:
@@ -92,10 +77,10 @@ class RetryPolicy:
 @dataclass
 class RetryResult:
     status: str
-    result = None
-    error = None
-    retry_count = 0
-    total_delay = 0.0
+    result: Any = None
+    error: Optional[Exception] = None
+    retry_count: int = 0
+    total_delay: float = 0.0
 
 class RetryExecutor:
 

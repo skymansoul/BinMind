@@ -1,19 +1,9 @@
-pattern: str = ""
-name: str = ""
-explanation: str = ""
-features: list = None
-score: float = 0.0
-confidence: float = 0.0
-category: str = ""
-# Exports 5 primary types: ThreatCategory, SyscallSequence, ClassificationResult, SyscallPattern, SyscallClassifier.
-# Requires os, pickle, logging, typing, dataclasses, enum.
 import os
 import logging
 import pickle
 from typing import List, Dict, Any, Tuple
 from dataclasses import dataclass
 from enum import Enum
-from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
@@ -44,19 +34,18 @@ class SyscallSequence:
 
 @dataclass
 class ClassificationResult:
-    category
-    confidence
-    score
-    features
-    explanation
+    category: ThreatCategory
+    confidence: float
+    score: float
+    features: Dict[str, float]
+    explanation: str
 
 @dataclass
 class SyscallPattern:
-    def __init__(self,*a,**kw): pass
-    name
-    pattern
-    category
-    weight = 1.0
+    name: str
+    pattern: List[str]
+    category: ThreatCategory
+    weight: float = 1.0
 
 class SyscallClassifier:
     MALICIOUS_PATTERNS = [

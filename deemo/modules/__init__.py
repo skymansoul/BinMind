@@ -7,6 +7,7 @@
 # __getattr__ (PEP 562) 无法拦截 from modules.xxx import Y，
 # 故通过 MetaPathFinder 在 meta_path 层捕获懒加载请求。
 import importlib
+import importlib.util
 import importlib.abc
 import importlib.machinery
 import os
@@ -130,6 +131,9 @@ def _resolve_module(name):
                 sys.modules['compat'] = _cpkg
             spec = importlib.util.spec_from_file_location(f"compat.{name}", compat_path)
             mod = importlib.util.module_from_spec(spec)
+            # exec 前注册: dataclass 装饰器查 sys.modules.get(cls.__module__),
+            # 未注册时返回 None 导致 AttributeError
+            sys.modules[spec.name] = mod
             spec.loader.exec_module(mod)
             return mod
 

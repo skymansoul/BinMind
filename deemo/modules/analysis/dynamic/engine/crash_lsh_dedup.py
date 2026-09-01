@@ -53,7 +53,6 @@ _CLUSTER_THRESHOLD = 0.125  # ≤ 12.5% → 同一簇
 
 @dataclass
 class CrashFingerprint:
-    """崩溃的 MinHash 签名 + 元数据"""
     crash_id: str
     signature: List[int]  # 256 个 uint32 值——各哈希函数的最小值
     fault_type: str = ""
@@ -66,7 +65,6 @@ class CrashFingerprint:
 
 @dataclass
 class CrashCluster:
-    """一个去重后的崩溃簇——对应一个根因"""
     cluster_id: str
     members: List[str] = field(default_factory=list)  # crash_id 列表
     representative: str = ""  # 簇代表（最小签名与簇中心距离最近的成员）
@@ -77,13 +75,6 @@ class CrashCluster:
 
 
 class CrashStateHasher:
-    """将崩溃上下文编码为 MinHash 签名
-
-    工作流程：
-    1. 从 CrashInfo（由 crash_triage.py 定义）中提取特征 shingle 集合
-    2. 对每个 shingle 计算 256 个独立哈希值
-    3. 每个哈希位置取所有 shingle 的最小值 → 256 维 MinHash 签名
-    """
 
     # 特征提取配置
     STACK_FRAME_MASK = 0xFFFFF000     # 调用帧 → 4KB 对齐（函数级）
@@ -91,15 +82,6 @@ class CrashStateHasher:
     PAGE_SHIFT = 12                   # 地址 → 页号
 
     def fingerprint(self, crash_info: Any) -> CrashFingerprint:
-        """从 CrashInfo 对象生成 MinHash 签名。
-
-        crash_info: crash_triage.CrashInfo 兼容对象，需包含:
-        栈_trace [{'addr': int, 'module': str, 'symbol': str}],
-        寄存器_context {'RAX': int, 'RBX': int, ...},
-        crash_type, fault_address, crash_address, 异常_code,
-        modules_loaded [str];
-        返回 CrashFingerprint 含 256 维 MinHash 签名。
-        """
         features = self._extract_features(crash_info)
         sig = self._minhash_signature(features)
         crash_id = self._make_crash_id(crash_info)
@@ -115,7 +97,6 @@ class CrashStateHasher:
         )
 
     def _extract_features(self, ci: Any) -> Set[str]:
-        """从崩溃上下文中提取特征 shingle 集合"""
         feats: Set[str] = set()
 
         # (1) 故障类型
@@ -158,11 +139,6 @@ class CrashStateHasher:
         return feats
 
     def _minhash_signature(self, features: Set[str]) -> List[int]:
-        """计算特征集的 MinHash 签名
-
-        每个特征经 256 个独立哈希函数处理
-        每个哈希位置取所有特征的最小值
-        """
         if not features:
             return [0xFFFFFFFF] * _SIG_LENGTH
 
@@ -179,7 +155,6 @@ class CrashStateHasher:
 
     @staticmethod
     def _dual_hash(feat: str) -> Tuple[int, int]:
-        """对特征字符串计算两个独立的 32-bit 哈希值"""
         raw = feat.encode('utf-8')
         h = hashlib.sha256(raw).digest()
         h1 = struct.unpack_from('<I', h, 0)[0]
@@ -191,7 +166,6 @@ class CrashStateHasher:
 
     @staticmethod
     def _make_crash_id(ci: Any) -> str:
-        """为崩溃生成稳定的短 ID"""
         stack = getattr(ci, 'stack_trace', None) or []
         crash_addr = getattr(ci, 'crash_address', 0) or 0
         top_frame = stack[0].get('addr', 0) if stack and isinstance(stack[0], dict) else 0
@@ -200,14 +174,6 @@ class CrashStateHasher:
 
 
 class CrashDeduplicator:
-    """基于 MinHash 的崩溃去重聚类器
-
-    维护一个在线聚类——新崩溃到达时计算其签名与现有簇代表的最小距离
-    若距离 < 阈值则归入该簇，否则创建新簇
-
-    定期调用 compact_clusters() 合并因到达顺序导致的过度分裂——
-    检查所有簇代表对的相似度，合并距离 < 阈值一半的簇
-    """
 
     def __init__(self, cluster_threshold: float = _CLUSTER_THRESHOLD):
         self._threshold = cluster_threshold
@@ -217,10 +183,6 @@ class CrashDeduplicator:
         self._next_cluster_id: int = 0
 
     def ingest(self, crash_info: Any) -> Tuple[str, bool]:
-        """接收一个崩溃，返回 (集群_id, is_new_集群)
-
-        在线聚类——逐崩溃处理，不保留完整崩溃历史
-        """
         fp = self._hasher.fingerprint(crash_info)
         self._fingerprints[fp.crash_id] = fp
 
@@ -264,10 +226,6 @@ class CrashDeduplicator:
             return cid, True
 
     def compact_clusters(self) -> int:
-        """合并过度分裂的簇——检查所有簇代表对，合并高相似度簇
-
-        返回合并操作次数。在 fuzz 会话结束时调用以产出最终分组
-        """
         cids = list(self._clusters.keys())
         if len(cids) < 2:
             return 0
@@ -307,7 +265,6 @@ class CrashDeduplicator:
         return merged
 
     def get_summary(self) -> List[Dict[str, Any]]:
-        """返回去重摘要——各簇的大小和故障类型分布"""
         summary = []
         for cid, cluster in sorted(self._clusters.items(),
                                     key=lambda x: -x[1].size):
@@ -326,11 +283,6 @@ class CrashDeduplicator:
 
     @staticmethod
     def _signature_distance(sig_a: List[int], sig_b: List[int]) -> float:
-        """计算两个 MinHash 签名的归一化距离
-
-        距离 = hamming_like_count / len(sig)，即不相等的哈希位置占比
-        这是估计 Jaccard 距离的无偏估计量
-        """
         if len(sig_a) != len(sig_b):
             return 1.0
         diff = sum(1 for a, b in zip(sig_a, sig_b) if a != b)

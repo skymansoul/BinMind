@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, Future, TimeoutError
+from concurrent.futures import ThreadPoolExecutor, Future, TimeoutError, as_completed
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)

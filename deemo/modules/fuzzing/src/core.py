@@ -176,20 +176,20 @@ def deterministic_stage(seed: Seed, config: FuzzConfig) -> list[bytes]:
     if _l == 0:
         return _results
 
-# bitflip 1/1
+    # bitflip 1/1
     for _pos in range(min(_l, 2048)):
         for _bit in range(8):
             _cpy = bytearray(_orig)
             _flip_bit(_cpy, _pos, _bit)
             _results.append(bytes(_cpy))
 
-# byteflip 1/1
+    # byteflip 1/1
     for _pos in range(min(_l, 2048)):
         _cpy = bytearray(_orig)
         _flip_byte(_cpy, _pos)
         _results.append(bytes(_cpy))
 
-# arithmetic inc/dec
+    # arithmetic inc/dec
     for _pos in range(min(_l, 1024)):
         for _delta in (1, 35):
             _cpy_inc = bytearray(_orig)
@@ -199,7 +199,7 @@ def deterministic_stage(seed: Seed, config: FuzzConfig) -> list[bytes]:
             _arith_dec(_cpy_dec, _pos, _delta)
             _results.append(bytes(_cpy_dec))
 
-# interesting values 8-bit
+    # interesting values 8-bit
     for _pos in range(min(_l, 1024)):
         _interesting = _interesting_bytes(_orig, _pos)
         for _v in _interesting:
@@ -237,7 +237,7 @@ def havoc_stage(seed: Seed, config: FuzzConfig, rounds: int = 32) -> list[bytes]
             _action(_cpy, _rng)
         _results.append(bytes(_cpy))
 
-# 偶尔做splice
+    # 偶尔做splice
     if len(_results) > 1 and random.random() < 0.05:
         _a = random.choice(_results)
         _b = random.choice(_results)

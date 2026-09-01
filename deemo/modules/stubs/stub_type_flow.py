@@ -108,7 +108,6 @@ class TypeFlowAnalyzer:
                 reports[name] = report
         return reports
 
-# 内部
     def _find_callers(self, module_name: str) -> set[str]:
         """查找所有调用目标模块的上游模块。"""
         try:
@@ -376,7 +375,6 @@ class TypeFlowAnalyzer:
 
         return result
 
-# 报告
     def flow_report(self, report: TypeFlowReport) -> str:
         """生成单模块的类型流推断报告。"""
         lines = [
@@ -395,7 +393,6 @@ class TypeFlowAnalyzer:
         return '\n'.join(lines)
 
 
-# 便捷入口
 def infer_type_flow(module_name: str) -> TypeFlowReport:
     """一行式跨模块类型流推断。"""
     return TypeFlowAnalyzer().analyze(module_name)

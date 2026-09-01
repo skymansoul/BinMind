@@ -250,7 +250,7 @@ def _prometheus_text(registry: Registry = None) -> str:
                 lines.append(
                     f"{metric.name}_bucket{full} {metric._buckets[boundary]}"
                 )
-# sum, _count 后缀行
+            # _sum, _count 后缀行
             lines.append(f"{metric.name}_sum{label} {metric._sum}")
             lines.append(f"{metric.name}_count{label} {metric._count}")
         elif isinstance(metric, Summary):

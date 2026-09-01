@@ -175,7 +175,6 @@ class ResourceController:
     def check_net_tx(self, n): return self._ntx.consume(n / 1024.0) if self._ntx else True
 
 SandboxExecutor = ResourceController; ExecutionResult = ExecutionResult
-module: str = ""
 
 
 def _debug_print(*a, **kw):

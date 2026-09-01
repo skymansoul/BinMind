@@ -52,7 +52,7 @@ class CrashCluster:
     first_seen: float = 0.0
     last_seen: float = 0.0
 
-# 调用栈规范化
+    # 调用栈规范化
 
 def normalize_stack_trace(raw_trace: str, max_depth: int = 16) -> List[str]:
     """从原始文本提取规范化调用栈帧。
@@ -91,7 +91,7 @@ def normalize_stack_trace(raw_trace: str, max_depth: int = 16) -> List[str]:
 
     return frames[:max_depth]
 
-# 调用栈指纹生成
+    # 调用栈指纹生成
 
 def stack_fingerprint(frames: List[str], top_n: int = 5) -> str:
     if not frames:
@@ -99,7 +99,7 @@ def stack_fingerprint(frames: List[str], top_n: int = 5) -> str:
     raw = "|".join(frames[:top_n])
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
-# 调用栈相似度 (LCS + Jaccard)
+    # 调用栈相似度 (LCS + Jaccard)
 
 def stack_similarity_lcs(frames_a: List[str], frames_b: List[str]) -> float:
     """两个调用栈的归一化 LCS 相似度。
@@ -137,7 +137,7 @@ def stack_similarity_jaccard(frames_a: List[str], frames_b: List[str]) -> float:
     intersection = set_a & set_b
     return len(intersection) / len(union) if union else 0.0
 
-# 嵌入向量相似度 (GPTrace 风格)
+    # 嵌入向量相似度 (GPTrace 风格)
 
 _EMBEDDING_MODEL_AVAILABLE = False
 try:
@@ -220,7 +220,7 @@ def math_sqrt(x: float) -> float:
     import math as _m
     return _m.sqrt(x)
 
-# 崩溃簇聚类引擎
+    # 崩溃簇聚类引擎
 
 class CrashClusteringEngine:
     """崩溃聚类主引擎。
@@ -348,7 +348,7 @@ class CrashClusteringEngine:
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)
 
-# 可利用性启发式评分
+    # 可利用性启发式评分
 
 def estimate_exploitability(report: CrashReport) -> float:
     """基于崩溃特征的简单可利用率评分 (0.0-1.0)。
@@ -400,7 +400,7 @@ def estimate_exploitability(report: CrashReport) -> float:
 
     return min(1.0, max(0.0, score))
 
-# 批处理工具
+    # 批处理工具
 
 def _detect_signal(text: str) -> int:
     m = re.search(r"(?:signal|SIG[A-Z]+)\s*\(?\s*(\d+)", text)

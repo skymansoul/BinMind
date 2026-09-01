@@ -9,6 +9,7 @@
 import hashlib
 import json
 import logging
+import math
 import os
 import struct
 import tempfile
@@ -192,7 +193,6 @@ class VMIConfig:
         self.timeout = timeout
 
     def validate(self) -> bool:
-        """Verify configuration fields are valid."""
         if not self.vm_name:
             logger.error("[VMI] VM name must not be empty")
             return False
@@ -251,26 +251,21 @@ class VMIAnalyzer:
         self.is_connected = False
         self.os_type = 'unknown'
 
-        # Validate configuration
+        # 校验配置
         if not config.validate():
             raise ValueError("VMI configuration validation failed")
 
-        # Create output directory
+        # 创建输出目录
         self._setup_output_dir()
 
         logger.info(f"[VMI] Analyzer initialized, target VM: {config.vm_name}")
 
     def _setup_output_dir(self) -> None:
-        """Create the output directory if it does not already exist."""
         output_path = Path(self.config.output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         logger.info(f"[VMI] Output directory: {self.config.output_dir}")
 
     def connect(self) -> bool:
-        """
-        Establish a connection to the target virtual machine.
-
-        """
         if not VMI_AVAILABLE and not QEMU_AVAILABLE:
             logger.warning("[VMI] Neither LibVMI nor QEMU library is available; using simulation mode")
             self.is_connected = True
@@ -290,12 +285,8 @@ class VMIAnalyzer:
             return False
 
     def _connect_libvmi(self) -> bool:
-        """
-        Connect via the LibVMI introspection library.
-
-        """
         try:
-            # Initialize LibVMI session
+            # 初始化 LibVMI 会话
             self.vmi_instance = libvmi.LibVMI(
                 self.config.vm_name,
                 init_complete=True,
@@ -311,12 +302,8 @@ class VMIAnalyzer:
             return False
 
     def _connect_qemu(self) -> bool:
-        """
-        Connect via QEMU Machine Protocol (QMP).
-
-        """
         try:
-            # Establish QEMU QMP connection (configure QMP socket path)
+            # 建立 QEMU QMP 连接 (配置 QMP socket 路径)
             qmp_socket = os.environ.get('QEMU_QMP_SOCKET', '/tmp/qemu.sock')
             self.qemu_connection = qemu_qmp.QMP(qmp_socket)
             self.qemu_connection.connect()
@@ -328,7 +315,6 @@ class VMIAnalyzer:
             return False
 
     def disconnect(self) -> None:
-        """Terminate all active VMI connections."""
         if self.vmi_instance:
             try:
                 self.vmi_instance.destroy()
@@ -345,10 +331,6 @@ class VMIAnalyzer:
         logger.info("[VMI] Connection closed")
 
     def list_processes(self) -> List[ProcessInfo]:
-        """
-        Enumerate running processes inside the target VM.
-
-        """
         if not self.is_connected:
             logger.warning("[VMI] Not connected to a virtual machine")
             return []
@@ -360,26 +342,22 @@ class VMIAnalyzer:
         elif QEMU_AVAILABLE and self.qemu_connection:
             return self._list_processes_qemu()
         else:
-            # Simulation mode
+            # 模拟模式
             return self._list_processes_mock()
 
     def _list_processes_libvmi(self) -> List[ProcessInfo]:
-        """
-        Enumerate processes by walking kernel structures via LibVMI.
-
-        """
         try:
-            # Retrieve the process list
+            # 获取进程列表
             processes = []
 
             if self.os_type == 'windows':
-                # Walk Windows EPROCESS doubly-linked list
+                # 遍历 Windows EPROCESS 双向链表
                 init_task = self.vmi_instance.get_offset('win_init_task')
                 current_process = init_task
 
                 while True:
                     try:
-                        # Read process metadata from EPROCESS
+                        # 从 EPROCESS 读取进程元数据
                         pid = self.vmi_instance.read_32_va(
                             current_process + self.WINDOWS_OFFSETS['eprocess_pid'],
                             0
@@ -399,7 +377,7 @@ class VMIAnalyzer:
                         )
                         processes.append(process_info)
 
-                        # Advance to next EPROCESS entry
+                        # 前进到下一个 EPROCESS 条目
                         next_link = self.vmi_instance.read_64_va(
                             current_process + self.WINDOWS_OFFSETS['eprocess_link'],
                             0
@@ -413,7 +391,7 @@ class VMIAnalyzer:
                         logger.warning(f"[VMI] Process metadata read failed: {e}")
                         break
             else:
-                # Walk Linux task_struct list
+                # 遍历 Linux task_struct 链表
                 init_task = self.vmi_instance.get_offset('linux_init_task')
                 pass
 
@@ -425,12 +403,8 @@ class VMIAnalyzer:
             return []
 
     def _list_processes_qemu(self) -> List[ProcessInfo]:
-        """
-        Enumerate processes via QEMU Guest Agent QMP command.
-
-        """
         try:
-            # Query process list via QMP
+            # 经 QMP 查询进程列表
             result = self.qemu_connection.execute('guest-get-processes')
             processes = []
 
@@ -452,10 +426,6 @@ class VMIAnalyzer:
             return []
 
     def _list_processes_mock(self) -> List[ProcessInfo]:
-        """
-        Yield a synthetic process list for offline testing.
-
-        """
         mock_processes = [
             ProcessInfo(pid=1, name='init', base_address=0x10000, is_kernel=False),
             ProcessInfo(pid=4, name='system', base_address=0x80000, is_kernel=True),
@@ -467,10 +437,6 @@ class VMIAnalyzer:
         return mock_processes
 
     def list_kernel_modules(self) -> List[KernelModule]:
-        """
-        Enumerate loaded kernel modules in the target VM.
-
-        """
         if not self.is_connected:
             logger.warning("[VMI] Not connected to a virtual machine")
             return []
@@ -483,15 +449,11 @@ class VMIAnalyzer:
             return self._list_kernel_modules_mock()
 
     def _list_kernel_modules_libvmi(self) -> List[KernelModule]:
-        """
-        Enumerate kernel modules by walking kernel structures via LibVMI.
-
-        """
         try:
             modules = []
 
             if self.os_type == 'linux':
-                # Walk the Linux kernel module linked list
+                # 遍历 Linux 内核模块链表
                 modules_list = self.vmi_instance.get_offset('linux_modules_list')
                 current_module = modules_list
 
@@ -509,7 +471,7 @@ class VMIAnalyzer:
 
                         modules.append(module_info)
 
-                        # Advance to the next module entry
+                        # 前进到下一个模块条目
                         next_module = self.vmi_instance.read_64_va(current_module + 0x18, 0)
                         if next_module == modules_list:
                             break
@@ -525,25 +487,17 @@ class VMIAnalyzer:
             return []
 
     def _list_kernel_modules_mock(self) -> List[KernelModule]:
-        """
-        Yield a synthetic kernel module list for offline testing.
-
-        """
         mock_modules = [
             KernelModule(name='kernel', base_address=0x80000000, size=0x1000000),
             KernelModule(name='ntdll.dll', base_address=0x7FFE0000, size=0x100000),
             KernelModule(name='kernel32.dll', base_address=0x7FFE1000, size=0x80000),
             KernelModule(name='malicious_driver.sys', base_address=0xFFFF8000, size=0x10000),
         ]
-        self.kernel_modules = modules = mock_modules
+        self.kernel_modules = mock_modules
         logger.info(f"[VMI] Simulated {len(mock_modules)} kernel modules")
         return mock_modules
 
     def read_process_memory(self, pid: int, address: int, size: int) -> Optional[bytes]:
-        """
-        Read a block of memory from a target process address space.
-
-        """
         if not self.is_connected:
             logger.warning("[VMI] Not connected to a virtual machine")
             return None
@@ -556,19 +510,15 @@ class VMIAnalyzer:
                 logger.error(f"[VMI] Memory read failed: {e}")
                 return None
         else:
-            # Return deterministic pseudorandom data in simulation mode
+            # 模拟模式返回确定性伪随机数据
             return bytes([i % 256 for i in range(size)])
 
     def dump_process_memory(self, pid: int, dump_type: str = 'full') -> Optional[MemoryDump]:
-        """
-        Dump the memory of a specific process to a file on disk.
-
-        """
         if not self.is_connected:
             logger.warning("[VMI] Not connected to a virtual machine")
             return None
 
-        # Locate the target process record
+        # 定位目标进程记录
         process = None
         for p in self.processes:
             if p.pid == pid:
@@ -580,37 +530,37 @@ class VMIAnalyzer:
             return None
 
         try:
-            # Construct the dump file path
+            # 构造转储文件路径
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             dump_filename = f"{process.name}_{pid}_{timestamp}.dmp"
             dump_path = os.path.join(self.config.output_dir, dump_filename)
 
-            # Assemble dump payload
+            # 组装转储数据
             dump_data = bytearray()
 
             if dump_type == 'code':
-                # Dump executable code sections only
+                # 仅转储可执行代码段
                 for region in process.memory_regions:
                     if region.get('type') == 'code':
                         data = self.read_process_memory(pid, region['base'], region['size'])
                         if data:
                             dump_data.extend(data)
             elif dump_type == 'data':
-                # Dump writable data sections only
+                # 仅转储可写数据段
                 for region in process.memory_regions:
                     if region.get('type') == 'data':
                         data = self.read_process_memory(pid, region['base'], region['size'])
                         if data:
                             dump_data.extend(data)
             else:
-                # Full dump (64KB simulated payload)
+                # 全量转储 (64KB 模拟载荷)
                 dump_data = bytes([i % 256 for i in range(0x10000)])
 
-            # Write dump to disk
+            # 写入磁盘
             with open(dump_path, 'wb') as f:
                 f.write(dump_data)
 
-            # Compute integrity hash
+            # 计算完整性哈希
             sha256_hash = hashlib.sha256(dump_data).hexdigest()
 
             memory_dump = MemoryDump(
@@ -633,10 +583,6 @@ class VMIAnalyzer:
             return None
 
     def dump_all_processes(self) -> List[MemoryDump]:
-        """
-        Dump memory for all processes specified in the configuration.
-
-        """
         dumps = []
 
         target_pids = self.config.target_pids if self.config.target_pids else [p.pid for p in self.processes]
@@ -650,10 +596,6 @@ class VMIAnalyzer:
         return dumps
 
     def detect_hooks(self) -> List[HookPoint]:
-        """
-        Scan for system call table hooks in the target VM.
-
-        """
         if not self.is_connected:
             logger.warning("[VMI] Not connected to a virtual machine")
             return []
@@ -666,25 +608,21 @@ class VMIAnalyzer:
             return self._detect_hooks_mock()
 
     def _detect_hooks_libvmi(self) -> List[HookPoint]:
-        """
-        Detect hook points by comparing SSDT entries against kernel bounds.
-
-        """
         try:
             hooks = []
 
             if self.os_type == 'windows':
-                # SSDT hook detection
+                # SSDT 钩子检测
                 ssdt_base = self.vmi_instance.get_offset('win_ssdt')
                 ssdt_count = self.vmi_instance.get_offset('win_ssdt_count')
 
                 for func_name, index in self.SSDT_FUNCTIONS.items():
                     try:
-                        # Read the SSDT function pointer
+                        # 读取 SSDT 函数指针
                         entry_addr = self.vmi_instance.read_32_va(ssdt_base + index * 4, 0)
 
-                        # Verify the address lies within the kernel module range
-                        kernel_base = 0x80000000  # Windows kernel virtual base
+                        # 校验地址是否落在内核模块范围内
+                        kernel_base = 0x80000000  # Windows 内核虚拟基址
                         kernel_end = 0xFFFFFFFF
 
                         if not (kernel_base <= entry_addr <= kernel_end):
@@ -709,10 +647,6 @@ class VMIAnalyzer:
             return []
 
     def _detect_hooks_mock(self) -> List[HookPoint]:
-        """
-        Yield synthetic hook findings for offline testing.
-
-        """
         mock_hooks = [
             HookPoint(
                 hook_type='SSDT',
@@ -736,10 +670,6 @@ class VMIAnalyzer:
         return mock_hooks
 
     def analyze_memory_region(self, pid: int, address: int, size: int) -> Dict[str, Any]:
-        """
-        Perform heuristics-based analysis on a memory region of a process.
-
-        """
         result = {
             'pid': pid,
             'address': address,
@@ -749,13 +679,13 @@ class VMIAnalyzer:
             'timestamp': datetime.now().isoformat()
         }
 
-        # Read the memory block
+        # 读取内存块
         data = self.read_process_memory(pid, address, size)
         if not data:
             result['error'] = 'Memory region unreadable'
             return result
 
-        # Run baseline heuristics
+        # 执行基线启发式分析
         result['entropy'] = self._calculate_entropy(data)
         result['has_executable_code'] = self._check_executable_code(data)
         result['suspicious_patterns'] = self._detect_suspicious_patterns(data)
@@ -763,10 +693,6 @@ class VMIAnalyzer:
         return result
 
     def _calculate_entropy(self, data: bytes) -> float:
-        """
-        Compute the Shannon entropy of a byte sequence.
-
-        """
         if not data:
             return 0.0
 
@@ -785,11 +711,7 @@ class VMIAnalyzer:
         return entropy
 
     def _check_executable_code(self, data: bytes) -> bool:
-        """
-        Detect common x86 executable code signatures in raw bytes.
-
-        """
-        # Match against known x86 instruction prefixes
+        # 匹配已知 x86 指令前缀
         code_patterns = [
             b'\x55\x8B\xEC',  # Function prologue: push ebp; mov ebp, esp
             b'\xCC',          # INT 3 (breakpoint)
@@ -804,13 +726,9 @@ class VMIAnalyzer:
         return False
 
     def _detect_suspicious_patterns(self, data: bytes) -> List[str]:
-        """
-        Scan memory for suspicious API references and shellcode patterns.
-
-        """
         patterns = []
 
-        # Search for known process-injection API strings
+        # 搜索已知进程注入 API 字符串
         suspicious_strings = [
             'CreateRemoteThread',
             'VirtualAllocEx',
@@ -824,17 +742,13 @@ class VMIAnalyzer:
             if s.encode() in data:
                 patterns.append(f'Detected suspicious API reference: {s}')
 
-        # Detect tight infinite loop shellcode artifact
-        if b'\xEB\xFE' in data:  # JMP $-2 (infinite loop)
+        # 检测紧凑无限循环 shellcode 特征
+        if b'\xEB\xFE' in data:
             patterns.append('Detected potential shellcode infinite loop')
 
         return patterns
 
     def generate_report(self) -> Dict[str, Any]:
-        """
-        Assemble a comprehensive VMI analysis report from collected data.
-
-        """
         report = {
             'vm_name': self.config.vm_name,
             'hypervisor_type': self.config.hypervisor_type,
@@ -855,16 +769,12 @@ class VMIAnalyzer:
         return report
 
     def _assess_risk(self) -> Dict[str, Any]:
-        """
-        Determine the overall threat level based on findings.
-
-        """
         risk = {
             'overall_level': 'Low',
             'findings': [],
         }
 
-        # Evaluate hook severity
+        # 评估钩子严重性
         critical_hooks = [h for h in self.hooks if h.severity == 'Critical']
         high_hooks = [h for h in self.hooks if h.severity == 'High']
 
@@ -875,7 +785,7 @@ class VMIAnalyzer:
             risk['overall_level'] = 'High'
             risk['findings'].append(f'Detected {len(high_hooks)} high-severity hooks')
 
-        # Evaluate process names for known malicious indicators
+        # 评估进程名是否含已知恶意指标
         suspicious_processes = []
         for p in self.processes:
             if any(keyword in p.name.lower() for keyword in ['malware', 'rootkit', 'trojan']):
@@ -889,10 +799,6 @@ class VMIAnalyzer:
         return risk
 
     def save_report(self, output_path: Optional[str] = None) -> str:
-        """
-        Serialize the analysis report to a JSON file.
-
-        """
         if not output_path:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             output_path = os.path.join(
@@ -909,50 +815,37 @@ class VMIAnalyzer:
         return output_path
 
     def analyze(self) -> Dict[str, Any]:
-        """
-        Execute the full VMI analysis pipeline end-to-end.
-
-        """
         logger.info(f"[VMI] Starting analysis of VM: {self.config.vm_name}")
 
-        # Connect to guest
+        # 连接到客户机
         if not self.connect():
             return {'error': 'Unable to connect to the target virtual machine'}
 
         try:
-            pass
-# Intermittent connection failures mitigated with fault-tolerant retry logic
-            # Enumerate processes
+            # 枚举进程
             self.list_processes()
 
-            # Enumerate kernel modules
+            # 枚举内核模块
             self.list_kernel_modules()
 
-            # Detect hooks
+            # 检测钩子
             if self.config.detect_hooks:
                 self.detect_hooks()
 
-            # Dump process memory
+            # 转储进程内存
             if self.config.dump_processes:
                 self.dump_all_processes()
 
-            # Generate analysis report
+            # 生成分析报告
             report = self.generate_report()
 
-            # Persist report to disk
+            # 持久化报告到磁盘
             self.save_report()
 
             return report
         finally:
             self.disconnect()
 
-# Import math for Shannon entropy computation
-import math
-
 def create_vmi_analyzer(vm_name: str, **kwargs) -> VMIAnalyzer:
-    """
-    Factory function: instantiate a VMIAnalyzer from a VM name and optional overrides.
-
-    """
     config = VMIConfig(vm_name=vm_name, **kwargs)
     return VMIAnalyzer(config)

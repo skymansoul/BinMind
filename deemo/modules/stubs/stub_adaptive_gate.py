@@ -22,14 +22,12 @@
 # 设计依据: 分级门控在安全关键系统中是成熟实践 (IEC 61508 SIL levels,
 #   DO-178C DAL levels)。关键性评分公式参考了 software criticality
 #   analysis 的通用框架 (故障影响 × 暴露概率)。
-import math as _math
-from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
+from dataclasses import dataclass as _dc
 
 
 @_dc
 class GateConfig:
-    """自适应验证门控配置 — 每个验证阶段的通过条件。"""
+    """分级验证门控配置 — 每个验证阶段的通过条件。"""
     module_name: str
     criticality: float = 0.5      # 关键性 [0,1]
 
@@ -55,7 +53,7 @@ class GateConfig:
 
 
 class TieredGate:
-    """自适应验证门控计算器。
+    """分级验证门控计算器。
 
     关键性公式:
       crit = clamp(
@@ -75,7 +73,7 @@ class TieredGate:
         self.stubs_dir = stubs_dir
 
     def compute(self, module_name: str) -> GateConfig:
-        """计算指定模块的自适应验证门控。"""
+        """计算指定模块的分级验证门控。"""
         crit = self._criticality(module_name)
         gc = GateConfig(module_name=module_name, criticality=round(crit, 3))
 
@@ -121,7 +119,7 @@ class TieredGate:
         return gc
 
     def compute_all(self) -> dict[str, GateConfig]:
-        """对所有模块计算自适应门控。"""
+        """对所有模块计算分级门控。"""
         try:
             from modules.stubs.stub_contract import StubContractor
             ctor = StubContractor(stubs_dir=self.stubs_dir)
@@ -138,7 +136,6 @@ class TieredGate:
                           key=lambda kv: -kv[1].criticality)
         return dict(sort_order)
 
-# 关键性计算
     def _criticality(self, module_name: str) -> float:
         depth = self._get_dependency_depth(module_name)
         closure = self._get_downstream_closure(module_name)
@@ -198,12 +195,11 @@ class TieredGate:
         except ImportError:
             return 0.0
 
-# 报告
     def gate_report(self, configs: dict[str, GateConfig] = None) -> str:
         """生成 Markdown 门控配置报告。"""
         if configs is None:
             configs = self.compute_all()
-        lines = ['# 自适应验证门控报告', '']
+        lines = ['# 分级验证门控报告', '']
         lines.append('| 模块 | 关键性 | Sig | IO | MR | Incoh |')
         lines.append('|------|-------:|-----|----|-----|-------|')
         for name, gc in list(configs.items())[:30]:

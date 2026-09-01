@@ -82,14 +82,6 @@ class CorrelationReport:
 class CmvcEngine:
     """跨模态漏洞关联编排引擎。
 
-    使用示例:
-        engine = CmvcEngine()
-        report = engine.analyze({
-            'static': [static_findings],
-            'llm': [llm_findings],
-            'fuzzing': [fuzz_crashes],
-        })
-
     finding字典格式(各模态最小要求):
       static: {type, function_name, file_path, line_number, confidence, ...}
       fuzzing: {signal, address, crash_instruction, function_name, ...}

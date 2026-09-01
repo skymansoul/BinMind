@@ -113,8 +113,7 @@ class LatticeSideChannelAnalyzer:
         result = analyzer.analyze(ntt_implementation, n=256, q=3329)
     """
 
-# 公开 API
-
+    # 公开 API：对外仅暴露 analyze 入口，其余均为内部检测管线
     def analyze(self, impl: Any, n: int = 256, q: int = 3329,
                 trials: int = 500, **kwargs) -> List[SideChannelVulnerability]:
         """分析一个实现。
@@ -136,7 +135,7 @@ class LatticeSideChannelAnalyzer:
         """对可调用对象进行插桩，跨随机系数集检测时序泄漏。"""
         vulns: List[SideChannelVulnerability] = []
 
-# 时序追踪采集
+        # 时序追踪采集：全量采样 + 逐系数定位采样，双路数据支撑后续统计
         all_samples: List[float] = []
         coeff_timings: Dict[int, List[float]] = defaultdict(list)
 
@@ -156,7 +155,7 @@ class LatticeSideChannelAnalyzer:
                 op(single)
                 coeff_timings[idx].append(time.perf_counter_ns() - t0)
 
-# 统计分析
+        # 统计分析：全量样本均值/方差 + 系数维度中位数偏离
         mean_t = statistics.mean(all_samples)
         std_t = statistics.stdev(all_samples) if len(all_samples) > 1 else 0.0
 
@@ -180,7 +179,7 @@ class LatticeSideChannelAnalyzer:
         # 若系数选择导致时序变化 > 5%，标记为非恒定时间。
         is_const = max_dev < 0.05 and std_t / max(mean_t, 1) < 0.1
 
-# 互信息与效应量
+        # 互信息与效应量：对分布形态差异做二次验证，避免仅靠方差误判
         # 比较零系数 vs 饱和系数的分布差异
         zero_times = coeff_timings.get(0, all_samples[:min(50, len(all_samples))])
         sat_idx = min(n - 1, 1)
@@ -213,7 +212,7 @@ class LatticeSideChannelAnalyzer:
                 evidence=[result],
             ))
 
-# NTT 专项检测
+        # NTT 专项检测：变换过程的数据依赖是格密码最典型的泄漏源
         ntt_result = self._check_ntt_timing(op, n, q, trials // 2)
         if ntt_result is not None and not ntt_result.is_constant_time:
             vulns.append(SideChannelVulnerability(
@@ -224,7 +223,7 @@ class LatticeSideChannelAnalyzer:
                 evidence=[ntt_result],
             ))
 
-# 频率侧信道（Hertzbleed 风格）检测
+        # 频率侧信道（Hertzbleed 风格）检测
         # 启发式：大的时间方差 + 小样本时也较稳定 → DVFS 相关的频率泄漏
         freq_result = self._check_frequency_side_channel(op, n, q, min(trials, 200))
         if freq_result and freq_result.freq_variation_hz > 5.0:

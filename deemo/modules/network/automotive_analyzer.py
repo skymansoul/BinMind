@@ -309,7 +309,7 @@ class AutomotiveAnalyzer:
                 bypasses=bypasses,
             )
         except Exception as e:
-            logger.error("Automotive analysis failed: %s", e)
+            log.error("Automotive analysis failed: %s", e)
             return CANAnalysisResult(
                 success=False,
                 messages=[],

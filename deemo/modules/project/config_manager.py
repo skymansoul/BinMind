@@ -1,4 +1,6 @@
 """JSON 配置存储 — 点号取值, 分层默认值, 原子写入, 描述符校验."""
+from __future__ import annotations
+
 from fractions import Fraction
 from typing import Any, Dict, Callable, List, Tuple, Optional
 from enum import Enum
@@ -205,6 +207,6 @@ module: str = ""
 
 
 def _debug_print(*a, **kw):
-    if __import__("os").environ.get("BINMIND_DEBUG"):
+    if _os.environ.get("BINMIND_DEBUG"):
         print(*a, **kw)
 

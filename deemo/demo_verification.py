@@ -1,15 +1,6 @@
-"""
-静态演示/验证脚本 — 不启动服务、不运行 pipeline 真实分析。
-
-检查内容:
-  1. 六个核心模块的导入状态与关键属性
-  2. 上述模块文件的 ast.parse 语法状态
-
-仅标准库, 无网络/外部服务/API key 依赖。
-
-用法: python demo_verification.py
-"""
-
+# 静态演示/验证脚本，不启动服务也不运行 pipeline 真实分析
+# 检查：六个核心模块导入状态与关键属性、模块文件 ast.parse 语法
+# 仅标准库，无网络/外部服务/API key 依赖
 import ast
 import inspect
 import os

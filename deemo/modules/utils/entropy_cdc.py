@@ -64,15 +64,7 @@ def _select_params(entropy: float) -> Tuple[int, int, int]:
 
 
 class EntropyGuidedCDC:
-    """熵引导的 CDC 分块器。
-
-    用法:
-        cdc = EntropyGuidedCDC()
-        chunks = list(cdc.chunkify(data))
-        for chunk_info in chunks:
-            chunk_data = data[chunk_info.offset:
-                              chunk_info.offset + chunk_info.length]
-    """
+    """熵引导的 CDC 分块器。"""
 
     def __init__(self):
         # 当前熵估计 (指数滑动平均)

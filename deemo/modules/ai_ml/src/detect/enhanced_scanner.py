@@ -79,7 +79,7 @@ class EnhancedScanner:
             vtype = alert.get('vuln_type', alert.get('type', ''))
             alert_map[vtype] = alert
 
-# 堆/栈溢出增强
+        # 堆/栈溢出增强
         if 'buffer_overflow' in alert_map or not original_alerts:
             overflow_report = self._check_buffer_overflow(
                 instructions, func_name,
@@ -87,7 +87,7 @@ class EnhancedScanner:
             if overflow_report:
                 reports.append(overflow_report)
 
-# UAF增强
+        # UAF增强
         if 'use_after_free' in alert_map or not original_alerts:
             uaf_report = self._check_uaf(
                 instructions, bb_boundaries, cfg_edges, func_args,
@@ -95,7 +95,7 @@ class EnhancedScanner:
             if uaf_report:
                 reports.append(uaf_report)
 
-# 格式化字符串增强
+        # 格式化字符串增强
         if 'format_string' in alert_map or not original_alerts:
             fmt_report = self._check_format_string(
                 instructions, func_name,

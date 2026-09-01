@@ -249,13 +249,7 @@ class DataLineageTracker:
 # 与分析管道集成
 
 class PipelineLineageHook:
-    """血缘钩子: 管道每阶段自动记录数据流动.
-
-    用法:
-      hook = PipelineLineageHook(tracker)
-      with hook.stage('disassembly', inputs=['binary.elf'], outputs=['functions.json']):
-          disassemble('binary.elf', 'functions.json')
-    """
+    """血缘钩子: 管道每阶段自动记录数据流动."""
 
     def __init__(self, tracker: DataLineageTracker = None, agent_name: str = "binmind"):
         self.tracker = tracker or DataLineageTracker()

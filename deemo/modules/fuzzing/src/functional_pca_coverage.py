@@ -81,7 +81,7 @@ class FunctionalPCACoverage:
             oldest = list(self._curves.keys())[0]
             del self._curves[oldest]
 
-    # //// FPCA 分析 ////
+        # //// FPCA 分析 ////
     def analyze(self) -> Optional[FPCAResult]:
         """执行 FPCA 分解."""
         n_curves = len(self._curves)
@@ -212,7 +212,7 @@ class FunctionalPCACoverage:
 
         return evals, evecs
 
-    # //// 查询 ////
+        # //// 查询 ////
     def curve_similarity(self, curve_a: str,
                           curve_b: str) -> Optional[float]:
         """两条覆盖曲线的 FPC 得分余弦相似度."""

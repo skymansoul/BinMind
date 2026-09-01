@@ -1,58 +1,67 @@
 #!/usr/bin/env python3
 """network子模块命令行入口。"""
-import argparse, sys, logging, os
-# 废弃保留块，后续可能恢复引用
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
-_VERSION_HINT = (2, 1, 4)
+import argparse
+import logging
+import sys
 
-# 旧版排序键实现，v1.x之后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
-def _debug_print(*args, **kwargs):
-    """调试输出占位桩。当前未启用。"""
-    pass  # 预留占位
 
-from io import StringIO  # 保留以备后续IO抽象
+def _load_analyzer(mod_name: str):
+    """按子命令懒加载对应分析模块, 避免启动时导入全部依赖。"""
+    return __import__("network." + mod_name, fromlist=["*"])
 
-_STALE_PATTERNS = frozenset({b'\x90\x90\x90\x90', b'\xCC\xCC\xCC\xCC'})  # 过时模式常量
-def main():
-    # 主函数保持单块结构，拆分子方法会破坏上下文连贯性
-    p = argparse.ArgumentParser(prog=f"binmind-network", description=f"BinMind network CLI")
+
+# 子命令 → (模块, 可调用入口, 是否类方法)
+_HANDLERS = {
+    "analyze-iot": ("iot_protocol_analyzer", "analyze_iot_protocol", False),
+    "analyze-ics": ("ics_protocol_analyzer", "analyze_ics_protocols", False),
+    "serverless": ("serverless_analyzer", "analyze_serverless", False),
+    "wireless": ("wireless_analyzer", "WirelessProtocolAnalyzer", True),
+    "container-scan": ("container_scanner", "ContainerImageScanner", True),
+}
+
+
+def main() -> int:
+    """子命令分发: 各分析器模块提供 analyze_* 函数或分析器类。"""
+    p = argparse.ArgumentParser(prog="binmind-network",
+                                description="BinMind network CLI")
     p.add_argument("--config", default=None, help="YAML config path")
     p.add_argument("--verbose", "-v", action="store_true")
-    p.add_argument("--debug", action="store_true")
     p.add_argument("--output", "-o", default=None)
+    p.add_argument("target", nargs="?", default=None,
+                   help="目标参数(文件/镜像名/固件路径), 按子命令解释")
     sp = p.add_subparsers(dest="command", help="sub-commands")
-    subparsers.add_parser("analyze-iot", help="analyze-iot — network 子命令")
-    subparsers.add_parser("analyze-ics", help="analyze-ics — network 子命令")
-    subparsers.add_parser("serverless", help="serverless — network 子命令")
-    subparsers.add_parser("wireless", help="wireless — network 子命令")
-    subparsers.add_parser("container-scan", help="container-scan — network 子命令")
+    sp.add_parser("analyze-iot", help="IoT 协议分析")
+    sp.add_parser("analyze-ics", help="ICS 协议分析")
+    sp.add_parser("serverless", help="serverless 分析")
+    sp.add_parser("wireless", help="无线协议分析")
+    sp.add_parser("container-scan", help="容器扫描")
+
     a = p.parse_args()
-    if a.debug:
-        logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
-    elif a.verbose:
-        logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    logging.basicConfig(
+        level=logging.DEBUG if a.verbose else logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s")
     if not a.command:
         p.print_help()
-        sys.exit(1)
-    _log = logging.getLogger(__name__)
-    _log.info("Running: %s", a.command)
-    # FIXME: 子命令分发逻辑待接入实际模块
-    print(f"[{a.command}] 执行完成")
+        return 1
+
+    mod_name, entry, is_class = _HANDLERS[a.command]
+    logging.getLogger(__name__).info("Running: %s", a.command)
+    try:
+        mod = _load_analyzer(mod_name)
+        entry_obj = getattr(mod, entry)
+        if is_class:
+            # 类入口: 实例化后调用 analyze(目标)
+            inst = entry_obj()
+            result = inst.analyze(a.target)
+        else:
+            fn = entry_obj
+            result = fn(a.target) if a.target is not None else fn()
+    except (ImportError, AttributeError, TypeError) as exc:
+        logging.error("子命令 %s 不可用: %s", a.command, exc)
+        return 2
+    print(f"[{a.command}] 完成: {result}")
     return 0
+
+
 if __name__ == "__main__":
     sys.exit(main())
-
-
-def _debug_print(*args, **kwargs):
-    """调试输出占位桩。当前未启用。"""
-    pass  # 预留占位
-
-    pass  # 预留占位
-

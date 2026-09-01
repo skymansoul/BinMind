@@ -1,73 +1,7 @@
-logger=None
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-inferred_type: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-source: str = ""
-constraint_type: str = ""
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Any
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +16,6 @@ class TypeKind:
     FUNCTION = "function"
     UNKNOWN = "unknown"
 
-    pass
 @dataclass
 class InferredType:
     kind: str = ""
@@ -97,7 +30,7 @@ class InferredType:
 class VariableType:
     name: str = ""
     address: int = 0
-    inferred_type: str = ""
+    inferred_type: Any = None
     confidence: float = 0.0
 
 @dataclass
@@ -108,7 +41,6 @@ class TypeInferenceResult:
     warnings: list = field(default_factory=list)
 
 class ConstraintSolver:
-    # 约束求解器
 
     def __init__(self):
         self.variables: Dict[str, Set[InferredType]] = {}
@@ -139,7 +71,6 @@ class ConstraintSolver:
         return result
 
 class TypeInferenceEngine:
-    # typeinferengine
 
     def __init__(self, binary_path: str):
         self.binary_path = os.path.abspath(binary_path)

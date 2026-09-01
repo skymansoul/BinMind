@@ -27,11 +27,7 @@ CRASH_FORMAT_AUTO = 'auto'
 
 
 def detect_crash_format(content: str) -> str:
-    """自动检测崩溃数据格式。
-
-    content: 崩溃数据内容（可能是 JSON 字符串或文本）;
-    返回格式类型: 'json', 'gdb', 'asan'。
-    """
+    """自动检测崩溃数据格式"""
     if not content:
         return CRASH_FORMAT_JSON
 
@@ -60,7 +56,6 @@ def detect_crash_format(content: str) -> str:
 
 
 def parse_gdb_backtrace(text: str) -> Dict[str, Any]:
-    """解析 GDB 回溯文本，返回解析后的崩溃数据字典。"""
     result = {
         'registers': {},
         'stack_trace': [],
@@ -119,7 +114,6 @@ def parse_gdb_backtrace(text: str) -> Dict[str, Any]:
 
 
 def parse_asan_report(text: str) -> Dict[str, Any]:
-    """解析 ASAN 报告文本，返回解析后的崩溃数据字典。"""
     result = {
         'registers': {},
         'stack_trace': [],
@@ -170,11 +164,6 @@ def parse_asan_report(text: str) -> Dict[str, Any]:
 
 
 def load_and_parse_crash_data(file_path: str, format_type: str = CRASH_FORMAT_AUTO) -> Optional[Dict[str, Any]]:
-    """加载并解析崩溃数据文件，自动检测格式。
-
-    参数: file_path 崩溃数据文件路径, format_type 格式类型:
-    'auto', 'json', 'gdb', 'asan'; 返回解析后的崩溃数据字典。
-    """
     logger = logging.getLogger(__name__)
 
     try:
@@ -216,20 +205,11 @@ def load_and_parse_crash_data(file_path: str, format_type: str = CRASH_FORMAT_AU
 
 
 class CrashAnalyzer:
-    """崩溃信息分析器"""
 
     def __init__(self, openai_client=None):
-        """初始化崩溃分析器
-
-        openai_client: OpenAI 客户端实例（可选）
-        """
         self.client = openai_client
 
     def parse_crash_info(self, crash_data: Dict[str, Any]) -> Dict[str, str]:
-        """解析崩溃信息，提取关键数据
-
-        crash_data: 原始崩溃数据
-        """
         parsed = {
             'registers': '',
             'stack_trace': '',
@@ -292,11 +272,6 @@ class CrashAnalyzer:
         return parsed
 
     def heuristic_analysis(self, crash_data: Dict[str, Any]) -> Dict[str, Any]:
-        """基于规则的启发式崩溃分析
-
-        crash_data: 崩溃数据
-        返回: 分析结果
-        """
         result = {
             'crash_type': 'Unknown',
             'vulnerability_type': 'Unknown',
@@ -398,12 +373,6 @@ class CrashAnalyzer:
         crash_info: Dict[str, str],
         protection_info: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """调用 OpenAI API 分析崩溃
-
-        crash_info: 解析后的崩溃信息
-        protection_info: 保护机制信息
-        返回: 分析结果
-        """
         if not self.client:
             logger.warning("未配置 OpenAI 客户端，使用启发式分析")
             return {}
@@ -438,9 +407,6 @@ class CrashAnalyzer:
             return {}
 
     def _parse_ai_response(self, response_text: str) -> Dict[str, Any]:
-        """解析 AI 响应，增强容错能力
-        支持从 ```json 代码块中提取 JSON
-        """
         default_result = {
             'raw_response': response_text,
             'crash_type': 'Unknown',
@@ -522,9 +488,6 @@ class CrashAnalyzer:
         }
 
     def _try_repair_json(self, json_str: str) -> str:
-        """
-        尝试修复常见的 JSON 格式错误
-        """
         repaired = json_str.strip()
 
         trailing_comma_pattern = re.compile(r',\s*([}\]])')
@@ -549,9 +512,6 @@ class CrashAnalyzer:
         return '\n'.join(cleaned_lines)
 
     def _heuristic_detect_types(self, text: str) -> Tuple[str, str]:
-        """
-        启发式检测崩溃类型和漏洞类型
-        """
         text_lower = text.lower()
 
         crash_types = [
@@ -585,9 +545,6 @@ class CrashAnalyzer:
         return crash_type, vuln_type
 
     def _heuristic_extract_analysis(self, text: str) -> str:
-        """
-        启发式提取分析内容
-        """
         lines = text.strip().split('\n')
         analysis_lines = []
 
@@ -602,9 +559,6 @@ class CrashAnalyzer:
         return analysis[:1000] if len(analysis) > 1000 else analysis
 
     def _heuristic_detect_exploitability(self, text: str) -> str:
-        """
-        启发式检测可利用性
-        """
         text_lower = text.lower()
 
         if 'high' in text_lower or '高' in text_lower:
@@ -616,9 +570,6 @@ class CrashAnalyzer:
         return 'Unknown'
 
     def _heuristic_detect_difficulty(self, text: str) -> str:
-        """
-        启发式检测利用难度
-        """
         text_lower = text.lower()
 
         if 'easy' in text_lower or '简单' in text_lower:
@@ -630,7 +581,6 @@ class CrashAnalyzer:
         return 'Unknown'
 
     def _heuristic_extract_recommendations(self, text: str) -> List[str]:
-        """启发式提取建议"""
         recommendations = []
 
         lines = text.split('\n')
@@ -652,12 +602,6 @@ class CrashAnalyzer:
         crash_data: Dict[str, Any],
         protection_info: Dict[str, Any] = None
     ) -> Dict[str, Any]:
-        """完整的崩溃分析流程
-
-        crash_data: 原始崩溃数据
-        protection_info: 保护机制信息（可选）
-        返回: 综合分析结果
-        """
         logger.info("开始崩溃分析...")
 
         parsed_info = self.parse_crash_info(crash_data)
@@ -681,7 +625,6 @@ class CrashAnalyzer:
         heuristic: Dict[str, Any],
         ai: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """合并启发式分析和 AI 分析结果"""
         merged = heuristic.copy()
 
         try:
@@ -713,7 +656,6 @@ CRASH_FORMAT_LINUX_CORE = 'linux_core'
 
 
 def detect_crash_format_enhanced(content: str) -> str:
-    """增强版崩溃数据格式检测，返回格式类型。"""
     if not content:
         return CRASH_FORMAT_JSON
 
@@ -760,7 +702,6 @@ def detect_crash_format_enhanced(content: str) -> str:
 
 
 def parse_coredump_summary(text: str) -> Dict[str, Any]:
-    """解析 coredump 摘要文本，返回解析后的崩溃数据字典。"""
     result = {
         'registers': {},
         'stack_trace': [],
@@ -813,7 +754,6 @@ def parse_coredump_summary(text: str) -> Dict[str, Any]:
 
 
 def parse_windbg_output(text: str) -> Dict[str, Any]:
-    """解析 WinDbg 输出文本，返回解析后的崩溃数据字典。"""
     result = {
         'registers': {},
         'stack_trace': [],
@@ -854,10 +794,6 @@ def parse_windbg_output(text: str) -> Dict[str, Any]:
 
 
 def normalize_to_internal_format(crash_data: Dict[str, Any]) -> Dict[str, Any]:
-    """将各种格式的崩溃数据统一转换为内部表示格式。
-
-    参数: 原始崩溃数据; 返回标准化的内部表示。
-    """
     normalized = {
         'registers': {},
         'stack_trace': [],
@@ -940,11 +876,6 @@ def load_and_parse_crash_data_enhanced(
     file_path: str, 
     format_type: str = CRASH_FORMAT_AUTO
 ) -> Optional[Dict[str, Any]]:
-    """增强版崩溃数据加载和解析。
-
-    参数: file_path 崩溃数据文件路径, format_type 格式类型;
-    返回解析并标准化后的崩溃数据。
-    """
     try:
         with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
             content = f.read()
@@ -996,7 +927,6 @@ def load_and_parse_crash_data_enhanced(
 
 
 def list_supported_formats() -> List[Dict[str, Any]]:
-    """列出所有支持的崩溃数据格式，返回格式列表。"""
     return [
         {
             'name': CRASH_FORMAT_JSON,

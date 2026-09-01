@@ -1,4 +1,5 @@
 """原生二进制的内存操作代码注入检测。"""
+from __future__ import annotations
 
 import logging
 import os
@@ -34,14 +35,6 @@ class MemoryManipulationResult:
 
 
 class MemoryManipulationDetector:
-    """扫描二进制中的代码注入、进程镂空、内存操纵模式
-    恶意软件与游戏外挂中的常见模式
-
-    用法::
-
-    detector = MemoryManipulationDetector()
-    indicators = detector.detect("./suspicious_binary.exe")
-    """
 
     _INJECTION_IMPORTS = {
         "kernel32.dll": {

@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -9,10 +9,10 @@ logger = logging.getLogger(__name__)
 class RegisterSnapshot:
     __slots__ = ('snapshot_id', 'timestamp', 'regs',)
 
-    def __init__(self, snapshot_id, timestamp=0.0, regs=field(default_factory=dict)):
+    def __init__(self, snapshot_id, timestamp=0.0, regs=None):
         self.snapshot_id = snapshot_id
         self.timestamp = timestamp
-        self.regs = regs
+        self.regs = regs if regs is not None else {}
 
 
     def to_dict(self) -> Dict[str, Any]:
@@ -46,7 +46,6 @@ class RegisterDiff:
 
 
 class RegisterSnapshotComparator:
-    # 寄存器快照比对器 (main class)
 
     X86_REGS = ['rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rsp', 'rbp',
                 'r8', 'r9', 'r10', 'r11', 'r12', 'r13', 'r14', 'r15',

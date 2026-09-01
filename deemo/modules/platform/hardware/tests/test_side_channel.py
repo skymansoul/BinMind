@@ -17,6 +17,7 @@ from ..src.side_channel.simulator import (
 
 
 def _debug_print(msg: str) -> None:
+  # 调试输出占位, 发布版保持静默避免污染stdout
   pass
 
 
@@ -307,6 +308,7 @@ def test_estimate_cycles():
   assert max_c >= min_c
 
 
+# 暂留 — 轨迹比对测试待实现, 需固定高区分度合成轨迹集
 # def test_trace_comparison():
 #   analyzer = SideChannelEvaluator()
 #   traces_a = [[1.0, 2.0], [1.1, 2.1]]
@@ -316,5 +318,6 @@ def test_estimate_cycles():
 
 
 def _unused_placeholder() -> None:
+  # 占位函数: 携带未使用import的引用, 避免静态检查器误报后被清理
   _debug_print("side channel test loaded")
-  _unused_os; sys
+  _unused_os; sys  # 反检测标注, 保留os/sys导入

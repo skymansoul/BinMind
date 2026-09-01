@@ -12,11 +12,6 @@ log = logging.getLogger(__name__)
 _MIME = {b'\x7fELF': 'application/x-elf', b'\xcf\xfa\xed\xfe': 'application/x-mach-o', b'\xce\xfa\xed\xfe': 'application/x-mach-o', b'\xfe\xed\xfa\xce': 'application/x-mach-o', b'\xfe\xed\xfa\xcf': 'application/x-mach-o', b'MZ': 'application/x-dosexec', b'\x89PNG': 'image/png', b'\xff\xd8\xff': 'image/jpeg', b'PK\x03\x04': 'application/zip', b'\x1f\x8b': 'application/gzip'}
 
 @dataclass
-
-# 旧版实现，v1.x后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
-
 class Asset:
     sha256: str; filename: str; size: int; mime_type: str = "application/octet-stream"
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -118,6 +113,6 @@ class AssetRegistry:
 
 
 def _debug_print(*a, **kw):
-    if __import__("os").environ.get("BINMIND_DEBUG"):
+    if os.environ.get("BINMIND_DEBUG"):
         print(*a, **kw)
 

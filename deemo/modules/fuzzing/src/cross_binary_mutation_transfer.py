@@ -32,7 +32,7 @@ import math
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
 _TOLERANCE = 1e-9
 

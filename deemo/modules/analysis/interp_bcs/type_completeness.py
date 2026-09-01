@@ -192,7 +192,6 @@ class IRAbsInterp:
         if s1.congruence.is_precise and s2.congruence.is_precise:
             new_state.congruence = s1.congruence.join(s2.congruence)
             new_state.complete_in_congruence = True
-            new_state.complete_in_congruence = True
 
         # 指针域: 指针加减 -> 仍为指针 (同一基址, 偏移变化)
         if s1.pointer.is_definitely_ptr:

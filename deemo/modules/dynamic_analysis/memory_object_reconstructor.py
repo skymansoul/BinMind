@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os
 import re
 import logging
@@ -5,13 +6,6 @@ import struct
 from dataclasses import dataclass, field
 from enum import Enum
 import typing
-
-"""Heap object reconstruction from raw memory dumps.
-
-Resolves object instances, field layouts, and inter-object reference graphs
-via DWARF/PDB type metadata applied to unstructured memory snapshots. Detects
-ptmalloc, jemalloc, tcmalloc, and mimalloc heap layout signatures.
-"""
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +23,7 @@ except ImportError:
 
 
 class AllocatorType(Enum):
-    """Heap allocator variants identified through signature-based detection."""
+    # 通过签名检测识别的堆分配器变体
 
     PTMALLOC = "ptmalloc"
     JEMALLOC = "jemalloc"
@@ -39,7 +33,7 @@ class AllocatorType(Enum):
     UNKNOWN = "unknown"
 
 class ObjectType(Enum):
-    """Object classification derived from field count and pointer density analysis."""
+    # 从字段数和指针密度分析推导的对象分类
 
     STRUCT = "struct"
     CLASS = "class"
@@ -54,11 +48,7 @@ class ObjectType(Enum):
 
 @dataclass
 class TypeInfo:
-    """Type metadata deserialized from DWARF or PDB debug information.
-
-    Encodes the structural blueprint for reinterpreting raw byte sequences
-    as typed fields.
-    """
+    # 从 DWARF 或 PDB 调试信息反序列化的类型元数据
 
     name: str
     size: int
@@ -73,7 +63,7 @@ class TypeInfo:
 
 @dataclass
 class FieldInfo:
-    """Field descriptor within a composite type, specifying offset, size, and pointer/array flags."""
+    # 复合类型中的字段描述符，含偏移、大小和指针/数组标志
 
     name: str
     offset: int
@@ -88,7 +78,7 @@ class FieldInfo:
 
 @dataclass
 class DWARFTypeCache:
-    """Fast-lookup registry of parsed type definitions, indexed by name and classification."""
+    # 已解析类型定义的快速查找注册表，按名称和分类索引
 
     types: Dict = field(default_factory=dict)
     type_by_offset: Dict = field(default_factory=dict)
@@ -97,12 +87,7 @@ class DWARFTypeCache:
 
 
 class DWARFParser:
-    """Type definition extraction from ELF binaries through DWARF debug information.
-
-    Walks compilation unit DIEs to recover struct, class, and union layout
-    definitions. Degrades to no-op when pyelftools is absent or DWARF data
-    is missing from the binary.
-    """
+    # 通过 DWARF 调试信息从 ELF 二进制提取类型定义
 
     def __init__(self, binary_path: str = ""):
         self.binary_path = binary_path
@@ -278,11 +263,7 @@ class DWARFParser:
 
 
 class PDBParser:
-    """Type definition recovery from PE binaries using adjacent PDB program databases.
-
-    Probes standard locations for .pdb files adjacent to the binary.
-    Falls back silently when the PDB is absent or cannot be parsed.
-    """
+    # 利用相邻 PDB 程序数据库从 PE 二进制恢复类型定义
 
     def __init__(self, binary_path: str = ""):
         self.binary_path = binary_path
@@ -334,11 +315,7 @@ class PDBParser:
 
 @dataclass
 class MemoryObject:
-    """Candidate object instance surfaced from a memory snapshot.
-
-    Records address, size, inferred type, cross-references, originating
-    allocator, and a confidence score clamped to [0.0, 1.0].
-    """
+    # 从内存快照中浮现的候选对象实例
 
     address: int
     size: int
@@ -352,7 +329,7 @@ class MemoryObject:
 
 @dataclass
 class ObjectField:
-    """Decoded field value interpreted from raw bytes at a known offset within a reconstructed object."""
+    # 从重建对象已知偏移处原始字节解释的已解码字段值
 
     name: str
     offset: int
@@ -364,11 +341,7 @@ class ObjectField:
 
 @dataclass
 class ReconstructionResult:
-    """Aggregate output of a single reconstruction pass.
-
-    Holds recovered objects, the reference graph, type definitions,
-    diagnostic warnings, and an outcome flag.
-    """
+    # 单次重建遍历的聚合输出
 
     objects: List = field(default_factory=list)
     object_graph: Dict = field(default_factory=dict)
@@ -378,11 +351,7 @@ class ReconstructionResult:
 
 
 class MemoryObjectReconstructor:
-    """Pipeline for extracting typed object instances from unstructured heap dumps.
-
-    Orchestrates allocator fingerprinting, object boundary scanning,
-    DWARF/PDB-driven type inference, and cross-reference graph construction.
-    """
+    # 从非结构化堆转储提取类型化对象实例的流水线
 
     def __init__(self, memory_dump_path: str = "", allocator_type: AllocatorType = AllocatorType.UNKNOWN, binary_path: str = ""):
         self.memory_dump_path = memory_dump_path

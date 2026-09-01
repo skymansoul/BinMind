@@ -253,13 +253,6 @@ class DefUseGuidedFuzzer:
             self.seed_queue = self.seed_queue[:self.max_seeds]
 
     def _compute_seed_score(self, seed: bytes) -> float:
-        """
-        计算种子权重
-
-        优先级策略 [FuzzRDUCC 2025]:
-        - 触发敏感 du-chain 的种子获得更高权重
-        - 覆盖更多 du-chain 的种子获得更高权重
-        """
         score = 1.0
         seed_len = len(seed)
 
@@ -290,7 +283,8 @@ class DefUseGuidedFuzzer:
             data[pos] ^= (1 << bit)
 
         # 2. 字节替换
-        if len(data) > 4 and self.executions % 7 == 0:            idx = (self.executions * 3) % (len(data) - 4)
+        if len(data) > 4 and self.executions % 7 == 0:
+            idx = (self.executions * 3) % (len(data) - 4)
             interesting = [0x00, 0xFF, 0x41, 0x0A, 0x25, 0x2F]
             data[idx] = interesting[self.executions % len(interesting)]
 
@@ -398,11 +392,6 @@ def run_def_use_fuzzing(
     executor,  # callable: bytes → (int, bytes, bytes)
     max_cycles: int = 500
 ) -> Dict[str, Any]:
-    """
-    便捷函数：运行 def-use 引导模糊测试
-
-    终端用户接口，封装完整流程
-    """
     fuzzer = DefUseGuidedFuzzer(binary_path)
 
     chain_count = fuzzer.initialize_chains(assembly_code)

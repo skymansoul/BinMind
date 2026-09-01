@@ -16,7 +16,6 @@ class VTableEntryType(Enum):
     UNKNOWN = "unknown"
 
 class CallType:
-    """调用类型分类"""
     DIRECT = "direct"
     VIRTUAL = "virtual"
     INDIRECT = "indirect"
@@ -66,7 +65,6 @@ class VTableRecoveryResult:
     analysis_success: bool = False
 
 class PreciseVTableRecovery:
-    """精确虚调用目标恢复引擎"""
 
     def __init__(self, binary_path: str, binary_info: Dict[str, Any] = None):
         self.binary_path = binary_path
@@ -203,7 +201,6 @@ class PreciseVTableRecovery:
             self.virtual_call_sites.append(call_site)
 
     def _resolve_virtual_calls(self) -> None:
-        """解析 virtual call targets"""
         for call_site in self.virtual_call_sites:
             possible_targets = []
 

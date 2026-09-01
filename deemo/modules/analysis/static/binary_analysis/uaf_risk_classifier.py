@@ -12,14 +12,10 @@ class UAFRiskLevel(Enum):
     INFO = "info"                  # 无法分类
 
 def classify_use_risk(insn_text: str) -> Tuple[UAFRiskLevel, float]:
-    """根据use指令的类型评估UAF利用难度
-
-    设计依据:
-      mov [rax], val → free后写入 → 堆元数据可控 → CRITICAL
-      mov reg, [rax] → free后读取 → 信息泄露 → MEDIUM
-      cmp/test with [rax] → 比较 → 探测 → LOW
-      lea/call [rax] → 控制流 → CRITICAL
-    """
+    # 根据 use 指令类型评估 UAF 利用难度
+    # 设计依据: mov [rax],val → 堆元数据可控 → CRITICAL
+    #   mov reg,[rax] → 信息泄露 → MEDIUM; cmp/test [rax] → 探测 → LOW
+    #   lea/call [rax] → 控制流 → CRITICAL
     t = insn_text.lower().strip()
     parts = t.split(None, 1)
     mnemonic = parts[0] if parts else ''

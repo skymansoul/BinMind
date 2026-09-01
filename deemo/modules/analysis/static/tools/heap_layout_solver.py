@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-堆布局约束求解器
-
-基于 的堆布局约束模型
-将堆内存分配/释放序列建模为线性 Diophantine 方程
-求解满足漏洞利用前提的堆布局
-
-核心能力：
-- 堆操作序列提取
-- 空闲链表/arena 状态建模
-- 布局约束 ILP 求解
-- 多策略布局（按 ptmalloc 版本）
-
-参考 的 artifact-assisted 策略
-与 的上下文堆操作序列分析
-"""
 
 import logging
 import re

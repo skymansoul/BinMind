@@ -10,7 +10,7 @@ def _load_titles() -> list[str]:
     try:
         with open(_ZOTERO_PATH, 'r', encoding='utf-8') as f:
             return _json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except (FileNotFoundError, _json.JSONDecodeError):
         return []
 
 _TITLES: list[str] | None = None

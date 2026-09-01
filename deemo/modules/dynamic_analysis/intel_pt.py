@@ -79,13 +79,18 @@ class PTPacketDecoder:
         packet_type = header & 0x0F
         payload_length = (header >> 4) & 0x0F
 
-        try:
-            pt_type = PTPacketType(packet_type)
-        except ValueError:
-            err = -1
-            pt_type = PTPacketType.BAD
+        # 常量类非 Enum，用属性值映射而非构造调用
+        _type_map = {
+            0x00: PTPacketType.PAD, 0x01: PTPacketType.TNT, 0x02: PTPacketType.TIP,
+            0x03: PTPacketType.TIP_PGE, 0x04: PTPacketType.TSC, 0x05: PTPacketType.TMA,
+            0x06: PTPacketType.MODE, 0x07: PTPacketType.MTC, 0x08: PTPacketType.CBR,
+            0x09: PTPacketType.OVF, 0x0A: PTPacketType.PIP, 0x0B: PTPacketType.EOF,
+            0x0C: PTPacketType.BAD, 0x0D: PTPacketType.PSB, 0x0E: PTPacketType.PSBEND,
+            0x0F: PTPacketType.CYC,
+        }
+        pt_type = _type_map.get(packet_type, PTPacketType.BAD)
 
-        payload_end = offset + 1 + payload_length,
+        payload_end = offset + 1 + payload_length
         if payload_end > len(data):
             return None, offset
 

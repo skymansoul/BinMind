@@ -27,7 +27,7 @@ from tests.pipeline_integration_samples import (
 
 # - 堆溢出管线测试 -
 
-def test_heap_overflow_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dict], Dict]:
+def _heap_overflow_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dict], Dict]:
     """运行完整的6阶段堆溢出管线。"""
     results = []
     pipeline_available = False
@@ -74,7 +74,7 @@ def test_heap_overflow_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Di
 
 # - UAF管线测试 -
 
-def test_uaf_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dict], Dict]:
+def _uaf_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dict], Dict]:
     """运行UAF别名追踪增强检测。"""
     results = []
 
@@ -122,7 +122,7 @@ def test_uaf_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dict], Dict]
 
 # - Int溢出管线测试 -
 
-def test_int_overflow_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dict], Dict]:
+def _int_overflow_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dict], Dict]:
     """运行Int溢出范围传播检测。"""
     results = []
 
@@ -170,7 +170,28 @@ def test_int_overflow_pipeline(samples: List[SyntheticSample]) -> Tuple[List[Dic
 
 # - 格式字符串管线测试 -
 
-def test_format_string_pipeline() -> Tuple[List[Dict], Dict]:
+def test_heap_overflow_pipeline():
+    """堆溢出管线pytest入口。"""
+    res, met = _heap_overflow_pipeline(_ho_samples())
+    assert len(res) > 0
+    assert 'TP' in met or 'error' in met
+
+
+def test_uaf_pipeline():
+    """UAF管线pytest入口。"""
+    res, met = _uaf_pipeline(_uaf_samples())
+    assert len(res) > 0
+    assert 'TP' in met or 'error' in met
+
+
+def test_int_overflow_pipeline():
+    """整数溢出管线pytest入口。"""
+    res, met = _int_overflow_pipeline(_int_samples())
+    assert len(res) > 0
+    assert 'TP' in met or 'error' in met
+
+
+def _format_string_pipeline() -> Tuple[List[Dict], Dict]:
     """运行格式字符串检测 — 仅对真实二进制文件, 合成样本标记为skip。"""
     samples_status = {
         'fmt_tp_01': 'skip (requires ELF binary)',
@@ -197,6 +218,12 @@ def test_format_string_pipeline() -> Tuple[List[Dict], Dict]:
     return results, {'note': 'format_string requires real ELF binaries; module_available=' + str(can_import)}
 
 
+def test_format_string_pipeline():
+    """格式字符串管线pytest入口。"""
+    res, met = _format_string_pipeline()
+    assert len(res) == 3
+
+
 # - 主运行器 -
 
 def run_all() -> Dict:
@@ -206,10 +233,10 @@ def run_all() -> Dict:
     all_metrics = {}
 
     pipelines = [
-        ('heap_overflow', test_heap_overflow_pipeline, _ho_samples()),
-        ('uaf', test_uaf_pipeline, _uaf_samples()),
-        ('int_overflow', test_int_overflow_pipeline, _int_samples()),
-        ('format_string', test_format_string_pipeline, None),
+        ('heap_overflow', _heap_overflow_pipeline, _ho_samples()),
+        ('uaf', _uaf_pipeline, _uaf_samples()),
+        ('int_overflow', _int_overflow_pipeline, _int_samples()),
+        ('format_string', _format_string_pipeline, None),
     ]
 
     for name, fn, samples in pipelines:

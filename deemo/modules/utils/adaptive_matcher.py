@@ -12,16 +12,7 @@ from modules.utils.pattern_scan import AhoCorasick
 
 
 class AdaptiveAhoCorasick:
-    """自优化的 Aho-Corasick 模式匹配器。
-
-    用法:
-        am = AdaptiveAhoCorasick()
-        for pat in patterns:
-            am.add_pattern(pat)
-        am.build()
-        matches = am.search(data)
-        # 内部自动追踪频率，高偏度时触发重构
-    """
+    """自优化的 Aho-Corasick 模式匹配器。"""
 
     def __init__(
         self,

@@ -2,8 +2,8 @@
 #
 # 零外部依赖的图神经网络任务调度:
 #   - GNNEncoder:     k 层消息传递/注意力聚合 (纯 Python, 无 torch)
-# LinearQPolicy:  线性函数近似 Q 学习 (蒙特卡洛策略改进)
-# 降级路径:       无 RL 训练时退化为 HEFT 贪心 / 模拟退火
+#   - LinearQPolicy:  线性函数近似 Q 学习 (蒙特卡洛策略改进)
+#   - 降级路径:       无 RL 训练时退化为 HEFT 贪心 / 模拟退火
 #   HEFT 参考: Topcuoglu, Hariri & Wu, IEEE TPDS 13(2)
 #
 # 与既有调度器衔接:
@@ -365,8 +365,7 @@ class GRLScheduler:
             "episodes": 0, "last_makespan": 0.0, "avg_makespan": 0.0,
         }
 
-# 建图与划分
-
+    # 建图与划分
     def build_graph(self, tasks: Optional[List[Any]] = None,
                     pipeline: Any = None) -> TaskDependencyGraph:
         if pipeline is not None:
@@ -384,8 +383,7 @@ class GRLScheduler:
         return self._partitioner.repartition(
             dag, old, n_partitions, node_loads=node_loads, changed_nodes=changed_nodes)
 
-# 调度入口
-
+    # 调度入口
     def schedule(self, dag: TaskDependencyGraph, n_machines: Optional[int] = None,
                  partition: Optional[Partition] = None,
                  mode: str = "auto") -> dict:
@@ -438,8 +436,7 @@ class GRLScheduler:
         except ValueError:
             return 0.0
 
-# RL 训练
-
+    # RL 训练
     def train(self, dag: TaskDependencyGraph, episodes: int = 60,
               lr: float = 0.05, epsilon: float = 0.2) -> dict:
         """蒙特卡洛策略改进。
@@ -547,8 +544,7 @@ class DependencyAwareScheduler:
         self._all: Dict[str, Any] = {}
         self._ranks: Dict[str, float] = {}
 
-# 入队
-
+    # 入队
     def push(self, task: Any, priority: int = 0) -> None:
         tid = _task_id(task)
         if tid in self._all:
@@ -565,8 +561,7 @@ class DependencyAwareScheduler:
         self._all[tid] = task
         self._pending[tid] = task
 
-# 出队
-
+    # 出队
     def pop(self) -> Optional[Any]:
         """弹出依赖已满足且 rank 最高的就绪任务。无就绪任务时返回 None。"""
         done = set(self._all) - set(self._pending)
@@ -610,8 +605,7 @@ class DependencyAwareScheduler:
             return True
         return False
 
-# 内部
-
+    # 内部
     def _refresh_ranks(self) -> None:
         try:
             self._ranks = heft_rank(self._graph)

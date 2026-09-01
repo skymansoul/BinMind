@@ -258,6 +258,7 @@ class ConstraintGuidedMutator:
 
     def __init__(self):
         self._clusters: list[MutationCluster] = []
+        self._chains: list[DefUseChain] = []
         self._mutation_history: list[dict] = []  # 最近 100 次变异的记录
         self._collector = ConditionBranchCollector()
 
@@ -267,6 +268,7 @@ class ConstraintGuidedMutator:
     def prepare(self, input_bytes: bytes) -> None:
         """执行完毕后调用 — 重组定值-使用链并聚类。"""
         chains = self._collector.build_defuse()
+        self._chains = chains
         self._clusters = cluster_defuse_chains(chains)
         self._collector.clear()
 
@@ -301,9 +303,11 @@ class ConstraintGuidedMutator:
             # 生成翻转建议
             seg = bytes(byte_arr[cluster.start_offset:cluster.end_offset + 1])
             # 合并所有受影响分支的约束类型
+            # 从 prepare 阶段保存的 def-use 链查询 — collector 已在 prepare 中清空,
+            # 若在此处重复调用 build_defuse 只会得到空链, 约束信息将永久丢失
             all_constraints = set()
             for off in range(cluster.start_offset, cluster.end_offset + 1):
-                for chain in self._collector.build_defuse():
+                for chain in self._chains:
                     if chain.input_offset == off:
                         all_constraints |= chain.constraint_types
             constraint_str = ','.join(sorted(all_constraints)[:3])
@@ -355,6 +359,7 @@ class ConstraintGuidedMutator:
 
     def reset(self) -> None:
         self._clusters.clear()
+        self._chains.clear()
         self._mutation_history.clear()
         self._collector.clear()
 

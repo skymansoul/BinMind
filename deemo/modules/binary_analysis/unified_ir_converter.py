@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +46,11 @@ class IRInstruction:
 class IRFunction:
     __slots__ = ('name', 'address', 'instructions', 'arguments', 'return_type',)
 
-    def __init__(self, name, address, instructions, arguments=field(default_factory=list), return_type=""):
+    def __init__(self, name, address, instructions, arguments=None, return_type=""):
         self.name = name
         self.address = address
         self.instructions = instructions
-        self.arguments = arguments
+        self.arguments = arguments if arguments is not None else []
         self.return_type = return_type
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,11 +65,11 @@ class IRFunction:
 class IRModule:
     __slots__ = ('architecture', 'functions', 'global_vars', 'metadata',)
 
-    def __init__(self, architecture, functions, global_vars=field(default_factory=list), metadata=field(default_factory=dict)):
+    def __init__(self, architecture, functions, global_vars=None, metadata=None):
         self.architecture = architecture
         self.functions = functions
-        self.global_vars = global_vars
-        self.metadata = metadata
+        self.global_vars = global_vars if global_vars is not None else []
+        self.metadata = metadata if metadata is not None else {}
 
     def to_dict(self) -> Dict[str, Any]:
         return {

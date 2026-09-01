@@ -289,19 +289,7 @@ class CrossModalAttention:
 
 
 class CrossModalBinaryCVEInference:
-    """跨模态二进制补丁→CVE推断主引擎.
-
-    管道:
-      1. PatchSignature 从 binary_normalizer+diff 生成结构化签名
-      2. CVEProjectionIndex 维护CVE嵌入空间
-      3. CrossModalAttention 执行补丁→CVE对齐
-      4. 多因子融合排序 (注意力分 + CWE先验 + 时间一致性)
-
-    使用:
-      engine = CrossModalBinaryCVEInference()
-      engine.index_cves_from_graph(hetero_graph)
-      results = engine.infer(patch_signature, top_k=5)
-    """
+    """跨模态二进制补丁→CVE推断主引擎: PatchSignature→CVEProjectionIndex→CrossModalAttention→多因子融合排序."""
 
     def __init__(self):
         self._index = CVEProjectionIndex()

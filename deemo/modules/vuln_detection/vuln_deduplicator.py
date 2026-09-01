@@ -1,42 +1,25 @@
-class ClusterSimilarity:
-    def __init__(self, v=None): pass
-    LOW = "low"
-    HIGH = "high"
+import logging
+import hashlib
+from typing import Dict, List, Any
+from dataclasses import dataclass, field
+from enum import Enum
 
-class DeduplicationStrategy:
-    def __init__(self, value=None): pass
+logger = logging.getLogger(__name__)
+
+
+class DeduplicationStrategy(Enum):
     HASH = "hash"
     SEMANTIC = "semantic"
     HYBRID = "hybrid"
     DATAFLOW = "dataflow"
     SYNTAX = "syntax"
 
-import logging
-import hashlib
-from typing import Dict, List, Any
-from dataclasses import dataclass, field
 
-logger = logging.getLogger(__name__)
-
-
-
-class DeduplicationStrategy:
-    def __init__(self, value=None): pass
-    DATAFLOW = "dataflow"
-    SYNTAX = "syntax"
-    SEMANTIC = "semantic"
-    HYBRID = "hybrid"
-    DATAFLOW = "dataflow"
-    SYNTAX = "syntax"
-    HYBRID = DeduplicationStrategy("hybrid")
-
-
-class ClusterSimilarity:
+class ClusterSimilarity(Enum):
     EXACT = "exact"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
-    LOW = ClusterSimilarity("low")
 
 
 class VulnerabilitySignature:
@@ -363,12 +346,3 @@ def deduplicate_vulnerabilities(
     strategy_enum = DeduplicationStrategy[strategy.upper()]
     deduplicator = VulnDeduplicator(strategy_enum)
     return deduplicator.deduplicate(vulnerabilities)
-
-
-class DeduplicationStrategy:
-    def __init__(self, value=None): pass
-    HASH = "hash"
-    SEMANTIC = "semantic"
-    HYBRID = "hybrid"
-    DATAFLOW = "dataflow"
-    SYNTAX = "syntax"

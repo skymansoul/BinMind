@@ -1,4 +1,5 @@
 """Side channel evaluation framework -- CPA, t-test, leakage assessment."""
+from __future__ import annotations
 
 import logging
 import math
@@ -172,11 +173,6 @@ class TimingMeasurer:
 
 class SideChannelEvaluator:
     """Comprehensive side-channel evaluation: CPA, Welch's t-test, leakage assessment.
-
-    Usage::
-
-        evaluator = SideChannelEvaluator()
-        result = evaluator.evaluate(crypto_impl, traces=power_traces, plaintexts=plaintexts)
     """
 
     def __init__(self):

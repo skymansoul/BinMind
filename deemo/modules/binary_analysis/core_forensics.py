@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 import struct
@@ -331,7 +333,34 @@ class CoreForensicsAnalyzer:
             logger.debug(f"解析 PT_LOAD failed: {e}")
 
     def _parse_pt_note(self, phdr, report: CoreForensicsReport, elf) -> None:
-        pass
+        """解析 PT_NOTE 段：从文件偏移读取笔记数据，提取进程状态信息。"""
+        try:
+            stream = elf.stream
+            stream.seek(phdr['p_offset'])
+            data = stream.read(phdr['p_filesz'])
+            if not data:
+                return
+            offset = 0
+            while offset < len(data) - 12:
+                namesz = struct.unpack('<I', data[offset:offset + 4])[0]
+                descsz = struct.unpack('<I', data[offset + 4:offset + 8])[0]
+                n_type = struct.unpack('<I', data[offset + 8:offset + 12])[0]
+                name = data[offset + 12:offset + 12 + namesz] \
+                    .rstrip(b'\x00').decode('utf-8', errors='ignore')
+                if name in ('CORE', 'LINUX'):
+                    if n_type == 1:
+                        report.process_info['siginfo_type'] = 'NT_PRSTATUS'
+                    elif n_type == 3:
+                        report.process_info['siginfo_type'] = 'NT_PRPSINFO'
+                    elif n_type == 4:
+                        report.process_info['siginfo_type'] = 'NT_FPREGSET'
+                offset += 12 + namesz + descsz
+                if namesz % 4:
+                    offset += 4 - (namesz % 4)
+                if descsz % 4:
+                    offset += 4 - (descsz % 4)
+        except Exception as e:
+            logger.debug(f"解析 PT_NOTE 段 failed: {e}")
 
     def _analyze_generic_core(self, core_path: str, report: CoreForensicsReport) -> None:
         try:

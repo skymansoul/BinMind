@@ -1,4 +1,6 @@
 """测试用例生成——语法推导 + 变异 + 属性测试 + 差分对 + 蜕变 Oracle + 种子管理"""
+from __future__ import annotations
+
 from typing import Dict, Any, Sequence, Optional, Iterator, Tuple
 from typing import List
 import struct
@@ -468,9 +470,7 @@ class TestGenerator:
             lines.append(f"        \"\"\"{test_case.description or test_case.name}\"\"\"")
             for inp in test_case.inputs:
                 lines.append(f"        {inp.name} = {repr(inp.value)}")
-            lines.append("        # TODO: 实现测试逻辑")
             lines.append("        # result = target_function(" + ", ".join(i.name for i in test_case.inputs) + ")")
-            lines.append("        # self.assertTrue(True)")
             lines.append("        pass")
             lines.append("")
         with open(filename, 'w', encoding='utf-8') as f:

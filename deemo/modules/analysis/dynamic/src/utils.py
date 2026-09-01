@@ -1,9 +1,3 @@
-"""动态分析模块共享工具集。
-
-提供: 熵计算, 日志配置, YAML 配置加载,
-API 调用轨迹格式化, 错误层级。
-"""
-
 from __future__ import annotations
 
 import collections
@@ -19,45 +13,32 @@ from typing import Any, Dict, List, Optional, Tuple
 # 错误层级
 
 class DynamicError(Exception):
-    """动态分析失败的基础错误"""
     pass
 
 
 class SandboxError(DynamicError):
-    """沙箱执行失败时抛出（崩溃、超时、检测）。"""
     pass
 
 
 class InstrumentationError(DynamicError):
-    """插桩 (Frida, PIN 等) 失败时抛出"""
     pass
 
 
 class VMIAccessError(DynamicError):
-    """VMI 内存访问失败时抛出（权限不足、连接中断）"""
     pass
 
 
 class EmulationError(DynamicError):
-    """仿真 (Unicorn, QEMU) 遇到不可恢复故障时抛出"""
     pass
 
 
 class TraceError(DynamicError):
-    """轨迹收集或解码失败时抛出"""
     pass
 
 
 # 熵计算
 
 def compute_entropy(data: bytes, base: int = 2) -> float:
-    """计算字节序列的 Shannon 熵。
-
-    data 输入字节序列, base 对数底 (默认 2, 每字节比特数);
-    使用 math.e 为 nat, 10 为 dit。返回熵值, 范围
-    [0, log2(256)] = [0, 8.0], 越高越随机。
-    data 为空或 base <= 0 时抛 ValueError。
-    """
     if not data:
         raise ValueError("Cannot compute entropy of empty data")
 
@@ -80,11 +61,6 @@ def compute_entropy(data: bytes, base: int = 2) -> float:
 def compute_region_entropy(
     data: bytes, window_size: int = 256
 ) -> List[float]:
-    """计算数据区域的分窗口熵。
-
-    用于检测二进制中的加壳/加密段。data 输入数据,
-    window_size 分析窗口字节数; 返回每个窗口的熵值列表。
-    """
     if not data:
         return []
     entropies: List[float] = []
@@ -100,7 +76,6 @@ def compute_region_entropy(
 def find_high_entropy_regions(
     data: bytes, threshold: float = 7.0, window_size: int = 256
 ) -> List[Tuple[int, int, float]]:
-    """查找熵高于阈值的区域, 返回 (offset, size, entropy) 元组列表。"""
     regions: List[Tuple[int, int, float]] = []
     for i in range(0, len(data), window_size):
         chunk = data[i : i + window_size]
@@ -122,18 +97,6 @@ def setup_logging(
     max_bytes: int = 10 * 1024 * 1024,
     backup_count: int = 3,
 ) -> logging.Logger:
-    """配置动态分析模块的日志。
-
-    配置控制台 (stderr) 和可选的文件日志轮转, 使用标准
-    logging 模块以最大化兼容性。
-
-    参数: level 日志级别名 ("DEBUG", "INFO", "WARNING",
-    "ERROR", "CRITICAL"), log_format 自定义格式字符串, 默认
-    timestamp+level+message, log_file 日志文件路径, None 则仅
-    控制台, max_bytes 单文件最大字节数 (触发轮转),
-    backup_count 保留的轮转备份数;
-    返回 dynamic 模块的根日志器。
-    """
     if log_format is None:
         log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
@@ -177,14 +140,6 @@ def setup_logging(
 # YAML 配置加载
 
 def load_yaml_config(config_path: str) -> Dict[str, Any]:
-    """加载 YAML 配置文件。
-
-    先尝试 PyYAML, 失败后回退到最小内联解析器, 只覆盖实际
-    用到的 YAML 子集 (扁平 key-value 映射)。
-
-    参数: config_path YAML 文件路径; 返回解析后的配置字典。
-    文件无法读取或解析失败时抛 DynamicError。
-    """
     if not os.path.isfile(config_path):
         raise DynamicError(f"Config file not found: {config_path}")
 
@@ -204,11 +159,6 @@ def load_yaml_config(config_path: str) -> Dict[str, Any]:
 
 
 def _parse_simple_yaml(content: str) -> Dict[str, Any]:
-    """简单 key-value 映射的最小 YAML 解析器。
-
-    按缩进处理嵌套字典。不支持 lists, multi-line strings,
-    anchors 或 tags。
-    """
     result: Dict[str, Any] = {}
     lines = content.split("\n")
     stack: List[Dict[str, Any]] = [result]
@@ -267,19 +217,6 @@ def format_api_trace(
     return_value: Any = None,
     indent: int = 2,
 ) -> str:
-    """将 API 调用轨迹格式化为人类可读字符串。
-
-    输出形如:
-    VirtualAllocEx(
-    hProcess = 0x1234
-    lpAddress = 0x0
-    dwSize = 4096
-    ) -> 0x7FFA00000000
-
-    参数: api_name API 函数名, arguments 参数名到值的字典,
-    return_value 调用的返回值, indent 缩进空格数;
-    返回多行格式化字符串。
-    """
     lines = [f"{api_name}("]
 
     if arguments:
@@ -308,10 +245,6 @@ def format_api_trace_compact(
     api_name: str,
     arguments: Optional[Dict[str, Any]] = None,
 ) -> str:
-    """紧凑单行 API 调用轨迹。
-
-    输出: VirtualAllocEx(hProcess=0x1234, lpAddress=0x0, dwSize=4096)
-    """
     parts = [f"{api_name}("]
     if arguments:
         arg_strs = []
@@ -328,7 +261,6 @@ def format_api_trace_compact(
 # 其他工具函数
 
 def hash_file(filepath: str, algorithm: str = "sha256") -> str:
-    """计算文件哈希。"""
     h = getattr(hashlib, algorithm, hashlib.sha256)()
     try:
         with open(filepath, "rb") as f:
@@ -340,7 +272,6 @@ def hash_file(filepath: str, algorithm: str = "sha256") -> str:
 
 
 def is_pe_file(data: bytes) -> bool:
-    """检查 data 是否像 PE (Portable Executable) 文件。"""
     if len(data) < 64:
         return False
     if data[:2] != b"MZ":
@@ -352,7 +283,6 @@ def is_pe_file(data: bytes) -> bool:
 
 
 def is_elf_file(data: bytes) -> bool:
-    """检查 data 是否像 ELF 文件。"""
     return len(data) >= 4 and data[:4] == b"\x7fELF"
 
 

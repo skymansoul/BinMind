@@ -1,12 +1,8 @@
+"""测试PAC绕过分析模块"""
 
-"""
-测试PAC绕过分析模块
-"""
-
-import pytest
-_MOD_DEBUG = False
 import os
 import sys
+import struct
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -91,51 +87,90 @@ class TestPACSignatureDetector:
         assert "AUTIA" in AUTH_OPCODES.values()
 
     def test_detect(self):
-        """测试检测功能 — 需要实际二进制文件"""
-        pytest.skip("PACSignatureDetector requires a real binary file on disk")
+        """检测器为占位符，扫描职责由 PACBypassAnalyzer.run 承担"""
+        assert PACSignatureDetector is None
 
 
 class TestSignedGadgetFinder:
     """测试已签名Gadget查找器"""
 
     def test_find(self):
-        """测试查找功能 — 需要实际二进制文件"""
-        pytest.skip("SignedGadgetFinder requires a real binary file on disk")
+        """查找器为占位符，gadget 由 PACBypassAnalyzer.run 输出"""
+        assert SignedGadgetFinder is None
+
+
+def _write_pac_binary(path, words):
+    """构造含 PAC/AUT 指令编码的定长 4 字节小二进制"""
+    with open(path, 'wb') as f:
+        for w in words:
+            f.write(struct.pack('<I', w))
 
 
 class TestPACBypassAnalyzer:
     """测试PAC绕过分析器"""
 
     def test_analyzer_init_requires_path(self):
-        """测试分析器初始化需要binary_path"""
-        pytest.skip("PACBypassAnalyzer requires a real binary file on disk")
+        """binary_path 必填：空串与 None 抛 ValueError"""
+        try:
+            PACBypassAnalyzer("")
+            assert False, "空路径应抛 ValueError"
+        except ValueError:
+            pass
+        try:
+            PACBypassAnalyzer(None)
+            assert False, "None 应抛 ValueError"
+        except ValueError:
+            pass
 
     def test_run(self):
-        pytest.skip("PACBypassAnalyzer.run requires a real binary file on disk")
+        """真实 ARM64 ELF 上 run() 返回 AnalysisResult 且不抛异常；
+        不存在时回退到临时构造的 PAC 编码样本"""
+        candidates = [
+            os.path.join(os.path.dirname(__file__), '..', 'frontend',
+                         'node_modules', '7zip-bin', 'linux', 'arm64', '7za'),
+            os.path.join(os.path.dirname(__file__), '..', 'samples',
+                         'uaf', 'sample_uaf_15', 'sample_uaf_15.exe'),
+        ]
+        binary = next((p for p in candidates if os.path.isfile(p)), None)
+        if binary is None:
+            binary = os.path.join(os.path.dirname(__file__), '..',
+                                  'samples', 'cve_unified',
+                                  'synthetic_heap_safe',
+                                  'heap_safe_01_alignment_absorbed',
+                                  'vuln_elf.exe')
+        if not os.path.isfile(binary):
+            tmp = os.path.join(os.path.dirname(__file__), '_pac_tmp.bin')
+            # PACIA(0x00) / AUTIA(0x08) 高位编码样本
+            _write_pac_binary(tmp, [0x1B000000 | (0 << 22), 0x0B000000 | (8 << 22)])
+            binary = tmp
+        analyzer = PACBypassAnalyzer(binary)
+        result = analyzer.run()
+        assert isinstance(result, AnalysisResult)
+        assert isinstance(result.leaks, list)
+        assert result.entropy_assessment in ("none", "low", "medium", "high")
 
     def test_create_pac_bypass_analyzer(self):
-        """测试便捷工厂函数签名"""
-        pytest.skip("create_pac_bypass_analyzer requires a real binary file on disk")
-
-
-class TestLegacyAPI:
-    """旧版API测试（已移除的功能）"""
-
-    def test_analyze(self):
-        pytest.skip("analyze_pac_bypass removed — use PACBypassAnalyzer(binary_path).run()")
-
-    def test_evaluate_strength(self):
-        pytest.skip("evaluate_pac_strength removed — use _evaluate_bypass_feasibility internally")
-
-    def test_pac_bypass_types(self):
-        pytest.skip("PACBypassType enum removed — leak_type is a plain string")
-
-    def test_bypass_difficulty(self):
-        pytest.skip("BypassDifficulty enum removed — feasibility is a plain string in evaluation results")
-
+        """便捷工厂函数返回 PACBypassAnalyzer 实例"""
+        candidates = [
+            os.path.join(os.path.dirname(__file__), '..', 'frontend',
+                         'node_modules', '7zip-bin', 'linux', 'arm64', '7za'),
+            os.path.join(os.path.dirname(__file__), '..', 'samples',
+                         'uaf', 'sample_uaf_15', 'sample_uaf_15.exe'),
+        ]
+        binary = next((p for p in candidates if os.path.isfile(p)), None)
+        if binary is None:
+            binary = os.path.join(os.path.dirname(__file__), '..', 'samples',
+                                  'cve_unified', 'synthetic_heap_safe',
+                                  'heap_safe_01_alignment_absorbed',
+                                  'vuln_elf.exe')
+        if not os.path.isfile(binary):
+            tmp = os.path.join(os.path.dirname(__file__), '_pac_tmp.bin')
+            _write_pac_binary(tmp, [0x1B000000 | (0 << 22)])
+            binary = tmp
+        analyzer = create_pac_bypass_analyzer(binary)
+        assert isinstance(analyzer, PACBypassAnalyzer)
 
 
 if __name__ == "__main__":
+    import pytest
     pytest.main([__file__, "-v"])
-
-

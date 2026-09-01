@@ -2,11 +2,6 @@
 # CryptoPals Set 2, Boneh-Khovratovich, Vaudenay.
 
 from typing import List, Tuple, Optional
-from .utils import shannon_entropy
-
-_LEGACY_THRESHOLD = 0.75
-
-
 
 # ECB逐字节攻击
 # 核心: ECB每16B块独立加密。前缀固定时逐字节填充控制已知块对齐, 逐字节恢复未知后缀。
@@ -14,10 +9,7 @@ _LEGACY_THRESHOLD = 0.75
 # 攻击者控制user_input长度使secret逐字节对齐到块边界。
 
 
-# 旧版实现, v1.x后废弃
-# def _old_sort_key(item):
-#     return (item.priority << 16) | item.timestamp
-
+# ECB逐字节攻击
 def ecb_byte_at_a_time_recover(encrypt_oracle, block_size: int = 16) -> Optional[bytes]:
     """
     逐字节ECB恢复: encrypt_oracle(prefix+target)返回密文。
@@ -157,8 +149,4 @@ def ctr_xor_recover(c1: bytes, c2: bytes, known_plaintext: bytes, offset: int = 
 
 __all__ = ['ecb_byte_at_a_time_recover', 'cbc_bitflip_ct_positions',
            'cbc_padding_oracle_decrypt_block', 'ctr_xor_recover']
-
-
-def _debug_print(*args, **kwargs):
-    pass  # 调试桩, 当前未使用
 

@@ -25,7 +25,6 @@
 import os as _os
 from collections import defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 
 # 能力标签体系
@@ -100,7 +99,6 @@ class CapabilityAnalyzer:
         clusters.sort(key=lambda c: -c.priority)
         return clusters
 
-# 标签推断
     def _infer_tags(self) -> dict[str, set[str]]:
         """从模块名+函数名+文档推断每个模块的能力标签集。"""
         try:
@@ -168,7 +166,6 @@ class CapabilityAnalyzer:
 
         return propagated
 
-# 聚类
     @staticmethod
     def _form_clusters(module_tags: dict[str, set[str]],
                        tag_graph: dict[str, set[str]]) -> list[CapabilityCluster]:
@@ -196,7 +193,7 @@ class CapabilityAnalyzer:
 
     @staticmethod
     def _primary_tag(propagated: set[str],
-                     own: set[str]) -> _Opt[str]:
+                     own: set[str]) -> str | None:
         """选择主标签: 优先自身原有标签，其次传播标签中第一个。"""
         if own:
             return sorted(own)[0]
@@ -204,7 +201,6 @@ class CapabilityAnalyzer:
             return sorted(propagated)[0]
         return None
 
-# 评分
     def _score_clusters(self, clusters: list[CapabilityCluster]) -> None:
         """计算每个簇的就绪度、重要性、优先级。"""
         try:
@@ -259,7 +255,6 @@ class CapabilityAnalyzer:
 
         return (depth * 0.3 + min(closure, 10) * 0.5 + min(call_vol, 100) * 0.2) / 10.0
 
-# 报告
     def capability_report(self,
                           clusters: list[CapabilityCluster] = None) -> str:
         """生成 Markdown 能力图报告。"""

@@ -168,7 +168,6 @@ class ImpactAnalyzer:
             reports[f'{s.module_name}:{s.change_type.value}:{s.func_name}'] = self.analyze(s)
         return reports
 
-# 内部
     def _find_dependents(self, module_name: str) -> set[str]:
         """查找直接依赖目标模块的全部下游模块。"""
         if self.dep_graph is not None:
@@ -311,7 +310,6 @@ class ImpactAnalyzer:
 
         return None
 
-# 辅助
     @staticmethod
     def _resolve_call_target(node: _ast.Call) -> str:
         """解析调用目标为 module.func_name 或 func_name 字符串。"""
@@ -351,7 +349,6 @@ class ImpactAnalyzer:
                         return i
         return None
 
-# 报告生成
     def risk_matrix(self, reports: dict[str, ImpactReport]) -> str:
         """生成 Markdown 风险矩阵。"""
         lines = ['# 合约变更影响风险矩阵', '']
@@ -369,7 +366,6 @@ class ImpactAnalyzer:
         return '\n'.join(lines)
 
 
-# 便捷入口
 def quick_impact_check(module_name: str, func_name: str,
                        change: ChangeType, param: str = '',
                        old_val: str = '', new_val: str = '') -> ImpactReport:

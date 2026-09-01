@@ -98,7 +98,3 @@ def timeout(seconds: float):
     finally:
         signal.alarm(0)
         signal.signal(signal.SIGALRM, _old)
-
-
-    """调试输出桩，当前未启用"""
-    pass

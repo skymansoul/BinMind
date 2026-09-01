@@ -95,11 +95,9 @@ def infer_function_signatures(functions: dict[int, list[dict]]) -> dict[int, Fun
 
 
 def generate_cfi_landing_pad(type_id: int, arch: str = 'x86_64') -> bytes:
-    """在函数入口生成 CFI landing pad 标识。
-
-    x86-64: NOP 序列中嵌入 type_id - NOP [4-byte id] → 5 bytes total
-    ARM64: MOVK x16, #type_id → 4 bytes
-    生产环境建议使用 Intel CET endbr64 或 ARM BTI 指令。"""
+    # x86-64: NOP 序列中嵌入 type_id → 5 bytes total
+    # ARM64: MOVK x16, #type_id → 4 bytes
+    # 生产环境建议使用 Intel CET endbr64 或 ARM BTI 指令
     if arch == 'x86_64':
         # 前缀: 0F 1F 00 (3-byte NOP) + 2-byte type_id
         return struct.pack('<B B B H', 0x0F, 0x1F, 0x00, type_id & 0xFFFF)
@@ -110,10 +108,8 @@ def generate_cfi_landing_pad(type_id: int, arch: str = 'x86_64') -> bytes:
 
 def generate_cfi_check(call_site: IndirectCallSite,
                        target_type_id: int = 0) -> bytes:
-    """在间接调用前插入 CFI 类型检查。
-
-    x86-64: 在 call 前插入 cmp [target_func+3], type_id; jne abort
-    注: 前 3 字节是 landing pad 的 NOP 指令, type_id 在偏移 +3 处。"""
+    # x86-64: 在 call 前插入 cmp [target_func+3], type_id; jne abort
+    # 注: 前 3 字节是 landing pad 的 NOP 指令, type_id 在偏移 +3 处
     if not call_site.target_reg:
         return b''
     # 简化为伪代码——完整实现需要处理寄存器保存/恢复

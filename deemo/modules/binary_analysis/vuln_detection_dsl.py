@@ -1,3 +1,4 @@
+from typing import Dict, List, Any
 import logging, os, re, yaml
 
 logger = logging.getLogger(__name__)
@@ -13,7 +14,7 @@ class DSLRule:
     __slots__ = ('id', 'name', 'severity', 'action', 'conditions', 'description', 'cwe_id', 'false_positive_rate')
 
     def __init__(self, id: str, name: str, severity: RuleSeverity, action: RuleAction = None,
-                 conditions: list[Dict] = None, description: str = "", cwe_id: str = "",
+                 conditions: List[Dict] = None, description: str = "", cwe_id: str = "",
                  false_positive_rate: float = 0.0):
         self.id = id
         self.name = name
@@ -83,7 +84,7 @@ class VulnDetectionDSL:
                 r2 = subprocess.run(['r2','-q','-c','izz; q',binary_path],
                     capture_output=True, text=True, timeout=60, encoding='utf-8', errors='replace')
                 strings = r2.stdout
-            except: pass
+            except Exception as e: logger.warning(f"radare2scanfailed: {e}")
 
         findings = []
         compiled = self.compile_rules()

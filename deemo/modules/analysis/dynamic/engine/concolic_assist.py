@@ -80,11 +80,6 @@ class ConcolicState:
 
 
 class TaintSymbolBridge:
-    """污点标记与符号分类桥接。
-
-    内存地址与寄存器分别维护污点标签，classify_symbol 依据
-    污点状态将符号字节升级为 TAINTED_SYMBOLIC 并回填标签。
-    """
 
     def __init__(self):
         self._tainted_addrs: Dict[int, int] = {}
@@ -109,11 +104,6 @@ class TaintSymbolBridge:
 
 
 class DependencyTracker:
-    """寄存器与内存依赖追踪。
-
-    record_* 系列记录符号来源在寄存器/内存间的传播，
-    get_dependencies 返回某寄存器的符号来源地址集合。
-    """
 
     def __init__(self):
         self._reg_deps: Dict[str, Set[int]] = defaultdict(set)
@@ -139,11 +129,6 @@ class DependencyTracker:
 
 
 class ConcolicAssistant:
-    """混合执行辅助 — 符号输入创建、分支约束分类、状态保存恢复。
-
-    仅对涉及污点地址的约束分配求解器 ID，其余约束标记为
-    is_tainted=False 且 constraint_id=-1，降低 SMT 求解压力。
-    """
 
     def __init__(self, taint_bridge: Optional[TaintSymbolBridge] = None):
         self.bridge = taint_bridge or TaintSymbolBridge()
@@ -241,15 +226,6 @@ def create_concolic_assistant(tainted_addrs=None,
 
 
 class BranchPrioritizer:
-    """覆盖率引导的分支优先级调度器 — MD2U (Min-Distance--Uncovered)
-
-    从每个未覆盖节点反向BFS计算距离矩阵。已覆盖节点距离为0
-    未覆盖节点距离为其BFS层数。分支按距离排序：距离越近优先级越高
-    平局时优先选择探索次数少的分支（避免重复探索同一区域）
-
-    复杂度: O(V+E) per recompute, O(N 记录 N) per 排序
-    对10K+基本块的二进制，5K路径内通常比BFS多覆盖15-25%基本块
-    """
 
     def __init__(self, cfg_adjacency: Optional[Dict[int, List[int]]] = None):
         self._cfg = cfg_adjacency or {}
@@ -297,10 +273,6 @@ class BranchPrioritizer:
 
 
 class ConcolicExplorer:
-    """Concolic执行探索器 — 结合具体执行与符号约束求解
-
-    舍入 7: 集成BranchPrioritizer实现MD2U策略的路径排序
-    """
 
     def __init__(self, strategy: ExplorationStrategy = ExplorationStrategy.MD2U):
         self._strategy = strategy
@@ -405,9 +377,6 @@ class ConcolicExplorer:
     # 这通常能将SMT求解器的调用次数减少40-60%
     def filter_tainted_constraints(self, branches: List[BranchPoint],
                                      taint_map: Dict[int, bool]) -> List[BranchPoint]:
-        """TACE风格约束过滤：仅保留其地址在污点映射中的分支点
-        非污点分支（如内部循环计数器）的约束取反求解不会产生新路径覆盖
-        跳过它们可大幅减少SMT求解器压力"""
         return [b for b in branches if taint_map.get(b.address, False)]
 
 

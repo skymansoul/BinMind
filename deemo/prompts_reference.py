@@ -1,10 +1,4 @@
-"""
-Preserved LLM prompt templates from the original codebase.
-These templates were part of the full feature set; many corresponded
-to modules that have been archived. They're retained here as reference
-material and for use by any remaining code paths that reference them.
-"""
-
+# 原始代码库保留的 LLM 提示词模板，供残留代码路径引用
 from typing import Dict, Optional
 
 # core analysis prompts (active)
@@ -121,8 +115,7 @@ EXPLOIT_CHAIN = """
 
 
 class PromptManager:
-    """Thin registry for named prompt templates."""
-
+    # 命名提示词模板注册表
     _store: Dict[str, str] = {}
 
     @classmethod

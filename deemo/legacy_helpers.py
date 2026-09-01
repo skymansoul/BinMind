@@ -1,9 +1,4 @@
-"""
-Backward-compatibility shims for old module paths.
-Previously, everything lived under `modules.*`. These aliases
-let external scripts that haven't been updated still work.
-"""
-
+# 旧模块路径兼容层，将 modules.* 导入重定向到新包布局
 import sys as _sys
 import logging as _logging
 
@@ -37,10 +32,7 @@ _COMPAT_MAP = {
 
 
 class _CompatFinder:
-    """
-    Import finder that intercepts old `modules.xxx` imports and
-    redirects them to the new package layout. Registered on first use.
-    """
+# 旧 modules.xxx 导入拦截器，重定向到新包布局，首次使用时注册
     _installed = False
 
     @classmethod

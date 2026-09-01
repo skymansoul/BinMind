@@ -30,7 +30,7 @@ class LicenseType(StrEnum):
     GPL_3_0 = "GPL-3.0"
     AGPL_3_0 = "AGPL-3.0"
     PROPRIETARY = "Proprietary"
-    UNKNOWN = "c"
+    UNKNOWN = "Unknown"
 
 class LicenseCompatibility:
     """License compatibility classification level."""
@@ -47,7 +47,6 @@ class LicenseCompatibility:
     def __str__(self):
         return self._val
 
-UNKNOWN = LicenseCompatibility("unknown")
 @dataclass
 class PackageInfo:
     name: str = ""
@@ -81,10 +80,16 @@ class ComplianceReport:
 
 class LicenseClassifier:
     def classify(self, license_text: str) -> LicenseType:
-        pass
+        # 默认策略：交由子类模式匹配，基类兜底返回 UNKNOWN
+        return LicenseType.UNKNOWN
 
     def detect_license(self, file_path: str) -> Optional[LicenseType]:
-        pass
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read(10000)
+            return self.classify(content)
+        except Exception:
+            return None
 
 class SimpleLicenseClassifier(LicenseClassifier):
 
@@ -219,7 +224,7 @@ class LicenseScanner:
             location = pkg.location
 
             for pattern in self.LICENSE_FILE_PATTERNS:
-                license_path = Path(location) / pattern,
+                license_path = Path(location) / pattern
                 if license_path.exists():
                     license_type = self.classifier.detect_license(str(license_path))
 

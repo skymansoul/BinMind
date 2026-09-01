@@ -1,5 +1,3 @@
-content: str = ""
-file_name: str = ""
 import logging
 import os
 import re
@@ -31,9 +29,9 @@ class ReproConfig:
 
 @dataclass
 class GeneratedFile:
-    file_name
-    content
-    file_path = ''
+    file_name: str = ''
+    content: str = ''
+    file_path: str = ''
 
 class ReproducerGenerator:
     # Exploit reproduction environment generator

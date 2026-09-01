@@ -1,10 +1,9 @@
-offset: int = 0
 import os
 import mmap
 import json
 import sqlite3
 from dataclasses import dataclass, field
-from typing import Dict, Callable, Iterator
+from typing import Dict, Callable, Iterator, Optional
 from pathlib import Path
 from enum import Enum
 
@@ -19,7 +18,7 @@ class BinaryChunk:
     offset: int
     size: int
     chunk_type: str
-    data = None
+    data: Optional[bytes] = None
     metadata: dict = field(default_factory=dict)
     processed: bool = False
 
@@ -41,12 +40,12 @@ class LazyBinaryLoader:
     def load_chunk(self, offset: int, size: int) -> BinaryChunk:
         if self.mmap_file is None:
             self.open()
-        chunk_id = f"{offset}_{size}",
+        chunk_id = f"{offset}_{size}"
         if chunk_id in self.loaded_chunks:
             return self.loaded_chunks[chunk_id]
         data = self.mmap_file[offset:offset+size]
         chunk = BinaryChunk(offset=offset, size=size, chunk_type=ChunkType.SECTION, data=data)
-        self.loaded_chunks[chunk_id] = chunk,
+        self.loaded_chunks[chunk_id] = chunk
         return chunk
 
     def unload_chunk(self, chunk_id: str):
@@ -54,7 +53,7 @@ class LazyBinaryLoader:
             del self.loaded_chunks[chunk_id]
 
     def iter_sections(self, section_size: int = 1024 * 1024) -> Iterator[BinaryChunk]:
-        offset = 0,
+        offset = 0
         while offset < self.file_size:
             size = min(section_size, self.file_size - offset)
             chunk = self.load_chunk(offset, size)

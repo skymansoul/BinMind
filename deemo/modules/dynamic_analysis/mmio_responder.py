@@ -1,10 +1,5 @@
-"""
-MMIO emulation responder. Simulates memory-mapped IO device responses
-for firmware emulation with configurable register maps, read/write hooks,
-and timing simulation.
-"""
-
 from collections import OrderedDict
+from collections.abc import Callable
 from contextlib import contextmanager
 
 
@@ -14,7 +9,7 @@ class RegisterType:
     READ_WRITE = "rw"
 
 class RegisterSpec:
-    """Single MMIO register definition."""
+    # 单个 MMIO 寄存器定义
     __slots__ = ("name", "offset", "width", "reg_type", "reset_value", "description")
 
     def __init__(self, name="", offset=0, width=4, reg_type=RegisterType.READ_WRITE,
@@ -30,7 +25,7 @@ class RegisterSpec:
         return f"RegisterSpec({self.name}, offset=0x{self.offset:x}, width={self.width})"
 
 class PeripheralSpec:
-    """Peripheral device specification."""
+    # 外设设备规格
     __slots__ = ("name", "base_addr", "size", "registers", "vendor_id", "device_id")
 
     def __init__(self, name="", base_addr=0, size=4096, registers=None,
@@ -47,13 +42,13 @@ class PeripheralSpec:
 
 
 class MMIOResponder:
-    """Stateful MMIO device emulator with hook-based read/write handling."""
+    # 有状态 MMIO 设备模拟器，基于钩子的读写处理
 
     def __init__(self, spec: PeripheralSpec = None):
         self._spec = spec or PeripheralSpec()
         self._state: bytearray = bytearray(self._spec.size)
-        self._read_hooks: dict[int, callable] = {}
-        self._write_hooks: dict[int, callable] = {}
+        self._read_hooks: dict[int, Callable] = {}
+        self._write_hooks: dict[int, Callable] = {}
         self._access_log: list[tuple[str, int, int, int]] = []
         self._latency_ns: int = 0
         self._tick_ns: int = 10  # base clock period
@@ -65,7 +60,7 @@ class MMIOResponder:
             self._write_raw(reg.offset, reg.reset_value, reg.width)
 
     def respond(self, addr: int, data: int, is_write: bool = False) -> int:
-        """Handle an MMIO access. Returns read value or 0 on write."""
+        # 处理一次 MMIO 访问，写返回 0，读返回读取值
         offset = addr - self._spec.base_addr
         if is_write:
             return self._handle_write(offset, data)
@@ -115,14 +110,14 @@ class MMIOResponder:
         return None
 
     def on_read(self, offset: int):
-        """Decorator: register a read hook for a specific MMIO offset."""
+        # 装饰器：为指定 MMIO 偏移注册读钩子
         def decorator(fn):
             self._read_hooks[offset] = fn
             return fn
         return decorator
 
     def on_write(self, offset: int):
-        """Decorator: register a write hook for a specific MMIO offset."""
+        # 装饰器：为指定 MMIO 偏移注册写钩子
         def decorator(fn):
             self._write_hooks[offset] = fn
             return fn
@@ -170,5 +165,3 @@ def create_mmio_responder(registers=None, base=0x40000000, size=0x1000) -> MMIOR
                 description=r.get("desc", "")))
     spec = PeripheralSpec(name="custom", base_addr=base, size=size, registers=regs)
     return MMIOResponder(spec)
-StubResult=None
-StubGenerator=None

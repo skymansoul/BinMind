@@ -1,11 +1,3 @@
-"""
-实时 API 调用追踪与恶意行为序列分析。
-
-动态追踪二进制程序的 API 调用，按行为类别聚合，并在时间窗口内匹配
-已知恶意模式（进程注入、权限提升、C2 通信、数据外传）。strace 与
-Frida 二选一作为采集后端，均不可用时结果标记失败并保留错误信息。
-"""
-
 import json
 import logging
 import os
@@ -23,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class BehaviorCategory(Enum):
-    """行为类别枚举。"""
 
     FILE_OPERATION = 'file_operation'
     NETWORK = 'network'
@@ -52,7 +43,6 @@ class ApiCall:
     context: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        """转为可序列化字典。"""
         return {
             'timestamp': self.timestamp,
             'api_name': self.api_name,
@@ -67,7 +57,6 @@ class ApiCall:
 
 @dataclass
 class BehaviorSequence:
-    """检测到的行为序列。"""
 
     name: str
     pattern_type: str
@@ -81,7 +70,6 @@ class BehaviorSequence:
     is_malicious: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
-        """转为可序列化字典。"""
         return {
             'name': self.name,
             'pattern_type': self.pattern_type,
@@ -94,7 +82,6 @@ class BehaviorSequence:
 
 @dataclass
 class TraceResult:
-    """一次完整追踪的结果容器。"""
 
     binary_path: str = ''
     trace_duration: float = 0.0
@@ -109,7 +96,6 @@ class TraceResult:
     name: str = ''
 
     def to_dict(self) -> Dict[str, Any]:
-        """转为可序列化字典。"""
         return {
             'binary_path': self.binary_path,
             'trace_duration': self.trace_duration,
@@ -307,14 +293,8 @@ MALICIOUS_BEHAVIOR_PATTERNS: Dict[str, Dict[str, Any]] = {
 
 
 class BehaviorTracer:
-    """实时 API 调用追踪与恶意行为序列分析器。"""
 
     def __init__(self, timeout: int = 300, output_dir: Optional[str] = None):
-        """初始化追踪器。
-
-        timeout: 单次追踪超时（秒）。
-        output_dir: 追踪日志输出目录；未指定时使用默认 traces 目录。
-        """
         self.timeout = timeout
         if output_dir:
             self.trace_output_dir = output_dir
@@ -331,7 +311,6 @@ class BehaviorTracer:
         self._lock = threading.Lock()
 
     def _check_strace(self) -> bool:
-        """检查 strace 是否可用（Linux 平台）。"""
         try:
             result = subprocess.run(
                 ['strace', '--version'],
@@ -343,7 +322,6 @@ class BehaviorTracer:
             return False
 
     def _check_frida(self) -> bool:
-        """检查 Frida 是否可用。"""
         try:
             import frida  # noqa: F401
             return True
@@ -357,11 +335,6 @@ class BehaviorTracer:
         timeout: Optional[int] = None,
         use_frida: bool = False,
     ) -> TraceResult:
-        """追踪二进制程序的 API 调用序列。
-
-        目标不存在时返回 errors 非空的失败结果；采集后端缺失时
-        同样在 errors 中记录，不抛出异常。
-        """
         result = TraceResult(binary_path=binary_path)
         if not os.path.exists(binary_path):
             result.errors.append(f'文件不存在: {binary_path}')
@@ -398,7 +371,6 @@ class BehaviorTracer:
 
     def _trace_with_strace(self, binary_path: str, args: Optional[List[str]],
                            timeout: int) -> Optional[str]:
-        """使用 strace 采集系统调用，返回 stderr 文本。"""
         try:
             cmd = ['strace', '-f', '-e', 'trace=file,process,network,memory', '-s', '256']
             cmd.append(binary_path)
@@ -417,7 +389,6 @@ class BehaviorTracer:
 
     def _trace_with_frida(self, binary_path: str, args: Optional[List[str]],
                           timeout: int) -> Optional[List[Dict]]:
-        """使用 Frida 采集 API 调用，返回调用记录列表。"""
         try:
             import frida
         except ImportError:
@@ -460,7 +431,6 @@ class BehaviorTracer:
         return trace_data
 
     def _parse_trace_data(self, trace_data: Any) -> List[ApiCall]:
-        """按采集后端类型分发解析。"""
         if isinstance(trace_data, str):
             return self._parse_strace_output(trace_data)
         if isinstance(trace_data, list):
@@ -468,7 +438,6 @@ class BehaviorTracer:
         return []
 
     def _parse_strace_output(self, output: str) -> List[ApiCall]:
-        """解析 strace 行：PID syscall(args) = ret。"""
         api_calls: List[ApiCall] = []
         pattern = re.compile(
             r'^(\d+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)\s*=\s*(-?\d+|0x[0-9a-fA-F]+)'
@@ -495,7 +464,6 @@ class BehaviorTracer:
         return api_calls
 
     def _parse_strace_args(self, args_str: str) -> Dict[str, Any]:
-        """从 strace 参数字符串提取键值。"""
         arguments: Dict[str, Any] = {}
         for i, part in enumerate(args_str.split(',')):
             part = part.strip()
@@ -516,7 +484,6 @@ class BehaviorTracer:
         return arguments
 
     def _parse_frida_output(self, output: List[Dict]) -> List[ApiCall]:
-        """解析 Frida 采集的调用记录。"""
         api_calls: List[ApiCall] = []
         for item in output:
             api_name = item.get('api', 'unknown')
@@ -532,10 +499,6 @@ class BehaviorTracer:
         return api_calls
 
     def _categorize_api_call(self, api_name: str, arguments: Dict[str, Any]) -> BehaviorCategory:
-        """将 API 名称归类为行为类别。
-
-        先查精确映射表，再按名称关键词模糊归类，均未命中返回 UNKNOWN。
-        """
         if api_name in API_CATEGORY_MAP:
             return API_CATEGORY_MAP[api_name]
 
@@ -555,7 +518,6 @@ class BehaviorTracer:
         return BehaviorCategory.UNKNOWN
 
     def _analyze_behavior_sequences(self, api_calls: List[ApiCall]) -> List[BehaviorSequence]:
-        """按时间窗口分组，逐模式匹配，返回命中的行为序列。"""
         sequences: List[BehaviorSequence] = []
         if not api_calls:
             return sequences
@@ -595,11 +557,6 @@ class BehaviorTracer:
         return sequences
 
     def _match_pattern(self, calls: List[ApiCall], pattern: Dict[str, Any]) -> bool:
-        """判断调用列表是否命中模式的 api_sequence。
-
-        每个步骤中只要有一个 API 出现在调用集中即视为该步骤命中，
-        命中步骤占比不低于一半时判定模式成立。
-        """
         steps = pattern.get('api_sequence', [])
         if not steps:
             return False
@@ -618,7 +575,6 @@ class BehaviorTracer:
         return matched >= max(1, len(steps) / 2)
 
     def _match_confidence(self, calls: List[ApiCall], pattern: Dict[str, Any]) -> float:
-        """计算模式匹配置信度：命中步骤数占全部步骤的比例。"""
         steps = pattern.get('api_sequence', [])
         if not steps:
             return 0.0
@@ -635,14 +591,12 @@ class BehaviorTracer:
         return round(matched / len(steps), 3)
 
     def _calculate_risk_summary(self, sequences: List[BehaviorSequence]) -> Dict[str, int]:
-        """按风险等级统计行为序列数量。"""
         summary: Dict[str, int] = defaultdict(int)
         for seq in sequences:
             summary[seq.severity] += 1
         return dict(summary)
 
     def _save_trace_log(self, result: TraceResult) -> str:
-        """将追踪结果落盘为 JSON，返回文件路径。"""
         binary_name = os.path.splitext(os.path.basename(result.binary_path))[0]
         stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         log_path = os.path.join(self.trace_output_dir, f'{binary_name}_{stamp}.json')
@@ -654,7 +608,6 @@ class BehaviorTracer:
         return log_path
 
     def save_result(self, result: TraceResult, name: str) -> str:
-        """将追踪结果写入输出目录，返回保存路径。"""
         if not name.endswith('.json'):
             name += '.json'
         path = os.path.join(self.trace_output_dir, name)
@@ -663,7 +616,6 @@ class BehaviorTracer:
         return path
 
     def generate_report(self, result: TraceResult) -> str:
-        """生成 Markdown 格式的追踪分析报告。"""
         lines: List[str] = []
         lines.append('## API 调用追踪分析报告\n')
         lines.append('### 基本信息')
@@ -707,6 +659,5 @@ def trace_and_analyze(
     timeout: int = 300,
     use_frida: bool = False,
 ) -> TraceResult:
-    """便捷入口：追踪并分析单个二进制。"""
     tracer = BehaviorTracer(timeout=timeout)
     return tracer.trace_binary(binary_path, args, timeout, use_frida)

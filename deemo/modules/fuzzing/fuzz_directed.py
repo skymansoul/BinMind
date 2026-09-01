@@ -189,7 +189,7 @@ class DirectedSeedSelector:
         scored.sort(key=lambda x: x[1], reverse=True)
         return [sid for sid, _ in scored[:top_n]]
 
-# 目标提取器: 从补丁/CVE报告自动提取目标地址
+    # 目标提取器: 从补丁/CVE报告自动提取目标地址
 
 class TargetExtractor:
     """从多种来源自动提取模糊测试目标。
@@ -254,7 +254,7 @@ class TargetExtractor:
             for cve_id in cve_ids
         ]
 
-# 定向模糊测试门面
+    # 定向模糊测试门面
 
 class DirectedFuzzer:
     """定向模糊测试协调器。

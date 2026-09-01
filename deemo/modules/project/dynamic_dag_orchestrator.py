@@ -4,8 +4,6 @@
 理论依据:
   Baird & Moin: HGAT+依赖图+漏洞链预测.
   Slyp: 可扩展MCP工具服务器+ReAct管道→DAG编排参考.
-
-模块位置: project/dynamic_dag_orchestrator.py
 """
 
 from __future__ import annotations

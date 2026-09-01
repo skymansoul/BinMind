@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class RandomnessTest:
-    # 随机性检验工具类
 
     @staticmethod
     def frequency_test(data: bytes) -> Dict[str, Any]:
@@ -94,7 +93,6 @@ class RandomnessTest:
 
 
 class RandomnessTester:
-    # 随机数质量test器 (main class)
 
     def __init__(self):
         self._results: List[Dict[str, Any]] = []

@@ -17,12 +17,8 @@ from modules.stubs.stub_contract import (
     StubContract as _StubContract,
     StubContractor as _StubContractor,
 )
-try:
-    from modules.stubs.stub_health_monitor import StubHealthMonitor as _Monitor, StubCallRecord
-    from modules.stubs.stub_registry import StubRegistry as _Registry, get_registry as _get_registry
-except ImportError:  # 相对导入兜底：模块按文件路径加载时
-    from modules.stubs.stub_health_monitor import StubHealthMonitor as _Monitor, StubCallRecord
-    from modules.stubs.stub_registry import StubRegistry as _Registry, get_registry as _get_registry
+from modules.stubs.stub_health_monitor import StubHealthMonitor as _Monitor, StubCallRecord
+from modules.stubs.stub_registry import StubRegistry as _Registry, get_registry as _get_registry
 
 # 排序权重默认值 — "实现优先级"语义下缺口应主导（gap=0.40），
 # 健康(0.20)与调用量(0.20)提供使用强度调制，复杂度(0.15)次之。
@@ -89,7 +85,6 @@ class ImplementationPrioritizer:
         self._priorities: dict[str, StubPriority] = {}
         self._now = _time.time()
 
-    # 各维度得分
     def _health_score(self, rec: _Opt[StubCallRecord]) -> float:
         """健康得分 — 废弃候选或低调用量取 0，正常桩取 1。"""
         if rec is None:
@@ -133,7 +128,6 @@ class ImplementationPrioritizer:
             return 1.0
         return max(0.0, 1.0 - age_days / 90.0)
 
-    # 排序主流程
     def rank(self) -> list:
         """计算全部模块优先级并返回降序排序清单。"""
         self._priorities = {}
@@ -223,7 +217,6 @@ class ImplementationPrioritizer:
             backlog = self.implementation_backlog(n)
             return [p.module_name for p in backlog]
 
-    # 报告输出
     def generate_priority_report(self, top_n: int = 20) -> str:
         """输出 Markdown 排序清单报告。"""
         rows = self.rank()[:top_n]
@@ -243,7 +236,6 @@ class ImplementationPrioritizer:
         return '\n'.join(lines)
 
 
-# 顶层便捷入口
 def rank_implementation_priority(monitor: _Opt[_Monitor] = None, top_n: int = 10) -> list:
     """一行式排序入口：monitor 为 None 时使用默认健康监控实例。"""
     prior = ImplementationPrioritizer(monitor=monitor)

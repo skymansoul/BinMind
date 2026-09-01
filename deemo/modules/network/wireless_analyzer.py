@@ -461,8 +461,11 @@ class WirelessProtocolAnalyzer:
             length = frame[data_start]
             if length == 0 or data_start + 1 + length > len(frame):
                 break
-            # ad_type = frame[data_start + 1]
-            # AD数据解析占位，按需扩展
+            ad_type = frame[data_start + 1]
+            type_name = BLE_AD_TYPES.get(ad_type, f"UNK_{ad_type:02X}")
+            self._statistics[f"ble_ad_{type_name}"] = (
+                self._statistics.get(f"ble_ad_{type_name}", 0) + 1
+            )
             data_start += 1 + length
 
         if pdu_type not in BLE_ADV_PDU_TYPES:

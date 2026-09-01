@@ -25,19 +25,17 @@ class SizeAwareResult:
     risk_adjustment: float         # 对基础置信度的调整
 
 class FmtSizeAwareFilter:
-    """尺寸感知的格式字符串过滤, snprintf(已知size)降低置信度
-
-    设计依据:
-      sprintf(user_input, ...), 无条件危险
-      snprintf(buf, 256, user_input, ...), 受size保护, 降低风险
-      fprintf(stderr, user_input, ...), 输出到文件, 利用面不同
-    """
+    # 尺寸感知的格式字符串过滤, snprintf(已知size)降低置信度
+    # 设计依据:
+    #   sprintf(user_input, ...), 无条件危险
+    #   snprintf(buf, 256, user_input, ...), 受size保护, 降低风险
+    #   fprintf(stderr, user_input, ...), 输出到文件, 利用面不同
 
     def analyze(
         self, callee: str, asm_context: List[Tuple[int, str]], call_addr: int,
     ) -> SizeAwareResult:
-        """分析格式字符串调用的size保护"""
-        # 精确匹配函数名, 避免子字符串匹配 (printf匹配到snprintf)
+        # 分析格式字符串调用的size保护
+        # 精确匹配函数名, 避免子字符串匹配(printf匹配到snprintf)
         callee_clean = callee.lower().replace(' ', '').strip()
 
         size_arg = -1
@@ -74,7 +72,7 @@ class FmtSizeAwareFilter:
     def _extract_size_arg(
         self, asm_lines: List[Tuple[int, str]], call_addr: int,
     ) -> int:
-        """提取snprintf的size参数 (x86_64: rsi = 第二个参数)"""
+        # 提取snprintf的size参数(x86_64: rsi = 第二个参数)
         for addr, text in reversed(asm_lines):
             if addr >= call_addr: continue
             parts = text.lower().strip().split(None, 1)

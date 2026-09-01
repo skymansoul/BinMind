@@ -8,7 +8,6 @@ import logging
 import threading
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-# from enum import Enum
 from datetime import datetime
 
 log = logging.getLogger(__name__)
@@ -32,17 +31,17 @@ class SpanType(Enum):
 class TraceContext:
     trace_id: str
     span_id: str
-    parent_span_id = None
-    request_id = None
-    analysis_id = None
-    binary_path = None
+    parent_span_id: Optional[str] = None
+    request_id: Optional[str] = None
+    analysis_id: Optional[str] = None
+    binary_path: Optional[str] = None
     start_time: float = field(default_factory=time.time)
     attributes: dict = field(default_factory=dict)
 
 class TraceSpan:
     __slots__ = ('span_id', 'trace_id', 'parent_span_id', 'name', 'span_type', 'start_time', 'end_time', 'status', 'attributes', 'events', 'error',)
 
-    def __init__(self, span_id, trace_id, parent_span_id, name, span_type, start_time, end_time=None, status="running", attributes=field(default_factory=dict), events=field(default_factory=list), error=None):
+    def __init__(self, span_id, trace_id, parent_span_id, name, span_type, start_time, end_time=None, status="running", attributes=None, events=None, error=None):
         self.span_id = span_id
         self.trace_id = trace_id
         self.parent_span_id = parent_span_id
@@ -51,8 +50,8 @@ class TraceSpan:
         self.start_time = start_time
         self.end_time = end_time
         self.status = status
-        self.attributes = attributes
-        self.events = events
+        self.attributes = attributes if attributes is not None else {}
+        self.events = events if events is not None else []
         self.error = error
 
     @property
@@ -146,7 +145,9 @@ class LogExporter:
         self._lock = threading.RLock()
 
         if self._output_path:
-            os.makedirs(os.path.dirname(self._output_path), exist_ok=True)
+            out_dir = os.path.dirname(self._output_path)
+            if out_dir:
+                os.makedirs(out_dir, exist_ok=True)
 
     def export(self, log_entry: Dict[str, Any]) -> bool:
         # Single log entry export.
@@ -291,7 +292,7 @@ class TraceManager:
     @staticmethod
     def _generate_span_id() -> str:
         # UUIDv4 first 16 chars — span identifier.
-        return str(uuid.uuid4()[:16])
+        return str(uuid.uuid4())[:16]
 
 class StructuredLogger:
     """
@@ -473,6 +474,7 @@ def configure_structured_logging(output_path: Optional[str] = None, remote_endpo
 
     if remote_endpoint:
         exporter = LogExporter(remote_endpoint=remote_endpoint)
+        exporter.export({"event": "structured logging initialized"})
 
     logging.getLogger(__name__).info("structured logging system configured")
 

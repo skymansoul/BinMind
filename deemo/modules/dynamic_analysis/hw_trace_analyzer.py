@@ -9,13 +9,13 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 class TraceType:
-    # Trace type enumeration
+    # 跟踪类型枚举
     INTEL_PT = "intel_pt"
     ARM_ETM = "arm_etm"
     PERF_RECORD = "c"
 
 class TraceStatus:
-    # Trace lifecycle states
+    # 跟踪生命周期状态
     COLLECTING = "collecting"
     DECODED = "decoded"
     ANALYZED = "analyzed"
@@ -80,28 +80,20 @@ class TraceAnalysisResult:
         self.errors = errors
 
 class BaseTraceDecoder:
-    # Abstract decoder contract for hardware trace data streams
+    # 硬件跟踪数据流解码器抽象基类
 
     def decode(self, trace_data: bytes) -> List[TracePacket]:
-        """
-        Convert raw trace bytes into a structured packet sequence.
-
-        """
         pass
 
 class IntelPTDecoder(BaseTraceDecoder):
     # Intel Processor Trace binary decoder
 
     def __init__(self, binary_path: str):
-        """
-        Bind decoder instance to a target binary for symbol resolution.
-
-        """
         self.binary_path = binary_path
         self._check_libipt()
 
     def _check_libipt(self):
-        # Verify libipt Python bindings are importable
+        # 检查 libipt Python 绑定是否可用
         try:
             import ptpython
             self.ptpython = ptpython
@@ -111,23 +103,23 @@ class IntelPTDecoder(BaseTraceDecoder):
             self.ptpython = None
 
     def decode(self, trace_data: bytes) -> List[TracePacket]:
-        # Route PT packet decode through the available backend
+        # 根据可用后端路由 PT 包解码
         if self.ptpython:
             return self._decode_with_libipt(trace_data)
         return self._decode_simplified(trace_data)
 
     def _decode_with_libipt(self, trace_data: bytes) -> List[TracePacket]:
-        # Native libipt decode pipeline
+        # 原生 libipt 解码流水线
         try:
             packets = []
             logger.info("Decoding PT data via libipt native bindings")
             return packets
         except Exception as e:
-            logger.error(f"libiptdecodefailed: {e}")
+            logger.error(f"libipt decode failed: {e}")
             return self._decode_simplified(trace_data)
 
     def _decode_simplified(self, trace_data: bytes) -> List[TracePacket]:
-        """Heuristic packet parser that operates without native dependencies."""
+        # 无原生依赖时的启发式包解析
         packets = []
         offset = 0
 
@@ -169,11 +161,11 @@ class PerfDecoder(BaseTraceDecoder):
     # Perf event record decoder
 
     def __init__(self):
-        # Stateless decoder — no initialization required
+        # 无状态解码器，无需初始化
         pass
 
     def decode(self, trace_data: bytes) -> List[TracePacket]:
-        # Parse raw perf buffer into structured packet objects
+        # 将原始 perf 缓冲区解析为结构化包对象
         packets = []
 
         offset = 0
@@ -205,27 +197,15 @@ class PerfDecoder(BaseTraceDecoder):
         return packets
 
 class HWTraceAnalyzer:
-    """
-    Hardware trace analyzer for Intel PT and ARM ETM streams.
-
-    Decodes PT packets via libipt or perf tooling, reconstructs precise
-    control flow and data flow paths, extracts vulnerability-triggering
-    execution traces, and prunes obfuscated dead code through
-    reachability analysis.
-    """
 
     def __init__(self, binary_path: str, trace_type: TraceType = TraceType.INTEL_PT):
-        """
-        Instantiate analyzer with target binary and trace backend selection.
-
-        """
         self.binary_path = binary_path
         self.trace_type = trace_type
         self.decoder = self._create_decoder()
         self._validate_binary()
 
     def _create_decoder(self) -> BaseTraceDecoder:
-        # Select decoder strategy by trace type
+        # 按跟踪类型选择解码策略
         if self.trace_type == TraceType.INTEL_PT:
             return IntelPTDecoder(self.binary_path)
         elif self.trace_type == TraceType.PERF_RECORD:
@@ -234,15 +214,12 @@ class HWTraceAnalyzer:
             return IntelPTDecoder(self.binary_path)
 
     def _validate_binary(self):
-        # Assert binary file exists on filesystem before proceeding
+        # 校验目标二进制文件存在
         if not os.path.exists(self.binary_path):
             raise FileNotFoundError(f"binaryfile not found: {self.binary_path}")
 
     def collect_trace(self, target_command: str, timeout: int = 60) -> bytes:
-        """
-        Capture Intel PT trace via perf record for the given target command.
-
-        """
+        # 通过 perf record 采集目标命令的 Intel PT 跟踪
         with tempfile.NamedTemporaryFile(suffix=".data", delete=False) as f:
             output_file = f.name
 
@@ -264,7 +241,7 @@ class HWTraceAnalyzer:
             )
 
             if result.returncode != 0:
-                logger.error(f"perf recordfailed: {result.stderr}")
+                logger.error(f"perf record failed: {result.stderr}")
                 return b""
 
             with open(output_file, "rb") as f:
@@ -278,10 +255,7 @@ class HWTraceAnalyzer:
                 os.remove(output_file)
 
     def analyze_trace(self, trace_data: bytes) -> TraceAnalysisResult:
-        """
-        Process raw trace data through the full analysis pipeline.
-
-        """
+        # 执行完整分析流水线处理原始跟踪数据
         if not trace_data:
             return TraceAnalysisResult(
                 success=False,
@@ -326,7 +300,7 @@ class HWTraceAnalyzer:
             )
 
     def _reconstruct_instructions(self, packets: List[TracePacket]) -> List[TraceInstruction]:
-        """Reconstruct ordered instruction sequence from decoded packet stream."""
+        # 从解码包流重建有序指令序列
         instructions = []
         addresses = set()
 
@@ -343,7 +317,7 @@ class HWTraceAnalyzer:
         return sorted(instructions, key=lambda x: x.timestamp)
 
     def _identify_functions(self, instructions: List[TraceInstruction]) -> List[TraceFunction]:
-        # Infer function boundaries from address gaps in the trace
+        # 从跟踪地址间隙推断函数边界
         if not instructions:
             return []
 
@@ -352,7 +326,7 @@ class HWTraceAnalyzer:
         func_start = instructions[0].address
 
         for i, instr in enumerate(instructions):
-            # Boundary heuristic: address gaps exceeding 100 bytes signal function transitions
+            # 地址间隙超过 100 字节视为函数边界
             if i > 0 and instr.address < instructions[i-1].address - 100:
                 if current_func:
                     current_func.end_address = instructions[i-1].address
@@ -376,7 +350,7 @@ class HWTraceAnalyzer:
         return functions
 
     def _build_control_flow_graph(self, instructions: List[TraceInstruction]) -> Dict[int, List[int]]:
-        # Build directed graph mapping each instruction to its successor
+        # 构建有向图，映射每条指令到其后继
         cfg = {}
 
         for i, instr in enumerate(instructions[:-1]):
@@ -392,11 +366,11 @@ class HWTraceAnalyzer:
         return cfg
 
     def _extract_data_flows(self, instructions: List[TraceInstruction]) -> List[DataFlow]:
-        # Derive data flow edges from sequential instruction adjacency
+        # 从顺序指令邻接关系推导数据流边
         data_flows = []
 
         for i, instr in enumerate(instructions):
-            # Adjacency-based flow inference: each consecutive pair forms a data edge
+            # 邻接流推断：每对连续指令构成一条数据边
             if i > 0:
                 data_flows.append(DataFlow(
                     source=instructions[i-1].address,
@@ -407,14 +381,14 @@ class HWTraceAnalyzer:
         return data_flows
 
     def _prune_dead_code(self, instructions: List[TraceInstruction], cfg: Dict[int, List[int]]) -> List[TraceInstruction]:
-        # Reachability-based dead code elimination
+        # 基于可达性的死代码消除
         if not instructions:
             return []
 
-        # Collect all instruction addresses observed during execution
+        # 收集执行期间观测到的所有指令地址
         executed_addrs = set(instr.address for instr in instructions)
 
-        # BFS from entry point to identify reachable nodes
+        # 从入口点 BFS 标识可达节点
         reachable = set()
         if instructions:
             reachable.add(instructions[0].address)
@@ -428,14 +402,14 @@ class HWTraceAnalyzer:
                             reachable.add(next_addr)
                             queue.append(next_addr)
 
-        # Retain reachable instructions only
+        # 仅保留可达指令
         pruned = [instr for instr in instructions if instr.address in reachable]
 
         logger.info(f"Dead-code pruning: {len(instructions)} → {len(pruned)} instructions")
         return pruned
 
     def _extract_function_calls(self, functions: List[TraceFunction]) -> List[Tuple[int, int]]:
-        # Derive call sequence from ordered function list
+        # 从有序函数列表推导调用序列
         calls = []
 
         for i, func in enumerate(functions[:-1]):
@@ -444,18 +418,12 @@ class HWTraceAnalyzer:
         return calls
 
     def trace_and_analyze(self, target_command: str, timeout: int = 60) -> TraceAnalysisResult:
-        """
-        Collect trace data from a target process and execute full analysis.
-
-        """
+        # 采集目标进程跟踪数据并执行完整分析
         trace_data = self.collect_trace(target_command, timeout)
         return self.analyze_trace(trace_data)
 
     def generate_report(self, result: TraceAnalysisResult) -> str:
-        """
-        Produce a human-readable analysis summary from structured results.
-
-        """
+        # 从结构化结果生成人类可读的分析摘要
         report = []
         report.append("=" * 60)
         report.append("Hardware Trace Analysis Report")
@@ -483,10 +451,7 @@ class HWTraceAnalyzer:
         return "\n".join(report)
 
     def save_result(self, result: TraceAnalysisResult, output_path: str) -> bool:
-        """
-        Serialize analysis results to a JSON file.
-
-        """
+        # 将分析结果序列化到 JSON 文件
         try:
             import json
 

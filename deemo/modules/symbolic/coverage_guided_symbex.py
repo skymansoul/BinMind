@@ -11,6 +11,8 @@ The genetic optimizer uses roulette-wheel selection, single-point crossover,
 and per-byte mutation. Fitness = coverage_gain × 0.7 + risk_score × 0.3.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import random
@@ -23,7 +25,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, deque
 
-__log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ExplorationStrategy(Enum):

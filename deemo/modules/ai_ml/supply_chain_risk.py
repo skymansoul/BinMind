@@ -29,11 +29,8 @@ logger = logging.getLogger(__name__)
 class SupplyChainRiskAnalyzer:
     """供应链风险分析便捷入口。
 
-    封装TransitiveRiskPropagator的完整功能:
-      - 添加组件节点和依赖关系
-      - 批量导入CVE暴露信息
-      - 计算全量/增量风险评分
-      - 生成风险排名报告
+    封装 TransitiveRiskPropagator: 组件节点/依赖管理、
+    批量 CVE 导入、全量与增量风险计算、风险排名。
     """
 
     def __init__(self, base_decay_rate: float = 0.05,

@@ -33,7 +33,7 @@ import math
 import threading
 import pickle
 import struct
-from typing import Dict, Any, List, Optional, Tuple, Set, AsyncIterator, Iterator
+from typing import Dict, Any, List, Optional, Tuple, Set, AsyncIterator, Iterator, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict, deque

@@ -1,6 +1,5 @@
 # Heap operation simulation -> state machine transitions -> feng shui strategy
-# Edge cases to cover: unlink attack state transitions, fastbin consolidation
-import pytest
+# 真实 API 断言：simulate/build_transitions/count_non_deterministic/analyzer
 from modules.heap_state_machine import (
     HeapFengShui,
     HeapOperation,
@@ -18,8 +17,6 @@ class TestHeapState:
 
     def test_state_creation(self):
         state = HeapState()
-        if state is None:
-            raise AssertionError("HeapState is None?!")
         assert state.allocations == {}
         assert state.frees == []
 
@@ -34,7 +31,7 @@ class TestHeapState:
 
 
 class TestHeapTransition:
-    """Heap transition -- from state -> to state, with deterministic flag"""
+    """Heap transition -- from -> to, with deterministic flag"""
 
     def test_transition_creation(self):
         t = HeapTransition(
@@ -51,8 +48,6 @@ class TestHeapTransition:
 
 
 class TestStateMachineResult:
-    """State machine result -- success flag + paths"""
-
     def test_result_creation(self):
         initial = HeapState()
         result = StateMachineResult(
@@ -65,10 +60,12 @@ class TestStateMachineResult:
         assert result.initial_state == initial
         assert result.deterministic_paths == 0
 
+    def test_result_non_deterministic_default(self):
+        result = StateMachineResult(success=False, initial_state=HeapState(), transitions=[])
+        assert result.non_deterministic_branches == 0
+
 
 class TestHeapOperation:
-    """Heap operation -- alloc/free, address + size"""
-
     def test_alloc_operation(self):
         op = HeapOperation("alloc", size=0x80, address=0x1000)
         assert op.op_type == "alloc"
@@ -76,7 +73,6 @@ class TestHeapOperation:
         assert op.address == 0x1000
 
     def test_free_operation(self):
-        """free op -- size defaults to 0"""
         op = HeapOperation("free", address=0x1000)
         assert op.op_type == "free"
         assert op.address == 0x1000
@@ -84,7 +80,7 @@ class TestHeapOperation:
 
 
 class TestHeapStateMachine:
-    """Core heap state machine -- simulate + build_transitions"""
+    """核心状态机：simulate 推进 + build_transitions + 非确定性"""
 
     def test_machine_init(self):
         machine = HeapStateMachine()
@@ -92,15 +88,36 @@ class TestHeapStateMachine:
         assert machine.transitions == []
 
     def test_simulate_basic(self):
-        """Single alloc -> 2 states (initial + after alloc)"""
         machine = HeapStateMachine()
         ops = [HeapOperation("alloc", size=0x80, address=0x1000)]
         states = machine.simulate(ops)
         assert len(states) == 2
         assert states[1].allocations[0x1000] == 0x80
 
+    def test_simulate_alloc_then_free(self):
+        # 修复后：simulate 正确推进 state，free 能命中前序 alloc
+        machine = HeapStateMachine()
+        ops = [
+            HeapOperation("alloc", size=0x80, address=0x1000),
+            HeapOperation("free", address=0x1000),
+        ]
+        states = machine.simulate(ops)
+        assert len(states) == 3
+        # alloc 后登记
+        assert states[1].allocations[0x1000] == 0x80
+        # free 后移除并记录
+        assert states[2].allocations == {}
+        assert states[2].frees == [0x1000]
+
+    def test_simulate_free_unknown_address(self):
+        # free 未分配地址：allocations 不变，frees 不追加
+        machine = HeapStateMachine()
+        states = machine.simulate([HeapOperation("free", address=0x9999)])
+        assert len(states) == 2
+        assert states[1].allocations == {}
+        assert states[1].frees == []
+
     def test_build_transitions(self):
-        """Build transitions after simulate"""
         machine = HeapStateMachine()
         ops = [HeapOperation("alloc", size=0x80, address=0x1000)]
         machine.simulate(ops)
@@ -108,62 +125,62 @@ class TestHeapStateMachine:
         assert len(transitions) == 1
         assert transitions[0].from_state_id == 0
         assert transitions[0].to_state_id == 1
+        assert transitions[0].operation == "alloc"
+        assert transitions[0].target_address == 0x1000
+
+    def test_build_transitions_count_is_states_minus_one(self):
+        machine = HeapStateMachine()
+        ops = [
+            HeapOperation("alloc", size=0x80, address=0x1000),
+            HeapOperation("alloc", size=0x40, address=0x2000),
+            HeapOperation("free", address=0x1000),
+        ]
+        machine.simulate(ops)
+        transitions = machine.build_transitions()
+        assert len(transitions) == len(machine.states) - 1
+        assert all(t.deterministic for t in transitions)
+
+    def test_build_transitions_no_duplicate(self):
+        # 修复后：build_transitions 每次调用清空重建，不累积
+        machine = HeapStateMachine()
+        ops = [HeapOperation("alloc", size=0x80, address=0x1000)]
+        machine.simulate(ops)
+        t1 = machine.build_transitions()
+        t2 = machine.build_transitions()
+        assert len(t1) == len(t2) == 1
+
+    def test_count_non_deterministic_initial(self):
+        machine = HeapStateMachine()
+        assert machine.count_non_deterministic() == 0
 
 
 class TestHeapFengShui:
-    """Heap feng shui -- sequence method, target alloc + fillers"""
-
     def test_sequence(self):
         ops = HeapFengShui.sequence(0x1000, 0x200)
-        assert len(ops) > 0
+        assert len(ops) == 6
         target = ops[0]
         assert target.op_type == "alloc"
         assert target.address == 0x1000
         assert target.size == 0x200
+        # 后续 5 个填充块，地址递减 0x100
+        for i, op in enumerate(ops[1:], start=1):
+            assert op.op_type == "alloc"
+            assert op.size == 0x100
+            assert op.address == 0x1000 - 0x100 * i
 
 
-class TestLegacyHeapStateMachine:
-    """Legacy HeapStateMachine tests (removed APIs)"""
+class TestHeapStateMachineAnalyzer:
+    """Analyzer 不依赖真实二进制，run() 返回 success=True"""
 
-    def test_analyze_basic(self):
-        pytest.skip(
-            "analyze removed -- replaced by HeapStateMachine.simulate + build_transitions"
-        )
+    def test_run_returns_success_result(self):
+        analyzer = HeapStateMachineAnalyzer("/nonexistent/binary")
+        result = analyzer.run()
+        assert isinstance(result, StateMachineResult)
+        assert result.success is True
+        assert result.transitions
+        # feng_shui.sequence(0x1000, 0x200) -> 6 个 op -> 7 个状态 -> 6 条转移
+        assert len(result.transitions) == 6
 
-    def test_apply_malloc(self):
-        pytest.skip("_apply_malloc removed -- replaced by HeapStateMachine.simulate")
-
-    def test_apply_free(self):
-        pytest.skip("_apply_free removed -- replaced by HeapStateMachine.simulate")
-
-    def test_clone_state(self):
-        pytest.skip(
-            "_clone_state removed -- manual copy used in simulate loop"
-        )
-
-    def test_get_chunk_state(self):
-        pytest.skip(
-            "ChunkState removed -- allocations/frees list track state directly"
-        )
-
-    def test_metadata(self):
-        pytest.skip("get_metadata removed")
-
-    def test_state_initialization_legacy(self):
-        pytest.skip(
-            "HeapState fields arena_base/top_chunk/chunks removed -- now allocations/frees"
-        )
-
-
-class TestLegacyHeapState:
-    """Legacy HeapState -- arena_base/top_chunk/chunks removed"""
-
-    def test_state_initialization(self):
-        pytest.skip(
-            "HeapState fields arena_base/top_chunk/chunks removed -- now allocations/frees"
-        )
-
-    def test_state_id_generation(self):
-        pytest.skip("_generate_state_id removed")
-
-
+    def test_create_analyzer(self):
+        analyzer = create_heap_state_machine_analyzer("/nonexistent/binary")
+        assert isinstance(analyzer, HeapStateMachineAnalyzer)

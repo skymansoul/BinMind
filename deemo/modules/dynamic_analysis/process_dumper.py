@@ -11,7 +11,7 @@ import platform
 import tempfile
 from enum import Enum, auto
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, Callable
 from pathlib import Path
 
 import subprocess
@@ -389,7 +389,7 @@ class ProcessDumper:
         完整内存转储
         依次尝试可用方法，返回成功使用的输出路径
         """
-        methods: List[Tuple[str, callable]] = []
+        methods: List[Tuple[str, Callable]] = []
         if IS_LINUX:
             methods = [
                 ("gcore", lambda p: self._dump_via_gcore(p)),

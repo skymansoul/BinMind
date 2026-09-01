@@ -1,4 +1,4 @@
-﻿# analysis/fc_vra_detector — FC-VRA 流相关值域分析检测器 (本项目核心创新)
+# analysis/fc_vra_detector — FC-VRA 流相关值域分析检测器 (本项目核心创新)
 # 管线: C0 值流配对 → C1 大小等价 → C2 区间+分配器松弛 → C3 支配守卫 → C4 可控性确认
 #
 # 误报压制机理 (相对 PSVR-HLM v2):
@@ -17,7 +17,7 @@
 # 保持二进制级 (导入表) 检出能力不变。
 
 from __future__ import annotations
-from typing import Dict, List
+from typing import Dict, List, Optional
 import re
 
 from .value_range_analyzer import ValueRange, extract_value_ranges
@@ -26,7 +26,7 @@ from flow_pair_generator import generate_correlated_pairs, CorrelatedPair
 from size_equivalence import sizes_equivalent, write_bounded_by_alloc
 from allocator_slack import verdict_with_slack, usable_range_for_alloc
 from guard_dominance import find_dominating_guards
-from taint_confirm import confirm_controllability
+from taint_confirm import confirm_controllability, _seed_sources, _propagate
 from heap_overflow_v2 import detect_heap_overflow_v2, _in_loop, _has_loop_accumulation
 from fc_size_proof import (
     size_is_constant, resolve_sizeof_var, write_ternary_capped_by_alloc,
@@ -239,7 +239,7 @@ def detect_direct_writes(code: str, ranges: Dict, defines: Dict,
                     "reason": f"C0:direct offset buf[{off}]+1 > 可用{usable}B",
                 })
         # b) 循环全量写 (for/while 定界; <=N 为 N+1 次 → off-by-one)
-        # TODO: 循环上界为变量 (i < n) 时无法静态判定, 需接入区间推断
+        # 变量上界 (i < n) 无法静态定界, 仅匹配数字常量上界
         for lm in re.finditer(
             rf"(?:for\s*\([^;]*;\s*[^;]*(<=|<)\s*(\d+)\s*[^;]*;\s*[^)]*\)|"
             rf"while\s*\(\s*\w+\s*(<=|<)\s*(\d+)\s*\))", code):
@@ -369,7 +369,7 @@ def _analyze_pair(code: str, pair: CorrelatedPair, ranges: Dict,
         conf -= 0.15
 
 # C3: 支配守卫
-    # FIXME: write_pos 取该写入函数首次出现处, 同一函数多次调用时守卫归属可能错位
+    # write_pos 取该写入函数首次出现处, 同一函数多次调用时守卫归属可能错位
     write_pos = code.find(pair.write_func + "(", 0) if pair.write_func else -1
     guard = find_dominating_guards(code, write_pos, pair.write_size_expr or "")
     if guard["has_guard"]:

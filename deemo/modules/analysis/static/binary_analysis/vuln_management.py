@@ -88,10 +88,8 @@ class VulnKB:
         self.add(entry)
 
     def import_json(self, payload: dict) -> int:
-        """从 NVD JSON 结构导入 CVE 条目，返回导入数量。
-
-        payload 为 {cve_id: {...}} 或包含 'vulnerabilities' 键的 NVD 2.0 结构。
-        """
+        # 从 NVD JSON 结构导入 CVE 条目，返回导入数量
+        # payload 为 {cve_id: {...}} 或包含 'vulnerabilities' 键的 NVD 2.0 结构
         count = 0
         entries = payload.get("vulnerabilities", []) if isinstance(payload, dict) else []
         for item in entries:

@@ -77,8 +77,7 @@ class TagSpace:
     标签猜测攻击防护：增加分配时的随机延迟（模拟硬件中的随机化）。
     """
 
-    # 最大标签值（ARM MTE 为 15，即 4-bit 逻辑标签）
-    # tag 0 保留给无标签内存
+    # 最大标签值（ARM MTE 为 15，即 4-bit 逻辑标签）；tag 0 保留给无标签内存
     _RESERVED_TAGS = {0}
 
     def __init__(self, max_tag: int = 15):
@@ -238,7 +237,7 @@ class MTEState:
                         is_write=is_write,
                         message=f"未初始化读/野指针 0x{cur:x}",)
                     violations.append(v)
-                # 检查已释放的 alloc 对象
+                # 检查已释放的 alloc 对象：命中区间即 UAF
                 for a_addr, a in list(self.active_allocs.items()):
                     if a.freed and a.addr <= cur < a.addr + a.size:
                         v = MTEViolation(
@@ -252,7 +251,7 @@ class MTEState:
                             message=f"UAF 访问 0x{cur:x} (分配于 0x{a.addr:x} 已释放)",)
                         violations.append(v)
                         break
-            # 推测执行绕过检测
+            # 推测执行绕过检测：TikTag 已证明推测路径可跳过标签比对
             if speculative and violations:
                 for v in violations:
                     v.vtype = MTEViolationType.SPECULATIVE_TAG_BYPASS

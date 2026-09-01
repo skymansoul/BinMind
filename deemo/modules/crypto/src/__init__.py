@@ -295,7 +295,6 @@ _INSTANCE_IMPORTS = {
     'KeyTaintResult':               ('crypto_taint', 'KeyTaintResult'),
     'detect_key_taint':             ('crypto_taint', 'detect_key_taint'),
     'detect_key_taint_bytes':       ('crypto_taint', 'detect_key_taint_bytes'),
-    'new_cbom_generator':         ('cbom_generator', 'new_cbom_generator'),
     # pqc_ml_detector
     'PQCMLResult':                   ('pqc_ml_detector', 'PQCMLResult'),
     'PQCMLPipeline':                 ('pqc_ml_detector', 'PQCMLPipeline'),

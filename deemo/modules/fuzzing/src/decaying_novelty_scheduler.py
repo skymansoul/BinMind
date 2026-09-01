@@ -104,7 +104,7 @@ class DecayingNoveltyScheduler:
         self._decay_lambda = math.log(2) / halflife_sec
         self._pick_count: int = 0
 
-# 注册与管理
+    # 注册与管理
 
     def register_seed(
         self, seed_id: str, coverage_mask: Optional[Set[int]] = None
@@ -127,7 +127,7 @@ class DecayingNoveltyScheduler:
     def seed_count(self) -> int:
         return len(self._records)
 
-# 新颖度衰减计算
+    # 新颖度衰减计算
 
     def _compute_current_novelty(self, record: NoveltyRecord) -> float:
         """基于指数衰减模型计算当前新颖度。
@@ -160,7 +160,7 @@ class DecayingNoveltyScheduler:
                     rec.novelty = rec.novelty * math.exp(-self._decay_lambda * elapsed)
                     rec.last_scheduled = now
 
-# 种子选择
+    # 种子选择
 
     def pick_seed(self) -> Optional[str]:
         """选择下一个种子-双队列策略。
@@ -252,7 +252,7 @@ class DecayingNoveltyScheduler:
 
         return best_id
 
-# 复活机制
+    # 复活机制
 
     def _try_resurrect(self) -> Optional[str]:
         """检查重访队列中是否有冷却期满的候选种子。"""
@@ -283,7 +283,7 @@ class DecayingNoveltyScheduler:
         )
         return chosen
 
-# 统计与诊断
+    # 统计与诊断
 
     def novelty_distribution(self) -> Dict[str, float]:
         """返回所有种子当前新颖度分布的快照。"""

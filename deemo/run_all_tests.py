@@ -1,8 +1,4 @@
-"""
-一键回归测试 — 运行所有检测器并输出通过/失败汇总。
-用法: python run_all_tests.py [--quick]
-"""
-
+# 一键回归测试，运行所有检测器并输出通过/失败汇总
 import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -160,7 +156,7 @@ def main():
         status = "FAIL"
     print("=" * 60)
 
-    # Write report
+    # 写报告
     report = {
         'status': status,
         'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),

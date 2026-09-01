@@ -95,21 +95,11 @@ _CLEARING_OPS = {
 
 
 class TaintPrecisionEstimator:
-    """污点追踪精度自评估器
-
-    用法:
-    estimator = TaintPrecisionEstimator()
-    estimator.record_step(PropagationStep(...))  # 每次传播调用
-    report = estimator.estimate()                 # 定期评估
-    """
 
     _SAMPLING_INTERVAL = 100   # 每 100 步采样一次
     _MIN_SAMPLES = 5           # 最少样本数才报告
 
     def __init__(self, sample_rate: float = 0.05):
-        """
-        sample_rate: 传播步的采样率 (0.05 = 5%)
-        """
         self._rate = sample_rate
         self._steps: List[PropagationStep] = []
         self._total_steps = 0

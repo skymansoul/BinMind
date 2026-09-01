@@ -41,8 +41,3 @@ if __name__ == "__main__":
     sys.exit(main())
 def _debug_print(*a,**kw):
     if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)
-
-
-def _debug_print(*args, **kwargs):
-    """调试输出桩，当前未启用。"""
-    pass  # 调试桩，当前未使用

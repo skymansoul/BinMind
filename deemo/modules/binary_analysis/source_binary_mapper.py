@@ -50,7 +50,6 @@ class DWARFLineParser:
 
 
 class SourceBinaryMapper:
-    """源码到binary映射器 (main class)"""
 
     def __init__(self):
         self._mappings: Dict[int, SourceMapping] = {}

@@ -272,7 +272,6 @@ class PropagationGraph:
             if src_layer != tgt_layer:
                 yield edge, src_layer, tgt_layer
 
-    # 此段后续可微调，当前先保证正确性
     def _sparsify_isolated(self) -> None:
         """移除无出入边的孤立节点，超容量时调用。"""
         isolated = []

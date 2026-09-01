@@ -6,6 +6,7 @@
 import logging as _logging
 import math as _math
 import json as _json
+import numpy as np
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Tuple, Set
 from collections import defaultdict as _defaultdict
@@ -543,26 +544,216 @@ class GraphAugmenter:
 
 # 多视图 GNN 嵌入器
 
+@dataclass
+class FunctionEmbedding:
+    """函数嵌入结果，兼容字典接口与属性访问。"""
+    function_name: str = ""
+    function_address: int = 0
+    embedding: Any = None
+    confidence: float = 0.0
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SearchResult:
+    """相似函数搜索结果。"""
+    top_k: int = 10
+    similar_functions: List[Tuple[str, float]] = field(default_factory=list)
+
+
 class MultiViewGNNEmbedder:
-    """函数图嵌入与相似度计算的高层接口。"""
+    """函数图嵌入与相似度计算的高层接口。
+    兼容 dict 输入（测试接口）与 FunctionGraph 输入（原接口）。"""
 
-    __slots__ = ('m_model', 'm_loss', 'm_cache', 'm_augmenter')
-
-    def __init__(self, input_dim: int = 64, hidden_dim: int = 128, output_dim: int = 128):
+    def __init__(self, input_dim: int = 64, hidden_dim: int = 128, output_dim: int = 512):
         self.m_model = MultiViewGNN(input_dim, hidden_dim, output_dim)
         self.m_loss = ContrastiveLoss()
         self.m_cache: Dict[str, EmbeddingResult] = {}
         self.m_augmenter: Optional[GraphAugmenter] = None
+        self.embedding_cache: Dict[str, Any] = {}
+        self.output_dim = output_dim
 
     def enable_augmentation(self, edge_drop: float = 0.1, feat_mask: float = 0.1):
         """启用图增强器 -- 用于对比预训练阶段"""
         self.m_augmenter = GraphAugmenter(edge_drop_rate=edge_drop, feature_mask_rate=feat_mask)
 
+    def _function_info_to_graph(self, info: Dict[str, Any]) -> FunctionGraph:
+        """从字典格式函数信息构建 FunctionGraph。"""
+        name = info.get("name", "")
+        address = info.get("address", 0)
+        cfg_nodes = info.get("cfg_nodes", [])
+        cfg_edges = info.get("cfg_edges", [])
+        variables = info.get("variables", [])
+        call_graph = info.get("call_graph", [])
+
+        graph = FunctionGraph(
+            function_name=name,
+            function_address=address,
+            num_basic_blocks=len(cfg_nodes),
+            num_instructions=sum(len(n.get("instructions", [])) for n in cfg_nodes),
+        )
+
+        bi = 0
+        while bi < len(cfg_nodes):
+            node_data = cfg_nodes[bi]
+            features: List[float] = [
+                float(len(node_data.get("instructions", []))),
+                float(len(node_data.get("instructions", []))),
+                0.0, 0.0, 0.0, 0.0,
+            ]
+            ci = 0
+            while ci < 64 - len(features):
+                features.append(0.0)
+                ci += 1
+            node = GraphNode(
+                node_id=bi,
+                features=features[:64],
+                label=node_data.get("label", f"block_{bi}"),
+                num_instructions=len(node_data.get("instructions", [])),
+            )
+            graph.nodes.append(node)
+            bi += 1
+
+        ei = 0
+        while ei < len(cfg_edges):
+            e = cfg_edges[ei]
+            graph.cfg_edges.append(GraphEdge(
+                edge_id=ei, source_id=e.get("source", 0), target_id=e.get("target", 0)
+            ))
+            ei += 1
+
+        ci = 0
+        while ci < len(call_graph):
+            graph.call_edges.append(GraphEdge(
+                edge_id=ci, source_id=0, target_id=0,
+                edge_type="call"
+            ))
+            ci += 1
+
+        return graph
+
+    def embed_function(self, function_info: Dict[str, Any]) -> FunctionEmbedding:
+        """从函数信息字典生成嵌入向量。"""
+        name = function_info.get("name", "")
+        address = function_info.get("address", 0)
+        cache_key = f"{name}_{address}"
+
+        if cache_key in self.embedding_cache:
+            emb = self.embedding_cache[cache_key]
+        else:
+            graph = self._function_info_to_graph(function_info)
+            result = self.m_model.embed(graph)
+            emb = np.array(result.embedding[:self.output_dim])
+            pad_len = self.output_dim - len(emb)
+            if pad_len > 0:
+                emb = np.pad(emb, (0, pad_len))
+            self.embedding_cache[cache_key] = emb
+
+        cfg_nodes = function_info.get("cfg_nodes", [])
+        metadata = {
+            "num_cfg_nodes": len(cfg_nodes),
+            "num_cfg_edges": len(function_info.get("cfg_edges", [])),
+            "num_variables": len(function_info.get("variables", [])),
+            "num_call_targets": len(function_info.get("call_graph", [])),
+        }
+
+        return FunctionEmbedding(
+            function_name=name,
+            function_address=address,
+            embedding=emb,
+            confidence=1.0,
+            metadata=metadata,
+        )
+
+    def batch_embed(self, functions_info: List[Dict[str, Any]]) -> List[FunctionEmbedding]:
+        results: List[FunctionEmbedding] = []
+        i = 0
+        while i < len(functions_info):
+            results.append(self.embed_function(functions_info[i]))
+            i += 1
+        return results
+
+    def compute_similarity(self, embedding_a: Any, embedding_b: Any) -> float:
+        """计算两个嵌入向量的余弦相似度。"""
+        a = np.asarray(embedding_a, dtype=float)
+        b = np.asarray(embedding_b, dtype=float)
+        if a.shape != b.shape:
+            min_len = min(len(a), len(b))
+            a = a[:min_len]
+            b = b[:min_len]
+        na = np.linalg.norm(a)
+        nb = np.linalg.norm(b)
+        if na == 0.0 or nb == 0.0:
+            return 0.0
+        return float(np.dot(a, b) / (na * nb))
+
+    def search_graph_database(self, query: FunctionGraph,
+                              database: List[FunctionGraph],
+                              top_k: int = 10) -> List[SimilarityResult]:
+        """在图数据库中搜索与查询图最相似的函数。"""
+        query_result = self.embed(query)
+        query_emb = query_result.embedding
+
+        scored: List[SimilarityResult] = []
+        gi = 0
+        while gi < len(database):
+            graph = database[gi]
+            result = self.embed(graph)
+            sim = self._cosine_similarity(query_emb, result.embedding)
+            dist = self._euclidean_distance(query_emb, result.embedding)
+            scored.append(SimilarityResult(
+                function_a=query.function_name,
+                function_b=graph.function_name,
+                embedding_a=list(query_emb),
+                embedding_b=list(result.embedding),
+                cosine_similarity=sim,
+                euclidean_distance=dist,
+                is_match=sim > 0.85,
+                confidence=sim,
+            ))
+            gi += 1
+
+        scored.sort(key=lambda x: x.cosine_similarity, reverse=True)
+        return scored[:top_k]
+
+    def search_similar(self, query_embedding: Any, top_k: int = 10) -> SearchResult:
+        """在缓存中搜索与查询向量最相似的函数。"""
+        query = np.asarray(query_embedding, dtype=float)
+        scored: List[Tuple[str, float]] = []
+        for name, emb in self.embedding_cache.items():
+            sim = self.compute_similarity(query, emb)
+            scored.append((name, sim))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return SearchResult(top_k=top_k, similar_functions=scored[:top_k])
+
+    def save_embeddings(self, filepath: str) -> bool:
+        """保存嵌入缓存到文件。"""
+        try:
+            import pickle as _pk
+            data = {k: np.asarray(v) for k, v in self.embedding_cache.items()}
+            with open(filepath, 'wb') as f:
+                _pk.dump(data, f)
+            return True
+        except Exception as e:
+            __dbg.error(f"保存嵌入失败: {e}")
+            return False
+
+    def load_embeddings(self, filepath: str) -> bool:
+        """从文件加载嵌入缓存。"""
+        try:
+            import pickle as _pk
+            with open(filepath, 'rb') as f:
+                data = _pk.load(f)
+            self.embedding_cache = {k: np.asarray(v) for k, v in data.items()}
+            return True
+        except Exception as e:
+            __dbg.error(f"加载嵌入失败: {e}")
+            return False
+
     def embed(self, graph: FunctionGraph) -> EmbeddingResult:
         cache_key = f"{graph.function_name}_{graph.function_address}"
         if cache_key in self.m_cache:
             return self.m_cache[cache_key]
-
         result = self.m_model.embed(graph)
         self.m_cache[cache_key] = result
         return result
@@ -574,49 +765,6 @@ class MultiViewGNNEmbedder:
             results.append(self.embed(graphs[gi]))
             gi += 1
         return results
-
-    def compute_similarity(self, graph_a: FunctionGraph,
-                           graph_b: FunctionGraph) -> SimilarityResult:
-        emb_a = self.embed(graph_a)
-        emb_b = self.embed(graph_b)
-
-        cos_sim = self._cosine_similarity(emb_a.embedding, emb_b.embedding)
-        euc_dist = self._euclidean_distance(emb_a.embedding, emb_b.embedding)
-
-        view_sims: Dict[str, float] = {}
-        va_keys = set(emb_a.view_embeddings.keys()) & set(emb_b.view_embeddings.keys())
-        for vk in va_keys:
-            view_sims[vk] = self._cosine_similarity(
-                emb_a.view_embeddings[vk],
-                emb_b.view_embeddings[vk],
-            )
-
-        is_match = cos_sim > 0.85
-
-        return SimilarityResult(
-            function_a=graph_a.function_name,
-            function_b=graph_b.function_name,
-            embedding_a=emb_a.embedding,
-            embedding_b=emb_b.embedding,
-            cosine_similarity=cos_sim,
-            euclidean_distance=euc_dist,
-            view_similarities=view_sims,
-            is_match=is_match,
-            confidence=cos_sim,
-        )
-
-    def search_similar(self, query: FunctionGraph,
-                       database: List[FunctionGraph],
-                       top_k: int = 10) -> List[SimilarityResult]:
-        results: List[SimilarityResult] = []
-        di = 0
-        while di < len(database):
-            sim = self.compute_similarity(query, database[di])
-            results.append(sim)
-            di += 1
-
-        results.sort(key=lambda r: r.cosine_similarity, reverse=True)
-        return results[:top_k]
 
     def _cosine_similarity(self, a: List[float], b: List[float]) -> float:
         if len(a) != len(b) or len(a) == 0:
@@ -647,17 +795,18 @@ class MultiViewGNNEmbedder:
 
     def clear_cache(self):
         self.m_cache.clear()
+        self.embedding_cache.clear()
 
 
 # 多视图 GNN Embedder Analyzer
 
 class MultiViewGNNEmbedderAnalyzer:
-    """函数图嵌入与比较的 Analyzer。"""
+    """函数图嵌入与比较的 Analyzer。
+    兼容 functions/search_query 接口与 graphs/query_graphs 接口。"""
 
-    __slots__ = ('m_embedder', 'm_database', 'm_results')
-
-    def __init__(self, input_dim=64, hidden_dim=128, output_dim=128):
-        self.m_embedder = MultiViewGNNEmbedder(input_dim, hidden_dim, output_dim)
+    def __init__(self, input_dim=64, hidden_dim=128, output_dim=512):
+        self.embedder = MultiViewGNNEmbedder(input_dim, hidden_dim, output_dim)
+        self.m_embedder = self.embedder
         self.m_database: List[FunctionGraph] = []
         self.m_results: Dict[str, Any] = {}
 
@@ -667,10 +816,54 @@ class MultiViewGNNEmbedderAnalyzer:
     def get_version(self) -> str:
         return "1.0.0"
 
+    def validate_input(self, **kwargs) -> Tuple[bool, Optional[str]]:
+        """校验分析输入参数。"""
+        functions = kwargs.get("functions")
+        if functions is not None:
+            if not isinstance(functions, list):
+                return False, "functions 必须是列表类型"
+        return True, None
+
     def analyze(self, **kwargs) -> Dict[str, Any]:
+        """执行分析任务，支持函数嵌入与相似度搜索两种模式。"""
+        functions = kwargs.get("functions")
+        search_query = kwargs.get("search_query")
         graphs = kwargs.get("graphs", [])
         query_graphs = kwargs.get("query_graphs", [])
         top_k = kwargs.get("top_k", 10)
+
+        is_valid, error = self.validate_input(functions=functions if functions is not None else [])
+        if not is_valid:
+            return {"success": False, "error": error}
+
+        if functions is not None:
+            embeddings = self.embedder.batch_embed(functions)
+            self.m_results = {
+                "success": True,
+                "embeddings": [
+                    {
+                        "function_name": e.function_name,
+                        "function_address": e.function_address,
+                        "embedding": e.embedding,
+                        "confidence": e.confidence,
+                        "metadata": e.metadata,
+                    }
+                    for e in embeddings
+                ],
+            }
+            return self.m_results
+
+        if search_query is not None:
+            query = np.asarray(search_query, dtype=float)
+            result = self.embedder.search_similar(query, top_k=top_k)
+            self.m_results = {
+                "success": True,
+                "search_result": {
+                    "top_k": result.top_k,
+                    "similar_functions": result.similar_functions,
+                },
+            }
+            return self.m_results
 
         self.m_database = []
         gi = 0
@@ -685,16 +878,8 @@ class MultiViewGNNEmbedderAnalyzer:
             while qi < len(query_graphs):
                 qg = query_graphs[qi]
                 if isinstance(qg, FunctionGraph):
-                    sims = self.m_embedder.search_similar(qg, self.m_database, top_k)
-                    results[qg.function_name] = [
-                        {
-                            "match": s.function_b,
-                            "similarity": s.cosine_similarity,
-                            "is_match": s.is_match,
-                            "view_sims": s.view_similarities,
-                        }
-                        for s in sims
-                    ]
+                    sims = self.embedder.search_graph_database(qg, self.m_database, top_k)
+                    results[qg.function_name] = sims
                 qi += 1
 
         self.m_results = {
@@ -702,18 +887,22 @@ class MultiViewGNNEmbedderAnalyzer:
             "query_count": len(query_graphs) if query_graphs else 0,
             "results": results,
         }
-
         return dict(self.m_results)
+
+    def cleanup(self) -> None:
+        """释放嵌入器资源。"""
+        self.embedder = None
+        self.m_embedder = None
 
     def add_to_database(self, graph: FunctionGraph):
         self.m_database.append(graph)
 
     def embed_and_store(self, graph: FunctionGraph) -> EmbeddingResult:
         self.m_database.append(graph)
-        return self.m_embedder.embed(graph)
+        return self.embedder.embed(graph)
 
     def search(self, query: FunctionGraph, top_k: int = 10) -> List[SimilarityResult]:
-        return self.m_embedder.search_similar(query, self.m_database, top_k)
+        return self.embedder.search_graph_database(query, self.m_database, top_k)
 
 
 # 图构建工具 -- 增强版，自动计算图结构全局特征

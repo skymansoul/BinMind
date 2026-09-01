@@ -45,13 +45,6 @@ class CompilerFingerprint:
 
 
 class CompilerFingerprinter:
-    """从反汇编输出中提取统计指纹，匹配编译器/优化级别
-
-    使用接口:
-    fp = 编译器Fingerprinter()
-    result = fp.fingerprint(instructions=asm_lines, reg_pressure=0.5, loop_metrics={.})
-    # result: 编译器Fingerprint
-    """
 
     # 弱信号集成权重, 通过交叉验证校准
     _ENSEMBLE_WEIGHTS = {
@@ -239,14 +232,7 @@ class CompilerFingerprinter:
     def fingerprint(self, instructions: List[str],
                     reg_pressure: Optional[float] = None,
                     loop_body_sizes: Optional[List[float]] = None,
-                    unroll_indicators: Optional[List[float]] = None) -> CompilerFingerprint:
-        """主入口：对反汇编输出做编译器指纹识别
-
-        instructions: 反汇编指令列表（可来自 r2/objdump/Ghidra）
-        reg_pressure: 外部估算的寄存器压力值 [0, 1]，若为 None 则从指令估算
-        loop_body_sizes: 循环体大小列表（指令数），若为 None 则跳过
-        unroll_indicators: 展开因子列表（1.0=未展开，>2.0=已展开）
-        """
+                    unroll_indicators: Optional[List[float]] = None    ) -> CompilerFingerprint:
         _dyad_freq = self.extract_dyads(instructions)
         _dyad_scores = self._score_dyad_dimension(_dyad_freq)
 

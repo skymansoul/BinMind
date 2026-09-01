@@ -18,6 +18,7 @@
 #   两者使用外部知识图谱或 AST 语义索引做跨项目检索。
 #   本模块是项目内闭环学习 — 知识库随每次成功实现自动增长，
 #   且检索对象是"同项目内相似桩的实现模式"，不是外部代码。
+import ast as _ast
 import hashlib as _hl
 import json as _json
 import os as _os
@@ -167,7 +168,6 @@ class PatternKB:
     def size(self) -> int:
         return len(self._patterns)
 
-# 内部
     @staticmethod
     def _name_ngrams(name: str, n: int = 3) -> list[str]:
         """函数名 → 字符级 n-gram。"""
@@ -209,13 +209,12 @@ class PatternKB:
     @staticmethod
     def _extract_body(source: str, func_name: str) -> _Opt[str]:
         """从模块源码中提取指定函数的 body。"""
-        import ast
         try:
-            tree = ast.parse(source)
+            tree = _ast.parse(source)
         except SyntaxError:
             return None
         for node in tree.body:
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if isinstance(node, (_ast.FunctionDef, _ast.AsyncFunctionDef)):
                 if node.name == func_name:
                     lines = source.splitlines()
                     if node.body:

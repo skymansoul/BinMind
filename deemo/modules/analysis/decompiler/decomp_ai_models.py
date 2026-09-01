@@ -198,9 +198,7 @@ def escape_java_string(s: str) -> str:
 
 
 def escape_idc_string(s: str) -> str:
-    """
-    安全地转义 IDA IDC 脚本中的字符串
-    """
+    # 转义 IDA IDC 脚本字符串，防止注入
     if not s:
         return ''
 

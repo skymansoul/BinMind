@@ -25,7 +25,7 @@ def classification_report(y_true, y_pred, labels=None):
     _f1 = np.zeros(_n_labels, dtype=np.float64)
     _supp = np.zeros(_n_labels, dtype=np.int64)
 
-# 逐类别统计
+    # 逐类别统计
     for _j, _l in enumerate(_lbls):
         _tp = int(np.sum((_t == _l) & (_p == _l)))
         _fp = int(np.sum((_t != _l) & (_p == _l)))
@@ -38,12 +38,12 @@ def classification_report(y_true, y_pred, labels=None):
 
     _acc = float(np.sum(_t == _p)) / len(_t) if len(_t) > 0 else 0.0
 
-# 宏平均
+    # 宏平均
     _macro_p = float(np.mean(_prec))
     _macro_r = float(np.mean(_rec))
     _macro_f1 = 2 * _macro_p * _macro_r / (_macro_p + _macro_r) if (_macro_p + _macro_r) > 0 else 0.0
 
-# 加权平均
+    # 加权平均
     _total_supp = float(np.sum(_supp))
     if _total_supp > 0:
         _w = _supp.astype(np.float64) / _total_supp
@@ -53,7 +53,7 @@ def classification_report(y_true, y_pred, labels=None):
     else:
         _w_p = _w_r = _w_f1 = 0.0
 
-    # //// 拼表头，经典格式
+    # 拼表头
     _lines = []
     _lines.append(f"{'':>14} {'precision':>10} {'recall':>10} {'f1-score':>10} {'support':>10}")
     _lines.append("")

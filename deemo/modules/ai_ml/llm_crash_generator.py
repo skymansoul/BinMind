@@ -195,7 +195,8 @@ class LearnedGrammar:
                 buf.extend(tok.encode('utf-8', errors='surrogateescape'))
             return bytes(buf[:length])
 
-        # 回退: byte_transitions的Markov链        if self.byte_transitions:
+        # 回退: byte_transitions的Markov链
+        if self.byte_transitions:
             length = _r.randint(min_length, max_length)
             current = _r.choice(list(self.byte_transitions.keys()))
             buf.append(current)
@@ -464,7 +465,8 @@ class LLMCrashGenerator:
                     # 只做一次arithmetic——太多会破坏结构
                     break
 
-# SPLICE: 从corpus取片段拼接到当前输入        elif strategy == MutationStrategy.SPLICE:
+# SPLICE: 从corpus取片段拼接到当前输入
+        elif strategy == MutationStrategy.SPLICE:
             if corpus and len(corpus) > 0:
                 other = _rnd.choice(corpus)
                 if len(other) > 0:
@@ -516,7 +518,8 @@ class LLMCrashGenerator:
                         data[len(block_b):len(block_b)+len(block_a)] = block_a
                 ri += 1
 
-# INTERESTING: 注入boundary values到固定偏移        elif strategy == MutationStrategy.INTERESTING:
+# INTERESTING: 注入boundary values到固定偏移
+        elif strategy == MutationStrategy.INTERESTING:
             width = _rnd.choice([1, 2, 4])
             if dlen >= width:
                 pos = _rnd.randint(0, dlen - width)
@@ -652,7 +655,8 @@ Respond with ONLY valid JSON."""
         generated: List[bytes] = []
         crash_ctxs: List[CrashContext] = []
         best_inputs: Set[bytes] = set()
-        # 保留一份corpus用于SPLICE策略        corpus: List[bytes] = []
+        # 保留一份corpus用于SPLICE策略
+        corpus: List[bytes] = []
 
         if seed_inputs:
             best_inputs.update(seed_inputs)

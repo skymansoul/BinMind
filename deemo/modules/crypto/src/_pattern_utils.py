@@ -1,13 +1,8 @@
 """
 内部共享工具 — 密码学检测模块的通用模式匹配和字节扫描函数。
 
-创建: 2024-11-05 09:15
-修改:
-  2025-09-20 09:15 — 从 crypto_detector, lwc_detector, whitebox_detector 等模块提取公共模式
-
-目的:
-  减少代码重复, 但不强制所有模块迁移 — 各模块可选择直接使用或保留自身实现。
-  设计为无依赖纯函数, 仅依赖 Python stdlib。
+减少代码重复, 但不强制所有模块迁移 — 各模块可选择直接使用或保留自身实现。
+设计为无依赖纯函数, 仅依赖 Python stdlib。
 """
 
 from typing import List, Optional, Tuple

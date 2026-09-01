@@ -221,12 +221,7 @@ class ProcessSandboxDriver:
 
     def execute(self, command: List[str],
                 stdin_data: Optional[bytes] = None) -> SandboxResult:
-        """执行命令并捕获输出。
-
-        参数: command 命令行参数列表, stdin_data 可选标准输入
-        字节流; 返回 SandboxResult, 调用方通过
-        success/exit_code/stderr 判定。
-        """
+        """执行命令并捕获输出。"""
         if self.state != SandboxState.RUNNING:
             return SandboxResult(
                 stderr="Sandbox not running",

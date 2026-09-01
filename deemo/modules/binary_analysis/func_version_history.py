@@ -73,7 +73,7 @@ class FunctionHasher:
                     funcs.append(m.group(1).strip())
             return funcs
         except Exception as e:
-            logger.warning(f"Failed to get function list: {e}")
+            __log.warning(f"Failed to get function list: {e}")
             return []
 
     def fingerprint(self, binary_path: str, func_name: str) -> str:
@@ -86,7 +86,7 @@ class FunctionHasher:
             )
             return hashlib.sha256(r.stdout.encode("utf-8")).hexdigest()
         except Exception as e:
-            logger.warning(f"Fingerprinting failed: {e}")
+            __log.warning(f"Fingerprinting failed: {e}")
             return ""
 
 class VersionedFuncDB:
@@ -164,7 +164,7 @@ class VersionedFuncDB:
                 ))
                 return True
             except Exception as e:
-                logger.warning(f"Snapshot insert failed: {e}")
+                __log.warning(f"Snapshot insert failed: {e}")
                 return False
 
     def add_change(self, change: FunctionChangeLog) -> bool:
@@ -184,7 +184,7 @@ class VersionedFuncDB:
                 ))
                 return True
             except Exception as e:
-                logger.warning(f"Change insert failed: {e}")
+                __log.warning(f"Change insert failed: {e}")
                 return False
 
     def add_cve(self, cve: CVEMapping) -> bool:
@@ -199,7 +199,7 @@ class VersionedFuncDB:
                 ))
                 return True
             except Exception as e:
-                logger.warning(f"CVE insert failed: {e}")
+                __log.warning(f"CVE insert failed: {e}")
                 return False
 
     def get_history(self, binary_id: str, func_name: str) -> List[FunctionSnapshot]:

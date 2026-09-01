@@ -141,14 +141,6 @@ class SimilarityResult:
 
 
 class CFGHomologyEngine:
-    """CFG 持续同调指纹的完整匹配流水线
-
-    使用流程:
-    eng = CFGHomologyEngine()
-    eng.index_binary("libcrypto.so", nodes, edges)    # 索引已知二进制
-    eng.index_binary("libssl.so", nodes, edges)
-    results = eng.query(nodes, edges, top_k=5)         # 查询相似二进制
-    """
 
     # 通道权重 - entropy 和 betweenness 权重更高
     # 原因: 频率通道依赖动态覆盖数据, 静态场景下可能缺失

@@ -52,15 +52,7 @@ class UAFScoringReport:
 # 评分器
 
 class UseAfterFreeScorer:
-    """二进制级 UAF 概率评分器
-
-    用法:
-    scorer = UseAfterFreeScorer()
-    report = scorer.score(
-        heap_ops=[HeapOperation('malloc', 0x401000, 64, 'rax', 'foo', 0), ...],
-        function_instructions={'foo': ['mov [rbp-8], rax', ...], ...},
-    )
-    """
+    # 二进制级 UAF 概率评分器
 
     _WEIGHTS = {'escape': 0.35, 'lifetime_gap': 0.40, 'reallocation': 0.25}
 
@@ -156,13 +148,8 @@ class UseAfterFreeScorer:
         self, mop: HeapOperation, fop: HeapOperation,
         asm_lines: List[str],
     ) -> float:
-        """估计指针逃逸风险: free 后指针是否仍在作用域内
-
-        检查:
-        1. 指针是否被存储到内存 (非寄存器)->逃逸
-        2. 指针是否被传递给其他函数->逃逸
-        3. 指针是否被返回到调用者->逃逸
-        """
+        # 估计指针逃逸风险: free 后指针是否仍在作用域内
+        # 检查: 1.存储到内存 2.传递给其他函数 3.返回给调用者
         if not asm_lines:
             return 0.5
 
@@ -189,11 +176,8 @@ class UseAfterFreeScorer:
     def _estimate_lifetime_gap(
         self, mop: HeapOperation, fop: HeapOperation,
     ) -> float:
-        """生命期间距: 使用基本块计数 (跨编译器稳定) 替代地址差 (O3 下失准)。
-
-        若调用方提供了 BB 信息 (via set_bb_info), 使用基本块计数。
-        否则回退到地址差/4 估算——兼容旧调用。
-        """
+        # 生命期间距: 使用基本块计数(跨编译器稳定)替代地址差(O3 下失准)
+        # 若调用方提供了 BB 信息(via set_bb_info)使用基本块计数; 否则回退到地址差/4
         # 优先使用基本块计数——跨 GCC/Clang/O0/O3 差异 <20%
         if hasattr(self, '_bb_count_for_function') and mop.function_name:
             bb_count = self._bb_count_for_function.get(mop.function_name, 0)
@@ -213,19 +197,15 @@ class UseAfterFreeScorer:
         return normalized
 
     def set_bb_info(self, bb_counts: dict[str, int]) -> None:
-        """注入基本块计数——调用方从 CFG/反编译器获取。
-
-        bb_counts: {function_name: basic_block_count}。"""
+        # 注入基本块计数——调用方从 CFG/反编译器获取
+        # bb_counts: {function_name: basic_block_count}
         self._bb_count_for_function = bb_counts
 
     def _estimate_reallocation_risk(
         self, mop: HeapOperation, all_ops: List[HeapOperation],
     ) -> float:
-        """重新分配风险: 同一函数中同大小 malloc 的频率
-
-        若函数中频繁分配/释放同大小的块->glibc 的 bin 可能立即重用
-        ->UAF 后访问到新分配的块->可控利用
-        """
+        # 重新分配风险: 同一函数中同大小 malloc 的频率
+        # 频繁分配/释放同大小→glibc bin 可能立即重用→UAF 后访问到新分配的块→可控利用
         same_size_allocs = [
             op for op in all_ops
             if op.op_type in ('malloc', 'calloc')

@@ -21,13 +21,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 class AnalysisRedundancyDetector:
     """分析冗余检测器.
 
-    用法:
-      ard = AnalysisRedundancyDetector()
-      ard.record('static', '0x401000', 'buffer_overflow')
-      ard.record('dynamic', '0x401000', 'buffer_overflow')
-      ard.record('symbolic', '0x401000', 'buffer_overflow')
-      score = ard.redundancy_score('0x401000')
-      # score = 1.0 (三个源一致确认)
+    多源一致确认同一发现→高置信; 单源发现→误报候选.
     """
 
     def __init__(self, min_agreement_sources: int = 2):

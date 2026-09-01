@@ -18,14 +18,6 @@ from .config import PipelineConfig
 _TRACE_FLAGS = 0b1101_0010
 
 
-
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
-
 class AsyncPipeline:
     """异步流水线 —— item 间并发等 I/O。"""
 
@@ -171,7 +163,4 @@ class AsyncParallelPipeline:
                 results.append(await coro)
             return results
         return await asyncio.gather(*tasks)
-
-
-    pass  # 调试桩，当前未使用
 

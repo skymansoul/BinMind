@@ -1,31 +1,6 @@
 # 能力卡分级: 确认(definite)/可能(probable)/潜在(possible) 三级
 # 内存写原语检测: 4 类模式 (直接写/间接写/偏移写/条件写)
 
-"""崩溃利用能力目录 - 从可控性评估枚举具体的利用原语
-
-crash_primitive_slicer.py 确定攻击者能控制什么
-本模块确定攻击者能用这些控制做什么--将控制性转化为能力目录
-
-能力分类 (按利用难度递增):
-  ARBITRARY_READ:      攻击者可读取任意内存地址
-  ARBITRARY_WRITE:     攻击者可写入任意内存地址
-  RIP_CONTROL:         攻击者可控制指令指针 -> 代码执行
-  STACK_PIVOT:         攻击者可重定向栈指针 -> ROP 链
-  CONTROLLED_CALL:     攻击者可控制调用目标
-  CONTROLLED_BRANCH:   攻击者可控制条件分支方向
-  FORMAT_STRING:       格式字符串漏洞 -> 读/写原语
-  INFO_LEAK:           攻击者可获取内存布局信息
-
-每能力附带:
-- 置信度 [0,1]
-- 利用原语类型 (direct/indirect/offset-based)
-- 可操作的寄存器/地址
-- 约束条件 (如 "需先泄漏栈地址")
-
-设计意图: 将模糊的 "EXPLOITABLE" 标记替换为可操作的利用清单
-安全研究员可直接根据此清单选择开发路径--避免逐条检查崩溃寄存器
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -40,7 +15,6 @@ from .crash_primitive_slicer import (
 # 能力定义
 
 class CapabilityClass(Enum):
-    """利用能力类别"""
     ARBITRARY_READ = auto()
     ARBITRARY_WRITE = auto()
     RIP_CONTROL = auto()
@@ -59,7 +33,6 @@ class ConfidenceTier(Enum):
 
 @dataclass
 class ExploitCapability:
-    """单个利用能力的完整描述"""
     capability: CapabilityClass
     tier: ConfidenceTier
     confidence: float                    # [0, 1]
@@ -74,7 +47,6 @@ class ExploitCapability:
 
 @dataclass
 class CapabilityCatalog:
-    """崩溃的完整利用能力目录"""
     # 能力列表 (按利用价值排序)
     capabilities: List[ExploitCapability] = field(default_factory=list)
     # 最高能力级别
@@ -91,12 +63,6 @@ class CapabilityCatalog:
 # 能力合成器
 
 class CapabilitySynthesizer:
-    """从 ControlAssessment 合成利用能力目录
-
-    用法:
-    synth = CapabilitySynthesizer()
-    catalog = synth.synthesize(assessment, crash_insn_text='call [rax+0x10]')
-    """
 
     # 寄存器到其在利用中的角色的映射
     _IP_REGS = {'rip', 'eip'}          # 指令指针
@@ -111,7 +77,6 @@ class CapabilitySynthesizer:
         crash_insn_text: str = '',
         crash_address: int = 0,
     ) -> CapabilityCatalog:
-        """从可控性评估合成能力目录"""
         catalog = CapabilityCatalog()
 
         # 1. RIP 控制检测
@@ -350,6 +315,5 @@ def synthesize_capabilities(
     crash_insn_text: str = '',
     crash_address: int = 0,
 ) -> CapabilityCatalog:
-    """一行式能力合成"""
     synth = CapabilitySynthesizer()
     return synth.synthesize(assessment, crash_insn_text, crash_address)

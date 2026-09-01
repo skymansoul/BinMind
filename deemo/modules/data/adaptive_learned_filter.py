@@ -4,8 +4,6 @@
 理论依据:
   PLBF: 频率分组 + 指数衰减 Bloom 分配。
   LSHBloom: MinHashLSH+Bloom 过滤器, 0.6% 磁盘空间, 270% 加速。
-
-模块位置: data/adaptive_learned_filter.py
 """
 
 import math
@@ -76,8 +74,8 @@ class AdaptiveLearnedFilter:
         self._sketch = SplineSketch()
         self._insert_count = 0
         self._rebalance_interval = max(1000, capacity // 10)
-        # 各组: bitarray + hash seeds
-        self._filters: List[Tuple[int, List[int]]] = []
+        # 各组: (位存储, 字节数, hash seeds)
+        self._filters: List[Tuple[bytearray, int, List[int]]] = []
         self._group_thresholds: List[float] = []
         self._init_filters()
 
@@ -86,7 +84,9 @@ class AdaptiveLearnedFilter:
         for g in range(self._groups):
             weight = self._decay ** g
             bits = max(64, int(total_bits * weight / sum(self._decay ** i for i in range(self._groups))))
-            self._filters.append((bits, [hashlib.sha256(f"{g}_{s}".encode()).digest()[0] for s in range(3)]))
+            num_bytes = (bits + 7) // 8
+            seeds = [hashlib.sha256(f"{g}_{s}".encode()).digest()[0] for s in range(3)]
+            self._filters.append((bytearray(num_bytes), num_bytes, seeds))
 
     def _rebalance(self):
         """基于 SplineSketch 频率分布重算分组阈值。"""
@@ -98,6 +98,8 @@ class AdaptiveLearnedFilter:
 
     def add(self, key: bytes) -> bool:
         """插入键 — 返回 True 表示新键 (未命中过滤器)。"""
+        # 先查是否已存在
+        existed = self.contains(key)
         self._insert_count += 1
         freq = float(self._sketch._total)  # 频率代理 (简化)
         self._sketch.add(freq)
@@ -105,18 +107,23 @@ class AdaptiveLearnedFilter:
         if self._insert_count % self._rebalance_interval == 0:
             self._rebalance()
 
-        for g_idx, (bits, seeds) in enumerate(self._filters):
+        # 全分组置位
+        for _ba, num_bytes, seeds in self._filters:
             for s in seeds:
-                idx = int(hashlib.sha256(bytes([s]) + key).hexdigest(), 16) % bits
-        return True
+                idx = int(hashlib.sha256(bytes([s]) + key).hexdigest(), 16) % (num_bytes * 8)
+                _ba[idx >> 3] |= (1 << (idx & 7))
+        return not existed
 
     def contains(self, key: bytes) -> bool:
-        """成员查询 — 可能存在假阳性。"""
-        for bits, seeds in self._filters:
-            match = True
+        """成员查询 — 任一组所有位命中即判存在。"""
+        for _ba, num_bytes, seeds in self._filters:
+            all_set = True
             for s in seeds:
-                idx = int(hashlib.sha256(bytes([s]) + key).hexdigest(), 16) % bits
-            if match:
+                idx = int(hashlib.sha256(bytes([s]) + key).hexdigest(), 16) % (num_bytes * 8)
+                if not (_ba[idx >> 3] & (1 << (idx & 7))):
+                    all_set = False
+                    break
+            if all_set:
                 return True
         return False
 

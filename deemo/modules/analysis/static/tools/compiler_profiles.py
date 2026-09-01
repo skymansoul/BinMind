@@ -1,11 +1,5 @@
 # 从 编译器_fingerprint.py 中分离, 编译器特征数据库独立维护
 
-"""编译器特征数据库: 指令 dyad 频率、寄存器压力、循环残差的期望分布。
-
-从 BinKit 2.0 + 内部编译基准 (~12000 个二进制样本) 中通过三倍交叉验证校准。
-此数据模块与 CompilerFingerprinter 解耦, 允许在不修改主逻辑的情况下更新校准参数。
-"""
-
 from typing import Dict, List, Tuple
 
 # 指令 dyad 频率签名

@@ -58,8 +58,7 @@ class GraphPartitioner:
     def __init__(self, seed: Optional[int] = None) -> None:
         self._rng = random.Random(seed)
 
-# 主入口
-
+    # 主入口
     def partition(self, dag: TaskDependencyGraph, n_partitions: int,
                   node_loads: Optional[Dict[str, float]] = None,
                   max_passes: int = 4) -> Partition:
@@ -121,8 +120,7 @@ class GraphPartitioner:
                                 loads=node_loads or {}, allowed_to_move=candidate)
         return Partition(refined, n_p)
 
-# 初始划分
-
+    # 初始划分
     def _trivial(self, dag: TaskDependencyGraph, n_p: int) -> Dict[str, int]:
         return {n: i % n_p for i, n in enumerate(dag.node_ids)}
 
@@ -156,8 +154,7 @@ class GraphPartitioner:
                 part_load[p] += loads.get(nid, 1.0)
         return assignments
 
-# Kernighan-Lin 细化
-
+    # Kernighan-Lin 细化
     def _kernighan_lin(self, dag: TaskDependencyGraph, assignments: Dict[str, int],
                        n_p: int, loads: Dict[str, float], max_passes: int) -> Dict[str, int]:
         """KL 局部搜索: 每 pass 对所有节点做一次最陡下降单点移动。
@@ -259,8 +256,7 @@ class GraphPartitioner:
                 delta -= e.comm_cost
         return delta
 
-# 评估
-
+    # 评估
     def _cut_weight(self, dag: TaskDependencyGraph, assignments: Dict[str, int]) -> float:
         """总割边权重 — 跨分区边的 comm_cost 之和，即通信总代价。"""
         cut = 0.0

@@ -239,19 +239,7 @@ class CVSSNCScore:
 
 
 class ConformalVulnScorer:
-    """保形漏洞风险评分器.
-
-    封装EPSSEstimator (来自exploitability_scorer.py),
-    对其输出概率应用归纳式保形预测, 产出校准后的评分区间.
-
-    用法:
-      scorer = ConformalVulnScorer()
-      # 加载历史校准数据
-      scorer.load_calibration(historical_data)
-      # 对新漏洞评分
-      result = scorer.score(cvss=7.5, cwe="CWE-787", days=30)
-      # result.interval = [0.12, 0.35]  # 90%置信区间
-    """
+    """保形漏洞风险评分器: 封装EPSSEstimator, 对输出概率应用归纳式保形预测产出校准评分区间."""
 
     def __init__(self, alpha: float = _DEFAULT_ALPHA):
         self._alpha = alpha

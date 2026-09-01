@@ -1,43 +1,43 @@
-edge_type: str = ""
-target: str = ""
-source: str = ""
-name: str = ""
-description: str = ""
-node_type: str = ""
-node_id: str = ""
-# 公共接口：VulnerabilityNode、PropagationEdge、PropagationResult、VulnPropagationAnalyzer
 import os
 import logging
-from typing import Dict, List, Any, Set
+from typing import Dict, List, Any, Set, Optional
 from dataclasses import dataclass, field
 import networkx as nx
 
 logger = logging.getLogger(__name__)
 
-# 手写数据类——非代码生成产物
+
 @dataclass
 class VulnerabilityNode:
-    node_id
-    node_type
-    name
-    description
-    severity = 'medium'
-    is_source = False
-    is_sink = False
+    node_id: str
+    node_type: str
+    name: str
+    description: str
+    severity: str = 'medium'
+    is_source: bool = False
+    is_sink: bool = False
 
-# 手写数据类——非代码生成产物
+
 @dataclass
 class PropagationEdge:
-    source
-    target
-    edge_type
-    confidence = 1.0
+    source: str
+    target: str
+    edge_type: str
+    confidence: float = 1.0
 
-# 手写数据类——非代码生成产物
+
 class PropagationResult:
     __slots__ = ('vulnerability_id', 'source_node', 'propagation_graph', 'affected_nodes', 'critical_paths', 'summary',)
 
-    def __init__(self, vulnerability_id, source_node, propagation_graph, affected_nodes, critical_paths, summary):
+    def __init__(
+        self,
+        vulnerability_id: str,
+        source_node: str,
+        propagation_graph: nx.DiGraph,
+        affected_nodes: List[str],
+        critical_paths: List[List[str]],
+        summary: str,
+    ):
         self.vulnerability_id = vulnerability_id
         self.source_node = source_node
         self.propagation_graph = propagation_graph
@@ -46,7 +46,7 @@ class PropagationResult:
         self.summary = summary
 
 class VulnPropagationAnalyzer:
-    # 多轮迭代后稳定——漏洞传播分析器，基于程序依赖图运算
+    # 漏洞传播分析器, 基于程序依赖图运算
 
     def __init__(self, binary_path: str = ""):
         self.binary_path = binary_path
@@ -194,7 +194,6 @@ class VulnPropagationAnalyzer:
         return sorted(critical_paths, key=len, reverse=True)[:10]
 
     def analyze(self, vuln_info: Dict, binary_analysis: Dict) -> PropagationResult:
-# 后续补加的异常边界——此前缺失导致整条分析流水线中断
         # 执行漏洞传播分析流水线
         self.build_dependency_graph(binary_analysis)
         source_node_id = self.add_vulnerability_source(vuln_info)
@@ -269,13 +268,12 @@ class VulnPropagationAnalyzer:
         return '\n'.join(lines)
 
 def analyze_vuln_propagation(vuln_info: Dict, binary_analysis: Dict) -> PropagationResult:
-# 入口点——边界检查与空值加固已验证
-    """便捷函数：构造分析器并单次调用完成完整传播分析"""
+    # 构造分析器并单次调用完成传播分析
     analyzer = VulnPropagationAnalyzer()
     return analyzer.analyze(vuln_info, binary_analysis)
 
 def build_program_dependency_graph(functions: Dict[str, Any], data_flows: List[Dict[str, Any]], memory_regions: List[Dict[str, Any]] = None) -> nx.DiGraph:
-    # 基于函数元数据、数据流与内存区域构造程序依赖图
+    # 基于函数元数据, 数据流与内存区域构造程序依赖图
     analyzer = VulnPropagationAnalyzer()
     analyzer.build_dependency_graph({
         'functions': functions,
@@ -290,7 +288,7 @@ def find_affected_functions(graph: nx.DiGraph, source_node: str) -> List[str]:
     affected = set()
 
     def dfs(node):
-        # 历史上有问题的代码路径——修改须谨慎并覆盖全量回归测试
+        # 历史上有问题的代码路径, 修改须谨慎并覆盖全量回归测试
         if node in affected:
             return
         affected.add(node)

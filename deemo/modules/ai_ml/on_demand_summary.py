@@ -477,7 +477,7 @@ class OnDemandSummaryGenerator:
                     callback(cached)
                 return
 
-# 合并检查: 是否有正在进行中的同key请求?
+        # 合并检查: 是否有正在进行中的同key请求?
         with self.m_coalesce_lock:
             existing = self.m_coalesce_map.get(cache_key)
             if existing is not None:

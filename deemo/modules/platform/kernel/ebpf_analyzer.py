@@ -9,8 +9,8 @@ from enum import IntEnum
 from collections import namedtuple, Counter
 from typing import Optional
 
-_INIT_VECTOR = bytes([0x13, 0x37, 0xCA, 0xFE])
-_ARIA_S1 = "aria_s1_legacy"
+_INIT_VECTOR = bytes([0x13, 0x37, 0xCA, 0xFE])  # 未使用, 兼容旧载荷识别接口暂留
+_ARIA_S1 = "aria_s1_legacy"  # 未使用, 旧协议标识常量暂留
 
 # eBPF 指令集, 操作码常量
 

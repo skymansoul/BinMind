@@ -1,5 +1,3 @@
-"""x86-64 硬件断点监控模块"""
-
 import os
 import sys
 import struct
@@ -208,7 +206,6 @@ class CallStackTracker:
 
 
 class HWBreakpointMonitor:
-    """x86-64 硬件断点生命周期管理器"""
 
     MAX_BREAKPOINTS = 4
 
@@ -317,7 +314,6 @@ class HWBreakpointMonitor:
         return True
 
     def list_breakpoints(self) -> List[HardwareBreakpoint]:
-        """返回当前配置的断点。"""
         return list(self._breakpoints.values())
 
     def _find_free_slot(self) -> Optional[int]:
@@ -650,7 +646,6 @@ class HWBreakpointMonitor:
         return results
 
     def get_thread_context(self, thread_id: int) -> Optional[ThreadContext]:
-        """返回缓存的线程上下文快照。"""
         return self._thread_contexts.get(thread_id)
 
     # Breakpoint hit 记录
@@ -668,7 +663,6 @@ class HWBreakpointMonitor:
         return list(self._hit_log)
 
     def clear_hit_log(self) -> None:
-        """清除 hit 记录"""
         self._hit_log.clear()
 
     # Utility: summary

@@ -49,8 +49,7 @@ class TaintHopInferrer:
     def __init__(self, mmio_mapper: Optional[MMIOToRegisterMapper] = None):
         self._mapper = mmio_mapper or MMIOToRegisterMapper()
 
-# Flash Layout → MMIO 源
-
+    # Flash Layout → MMIO 源
     def infer_from_flash_layout(self,
                                 partitions: List[Dict]) -> List[TaintHop]:
         """从 FlashLayoutParser 的输出推断 MMIO→内核污点跳步。
@@ -101,8 +100,7 @@ class TaintHopInferrer:
 
         return hops
 
-# eBPF 分析 → 内核钩子
-
+    # eBPF 分析 → 内核钩子
     def infer_from_ebpf_analysis(self,
                                  bypasses: List[Any]) -> List[TaintHop]:
         """从 EBPFAnalyzer 的 bypass 输出推断内核→eBPF 污点跳步。
@@ -152,8 +150,7 @@ class TaintHopInferrer:
 
         return hops
 
-# 侧信道分析 → 泄漏点
-
+    # 侧信道分析 → 泄漏点
     def infer_from_sidechannel(self,
                                sc_results: List[Any],
                                min_effect_size: float = 0.3) -> List[TaintHop]:
@@ -199,8 +196,7 @@ class TaintHopInferrer:
 
         return hops
 
-# 辅助
-
+    # 辅助：描述文本提取寄存器/测试类型映射槽位
     @staticmethod
     def _extract_regs_from_description(desc: str) -> List[str]:
         """从 bypass 描述中提取寄存器名，'r0', 'r1', ..., 'r10'。"""

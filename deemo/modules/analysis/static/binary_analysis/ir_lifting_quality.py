@@ -18,10 +18,9 @@ class IRQualityReport:
 
 
 def detect_virtual_stack(ir_lines: list[str]) -> tuple[float, list[str]]:
-    """检测 EIR 的虚拟栈模式 - alloca/load/store 围绕单个栈基址。
-
-    虚拟栈特征: alloca 单个巨大数组 (模拟硬件栈), 所有局部变量
-    通过 GEP 索引到此数组。越多此类模式 → 越低分。"""
+    # 检测 EIR 的虚拟栈模式 - alloca/load/store 围绕单个栈基址
+    # 虚拟栈特征: alloca 单个巨大数组(模拟硬件栈), 所有局部变量通过 GEP 索引到此数组
+    # 越多此类模式 → 越低分
     alloca_count = 0
     virtual_stack_alloca = 0
     issues = []
@@ -52,10 +51,9 @@ def detect_virtual_stack(ir_lines: list[str]) -> tuple[float, list[str]]:
 
 def detect_memory_fidelity(ir_lines: list[str],
                            original_ins_count: int = 0) -> tuple[float, list[str]]:
-    """检测 IR 内存模型与原始二进制的保真度。
-
-    检查: load/store 计数比、内联汇编残留、Intrinsic 使用。
-    越多内联汇编 (call asm) → 越多未提升的指令 → 越低分。"""
+    # 检测 IR 内存模型与原始二进制的保真度
+    # 检查: load/store 计数比、内联汇编残留、Intrinsic 使用
+    # 越多内联汇编(call asm) → 越多未提升的指令 → 越低分
     load_count = sum(1 for l in ir_lines if 'load' in l and 'volatile' not in l)
     store_count = sum(1 for l in ir_lines if 'store' in l and 'volatile' not in l)
     asm_count = sum(1 for l in ir_lines if 'call void asm' in l or 'call asm' in l)
@@ -85,10 +83,8 @@ def detect_memory_fidelity(ir_lines: list[str],
 
 
 def detect_analysis_suitability(ir_lines: list[str]) -> tuple[float, list[str]]:
-    """评估 IR 是否可被下游分析工具直接消费。
-
-    检查: PHI node 存在 (SSA 形式完好)、变量命名 (非纯数字临时变量)、
-    类型信息完整性 (i32/i64 vs iN 截断)。"""
+    # 评估 IR 是否可被下游分析工具直接消费
+    # 检查: PHI node 存在(SSA 形式完好)、变量命名(非纯数字临时变量)、类型信息完整性
     phi_count = sum(1 for l in ir_lines if l.strip().startswith('phi '))
     unnamed_ratio = 0.0
     total_vars = 0

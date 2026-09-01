@@ -48,7 +48,7 @@ def detect_direct_writes(code: str, ranges: Dict, defines: Dict,
                     "reason": f"C0:direct offset buf[{off}]+1 > 可用{usable}B",
                 })
         # b) 循环全量写 (for/while 定界; <=N 为 N+1 次 → off-by-one)
-        # TODO: 循环上界为变量 (i < n) 时无法静态判定, 需接入区间推断
+        # 变量上界 (i < n) 无法静态定界, 仅匹配数字常量上界
         for lm in re.finditer(
             rf"(?:for\s*\([^;]*;\s*[^;]*(<=|<)\s*(\d+)\s*[^;]*;\s*[^)]*\)|"
             rf"while\s*\(\s*\w+\s*(<=|<)\s*(\d+)\s*\))", code):

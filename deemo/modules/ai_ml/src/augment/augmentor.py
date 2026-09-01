@@ -1,4 +1,4 @@
-# augment/增强器.py
+# augment/augmentor.py
 # 图结构数据增强：节点丢弃、边扰动、特征掩码、子图采样
 # 设计权衡：bridge nodes（度>5）不做node_drop，保护图的连通性
 # edge_perturb用引力加权删除，优先剪断高权重边（两端节点度都低的边）
@@ -143,7 +143,6 @@ def subgraph_sample(adj, num_seeds=3, walk_length=2):
 # subgraph放在最后是因为它改变节点数量，前面的操作需要完整的图
 
 class AugmentationPipeline:
-    # ////
     def __init__(self, probs=None):
         self._probs = {
             'node_drop': 0.2,

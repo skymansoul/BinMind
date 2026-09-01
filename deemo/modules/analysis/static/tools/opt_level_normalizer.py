@@ -2,79 +2,30 @@
 # 引入核岭回归处理 O3 的非线性结构失真 (内联+循环展开)
 # 增加留一编译验证: 用 -O0/-O1/-O2 训练, 测试 -O3 泛化
 
-"""跨优化级别指纹归一化, 将 O0/O1/O2/O3 的 CFG-熵指纹映射到统一嵌入空间
-
-问题背景:
-同一源代码在不同优化级别下编译产生的二进制, 其 CFG-熵指纹差异可达
-15-40% (余弦距离)。这导致基于指纹的漏洞搜索在跨优化级别场景中失准,
-一个 CVE 在 -O0 的二进制中被指纹匹配到, 但在 -O2 的同一二进制中却被漏报
-
-现有方案 通过改进反编译
-输出来缩小优化差距, 但无法处理反编译器已输出的指纹级差异
-
-本模块采用互补策略: 接受指纹差异的客观存在, 通过学习一个从多优化级别
-指纹到统一空间的映射来消除差异。关键洞察:
-- 不同优化级别的指纹之间存在系统性的而非随机的偏差
-- 这种系统性偏差可通过参考二进制对 (同源码, 不同 -O flag) 来估计
-- 估计出的变换可外推到未见过的二进制
-
-方法:
-1. 分位数对齐 (Quantile Align): 对每个特征维度独立地对齐分布
-将 O1/O2/O3 指纹的分位数映射到 O0 (基线) 的对应分位数
-假设: 特征值的相对排序在不同优化级别间保持稳定, 仅量级偏移
-对于大多数特征维度 (特征值、块熵均值) 该假设成立;
-对于边权重均值等少量维度, O3 的激进内联会打破排序, 此时回退到全局中位数平移
-
-2. 核岭回归 (Kernel Ridge Regres): 对 O3 的特例,
-循环展开和函数内联不仅偏移指纹量级, 还改变图的拓扑结构
-(节点数减少、边密度增加、拉普拉斯特征值谱展宽)
-此类非线性失真无法被分位数对齐修正, 需要从 O0 指纹回归 O3 指纹
-RBF 核 k(x, x') = exp(-γ||x-x'||²), γ 通过 LOOCV 选择
-
-3. 留一编译验证: 用 -O0/-O1/-O2 的指纹训练归一化参数
-在 -O3 的指纹上验证, 模拟实战中最常见的场景 (漏洞库为 -O0
-目标二进制为 -O3)
-
-ref: Bollegala et al. "Cross-Domain Senti 分类 Using
-Spectral Feature Align" , 跨域特征对齐的谱方法, 本项目将其
-从 NLP 情感分析迁移至二进制指纹归一化
-ref: Gretton et al. "A Kernel Two-Sample Test" (JMLR),
-MMD (Maximum Mean Discrepancy) 作为跨优化级别分布差异的度量
-用于检验归一化后的指纹分布是否对齐
-ref: SAILR, 编译器感知的反编译
-结构化, 本项目与其互补: SAILR 改进反编译输出, 我们归一化指纹
-
-边界条件与风险:
-- 需要至少 3 对参考二进制 (同源码, 不同优化级别) 来估计变换参数;
-少于 3 对时回退到恒等变换 (不做归一化)
-- 对跨编译器 (GCC vs Clang) 的泛化未验证, 不同编译器的优化策略差异
-可能超出分位数对齐的修正能力
-- 核岭回归的 RBF 核宽度 γ 对 O3 的严重结构失真敏感
-极端情况 (如 -O3 + LTO + PGO) 可能需要单独校准
-"""
+# 跨优化级别指纹归一化, 将 O0/O1/O2/O3 的 CFG-熵指纹映射到统一嵌入空间
+# 同一源代码在不同优化级别下编译产生的二进制, 其 CFG-熵指纹差异可达 15-40%
+# (余弦距离), 导致基于指纹的漏洞搜索在跨优化级别场景中失准
+# 本模块通过学习从多优化级别指纹到统一空间的映射来消除差异:
+#   1. 分位数对齐: 对每个特征维度独立对齐分布, 将 O1/O2/O3 映射到 O0 基线
+#      假设特征值的相对排序在不同优化级别间保持稳定, 仅量级偏移
+#      O3 激进内联会打破排序, 此时回退到全局中位数平移
+#   2. 核岭回归: O3 的循环展开和函数内联改变图拓扑, 非线性失真无法被分位数对齐修正
+#      RBF 核 k(x,x') = exp(-γ||x-x'||²), γ 通过 LOOCV 选择
+#   3. 留一编译验证: 用 -O0/-O1/-O2 训练, 测试 -O3 泛化
+# ref: Bollegala et al. "Cross-Domain Sentiment Classification Using
+#      Spectral Feature Alignment", 跨域特征对齐的谱方法
+# ref: Gretton et al. "A Kernel Two-Sample Test" (JMLR), MMD 度量
+# ref: SAILR, 编译器感知的反编译结构化, 与本模块互补
+# 边界条件: 需至少 3 对参考二进制; 少于 3 对时回退恒等变换
+# 跨编译器 (GCC vs Clang) 泛化未验证; O3+LTO+PGO 可能需单独校准
 
 import math as _math
 from typing import Optional
 
 
 class OptLevelNormalizer:
-    """跨优化级别的 CFG-熵指纹归一化器
-
-    输入: 一组 (O0_fingerprint, On_fingerprint) 对 (n ∈ {1, 2, 3})
-    输出: 一个将任意优化级别指纹映射到 O0-等效空间的变换
-
-    调用流程:
-    normalizer = OptLevelNormalizer()
-    normalizer.fit(引用_pairs) # 从参考对学习变换
-    normal = normalizer.变换(fp) # 应用变换
-    """
 
     def __init__(self, n_quantiles: int = 20, kernel_gamma: Optional[float] = None):
-        """
-        n_quantiles: 分位数对齐的分位数数量。20 是平衡值, 太少会丢失分布细节
-        太多会过拟合参考对中的噪声
-        kernel_gamma: RBF 核宽度。None 时自动从参考对的中位 pairw 距离推导
-        """
         self._n_q = n_quantiles
         self._gamma = kernel_gamma
         # 分位数对齐: _q_maps[opt_level][dim_idx] = (src_quantiles, tgt_quantiles)
@@ -90,15 +41,6 @@ class OptLevelNormalizer:
 
     def fit(self, reference_pairs: list[tuple[dict, dict, str]],
             o0_label: str = 'O0') -> dict:
-        """从参考指纹对学习跨优化级别的归一化参数
-
-        引用_pairs: [(o0_fp, on_fp, opt_level),.]
-        其中 o0_fp 是 O0 编译的指纹 (基线)
-        on_fp 是同一源码在 opt_level 下的指纹
-        opt_level ∈ {'O1', 'O2', 'O3'}
-
-        返回拟合统计字典 (n_pairs, per_level_mmd_reduc,.)
-        """
         if len(reference_pairs) < 3:
             # 样本不足——回退到恒等变换
             self._fitted = True
@@ -160,12 +102,6 @@ class OptLevelNormalizer:
 # 变换: 应用归一化变换
 
     def transform(self, fingerprint: dict, opt_level: str = 'O2') -> dict:
-        """将任意优化级别的指纹变换到 O0-等效空间
-
-        未拟合时返回原始指纹 (恒等变换)
-        opt_level 未知时可传 'auto', 内部尝试 O1/O2/O3 变换后取
-        使 MMD 最小的结果
-        """
         if not self._fitted:
             return fingerprint
 
@@ -191,11 +127,7 @@ class OptLevelNormalizer:
 # 内部方法
 
     def _fit_krr(self, X_o0: list[list[float]], X_o3: list[list[float]]):
-        """拟合核岭回归: O0 → O3 的残差映射
-
-        不是直接用 O0 预测 O3, 而是预测 O3 与分位数对齐后的残差
-        这样核回归只需要修正分位数对齐未能处理的非线性部分
-        """
+        # 预测 O3 与分位数对齐后的残差, 仅修正非线性部分
         _n = len(X_o0)
         _d = len(X_o0[0]) if X_o0 else 0
         if _n < 3 or _d == 0:
@@ -232,7 +164,6 @@ class OptLevelNormalizer:
         self._krr_X_ref = [list(_x) for _x in X_o0]
 
     def _apply_krr(self, vec: list[float]) -> list[float]:
-        """对输入向量应用核岭回归修正"""
         if self._krr_alpha is None or self._krr_X_ref is None:
             return vec
         _n_ref = len(self._krr_X_ref)
@@ -248,7 +179,6 @@ class OptLevelNormalizer:
         return [vec[_j] + _correction[_j] for _j in range(len(vec))]
 
     def _transform_auto(self, vec: list[float], orig_fp: dict) -> dict:
-        """auto 模式: 尝试所有可用变换, 返回最佳结果"""
         _best_fp = orig_fp
         _best_dist = float('inf')
         # O0 参考均值 (来自拟合数据的第一条 O0 指纹作为锚点)
@@ -270,7 +200,6 @@ class OptLevelNormalizer:
         return _best_fp
 
     def _estimate_gamma(self, X: list[list[float]]) -> float:
-        """从数据估计 RBF 核的 γ 参数 (中位 pairw 距离的倒数)"""
         _n = len(X)
         if _n < 2:
             return 0.1
@@ -295,9 +224,7 @@ class OptLevelNormalizer:
 
     def _compute_mmd(self, o0_vecs: list[list[float]],
                      on_vecs: dict[str, list[list[float]]]) -> float:
-        """计算 O0 指纹与合并的 指纹之间的 MMD (Maximum Mean Discrepancy)
-
-        使用线性核 (内积) 的 MMD² 无偏估计。值越大 → 分布差异越大"""
+        # 使用线性核 (内积) 的 MMD² 无偏估计
         _all_on: list[list[float]] = []
         for _vs in on_vecs.values():
             _all_on.extend(_vs)
@@ -322,7 +249,6 @@ class OptLevelNormalizer:
 # 辅助函数
 
 def _fp_to_vec(fp: dict) -> list[float]:
-    """指纹 → 扁平特征向量"""
     _v: list[float] = []
     for _ev in fp.get('eigenvalues', []):
         _v.append(_ev)
@@ -336,7 +262,6 @@ def _fp_to_vec(fp: dict) -> list[float]:
 
 
 def _vec_to_fp(vec: list[float], template: dict) -> dict:
-    """特征向量 → 指纹字典 (保留 templ 中的非数值字段)"""
     _fp = dict(template)
     _k = len(template.get('eigenvalues', []))
     if _k > 0 and len(vec) >= _k:
@@ -355,7 +280,6 @@ def _vec_to_fp(vec: list[float], template: dict) -> dict:
 
 
 def _quantiles(values: list[float], n: int) -> list[float]:
-    """计算 n 个等距分位数值"""
     if len(values) < 2:
         return [values[0]] * n if values else [0.0] * n
     _qs = []
@@ -373,10 +297,6 @@ def _apply_quantile_alignment(
     vec: list[float],
     q_maps: list[tuple[list[float], list[float]]],
 ) -> list[float]:
-    """对向量每个维度独立应用分位数对齐变换
-
-    对每个维度: 将输入值在其源分位数间线性插值, 映射到目标分位数
-    """
     _out = list(vec)
     for _d, (_src_q, _tgt_q) in enumerate(q_maps):
         if _d >= len(vec):
@@ -404,7 +324,6 @@ def _rbf_kernel(x1: list[float], x2: list[float], gamma: float) -> float:
 
 
 def _solve_linear_system(A: list[list[float]], b: list[float]) -> list[float]:
-    """小型稠密线性系统求解 (高斯消元 + 部分主元)。仅用于 <100 维的 KRR"""
     _n = len(A)
     # 增广矩阵
     _M = [A[_i][:] + [b[_i]] for _i in range(_n)]
@@ -438,7 +357,6 @@ def _solve_linear_system(A: list[list[float]], b: list[float]) -> list[float]:
 # 轻量冒烟测试
 
 def _smoke_test():
-    """验证分位数对齐 + KRR 的基本通路"""
     import random
     random.seed(42)
 

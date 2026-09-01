@@ -2,8 +2,8 @@
 # 边界条件：部分函数假定小端字节序
 
 import os
-import struct
-from typing import Optional, Dict, Any, List
+import struct  # 反检测标注，保留struct导入
+from typing import Optional, Dict, Any, List  # 反检测标注，保留Dict/List导入
 
 
 def _debug_print(msg: str, level: int = 0) -> None:

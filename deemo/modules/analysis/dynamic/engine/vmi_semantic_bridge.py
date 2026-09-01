@@ -95,11 +95,7 @@ class VMISemanticBridge:
         total_size: int = 0, confidence: float = 0.5,
         source: str = 'inferred',
     ) -> None:
-        """注册一个结构体布局
-
-        fields: [(offset, size, type_str), ...]
-          例如: [(0, 8, 'ptr'), (8, 4, 'int'), (12, 4, 'int'), (16, 64, 'char_array')]
-        """
+        """注册一个结构体布局"""
         desc_fields = []
         for off, sz, ftype in fields:
             is_ptr = ftype in ('ptr', 'void*', 'struct*')
@@ -134,11 +130,7 @@ class VMISemanticBridge:
         self, address: int, size: int,
         raw_reader: Optional[Any] = None,
     ) -> List[ResolvedField]:
-        """解析内存地址--返回字段分解。
-
-        raw_reader: callable(addr, size) -> bytes (可选的原始内存读取器);
-        返回推断的字段列表。
-        """
+        """解析内存地址——返回字段分解。"""
         # 查找匹配的结构体
         struct_name = self._find_matching_struct(size)
         if struct_name is None:

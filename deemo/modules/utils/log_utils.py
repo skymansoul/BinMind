@@ -103,11 +103,7 @@ def get_logger(name: str) -> logging.Logger:
 # 带上下文的结构化日志记录器
 
 class ContextLogger:
-    """携带默认上下文字典的日志记录器包装。
-    用法:
-        clog = ContextLogger("analysis", {"binary": "foo.exe"})
-        clog.info("decompiling", func_count=42)
-    """
+    """携带默认上下文字典的日志记录器包装。"""
 
     def __init__(self, name: str, default_context: Optional[Dict[str, Any]] = None):
         self._logger = logging.getLogger(name)

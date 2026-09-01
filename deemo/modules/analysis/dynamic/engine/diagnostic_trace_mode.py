@@ -33,14 +33,6 @@ class DiagnosticSession:
 # 减少可识别的序言/尾声对。调试模式下识别率>95%，release模式下>70%
 
 class CompilerFingerprinter:
-    """通过二进制字节模式识别编译器工具链
-
-    识别策略分三层:
-    1. 函数序言模式匹配 (最快，约80%准确率)
-    2. 字符串表特征 (编译路径、版本字符串)
-    3. 优化伪影 (循环展开模式、SIMD指令偏好)
-
-    参考: Intezer Analyze的编译器检测, Ghidra的编译器Spec识别"""
 
     _PROLOGUE_SIGNATURES: List[Tuple[str, bytes, str, float]] = [
         # (编译器, 序言字节模式, 说明, 置信度权重)
@@ -69,7 +61,6 @@ class CompilerFingerprinter:
         self._findings: Dict[str, float] = {}
 
     def fingerprint(self, binary_path: str) -> Dict[str, Any]:
-        """对二进制执行编译器指纹识别。返回匹配的编译器列表及置信度"""
         try:
             with open(binary_path, 'rb') as fh:
                 raw = fh.read()
@@ -112,7 +103,6 @@ class CompilerFingerprinter:
 
     @staticmethod
     def _extract_text_section(raw: bytes) -> bytes:
-        """从PE或ELF中提取代码段(.text)"""
         if raw[:2] == b'MZ':  # PE
             pe_off = int.from_bytes(raw[0x3C:0x40], 'little')
             if pe_off + 4 <= len(raw) and raw[pe_off:pe_off + 4] == b'PE\x00\x00':
@@ -144,7 +134,6 @@ class CompilerFingerprinter:
 
 
 class DiagnosticTracer:
-    """诊断追踪器 — 记录函数调用/返回/异常/系统调用/内存分配/信号"""
 
     def __init__(self, binary_path=""):
         self.binary_path = os.path.abspath(binary_path) if binary_path else ""
@@ -204,7 +193,6 @@ class DiagnosticTracer:
 
 # 舍入 8: 编译器 detection binary
     def fingerprint_compiler(self) -> Dict[str, Any]:
-        """对当前二进制进行编译器指纹识别"""
         if not self.binary_path or not os.path.isfile(self.binary_path):
             return {'error': 'No binary loaded'}
         return self._fingerprinter.fingerprint(self.binary_path)

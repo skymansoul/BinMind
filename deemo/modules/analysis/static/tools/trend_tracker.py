@@ -161,12 +161,8 @@ class ShortWindowPredictor:
 # 主类
 
 class TrendTracker(BaseAnalyzer):
-    """
-    Analysis results time-series tracker
-
-    存储 historical analysis results, 计算 漏洞 trends
-    构造 trend 报告. 2025 升级: GHP 启发的短期预测+原型分类
-    """
+    # 时序追踪器: 存储历史分析结果, 计算漏洞趋势, 构造趋势报告
+    # 2025 升级: GHP 启发的短期预测+原型分类
 
     def __init__(self, database_path: str = "data/trend_tracker.db"):
         self.database_path = Path(database_path)

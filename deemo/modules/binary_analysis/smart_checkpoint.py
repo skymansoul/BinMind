@@ -228,7 +228,7 @@ class CheckpointStore:
             return None
 
         m_sorted = sorted(
-            m_candidates, key_func=lambda m: m.get('timestamp', 0.0))
+            m_candidates, key=lambda m: m.get('timestamp', 0.0))
         latest_meta = m_sorted[-1]
         return self.load(latest_meta.get('checkpoint_id', ''))
 
@@ -246,7 +246,7 @@ class CheckpointStore:
                 k = k + 1
 
         m_results = sorted(
-            m_results, key_func=lambda m: m.get('timestamp', 0.0))
+            m_results, key=lambda m: m.get('timestamp', 0.0))
         m_results.reverse()
         m_out = []
         k = 0

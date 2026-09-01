@@ -1,23 +1,3 @@
-"""
-Crash register parsing and exploitability scoring
-
-Two concerns: register-state extraction heuristic and
-exploitability scoring — previously embedded inside crash_analysis.py's
-CrashAnalyzer monolith. Untestable, isolation impossible,
-reuse dragging full analysis pipeline. Extracting
-a dedicated module achieves three things:
-
-1. Register parsing becomes a reusable utility for format-specific
-   parsers (GDB, ASAN, WinDbg, coredump) without circular imports
-2. Scoring heuristics unit-tested against a matrix of
-   crash signatures without instantiating an OpenAI client
-3. Future scoring backends (ML classifiers, CVSS-style calculators)
-   slot in without touching core analysis workflow
-
-Logic unchanged — function bodies are direct copies from
-crash_analysis.py, split out for modularity.
-"""
-
 import logging
 import re
 from typing import Dict, Any, Tuple, List
@@ -42,10 +22,6 @@ REGISTER_NAMES = {
 
 
 def parse_registers_from_text(text: str) -> Dict[str, str]:
-    """从文本中解析寄存器值，兼容多种格式。
-
-    text: 包含寄存器信息的文本; 返回寄存器名字典。
-    """
     registers = {}
 
     if not text:
@@ -72,10 +48,6 @@ def parse_registers_from_text(text: str) -> Dict[str, str]:
 
 
 def heuristic_analysis(crash_data: Dict[str, Any]) -> Dict[str, Any]:
-    """基于规则的启发式崩溃分析。
-
-    crash_data: 崩溃数据; 返回分析结果。
-    """
     result = {
         'crash_type': 'Unknown',
         'vulnerability_type': 'Unknown',
@@ -174,9 +146,6 @@ def heuristic_analysis(crash_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _heuristic_detect_types(text: str) -> Tuple[str, str]:
-    """
-    启发式检测崩溃类型和漏洞类型
-    """
     text_lower = text.lower()
 
     crash_types = [
@@ -211,9 +180,6 @@ def _heuristic_detect_types(text: str) -> Tuple[str, str]:
 
 
 def _heuristic_extract_analysis(text: str) -> str:
-    """
-    启发式提取分析内容
-    """
     lines = text.strip().split('\n')
     analysis_lines = []
 
@@ -229,9 +195,6 @@ def _heuristic_extract_analysis(text: str) -> str:
 
 
 def _heuristic_detect_exploitability(text: str) -> str:
-    """
-    启发式检测可利用性
-    """
     text_lower = text.lower()
 
     if 'high' in text_lower or '高' in text_lower:
@@ -244,9 +207,6 @@ def _heuristic_detect_exploitability(text: str) -> str:
 
 
 def _heuristic_detect_difficulty(text: str) -> str:
-    """
-    启发式检测利用难度
-    """
     text_lower = text.lower()
 
     if 'easy' in text_lower or '简单' in text_lower:
@@ -259,7 +219,6 @@ def _heuristic_detect_difficulty(text: str) -> str:
 
 
 def _heuristic_extract_recommendations(text: str) -> List[str]:
-    """从文本中启发式提取修复建议列表。"""
     recommendations = []
 
     lines = text.split('\n')

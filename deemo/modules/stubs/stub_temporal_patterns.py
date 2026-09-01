@@ -138,7 +138,6 @@ class TemporalAnalyzer:
             return TemporalProfile(module_name=module_name,
                                   pattern_class='unknown')
 
-# 统计算子
     @staticmethod
     def _burstiness(intervals: list[float]) -> float:
         """突发性参数 B = (σ - μ) / (σ + μ)。
@@ -248,7 +247,6 @@ class TemporalAnalyzer:
         den = sum((i - x_mean) ** 2 for i in range(n))
         return num / den if den > 1e-9 else 0.0
 
-# 分类
     @staticmethod
     def _classify(p: TemporalProfile) -> str:
         """综合多维度信号分类。
@@ -331,7 +329,6 @@ class TemporalAnalyzer:
         return 0.05
 
 
-# 批量分析入口
 def analyze_all_patterns() -> dict[str, TemporalProfile]:
     """对所有有调用记录的桩模块执行时序分析。"""
     try:

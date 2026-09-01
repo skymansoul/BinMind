@@ -1,18 +1,7 @@
 #!/usr/bin/env python3
-"""
-协议状态机推断引擎
-
-基于 的自动状态机推断框架
-结合概率状态机（P-SM）和 Needleman-Wunsch 序列比对进行协议状态推断
-
-核心方法：
-1. 消息聚类：基于模糊隶属度的自适应 DBSCAN
-2. 会话分类：NW + K-Medoids 序列比对
-3. 状态推断：概率协议状态机（P-SM）
-4. 转移矩阵：从会话序列构建状态转移图
-
-扩展支持 的字段语义辅助标注
-"""
+# 协议状态机推断引擎
+# 核心方法: 消息聚类(模糊隶属度DBSCAN) → 会话分类(NW+K-Medoids) → 状态推断(概率状态机P-SM)
+# ref: Yang 2024 arXiv:2412.02540, BinPRE 2024 arXiv:2409.01994
 
 import logging
 import re
@@ -29,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ProtocolMessage:
-    """协议消息表示"""
     msg_id: int
     direction: str  # '发送' | 'recv'
     data: bytes
@@ -44,7 +32,6 @@ class ProtocolMessage:
             self.features = self._extract_features()
 
     def _extract_features(self) -> Dict[str, Any]:
-        """提取消息基本特征"""
         if not self.data:
             return {'len': 0, 'first_byte': 0}
         return {
@@ -72,7 +59,6 @@ class ProtocolMessage:
 
 @dataclass
 class ProtocolState:
-    """协议状态节点"""
     state_id: int
     label: str
     messages: List[int] = field(default_factory=list)  # msg IDs
@@ -86,7 +72,6 @@ class ProtocolState:
 
 @dataclass
 class StateTransition:
-    """状态转移"""
     from_state: int
     to_state: int
     trigger_message_type: str  # 消息类型标签
@@ -96,7 +81,6 @@ class StateTransition:
 
 @dataclass
 class ProtocolStateMachine:
-    """概率协议状态机"""
     states: List[ProtocolState] = field(default_factory=list)
     transitions: List[StateTransition] = field(default_factory=list)
     initial_state: Optional[int] = None
@@ -130,19 +114,13 @@ class ProtocolStateMachine:
 
 
 class FuzzyDBSCAN:
-    """
-    模糊隶属度 DBSCAN 聚类
-
-    基于消息特征向量的自适应聚类
-    使用指数衰减隶属度代替硬分配，支持边界样本的多重归属
-    """
+    # 指数衰减隶属度代替硬分配, 支持边界样本多重归属
 
     def __init__(self, eps: float = 0.35, min_samples: int = 3):
         self.eps = eps
         self.min_samples = min_samples
 
     def fit(self, messages: List[ProtocolMessage]) -> Dict[int, List[int]]:
-        """对消息进行聚类, 返回 {cluster_id: [msg_indices]}, -1 为噪声。"""
         n = len(messages)
         if n == 0:
             return {-1: []}
@@ -216,12 +194,6 @@ class FuzzyDBSCAN:
 
 
 class NeedlemanWunschAligner:
-    """
-    Needleman-Wunsch 全局序列比对
-
-    用于会话序列的分类
-    将每个会话的消息类型序列进行两两比对，构建距离矩阵
-    """
 
     def __init__(self, match_score: float = 2.0, mismatch_penalty: float = -1.0,
                  gap_penalty: float = -1.0):
@@ -230,11 +202,6 @@ class NeedlemanWunschAligner:
         self.gap = gap_penalty
 
     def align_score(self, seq_a: List[str], seq_b: List[str]) -> float:
-        """
-        计算两个消息类型序列的比对得分
-
-        得分归一化到 [0, 1]，1 表示完全匹配
-        """
         len_a, len_b = len(seq_a), len(seq_b)
         if len_a == 0 and len_b == 0:
             return 1.0
@@ -262,20 +229,12 @@ class NeedlemanWunschAligner:
 
 
 class KMedoidsClusterer:
-    """
-    K-Medoids 聚类器（用于会话分类）
-
-    基于 NW 比对距离矩阵将会话分组为协议类型簇
-    """
 
     def __init__(self, k_range: Tuple[int, int] = (2, 8)):
         self.k_range = k_range
 
     def cluster(self, distance_matrix: List[List[float]],
                 session_ids: List[int]) -> Dict[int, List[int]]:
-        """
-        基于距离矩阵的 K-Medoids 聚类
-        """
         n = len(distance_matrix)
         if n == 0:
             return {}
@@ -339,13 +298,6 @@ class KMedoidsClusterer:
 
 
 class ProtocolStateInferrer:
-    """
-    协议状态机推断器
-
-    整合消息聚类→会话分类→状态推断→转移矩阵的完整流程
-    [Yang 2024, arXiv:2412.02540]
-    可选 BinPRE 风格字段语义标注 [BinPRE 2024, 2409.01994]
-    """
 
     # 已知协议特征签名（用于预标注）
     _PROTO_SIGNATURES = {
@@ -368,13 +320,6 @@ class ProtocolStateInferrer:
         messages: List[ProtocolMessage],
         sessions: Optional[List[List[int]]] = None
     ) -> ProtocolStateMachine:
-        """
-        主推断流程。
-
-        messages 为所有协议消息, sessions 为会话分组
-        (按 msg_id 列表), None 则按时间窗口自动分组;
-        返回 ProtocolStateMachine 实例。
-        """
         logger.info(f"开始协议状态推断: {len(messages)} 条消息")
 
         if not messages:
@@ -406,7 +351,6 @@ class ProtocolStateInferrer:
     def _assign_type_labels(
         self, clusters: Dict[int, List[int]], messages: List[ProtocolMessage]
     ) -> None:
-        """为每个消息类型簇分配标签"""
         for cid, indices in clusters.items():
             if cid == -1:
                 continue
@@ -434,9 +378,6 @@ class ProtocolStateInferrer:
     def _auto_sessionize(
         self, messages: List[ProtocolMessage], idle_threshold: float = 5.0
     ) -> List[List[int]]:
-        """
-        基于时间间隔自动划分会话
-        """
         if not messages:
             return []
 
@@ -459,7 +400,6 @@ class ProtocolStateInferrer:
     def _build_type_sequences(
         self, sessions: List[List[int]], messages: List[ProtocolMessage]
     ) -> List[List[str]]:
-        """构建每个会话的消息类型序列"""
         sequences = []
         for session_indices in sessions:
             seq = []
@@ -475,11 +415,6 @@ class ProtocolStateInferrer:
     def _infer_states_and_transitions(
         self, sequences: List[List[str]]
     ) -> ProtocolStateMachine:
-        """
-        从消息类型序列推断状态和转移
-
-        使用概率方法：将频繁的消息类型共现模式映射为状态
-        """
         psm = ProtocolStateMachine()
 
         if not sequences:
@@ -546,9 +481,6 @@ class ProtocolStateInferrer:
     def _annotate_known_protocols(
         self, psm: ProtocolStateMachine, messages: List[ProtocolMessage]
     ) -> None:
-        """
-        基于字节签名标注已知协议 [BinPRE 2024]
-        """
         detected = []
         for proto_name, signatures in self._PROTO_SIGNATURES.items():
             if signatures is None:
@@ -569,13 +501,6 @@ def infer_protocol_states(
     messages_data: List[Dict[str, Any]],
     with_sessions: bool = True
 ) -> Dict[str, Any]:
-    """
-    便捷函数: 从原始消息数据推断协议状态机。
-
-    messages_data 为消息列表, 每条含 direction、data (hex str
-    或 bytes)、timestamp; with_sessions 控制是否使用会话分组;
-    返回状态机字典表示。
-    """
     messages = []
     for i, md in enumerate(messages_data):
         data = md.get('data', b'')

@@ -41,10 +41,7 @@ _ARM64_PROLOGUE = [
 
 
 def detect_prologue(code: bytes, arch: str = "x86") -> bool:
-    """检测给定字节序列是否匹配已知函数序言模式。O(k) k~=10 patterns
-
-    返回 True 序列以任何已知序言开头, False otherwise
-    """
+    # 检测给定字节序列是否匹配已知函数序言模式 O(k) k~=10 patterns
     patterns = _PROLOGUE_PATTERNS.get(arch, [])
     for pattern in patterns:
         if code[:len(pattern)] == pattern:
@@ -75,11 +72,9 @@ def detect_epilogue(code: bytes, arch: str = "x86") -> bool:
 
 def find_function_starts(code: bytes, arch: str = "x86",
                          min_gap: int = 4) -> list[int]:
-    """在二进制代码中扫描所有可能的函数入口点。O(n*k) n=len(code), k=patterns
-
-    线性扫描+模式匹配比递归下降快一个数量级
-    但会漏掉非标准序言的函数。对于正常编译的二进制准确率 >95%
-    """
+    # 在二进制代码中扫描所有可能的函数入口点 O(n*k)
+    # 线性扫描+模式匹配比递归下降快一个数量级，但会漏掉非标准序言的函数
+    # 对正常编译的二进制准确率 >95%
     starts: list[int] = []
     patterns = _PROLOGUE_PATTERNS.get(arch, [])
 
@@ -160,10 +155,7 @@ class MLFeatureVector:
 
 
 class MLModelInterface:
-    """ML 边界模型的统一接口。
-
-    未配置模型文件时退化为熵启发式预测，保证接口可用性。
-    """
+    # ML 边界模型统一接口; 未配置模型文件时退化为熵启发式预测
 
     def __init__(self, model_path: Optional[str] = None):
         self.model_path = model_path
@@ -189,10 +181,7 @@ class HeuristicAnalyzer:
 
 
 class FunctionBoundaryDetector:
-    """函数边界检测器。
-
-    支持 ML_MODEL / HEURISTIC / HYBRID 三种方法，分析入口统一为 analyze()。
-    """
+    # 支持 ML_MODEL / HEURISTIC / HYBRID 三种方法，分析入口统一为 analyze()
 
     def __init__(self, method: BoundaryDetectionMethod = BoundaryDetectionMethod.HYBRID):
         self.method = method

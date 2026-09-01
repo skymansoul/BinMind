@@ -91,7 +91,6 @@ class DiversityMonitor:
         r.recommendation = self._recommend(r)
         return r
 
-# 收集
     @staticmethod
     def _collect_strategy_labels() -> list[str]:
         labels = []
@@ -151,7 +150,6 @@ class DiversityMonitor:
             'stage_distribution': dict(stage_counts),
         }
 
-# Bootstrap估计
     @classmethod
     def _estimate(cls, labels: list[str], name: str) -> DiversityEstimate:
         est = DiversityEstimate()

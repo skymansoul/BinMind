@@ -209,7 +209,7 @@ class PatchReportComposer:
 
         return _rpt
 
-# 各维度评估
+    # 各维度评估
 
     def _eval_safety(self, result: Optional[Dict]) -> DimensionScore:
         _d = DimensionScore(name="Patch Safety", source_module="patch_safety_verifier",
@@ -397,7 +397,7 @@ class PatchReportComposer:
 
         return _d
 
-# 综合评分
+    # 综合评分
 
     def _compute_overall_score(self, dimensions: List[DimensionScore]) -> float:
         _total_weight = 0.0

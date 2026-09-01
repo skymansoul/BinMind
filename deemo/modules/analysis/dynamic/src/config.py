@@ -1,17 +1,3 @@
-"""动态分析模块的配置加载器。
-
-加载 default.yaml (内置), 叠加用户指定的 YAML 文件, 再叠加
-以 DYN_ 为前缀的环境变量。
-
-优先级: env > user YAML > default YAML。
-
-用法::
-
-from modules.analysis.dynamic.src.config import load_config
-cfg = load_config("custom_config.yaml")
-timeout = cfg["analysis"]["timeout_seconds"]
-"""
-
 from __future__ import annotations
 
 import logging
@@ -67,14 +53,6 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
 
 
 def _apply_env_overrides(config: Dict[str, Any], prefix: str = "DYN_") -> Dict[str, Any]:
-    """用环境变量覆盖配置值。
-
-    环境变量格式: DYN_SECTION_KEY
-    例: DYN_ANALYSIS_TIMEOUT_SECONDS=120 覆盖
-    config["analysis"]["timeout_seconds"]。
-
-    支持 string/int/float/boolean 值。
-    """
     for env_key, env_value in os.environ.items():
         if not env_key.startswith(prefix):
             continue
@@ -95,11 +73,6 @@ def _apply_env_overrides(config: Dict[str, Any], prefix: str = "DYN_") -> Dict[s
 
 
 def _cast_env_value(value: str) -> Any:
-    """将字符串环境变量值转换为适当类型。
-
-    布尔字面量优先于数值解析：纯 "1"/"0" 视为布尔开关，
-    其余数字串按 int/float 处理。
-    """
     lowered = value.lower()
     if lowered in ("true", "yes", "1"):
         return True
@@ -117,18 +90,6 @@ def _cast_env_value(value: str) -> Any:
 
 
 def load_config(user_config_path: Optional[str] = None) -> Dict[str, Any]:
-    """加载并合并配置源。
-
-    顺序:
-    1. 以 _DEFAULT_CONFIG 起步 (内存默认值)
-    2. 合并内置 config/default.yaml (若存在)
-    3. 合并用户指定的 YAML 文件 (若提供且存在)
-    4. 应用 DYN_* 环境变量覆盖
-
-    参数: user_config_path 可选, 用户 YAML 配置文件路径;
-    返回合并后的配置字典。user_config_path 指定但不存在时
-    抛 FileNotFoundError。
-    """
     config = dict(_DEFAULT_CONFIG)
 
     # 合并 bundled default.yaml

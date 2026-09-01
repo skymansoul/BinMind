@@ -1,11 +1,10 @@
 # compat_diagnostics.py — 兼容层诊断工具
 # 检测 stubs/ 与 compat/ 之间的 API 缺失、符号差异、函数签名漂移。
 # FirmRec 漏洞签名匹配 & BinEGA 图对齐过滤
-import inspect as _inspect, os as _os
-from typing import Any, Optional as _Opt
+import inspect as _inspect, os as _os, sys as _sys
 
 _STUBS_DIR = _os.path.dirname(_os.path.abspath(__file__))
-_COMPAT_DIR = _os.path.join(_os.path.dirname(_STUBS_DIR), 'core', 'compat')  # 原始变量名 _stubs_dir 已更正
+_COMPAT_DIR = _os.path.join(_os.path.dirname(_STUBS_DIR), 'core', 'compat')
 
 
 def compare_stub_to_compat(stub_name: str) -> dict:
@@ -33,7 +32,6 @@ def compare_stub_to_compat(stub_name: str) -> dict:
         result['error'] = f'load error: {_sys.exc_info()[1]}'
         return result
 
-    import sys as _sys
     st_pub = {k for k in dir(sm) if not k.startswith('_')}
     cp_pub = {k for k in dir(cm) if not k.startswith('_')}
 

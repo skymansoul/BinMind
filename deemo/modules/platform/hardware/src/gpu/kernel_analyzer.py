@@ -1,5 +1,5 @@
 # GPU Kernel分析器, SASS/PTX/CUBIN安全漏洞分析
-# FIXME: bank conflict检测仅限32-bank模型（Ampere+可能不同）
+# 局限: bank conflict检测基于32-bank模型, 未覆盖Ampere+可能的bank布局差异
 import re
 import struct
 from enum import Enum, auto as _unused_auto  # 未使用
@@ -143,6 +143,7 @@ class SASSAnalyzer:
 	BANK_CONFLICT_THRESHOLD = 2
 	UNCOALESCED_STRIDE = 4
 
+	# 暂留 — 旧版寄存器压力估计, 依赖SASS寄存器名解析, 精度不足已弃用
 	# def _resolve_register_pressure(self, instructions: list) -> int:
 	# 	return len(set(re.findall(r'R\d+', ' '.join(instructions))))
 
@@ -266,11 +267,11 @@ class CUBINParser:
 			for i in range(e_shnum):
 				shdr_off = e_shoff + i * e_shentsize
 				if ei_class == 2:
-					sh_name, sh_type, sh_flags = struct.unpack_from("<III", shdr_off, 0)
-					offset, size = struct.unpack_from("<QQ", shdr_off, 24)
+					sh_name, sh_type, sh_flags = struct.unpack_from("<III", data, shdr_off)
+					offset, size = struct.unpack_from("<QQ", data, shdr_off + 24)
 				else:
-					sh_name, sh_type, sh_flags = struct.unpack_from("<III", shdr_off, 0)
-					offset, size = struct.unpack_from("<II", shdr_off, 16)
+					sh_name, sh_type, sh_flags = struct.unpack_from("<III", data, shdr_off)
+					offset, size = struct.unpack_from("<II", data, shdr_off + 16)
 
 				if sh_type == 1 and (sh_flags & 0x4):
 					seg = data[offset:offset + size]
@@ -415,6 +416,7 @@ class GPUKernelAnalyzer:
 		return findings
 
 
+# 暂留 — 旧版bank分析器, 输出恒零无实际检测能力, 已被SharedMemBankAnalyzer取代
 # class _SharedMemBankProfiler:
 # 	def profile(self, access_pattern: list) -> dict:
 # 		return {"worst_case_degree": 0, "avg_bank_util": 0.0}
@@ -470,4 +472,5 @@ class SharedMemBankAnalyzer:
 
 
 def _debug_print(msg: str) -> None:
+	# 调试输出占位, 发布版保持静默避免污染stdout
 	pass

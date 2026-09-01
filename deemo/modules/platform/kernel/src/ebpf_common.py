@@ -87,7 +87,7 @@ class EbpfProgram:
         self._raw: bytes = b""
         _v = None  # 惰性初始化状态占位
 
-# 指令解析
+    # 指令解析
     def load(self, raw_bytes: bytes) -> 'EbpfProgram':
         """解析原始eBPF字节码入指令列表。返回self支持链式调用。"""
         self._raw = raw_bytes
@@ -139,7 +139,7 @@ class EbpfProgram:
 
         return _insns
 
-# CVE 模式扫描引擎
+    # CVE 模式扫描引擎
 
     def run_cve_checks(self) -> List[Dict]:
         """执行所有CVE检测，返回发现的漏洞列表。"""
@@ -289,7 +289,7 @@ class EbpfProgram:
                     })
         return _findings
 
-# 辅助诊断
+    # 辅助诊断
 
     @property
     def instructions(self) -> List[BpfInstruction]:
@@ -307,7 +307,7 @@ class EbpfProgram:
 
 
 # 共享 struct 格式辅助（struct.calcsize 跨平台对齐）
-# FIXME: ARM 与 x86_64 对齐不同 — 使用 calcsize，不硬编码大小
+# ARM 与 x86_64 对齐策略不同，故用 calcsize 动态取长而不硬编码字节数
 
 # 通用 eBPF 指令解包格式
 EBNPF_INSN_FMT = "<BBBBi"

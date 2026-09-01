@@ -22,7 +22,6 @@
 # 在线运行（每次调用即更新），无需离线 trace 收集阶段。
 # 与 StubGradual 的渐进实现闭环紧耦合 —— 精化后的合约
 #     直接改善下轮 TemplateGenerator 的代码生成质量。
-import math as _math
 from collections import defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt

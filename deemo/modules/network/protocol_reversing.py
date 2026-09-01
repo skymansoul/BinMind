@@ -155,7 +155,6 @@ class BoundaryDetector:
             kl = BoundaryDetector.kl_divergence_window(win_a, win_b)
             if kl > 2.0:
                 boundaries.append(offset + win)
-            prev_dist = kl
         return sorted(set(boundaries))
 
     @classmethod
@@ -358,7 +357,6 @@ class TypeInferrer:
             chunk = raw
         if not chunk:
             return "unknown"
-        chunk = raw[offset:offset + size]
         # ASCII 可打印字符
         if all(0x20 <= b <= 0x7E for b in chunk):
             return "ascii_string" if size is not None else "string"
@@ -368,8 +366,6 @@ class TypeInferrer:
             return "flags"
         if len(chunk) == 1:
             return "uint8"
-        if len(chunk) in (2, 4, 8) and all(b == 0x00 for b in chunk):
-            return "padding"
         if len(chunk) == 2:
             val = struct.unpack(">H", chunk)[0]
             if 0 < val <= 65535:

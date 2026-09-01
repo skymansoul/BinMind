@@ -661,7 +661,11 @@ class FunctionSummarizer:
         bullets = []
 
         if imports:
-            known_apis = [imp for imp in imports if imp.split('@')[-1] if imp in self.m_api_knowledge]
+            known_apis = []
+            for imp in imports:
+                base_imp = imp.split('@')[-1] if '@' in imp else imp
+                if base_imp in self.m_api_knowledge:
+                    known_apis.append(base_imp)
             if known_apis:
                 bullets.append(f"Uses {', '.join(known_apis[:3])}")
 

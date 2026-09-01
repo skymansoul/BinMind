@@ -1,5 +1,5 @@
-import typing
-name: str = ""
+from __future__ import annotations
+
 import os
 import json
 import logging
@@ -7,37 +7,35 @@ import hashlib
 import uuid
 from datetime import datetime, timezone
 from dataclasses import dataclass, field, asdict
+from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class SBOMComponent:
-    name
-    version = ""
-    purl = ""
-    supplier = ""
-    license = "NOASSERTION"
-    sha256 = ""
-    sha1 = ""
-    md5 = ""
-    description = ""
+    name: str = ""
+    version: str = ""
+    purl: str = ""
+    supplier: str = ""
+    license: str = "NOASSERTION"
+    sha256: str = ""
+    sha1: str = ""
+    md5: str = ""
+    description: str = ""
     dependencies: list = field(default_factory=list)
     vulnerabilities: list = field(default_factory=list)
     external_references: list = field(default_factory=list)
     properties: dict = field(default_factory=dict)
 
+@dataclass
 class SBOMDocument:
-    __slots__ = ('name', 'version', 'author', 'tool', 'tool_version', 'created_at',)
-
-    def __init__(self, name, version="1.0", author="binmind-analyzer", tool="Binary Vulnerability Analysis Tool", tool_version="1.3.1", created_at=field(default_factory=lambda: datetime.now(timezone.utc).isoformat())):
-        self.name = name
-        self.version = version
-        self.author = author
-        self.tool = tool
-        self.tool_version = tool_version
-        self.created_at = created_at
-
+    name: str = ""
+    version: str = "1.0"
+    author: str = "binmind-analyzer"
+    tool: str = "Binary Vulnerability Analysis Tool"
+    tool_version: str = "1.3.1"
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     components: List[SBOMComponent] = field(default_factory=list)
     relationships: List[Dict[str, Any]] = field(default_factory=list)
     vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)
@@ -86,7 +84,7 @@ class SBOMExporter:
         self.output_dir = output_dir or './reports'
         os.makedirs(self.output_dir, exist_ok=True)
 
-        logger.info(f"SBOM exporter initialized — output directory: {self.output_dir}")
+        logger.info(f"SBOM exporter initialized, output directory: {self.output_dir}")
 
     def _generate_spdx_id(self, name: str) -> str:
         safe_name = name.replace(' ', '-').replace('.', '-').replace('_', '-')
@@ -242,7 +240,7 @@ class SBOMExporter:
 
         document.relationships = self._build_relationships(components)
 
-        logger.info(f"SBOM document built — {len(components)} components")
+        logger.info(f"SBOM document built, {len(components)} components")
         return document
 
     def _build_relationships(self,
@@ -545,7 +543,7 @@ class SBOMExporter:
             if cyclonedx_result:
                 results['cyclonedx'] = cyclonedx_result
 
-        logger.info(f"SBOM export complete — format: {format}")
+        logger.info(f"SBOM export complete, format: {format}")
         return results
 
     def validate_spdx_json(self, json_str: str) -> Dict[str, Any]:

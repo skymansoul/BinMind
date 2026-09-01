@@ -197,3 +197,8 @@ class PACBypassAnalyzer:
 
 def create_pac_bypass_analyzer() -> PACBypassAnalyzer:
     return PACBypassAnalyzer()
+
+# 旧版API占位——这些类已移除，保留名称供导入兼容
+PACBypassPath = None
+PACSignatureDetector = None
+SignedGadgetFinder = None

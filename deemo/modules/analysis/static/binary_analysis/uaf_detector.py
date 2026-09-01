@@ -38,28 +38,15 @@ _USE_PATTERNS = re.compile(
 
 
 class UAFDetector:
-    """路径敏感的 UAF 检测器
-
-    用法:
-      detector = UAFDetector()
-      findings = detector.detect(
-          functions={'main': [(0x401000, 'call malloc'), ...]},
-          heap_ops=[HeapOperation('malloc', 0x401000, 64, 'rax'), ...],
-      )
-    """
+    # 路径敏感的 UAF 检测器
 
     def detect(
         self,
         functions: Dict[str, List[Tuple[int, str]]],
         heap_ops: Optional[List] = None,
     ) -> List[UAFFinding]:
-        """检测所有函数中的 UAF
-
-        heap_ops: 可选, 来自 uaf_candidate_scorer 的预筛选结果
-                  格式: HeapOperation 列表
-
-        返回: 按置信度降序排列的检测结果
-        """
+        # heap_ops: 可选, 来自 uaf_candidate_scorer 的预筛选结果
+        # 返回: 按置信度降序排列的检测结果
         findings: List[UAFFinding] = []
 
         for func_name, asm_lines in functions.items():
@@ -158,10 +145,8 @@ class UAFDetector:
         asm_lines: List[Tuple[int, str]],
         free_addr: int,
     ) -> Optional[Tuple[int, str, int]]:
-        """找与 free 配对的 malloc
-
-        条件: alloc 的返回寄存器 (rax) 被移动到 free 的参数寄存器 (rdi)
-        """
+        # 找与 free 配对的 malloc
+        # 条件: alloc 的返回寄存器(rax)被移动到 free 的参数寄存器(rdi)
         for a_addr, a_reg, a_size in reversed(allocs):
             if a_addr >= free_addr:
                 continue
@@ -199,12 +184,9 @@ class UAFDetector:
         free_idx: int,
         free_addr: int,
     ) -> Tuple[int, str, bool]:
-        """扫描 free 之后的指令, 查找对该指针的引用
-
-        返回: (use_address, use_instruction_text, is_path_conditional)
-
-        is_path_conditional: 若引用在条件分支内→True (仅在特定路径上触发)
-        """
+        # 扫描 free 之后的指令, 查找对该指针的引用
+        # 返回: (use_address, use_instruction_text, is_path_conditional)
+        # is_path_conditional: 若引用在条件分支内→True(仅在特定路径上触发)
         in_conditional = False
         for j in range(free_idx + 1, len(asm_lines)):
             addr, text = asm_lines[j]
@@ -238,10 +220,8 @@ class UAFDetector:
         asm_lines: List[Tuple[int, str]],
         alloc_addr: int, free_addr: int,
     ) -> bool:
-        """检查指针是否在 free 前逃逸: 存储到内存/传递给其他函数/返回
-
-        逃逸后本模块无法追踪→标记为 POSSIBLE
-        """
+        # 检查指针是否在 free 前逃逸: 存储到内存/传递给其他函数/返回
+        # 逃逸后本模块无法追踪→标记为 POSSIBLE
         for addr, text in asm_lines:
             if not (alloc_addr < addr < free_addr):
                 continue

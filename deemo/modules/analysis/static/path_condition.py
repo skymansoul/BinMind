@@ -98,10 +98,6 @@ class PathConstraint:
 
 
 class PathConditionTracker:
-    """路径条件追踪器.
-
-    在控制流分支处提取 cmp+jcc 条件, 沿各路径独立窄化值区间.
-    """
 
     # 32→64 bit 寄存器归一化
     _W32_TO_W64 = {
@@ -122,12 +118,6 @@ class PathConditionTracker:
         self._last_cmp_addr: int = 0
 
     def feed_instruction(self, ins: dict):
-        """逐指令馈入, 在cmp+jcc对处提取路径条件.
-
-        此方法应在控制流分析循环中调用.
-        返回: 若当前指令是条件跳转, 返回 (taken_constraint, fallthrough_constraint);
-               否则返回 None.
-        """
         mnem = ins.get("mnemonic", "").lower()
         ops = ins.get("operands", [])
         addr = ins.get("address", 0)

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import logging
 import os
 import subprocess
@@ -9,7 +11,7 @@ import struct
 import math
 import threading
 import zlib
-from typing import Dict, List, Optional, Set, Callable, Tuple, Iterator
+from typing import Dict, List, Optional, Set, Callable, Tuple, Iterator, Any
 import json
 from collections import defaultdict, deque
 import tempfile
@@ -28,7 +30,6 @@ class CrashDeduplicator:
         self._groups: Dict[str, List[ExecutionResult]] = defaultdict(list)
 
     def _compute_stack_hash(self, result: ExecutionResult) -> str:
-        # inline
         frames = result.crash_stack_frames[:5] if result.crash_stack_frames else []
         payload = f"{result.signal_number}|{'|'.join(frames)}"
         h = 0
@@ -61,7 +62,6 @@ class SeedTrimmer:
         self._crash_sig: Optional[Tuple[int, int]] = None
 
     def _crash_observed(self, data: bytes) -> bool:
-        # inline
         import tempfile
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.input') as f:
@@ -85,8 +85,6 @@ class SeedTrimmer:
         if not seed:
             return seed
         current = bytearray(seed)
-        # 先记录当前崩溃签名
-        self._crash_sig = None
         if not self._crash_observed(bytes(current)):
             return seed  # 原种子不崩溃，无法裁减
         block_size = max(1, len(current) // 16)
@@ -409,8 +407,7 @@ class DifferentialTester:
                 self._persistent_process = None
 
     def _execute_persistent(self, input_data: bytes,
-                            timeout: float = 5.0) -> Optional[ExecutionResult]:
-        # inline
+                             timeout: float = 5.0) -> Optional[ExecutionResult]:
         with self._persistent_lock:
             if self._persistent_process is None:
                 return None

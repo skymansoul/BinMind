@@ -1,25 +1,3 @@
-UC_ARCH_X86_64=None
-UC_ARCH_X86_64=None
-UC_ARCH_X86_64=None
-UC_ARCH_X86_64=None
-UC_ARCH_X86_64=None
-UC_ARCH_X86_64=None
-UC_ARCH_X86_64=None
-logger=None
-UC_ARCH_X86_64=None
-instructions_executed: str = ""
-execution_time_ms: str = ""
-simplified_constraints: str = ""
-dynamic_jump_targets: str = ""
-hidden_strings: list = None
-memory_snapshot: dict = None
-register_values: list = None
-branch_targets: list = None
-strings_found: list = None
-success: bool = False
-perms: str = ""
-end: int = 0
-start: int = 0
 import os
 import time
 import struct
@@ -39,7 +17,7 @@ try:
     try:
         from unicorn import UC_ARCH_X86_64
     except ImportError:
-        UC_ARCH_X86_64 = UC_ARCH_X86  # Backward compatibility for older Unicorn API
+        UC_ARCH_X86_64 = UC_ARCH_X86  # 旧版 Unicorn API 兼容
     UNICORN_AVAILABLE = True
 except ImportError:
     log.warning("Unicorn engine absent; UnicornHybridAnalyzer disabled.")
@@ -54,43 +32,32 @@ except ImportError:
 
 @dataclass
 class MemoryRegion:
-    start
-    end
-    perms
-    name = ""
+    start: int = 0
+    end: int = 0
+    perms: int = 0
+    name: str = ""
 
 @dataclass
 class ExecutionResult:
-    success
-    strings_found
-    branch_targets
-    register_values
-    memory_snapshot
-    error = ""
+    success: bool = False
+    strings_found: list = None
+    branch_targets: set = None
+    register_values: dict = None
+    memory_snapshot: dict = None
+    error: str = ""
 
 @dataclass
 class HybridAnalysisResult:
-    hidden_strings
-    dynamic_jump_targets
-    simplified_constraints
-    execution_time_ms
-    instructions_executed
+    hidden_strings: list = None
+    dynamic_jump_targets: set = None
+    simplified_constraints: list = None
+    execution_time_ms: int = 0
+    instructions_executed: int = 0
 
 class UnicornHybridAnalyzer:
-    """
-    Hybrid concrete-symbolic analyzer backed by the Unicorn Engine.
-
-    Merges dynamic emulation with symbolic execution to maximize path
-    coverage and detection precision.
-    """
+    # 基于 Unicorn 引擎的混合具体-符号分析器
 
     def __init__(self, binary_path: str):
-        """
-        Instantiate the hybrid analyzer against a target binary.
-
-        Reads the binary, detects ISA and emulation mode, initializes
-        the Unicorn engine if available.
-        """
         self.binary_path = binary_path
         self._binary_path_obj = Path(binary_path)
         self.binary_data = self._read_binary()
@@ -104,71 +71,53 @@ class UnicornHybridAnalyzer:
         else:
             self.uc = None
 
-    # Decomposed from a single-statement read into an explicit loop for line-level debugging.
     def _read_binary(self) -> bytes:
-        """
-        Slurp the raw binary into a bytes buffer.
-
-        Returns an empty bytes object on failure; does not propagate exceptions.
-        """
         try:
             with open(self._binary_path_obj, 'rb') as f:
                 return f.read()
         except Exception as e:
-            logger.error(f"Binary read failed: {e}")
+            log.error(f"Binary read failed: {e}")
             return b''
 
     def _detect_architecture(self) -> int:
-        """
-        Inspect magic bytes and header fields to determine the target ISA.
-
-        Handles ELF, Mach-O, and PE formats. Falls back to x86_64 when
-        the format is unrecognized.
-        """
         magic = self.binary_data[:4]
 
         if magic == b'\x7fELF':
-            # ELF: ei_class at offset 4 distinguishes 32-bit from 64-bit.
             ei_class = self.binary_data[4]
-            if ei_class == 2:  # 64-bit ELF
+            if ei_class == 2:
                 return UC_ARCH_X86_64
-            else:  # 32-bit ELF
+            else:
                 return UC_ARCH_X86
         elif magic in [b'\xcf\xfa\xed\xfe', b'\xfa\xcf\xfe\xed']:
-            # Mach-O: CPU type is packed as little-endian uint32 at offset 4.
+            # Mach-O CPU type 位于偏移 4, 小端 uint32
             cpu_type_offset = 4
             cpu_type = struct.unpack('<I', self.binary_data[cpu_type_offset:cpu_type_offset+4])[0]
-            if cpu_type == 0x01000007:  # ARM64 CPU type
-                return UC_ARCH_ARM64
-            elif cpu_type == 7:  # ARM CPU type
-                return UC_ARCH_ARM
-            elif cpu_type == 7:  # i386 CPU type (MACH_CPU_TYPE_I386)
-                return UC_ARCH_X86
-            elif cpu_type == 0x01000007:  # x86_64 CPU type (MACH_CPU_TYPE_X86_64)
+            if cpu_type == 0x01000007:
                 return UC_ARCH_X86_64
+            elif cpu_type == 0x0100000C:
+                return UC_ARCH_ARM64
+            elif cpu_type == 7:
+                return UC_ARCH_X86
+            elif cpu_type == 12:
+                return UC_ARCH_ARM
         elif magic[:2] == b'MZ':
-            # PE: locate NT header via e_lfanew, then read Machine field.
+            # PE 通过 e_lfanew 定位 NT 头再读 Machine 字段
             pe_offset = struct.unpack('<I', self.binary_data[0x3C:0x40])[0]
             if pe_offset + 4 < len(self.binary_data):
                 pe_magic = self.binary_data[pe_offset:pe_offset+4]
                 if pe_magic == b'PE\x00\x00':
                     machine = struct.unpack('<H', self.binary_data[pe_offset+4:pe_offset+6])[0]
-                    if machine == 0x8664:  # IMAGE_FILE_MACHINE_AMD64
+                    if machine == 0x8664:
                         return UC_ARCH_X86_64
-                    elif machine == 0x014C:  # IMAGE_FILE_MACHINE_I386
+                    elif machine == 0x014C:
                         return UC_ARCH_X86
-                    elif machine == 0xAA64:  # IMAGE_FILE_MACHINE_ARM64
+                    elif machine == 0xAA64:
                         return UC_ARCH_ARM64
 
-        # Unrecognized format; safest default.
+        # 未识别格式回退默认值
         return UC_ARCH_X86_64
 
     def _detect_mode(self) -> int:
-        """
-        Map the detected architecture to the corresponding Unicorn emulation mode.
-
-        x86_64 -> 64-bit, ARM64 -> ARM mode, ARM32 -> Thumb.
-        """
         if self.arch == UC_ARCH_X86_64:
             return UC_MODE_64
         elif self.arch == UC_ARCH_ARM64:
@@ -179,29 +128,19 @@ class UnicornHybridAnalyzer:
             return 0
 
     def _create_emu_instance(self) -> 'unicorn.Uc':
-        """
-        Allocate a Unicorn emulator instance for the resolved architecture and mode.
-
-        Returns None when initialization fails (missing native library, bad arch, etc.).
-        """
         try:
             uc = unicorn.Uc(self.arch, self.mode)
             return uc
         except Exception as e:
-            logger.error(f"Unicorn instance creation failed: {e}")
+            log.error(f"Unicorn instance creation failed: {e}")
             return None
 
     def _setup_memory(self, base_addr: int = 0x400000) -> bool:
-        """
-        Carve the emulator address space into code, data, and stack segments.
-
-        Writes the initial stack pointer into the architecture-specific SP register.
-        """
         if not self.uc:
             return False
 
         try:
-            # Code segment: RX, 2 MiB starting at base_addr.
+            # 代码段 RX 2MiB
             code_size = 0x200000
             self.uc.mem_map(base_addr, code_size, unicorn.UC_PROT_READ | unicorn.UC_PROT_EXEC)
             self.memory_regions.append(MemoryRegion(
@@ -211,7 +150,7 @@ class UnicornHybridAnalyzer:
                 name="code"
             ))
 
-            # Data segment: RW, placed immediately after code.
+            # 数据段 RW 紧跟代码段
             data_addr = base_addr + code_size
             data_size = 0x200000
             self.uc.mem_map(data_addr, data_size, unicorn.UC_PROT_READ | unicorn.UC_PROT_WRITE)
@@ -222,7 +161,7 @@ class UnicornHybridAnalyzer:
                 name="data"
             ))
 
-            # Stack: RW, high-address region, 1 MiB.
+            # 栈 RW 高地址区 1MiB
             stack_addr = 0x7ffffff0000
             stack_size = 0x100000
             self.uc.mem_map(stack_addr, stack_size, unicorn.UC_PROT_READ | unicorn.UC_PROT_WRITE)
@@ -233,7 +172,7 @@ class UnicornHybridAnalyzer:
                 name="stack"
             ))
 
-            # Seed the stack pointer at top-of-stack minus a small offset.
+            # 栈顶减偏移设 SP
             if self.arch == UC_ARCH_X86_64:
                 self.uc.reg_write(unicorn.x86_const.UC_X86_REG_RSP, stack_addr + stack_size - 0x100)
             elif self.arch == UC_ARCH_X86:
@@ -243,30 +182,22 @@ class UnicornHybridAnalyzer:
 
             return True
         except Exception as e:
-            logger.error(f"Memory layout setup failed: {e}")
+            log.error(f"Memory layout setup failed: {e}")
             return False
 
     def _load_binary(self, base_addr: int = 0x400000) -> bool:
-        """
-        Write the raw binary bytes into emulator memory at the specified base address.
-        """
         if not self.uc:
             return False
 
         try:
             self.uc.mem_write(base_addr, self.binary_data)
-            logger.debug(f"Mapped {len(self.binary_data)} bytes at 0x{base_addr:x}")
+            log.debug(f"Mapped {len(self.binary_data)} bytes at 0x{base_addr:x}")
             return True
         except Exception as e:
-            logger.error(f"Binary mapping failed: {e}")
+            log.error(f"Binary mapping failed: {e}")
             return False
 
     def _extract_strings_from_memory(self, start_addr: int, end_addr: int) -> List[str]:
-        """
-        Scan an emulator memory range for printable ASCII sequences (min length 4).
-
-        Returns a deduplicated list of discovered strings.
-        """
         strings = []
         try:
             memory = self.uc.mem_read(start_addr, end_addr - start_addr)
@@ -284,14 +215,11 @@ class UnicornHybridAnalyzer:
                 strings.append(''.join(current_string))
 
         except Exception as e:
-            logger.warning(f"Memory string extraction failed: {e}")
+            log.warning(f"Memory string extraction failed: {e}")
 
         return strings
 
     def _trace_branch(self, uc: 'unicorn.Uc', address: int, size: int, user_data: Any):
-        """
-        Hook callback invoked on every executed instruction; records the PC as a branch target.
-        """
         data = user_data
         data['branch_targets'].add(address)
 
@@ -300,11 +228,6 @@ class UnicornHybridAnalyzer:
         max_instructions: int = 100000,
         timeout_ms: int = 30000
     ) -> ExecutionResult:
-        """
-        Emulate the binary starting at the given address, bounded by instruction count.
-
-        Collects branch targets, register snapshots, and data-segment strings on success.
-        """
         if not self.uc:
             return ExecutionResult(
                 success=False,
@@ -324,7 +247,7 @@ class UnicornHybridAnalyzer:
         user_data = {'branch_targets': result.branch_targets}
 
         try:
-            # Install a code-level hook to capture every PC as a branch target.
+            # 安装代码级钩子捕获每条指令 PC 作为分支目标
             self.uc.hook_add(
                 unicorn.UC_HOOK_CODE,
                 self._trace_branch,
@@ -333,52 +256,47 @@ class UnicornHybridAnalyzer:
 
             start_time = time.time()
 
-            # Fire concrete execution.
+            # 启动具体执行
             self.uc.emu_start(start_addr, 0, nCount=max_instructions)
 
             end_time = time.time()
             result.execution_time_ms = int((end_time - start_time) * 1000)
             result.success = True
 
-            # Harvest printable strings from the data segment.
+            # 从数据段提取可打印字符串
             for region in self.memory_regions:
                 if region.name == "data":
                     result.strings_found.extend(self._extract_strings_from_memory(region.start, region.end))
 
-            # Snapshot general-purpose registers on x86_64.
+            # x86_64 快照通用寄存器
             if self.arch == UC_ARCH_X86_64:
                 regs = ['rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rbp', 'rsp', 'rip']
                 for reg_name in regs:
                     reg_const = getattr(unicorn.x86_const, f"UC_X86_REG_{reg_name.upper()}")
                     result.register_values[reg_name] = self.uc.reg_read(reg_const)
 
-            # Deduplicate before returning.
+            # 返回前去重
             result.strings_found = list(set(result.strings_found))
 
         except unicorn.UcError as e:
             result.error = f"Unicorn error: {e}"
-            logger.warning(f"Emulation aborted (Unicorn error): {e}")
+            log.warning(f"Emulation aborted (Unicorn error): {e}")
         except Exception as e:
             result.error = str(e)
-            logger.error(f"Emulation aborted (unexpected): {e}")
+            log.error(f"Emulation aborted (unexpected): {e}")
 
         return result
 
     def _analyze_complex_functions(self, symbolic_info: Dict[str, Any]) -> List[ExecutionResult]:
-        """
-        Offload functions flagged as intractable by symbolic execution to concrete emulation.
-
-        Caps at 5 functions to bound wall-clock time.
-        """
         results = []
 
         complex_funcs = symbolic_info.get('complex_functions', [])
         if not complex_funcs:
             return results
 
-        logger.info(f"Concretely executing {len(complex_funcs)} complex function(s)")
+        log.info(f"Concretely executing {len(complex_funcs)} complex function(s)")
 
-        for func_addr in complex_funcs[:5]:  # Hard cap to prevent runaway execution.
+        for func_addr in complex_funcs[:5]:  # 硬上限防止失控执行
             result = self._run_concrete_execution(func_addr)
             if result.success:
                 results.append(result)
@@ -386,37 +304,34 @@ class UnicornHybridAnalyzer:
         return results
 
     def _extract_hidden_strings(self) -> List[str]:
-        """
-        Recover obfuscated strings by scanning raw binary for ASCII runs and decryption gadgets.
-        """
         hidden_strings = []
 
-        # Direct ASCII scan over the entire binary blob; minimum 4 consecutive printable bytes.
+        # 直接对整个二进制 blob 做 ASCII 扫描, 最短 4 个连续可打印字节
         current_string = []
         for byte in self.binary_data:
-            if 0x20 <= byte <= 0x7E:  # Printable ASCII range
+            if 0x20 <= byte <= 0x7E:
                 current_string.append(chr(byte))
             else:
-                if len(current_string) >= 4:  # Viable string threshold
+                if len(current_string) >= 4:
                     hidden_strings.append(''.join(current_string))
                 current_string = []
 
-        # Flush trailing byte sequence.
+        # 刷新尾部字节序列
         if len(current_string) >= 4:
             hidden_strings.append(''.join(current_string))
 
         decrypt_patterns = [
-            b'\x8a\x06',  # MOV AL, [ESI]
-            b'\x30',      # XOR opcode prefix
-            b'\x2b',      # SUB opcode prefix
-            b'\x0f\xbe',  # MOVSX byte
+            b'\x8a\x06',
+            b'\x30',
+            b'\x2b',
+            b'\x0f\xbe',
         ]
 
-        # Identify offsets harboring decryption-indicative opcode sequences.
+        # 标记含解密特征 opcode 序列的偏移
         for i in range(len(self.binary_data) - 10):
             window = self.binary_data[i:i+10]
             if any(pattern in window for pattern in decrypt_patterns):
-                logger.debug(f"Decryption pattern candidate at offset 0x{i:x}")
+                log.debug(f"Decryption pattern candidate at offset 0x{i:x}")
 
         return hidden_strings
 
@@ -425,14 +340,8 @@ class UnicornHybridAnalyzer:
         timeout: int = 30,
         max_instructions: int = 100000
     ) -> HybridAnalysisResult:
-        """
-        Execute the hybrid analysis pipeline: set up memory, load binary, run concrete
-        emulation on complex functions, and extract hidden strings.
-
-        Returns an empty result if Unicorn is unavailable or memory setup fails.
-        """
         if not UNICORN_AVAILABLE:
-            logger.warning("Unicorn engine absent; hybrid analysis skipped.")
+            log.warning("Unicorn engine absent; hybrid analysis skipped.")
             return HybridAnalysisResult(
                 hidden_strings=[],
                 dynamic_jump_targets=set(),
@@ -440,11 +349,11 @@ class UnicornHybridAnalyzer:
                 execution_time_ms=0,
                 instructions_executed=0)
 
-        logger.info("Starting hybrid symbolic-concrete analysis.")
+        log.info("Starting hybrid symbolic-concrete analysis.")
 
         start_time = time.time()
 
-        # Initialize emulator address space and inject binary data.
+        # 初始化模拟器地址空间并写入二进制数据
         if not self._setup_memory() or not self._load_binary():
             return HybridAnalysisResult(
                 hidden_strings=[],
@@ -459,7 +368,7 @@ class UnicornHybridAnalyzer:
 
         instructions_executed = 0
 
-        # When symbolic pre-analysis data is available, delegate its complex functions to concrete execution.
+        # 有符号预分析数据时将其复杂函数委托具体执行
         if symbolic_info:
             exec_results = self._analyze_complex_functions(symbolic_info)
             for result in exec_results:
@@ -467,16 +376,16 @@ class UnicornHybridAnalyzer:
                 jump_targets.update(result.branch_targets)
                 instructions_executed += max_instructions
 
-        # Augment with strings mined directly from the raw binary.
+        # 合并原始二进制直接提取的字符串
         hidden_strings.extend(self._extract_hidden_strings())
 
-        # Merge duplicates.
+        # 去重
         hidden_strings = list(set(hidden_strings))
 
         end_time = time.time()
         execution_time_ms = int((end_time - start_time) * 1000)
 
-        logger.info(f"Hybrid analysis finished: {len(hidden_strings)} hidden string(s), {len(jump_targets)} jump target(s)")
+        log.info(f"Hybrid analysis finished: {len(hidden_strings)} hidden string(s), {len(jump_targets)} jump target(s)")
 
         return HybridAnalysisResult(
             hidden_strings=hidden_strings,
@@ -486,14 +395,7 @@ class UnicornHybridAnalyzer:
             instructions_executed=instructions_executed)
 
     def get_available_architectures(self) -> List[str]:
-        """
-        Report the ISA family names this analyzer can target.
-        """
         return ['x86', 'x86_64', 'arm', 'arm64']
 
     def is_available(self) -> bool:
-        """
-        Verify whether the Unicorn native library is importable at runtime.
-        """
         return UNICORN_AVAILABLE
-logger=None

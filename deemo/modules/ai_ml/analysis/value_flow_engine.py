@@ -114,7 +114,7 @@ class ValueFlowEngine:
             # 栈槽读取 (AT&T/Intel)
             m = _STACK_READ.match(instr)
             if m and _norm_reg(m.group(3)) == cur_reg:
-                off = _i(m.group(1)); sslot = f'rbp{-off:+d}' if off > 0 else f'rbp{+off:+d}'
+                off = _i(m.group(1)); sslot = f'rbp{off:+d}'
                 sk = SourceKind.STACK_SLOT
                 sv = self._trace_stack_slot(sslot, i, instructions)
                 if sv is not None: cur_si = sv
@@ -234,7 +234,7 @@ class ValueFlowEngine:
             # AT&T: mov %reg, N(%rbp)
             m = _STACK_WRITE.match(instr)
             if m:
-                off = _i(m.group(2)); sk = f'rbp{-off:+d}' if off > 0 else f'rbp{+off:+d}'
+                off = _i(m.group(2)); sk = f'rbp{off:+d}'
                 if sk == slot: return self._trace_reg_backward(m.group(1), i, instructions)
             # Intel: mov [rbp+N], reg
             m = _INTEL_STACK_WRITE.match(instr)
@@ -243,7 +243,7 @@ class ValueFlowEngine:
             # AT&T: mov $imm, N(%rbp)
             m = re.match(r'mov\s+\$?(0x[0-9a-f]+|\d+),\s*([+\-]?(?:0x[0-9a-f]+|\d+))\s*\(\s*%?rbp\s*\)', instr, re.I)
             if m:
-                off = _i(m.group(2)); sk = f'rbp{-off:+d}' if off > 0 else f'rbp{+off:+d}'
+                off = _i(m.group(2)); sk = f'rbp{off:+d}'
                 if sk == slot: return StridedInterval.exact(_i(m.group(1)))
             # Intel: mov [rbp+N], imm
             m = re.match(r'mov\s+(?:\w+\s+PTR\s+)?\[(rbp|rsp)([+-]\w+)\],\s*(0x[0-9a-f]+|\d+)', instr, re.I)

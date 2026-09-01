@@ -7,10 +7,8 @@ __log = logging.getLogger(__name__)
 
 
 class BehaviorTracer:
-    """二进制特征扫描器 — 将 API 导入字符串与行为分类法匹配"""
 
     def __init__(self):
-        """初始化模式库：I/O、网络、进程、注册表等分类签名"""
         self.patterns = [
             {'pattern': 'socket',       'type': 'Network',  'description': '网络套接字操作'},
             {'pattern': 'connect',      'type': 'Network',  'description': '发起网络连接'},
@@ -45,7 +43,6 @@ class BehaviorTracer:
         self.behaviors = []
 
     def trace(self, binary_path, output_dir=None):
-        """扫描二进制中的模式匹配，可选输出分组报告到磁盘"""
         try:
             self.behaviors = []
 
@@ -119,6 +116,5 @@ class BehaviorTracer:
 
 
 def trace_behavior(binary_path, output_dir=None):
-    """向后兼容入口：实例化追踪器并委托执行"""
     tracer = BehaviorTracer()
     return tracer.trace(binary_path, output_dir)

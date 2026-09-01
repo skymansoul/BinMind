@@ -113,11 +113,6 @@ class WASMAnalysisResult:
 
 
 class LEB128Decoder:
-    """
-    LEB128 变长整数解码器
-
-    WASM 二进制格式使用有符号和无符号 LEB128 编码
-    """
 
     @staticmethod
     def decode_unsigned(data: bytes, offset: int) -> Tuple[int, int]:
@@ -159,12 +154,6 @@ class LEB128Decoder:
 
 
 class WASMAnalyzer:
-    """
-    WebAssembly 模块分析器
-
-    解析 WASM 二进制格式，提取结构化信息
-    并进行安全性评估
-    """
 
     WASM_MAGIC = b'\x00asm'
     WASM_VERSION = 1

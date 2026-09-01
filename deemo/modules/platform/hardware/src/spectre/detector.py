@@ -17,7 +17,7 @@ try:
 except ImportError:
   logger.warning("Capstone 未安装，汇编分析受限。安装: pip install capstone")
 
-# FIXME: DecompilerAI 导入在无头环境可能失败
+# DecompilerAI 依赖反汇编后端, 无头环境常导入失败, 已用 try 包裹降级
 _DECOMPILER_AVAILABLE = False
 try:
   from deobfuscation.decomp_ai import DecompilerAI
@@ -740,6 +740,7 @@ class SpectreGadgetDetector:
 
     return result
 
+  # 暂留 — 旧版投机路径深度分析入口, 需要符号执行引擎支持, 待后续接入
   # def _analyze_speculative_paths(self) -> None:
   #   """分析投机路径深度，评估侧信道泄漏可能性。"""
   #   pass
@@ -807,4 +808,5 @@ __all__ = [
 
 
 def _debug_print(msg: str) -> None:
+	# 调试输出占位, 发布版保持静默避免污染stdout
 	pass

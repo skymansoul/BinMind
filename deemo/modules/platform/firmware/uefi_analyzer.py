@@ -268,7 +268,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] output directory: {}".format(self.output_dir))
 
     def _validate_path(self):
-        # 内联
+        # 路径校验：非空+绝对化+防目录穿越+尺寸界限检查
         if not self.firmware_path:
             raise ValueError("Firmware path must not be empty")
         s_path = os.path.abspath(self.firmware_path)
@@ -282,10 +282,10 @@ class UEFIFirmwareAnalyzer:
                 n_size / 1024 / 1024))
         self.firmware_path = s_path
 
-# 分析流程
+# 分析流程：解析FV→提取模块→分类→SMM漏洞检测→NIST评估→依赖图→报告
 
     def analyze(self):
-        # 上下文连贯
+        # 全流程串联，异常时返回失败报告而非抛出
         logger.info("[UEFI] starting firmware analysis...")
         start_time = datetime.now()
 
@@ -317,7 +317,7 @@ class UEFIFirmwareAnalyzer:
         logger.info("[UEFI] modules found: {}".format(len(self.modules)))
         logger.info("[UEFI] SMM modules: {}".format(len(self.smm_modules)))
 
-# uefi_firmware路径
+# uefi_firmware库解析路径：优先第三方库，失败回退内置解析器
 
     def _parse_with_uefi_firmware(self):
         try:
@@ -377,7 +377,7 @@ class UEFIFirmwareAnalyzer:
             return None
         return module
 
-# 内置解析器
+# 内置解析器：不依赖uefi_firmware库，直接扫描_FVH签名定位固件卷
 
     def _parse_with_builtin(self):
         logger.info("[UEFI] using built-in parser...")
@@ -567,7 +567,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] saveindexfailed: {}".format(e))
 
-# PE分析
+# PE分析：导入表匹配SMM危险函数，导出表与节信息入metadata
 
     def _analyze_modules(self):
         logger.info("[UEFI] analyzing PE modules...")
@@ -636,7 +636,7 @@ class UEFIFirmwareAnalyzer:
         except Exception as e:
             logger.warning("[UEFI] PE analysis failed ({}): {}".format(module.name, e))
 
-# DXE依赖图
+# DXE依赖图：按协议GUID匹配导出方(生产者)与导入方(消费者)
 
     def _build_dxe_dependency_graph(self):
         if not self.dxe_modules:
@@ -657,7 +657,7 @@ class UEFIFirmwareAnalyzer:
             logger.info("[UEFI] DXE dependency graph built: %d protocol nodes",
                         len(self._dxe_dep_graph))
 
-# SMM漏洞检测
+# SMM漏洞检测：六类检查并行下发到每个SMM模块，结果聚合
 
     def _detect_smm_vulnerabilities(self):
         logger.info("[UEFI] running SMM vulnerability detection...")
@@ -813,7 +813,7 @@ class UEFIFirmwareAnalyzer:
             })
         return vulns
 
-# NIST 800-193
+# NIST 800-193：按保护/检测/恢复三维评估固件弹性指标覆盖度
 
     def _assess_nist_800_193(self):
         all_imports_flat: set[str] = set()
@@ -843,7 +843,7 @@ class UEFIFirmwareAnalyzer:
                 })
         self.analysis_stats['nist_800_193'] = resiliency_scores
 
-# 报告
+# 报告生成：统计+模块清单+漏洞汇总+建议一次性输出
 
     def _generate_report(self):
         report = {

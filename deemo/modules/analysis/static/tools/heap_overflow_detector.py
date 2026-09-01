@@ -2,12 +2,6 @@
 # 增加跨函数追踪
 # 寄存器宽度归一化: edi/rdi/dil 统一匹配, 解决GCC O2下32-bit传参问题
 
-"""堆溢出静态检测, 分配/写入尺寸比较 + 跨函数传播
-
-不依赖符号执行, 从指令序列提取常量大小做比较。
-过滤增强版请用 heap_overflow_filtered.FilteredHeapOverflowDetector
-"""
-
 from __future__ import annotations
 
 import re
@@ -60,15 +54,6 @@ _SAFETY_CHECK_PATTERN = re.compile(
 
 
 class HeapOverflowDetector:
-    """静态堆溢出检测器
-
-    用法:
-      detector = HeapOverflowDetector()
-      findings = detector.detect(
-          functions={'main': [(0x401000, 'call malloc'), ...]},
-          call_graph={'main': ['process'], 'process': []},
-      )
-    """
 
     def detect(
         self,

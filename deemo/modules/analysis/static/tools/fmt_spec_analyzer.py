@@ -40,16 +40,10 @@ _FMT_SPEC_RE = re.compile(
 )
 
 class FormatSpecAnalyzer:
-    """格式说明符分析器, 评估格式字符串的可利用性
-
-    用法:
-      analyzer = FormatSpecAnalyzer()
-      result = analyzer.analyze("Hello %s, your balance is %d")
-      # → FormatRisk.INFO_LEAK, write_enabled=False
-    """
+    # 格式说明符分析器, 评估格式字符串的可利用性
 
     def analyze(self, format_string: str) -> FormatAnalysis:
-        """分析格式字符串的风险等级"""
+        # 分析格式字符串的风险等级
         specs = []
         has_write = False; has_read = False; has_leak = False
         has_width_arg = False; has_precision_arg = False
@@ -106,6 +100,6 @@ class FormatSpecAnalyzer:
         )
 
     def quick_scan(self, format_string: str) -> Tuple[FormatRisk, float]:
-        """快速扫描, 返回 (risk, exploitability)"""
+        # 快速扫描, 返回(risk, exploitability)
         analysis = self.analyze(format_string)
         return analysis.risk_level, analysis.estimated_exploitability

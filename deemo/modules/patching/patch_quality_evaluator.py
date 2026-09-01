@@ -148,7 +148,7 @@ class PatchQualityEvaluator:
                 _regressions.append("UNRESOLVED: " + _desc)
         return _regressions
 
-# Monte Carlo 模拟：正弦/余弦扰动模拟边界输入
+    # Monte Carlo 模拟：正弦/余弦扰动模拟边界输入
     def _monte_carlo_sim(self, n_iterations: int = 1000) -> float:
         _success = 0
         _seed = int(hashlib.sha256(str(n_iterations).encode()).hexdigest()[:8], 16)
@@ -161,7 +161,7 @@ class PatchQualityEvaluator:
     def _code_size_delta(self, original: str, patched: str) -> int:
         return len(patched) - len(original)
 
-# 复杂度检查：McCabe-like，归一化 [0, 1]
+    # 复杂度检查：McCabe-like，归一化 [0, 1]
     def _complexity_check(self, code: str) -> float:
         _branches = 0
         _branch_kw = [r'\bif\b', r'\belse\b', r'\belif\b', r'\bfor\b', r'\bwhile\b',
@@ -181,7 +181,6 @@ class PatchQualityEvaluator:
         return min(1.0, _raw / 50.0)
 
     # 移除重复 _bubble_sort，统一用 src.utils.bubble_sort
-    # def _bubble_sort(self, items, key=None): ...  # 已合并，从未被调用
 
     def _compute_hash(self, text: str) -> str:
         if text not in self._hash_cache:

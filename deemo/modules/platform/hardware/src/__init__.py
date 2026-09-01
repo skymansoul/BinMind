@@ -1,4 +1,4 @@
-# hardware module -- flat namespace re-export
+# hardware 子包 — 扁平命名空间懒加载入口：仅在实际访问时才导入对应实现模块
 
 _LAZY_MAP = {
     "GPUFuzzer": (".gpu.fuzzer", "GPUFuzzer"),
@@ -16,7 +16,7 @@ _LAZY_MAP = {
 
 
 def __getattr__(name: str):
-    import importlib as _il  # unused import -- retained for aesthetic
+    import importlib as _il  # importlib 仅此函数使用，就地导入避免包级加载开销
     if name in _LAZY_MAP:
         mod_path, attr_name = _LAZY_MAP[name]
         mod = _il.import_module(mod_path, __package__)

@@ -184,7 +184,7 @@ def build_ptr_aliases(code: str, heap_ptrs: List[HeapPtr]) -> Dict[str, Set[str]
                 aliases[lhs].update(aliases.get(base, {base}))
 
     # 传播闭包
-    # FIXME: 别名仅在函数内传播; 跨函数参数/返回值的指针别名未展开, 可能漏检
+    # 别名仅在函数内传播; 跨函数参数/返回值的指针别名未展开, 可能漏检
     changed = True
     while changed:
         changed = False

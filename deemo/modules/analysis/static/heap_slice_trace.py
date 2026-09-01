@@ -41,11 +41,6 @@ class TaintSource:
 
 
 class BackwardSliceTracer:
-    """后向值流切片追踪器.
-
-    输入: 指令序列 + 起始操作数.
-    输出: 该操作数的污染源分类.
-    """
 
     # 外部输入函数: 返回值不可信
     EXTERNAL_SOURCES = {
@@ -61,12 +56,6 @@ class BackwardSliceTracer:
 
     def trace(self, instructions: List[dict],
                start_operand: str, max_depth: int = 50) -> TaintSource:
-        """从 start_operand 反向追踪其值来源.
-
-        instructions: 当前函数内的指令, 按执行顺序排列.
-        start_operand: 要追踪的寄存器或立即数.
-        返回: 污染源分类.
-        """
         current_reg = self._normalize(start_operand)
 
         # 立即数 → 常量

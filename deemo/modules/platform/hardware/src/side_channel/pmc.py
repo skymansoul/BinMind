@@ -72,8 +72,7 @@ class PMCSideChannelEvaluator:
         self._perf_available = False
         self._check_perf()
 
-# 主评估入口
-
+    # 主评估入口
     def evaluate(self, impl: Any, secrets: Optional[List[bytes]] = None,
                  trials: int = 500) -> List[ExploitabilityScore]:
         """评估实现。`impl` 为可调用对象 (secret) -> result。"""
@@ -87,8 +86,7 @@ class PMCSideChannelEvaluator:
         secrets = secrets or [b"\x00", b"\xFF", b"\xAA", b"\x55"]
         return self._profile_callable(impl, secrets, trials)
 
-# 剖析采集
-
+    # 剖析采集
     def _profile_callable(self, op: Callable, secrets: List[bytes],
                           trials: int) -> List[ExploitabilityScore]:
         """按密钥值采集 PMC 数据并计算相关性。"""
@@ -113,18 +111,18 @@ class PMCSideChannelEvaluator:
 
         scores: List[ExploitabilityScore] = []
 
-# 时序泄漏
+        # 时序泄漏
         timing_score = self._compute_leakage(all_timings, PMCCounterType.CYCLES)
         if timing_score.score > 0.1:
             scores.append(timing_score)
 
-# 指令数泄漏
+        # 指令数泄漏
         icount_score = self._compute_leakage(all_icounts, PMCCounterType.INSTRUCTIONS,
                                              is_int=True)
         if icount_score.score > 0.1 or timing_score.score <= 0.1:
             scores.append(icount_score)
 
-# 缓存相关泄漏
+        # 缓存相关泄漏
         if self._perf_available:
             cache_data = self._read_perf_cache()
             if cache_data:
@@ -133,7 +131,7 @@ class PMCSideChannelEvaluator:
                     if s.score > 0.05:
                         scores.append(s)
 
-# 分支预测泄漏
+        # 分支预测泄漏
         branch_variance = self._estimate_branch_misses(all_timings)
         if branch_variance > 0.15:
             scores.append(ExploitabilityScore(

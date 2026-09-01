@@ -1,7 +1,7 @@
-# 预处理.py x86汇编指令归一化
+# preprocessing.py x86汇编指令归一化
 # 核心思路：把变化的部分（立即数、偏移、地址）替换为占位符，
 # 保留操作语义不变。受ContraBin启发但简化了寄存器抽象。
-# //// 不抽象寄存器名，因为寄存器选择本身就是语义特征 ////
+# 不抽象寄存器名，因为寄存器选择本身就是语义特征
 
 import re
 
@@ -154,7 +154,7 @@ def normalize_function(asm_lines: list) -> list:
     return _out
 
 
-# //// 辅助：提取指令中的寄存器操作数 ////
+# 辅助：提取指令中的寄存器操作数
 def _extract_regs(operand_str: str) -> set:
     """Pull out register names from an operand string."""
     _found = set()

@@ -1,4 +1,4 @@
-"""End-to-end pipeline verification script."""
+# 端到端流水线验证脚本
 import sys, json
 sys.path.insert(0, '.')
 

@@ -1,29 +1,6 @@
 # 校准动作注册表: 每类校准动作对应一个可插拔 handler
 # 校准效果验证: 执行校准后监控 3 个采集周期, 若度量未恢复则升级校准级别
 
-"""分析管道漂移校准器 - 漂移检测->校准触发->效果验证的闭环
-
-将 drift_metrics (度量收集) 和 drift_detector (漂移检测) 组合为
-完整的自校准管线:
-
-  度量收集 (定时) -> 漂移检测 -> 严重度判定 ->
-  ├─ NORMAL: 继续收集
-  ├─ MILD:   轻量校准 + 继续监控
-  ├─ MODERATE: 中层校准 + 验证
-  ├─ SEVERE:  深度校准 + 验证
-  └─ CRITICAL: 重启管道
-
-校准验证:
-  执行校准后进入验证期--监控 3 个采集周期
-  若 Mahalanobis 距离未回落到阈值以下 -> 升级校准级别
-  若 3 次升级后仍未恢复 -> 触发 CRITICAL 级别
-
-设计决策:
-- 每类校准动作匹配一个优先级: 低优先级动作 (flush cache) 优先尝试
-- 升级策略: flush -> reset context -> 注入噪声 -> prune -> 重启
-- 避免过度校准: 冷却期机制防止校准震荡
-"""
-
 from __future__ import annotations
 
 import logging
@@ -53,23 +30,16 @@ CalibrationHandler = Callable[[], bool]
 
 
 class CalibrationRegistry:
-    """校准动作 -> 处理器映射
-
-    外部模块通过 register() 注册具体的校准逻辑
-    例如: solver 模块可注册 FLUSH_SOLVER_CACHE -> z3_solver.reset_cache()
-    """
 
     def __init__(self):
         self._handlers: Dict[CalibrationAction, List[CalibrationHandler]] = {}
 
     def register(self, action: CalibrationAction, handler: CalibrationHandler) -> None:
-        """注册校准动作的处理器--支持同一动作多个处理器 (链式调用)"""
         if action not in self._handlers:
             self._handlers[action] = []
         self._handlers[action].append(handler)
 
     def execute(self, action: CalibrationAction) -> bool:
-        """执行单个校准动作, 返回是否成功"""
         handlers = self._handlers.get(action, [])
         if not handlers:
             _log.debug(f"DriftCalibrator: no handler for {action.value}")
@@ -92,7 +62,6 @@ class CalibrationRegistry:
         return all_ok
 
     def execute_all(self, actions: List[CalibrationAction]) -> Dict[str, bool]:
-        """按优先级顺序执行多个校准动作"""
         # 优先级: FLUSH < RESET < INJECT < PRUNE < RESTART
         priority = {
             CalibrationAction.NONE: 0,
@@ -113,18 +82,6 @@ class CalibrationRegistry:
 # 主校准器
 
 class DriftCalibrator:
-    """分析管道漂移校准器--完整的监控-检测-校准-验证闭环
-
-    用法:
-    cal = DriftCalibrator()
-    # 注册校准处理器
-    cal.registry.register(CalibrationAction.FLUSH_SOLVER_CACHE, my_flush_fn)
-    # 定时调用 (如每 60s)
-    snap = MetricSnapshot(timestamp=time.time(), ...)
-    report = cal.feed(snap)
-    if report.is_calibrating:
-        cal.apply_calibration(report)
-    """
 
     # 验证期长度--校准后观察多少个采集周期
     VERIFICATION_PERIODS = 3
@@ -156,10 +113,6 @@ class DriftCalibrator:
         self._taint_tracker = TaintConfidenceTracker()
 
     def feed(self, snapshot: MetricSnapshot) -> DriftReport:
-        """输入一个度量快照--返回漂移检测报告
-
-        这是主入口--所有监控逻辑的集中点
-        """
         # 更新度量收集器
         self.collector.collect(snapshot)
         self._coverage_tracker.update(snapshot.coverage_marginal_gain)
@@ -188,10 +141,6 @@ class DriftCalibrator:
         return report
 
     def apply_calibration(self, report: DriftReport) -> Dict[str, Any]:
-        """执行漂移报告建议的校准动作
-
-        返回执行结果摘要
-        """
         if not report.is_calibrating:
             return {"status": "skipped", "reason": "not calibrating"}
 
@@ -221,7 +170,6 @@ class DriftCalibrator:
         }
 
     def _escalate(self) -> None:
-        """升级校准级别"""
         self._escalation_count += 1
 
         if self._escalation_count >= self.MAX_ESCALATIONS:
@@ -258,7 +206,6 @@ class DriftCalibrator:
         self._verify_countdown = self.VERIFICATION_PERIODS
 
     def _complete_verification(self, success: bool) -> None:
-        """结束验证期"""
         self._verifying = False
         self._verify_countdown = 0
         self._escalation_count = 0
@@ -272,7 +219,6 @@ class DriftCalibrator:
 # 便捷查询
     @property
     def is_healthy(self) -> bool:
-        """快速健康检查--管道是否正常运行"""
         if not self._report_history:
             return True
         recent = self._report_history[-5:]
@@ -287,7 +233,6 @@ class DriftCalibrator:
         return self._verifying
 
     def summary(self) -> Dict[str, Any]:
-        """生成当前状态的摘要报告"""
         trends = self.collector.get_all_trends()
         return {
             "uptime_seconds": self.collector.uptime_seconds,

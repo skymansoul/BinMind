@@ -49,7 +49,6 @@ class HookTemplate:
     name: str=""; template_type: Any=None; description: str=""; script_template: Any=None
 
 class InstrumentationManager:
-    """Frida 插桩 manager Stalker fast-追踪 template-based 钩子 injection"""
 
     def __init__(self):
         self.frida_session=None; self.frida_script=None
@@ -71,7 +70,6 @@ class InstrumentationManager:
     # 将常用的Frida脚本模板预编译为JavaScript字符串并缓存
     # 避免重复的字符串拼接开销，在高频hook场景下减少GC压力
     def preload_templates(self):
-        """预加载所有hook模板到内存缓存。首次调用后，后续inject_script直接从缓存读取"""
         templates = {
             'anti_debug': self._generate_anti_debug_script(),
             'syscall_monitor': self._generate_syscall_monitor_script(),
@@ -136,7 +134,6 @@ try{Interceptor.attach(Module.findExportByName(null,'getpid'),{onLeave:function(
         return """const ft={td:0,functionTrace:true,run:function(){try{const lc=Process.findModuleByName('libc.so.6')||Process.findModuleByName('libSystem.B.dylib')||Process.findModuleByName('msvcrt.dll');if(lc){['malloc','free','calloc','realloc'].forEach((n)=>{const fp=lc.getExportByName(n);if(fp)Interceptor.attach(fp,{onEnter(args){ft.td++;send({type:'trace',fn:n,sz:args[0].toInt32(),depth:ft.td})},onLeave(rv){ft.td--}})});}}}}};ft.run();"""
 
     def parse_template_args(self, arg_str: Optional[str]) -> Tuple[List[str], Dict[str, Any]]:
-        """解析模板参数串: 'a,b,a:key=val' → (['a','b'], {'a': {'key': val}})."""
         if not arg_str:
             return [], {}
         templates: List[str] = []
@@ -155,7 +152,6 @@ try{Interceptor.attach(Module.findExportByName(null,'getpid'),{onLeave:function(
         return templates, params
 
     def _parse_param_value(self, raw: str) -> Any:
-        """将参数字符串解析为 int/float/bool/str。"""
         low = raw.lower()
         if low == 'true':
             return True
@@ -172,7 +168,6 @@ try{Interceptor.attach(Module.findExportByName(null,'getpid'),{onLeave:function(
 
 # Round 2: 网络监控模板
     def _generate_network_monitor_script(self)->str:
-        """跨平台网络套接字 API监控。Linux/macOS/Windows自动适配"""
         return """
         function hookNetFunc(mod, name) {
             const fp = Module.findExportByName(mod, name);
@@ -276,8 +271,6 @@ try{Interceptor.attach(Module.findExportByName(null,'getpid'),{onLeave:function(
 # Round 2: 超时自动分离
     def run_with_timeout(self, target_path: str = None, pid: int = None,
                          timeout_sec: int = 30, **kwargs) -> Dict[str, Any]:
-        """在指定超时后自动detach，防止长时间挂起
-        启动独立线程计时，到期后调用frida_session.detach()"""
         import threading
         result = self.run_instrumentation(target_path=target_path, pid=pid, **kwargs)
         if not result['success']:

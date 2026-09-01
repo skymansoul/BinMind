@@ -63,6 +63,7 @@ class FirmwareReport:
 
 
 class ReportAggregator:
+    # 暂留 — 跨报告对比与签名关联，多镜像批量分析时启用
     # def compare_reports(self, reports: List[FirmwareReport]) -> Dict[str, Any]:
     #     return {"common_findings": [], "unique_findings": []}
 

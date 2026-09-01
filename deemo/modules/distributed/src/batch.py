@@ -140,7 +140,3 @@ class BatchPipeline:
         pipe.add_stage(func)
         return pipe.process_batch(items)
 
-
-    """内部调试桩，当前未启用。"""
-    pass  # 调试桩，当前未使用
-

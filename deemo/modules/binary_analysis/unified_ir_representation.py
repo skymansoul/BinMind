@@ -1,7 +1,6 @@
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, Any
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import Dict, Any, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +26,10 @@ class IROpcode:
 class IRInstruction:
     __slots__ = ('id', 'opcode', 'operands', 'original_addr', 'original_arch',)
 
-    def __init__(self, id, opcode, operands=field(default_factory=list), original_addr=0, original_arch="x86_64"):
+    def __init__(self, id, opcode, operands=None, original_addr=0, original_arch="x86_64"):
         self.id = id
         self.opcode = opcode
-        self.operands = operands
+        self.operands = operands if operands is not None else []
         self.original_addr = original_addr
         self.original_arch = original_arch
 
@@ -43,7 +42,6 @@ class IRInstruction:
         }
 
 class UnifiedIRRepresentation:
-    # 统一IR表示器 (main class)
 
     ARCH_REGISTERS = {
         'x86_64': ['rax', 'rbx', 'rcx', 'rdx', 'rsi', 'rdi', 'rsp', 'rbp',

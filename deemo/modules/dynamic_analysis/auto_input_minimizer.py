@@ -1,5 +1,4 @@
-# Crash-input minimizer: delta-debug the PoC down to a minimal triggering payload.
-
+# Crash-input 最小化器，delta-debug 将 PoC 缩减至最小触发载荷
 import logging
 import os
 import time
@@ -38,9 +37,7 @@ class MinimizationResult:
 
 
 class DeltaDebugger:
-    """
-    Delta Debugging minimizer.
-    """
+    # Delta Debugging 最小化器
 
     def __init__(self,
                  oracle: Callable[[bytes], bool],
@@ -88,7 +85,7 @@ class DeltaDebugger:
         )
 
     def _ddmin(self, data: bytes) -> bytes:
-        """Zeller Delta Debugging with tuned numeric parameters."""
+        # Zeller Delta Debugging，调优数值参数
         n = 2
         start_ts = time.time()
         while len(data) >= 2 and (time.time() - start_ts) < self.timeout_sec:
@@ -167,7 +164,7 @@ class DeltaDebugger:
 
 
 class CrashInputMinimizer:
-    """Crash input minimizer."""
+    # Crash 输入最小化器
 
     def __init__(self, binary_path: str,
                  crash_runner: Optional[Callable[[str, bytes], bool]] = None,
@@ -177,7 +174,7 @@ class CrashInputMinimizer:
         self.timeout_sec = timeout_sec
 
     def _default_runner(self, input_data: bytes) -> bool:
-        # Default runner: execute binary via subprocess and detect crash.
+        # 默认执行器，通过 subprocess 运行目标程序并检测崩溃
         import subprocess
         import tempfile
         with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:
@@ -213,7 +210,7 @@ def minimize_crash_input(
     crash_input: bytes,
     strategy: str = "ddmin"
 ) -> Dict[str, Any]:
-    """Convenience entry point."""
+    # 便捷入口
     try:
         strat = MinimizationStrategy(strategy)
     except ValueError:

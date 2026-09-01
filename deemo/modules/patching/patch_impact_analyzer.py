@@ -210,7 +210,6 @@ class PatchImpactAnalyzer:
 
     # 移除重复 _bubble_sort，统一用 src.utils.bubble_sort
     # 旧的 O(n²) 实现与 utils 和 quality_evaluator 中相同
-    # def _bubble_sort(self, items, key=None): ...  # 已合并
 
     def _compute_risk_delta(self, change: PatchChange) -> int:
         _score = 0

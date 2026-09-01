@@ -1,16 +1,3 @@
-"""追踪门面 — API 调用序列分类 (IntFlag 行为类别), 滑动窗口
-恶意链匹配, Intel PT/ARM ETM 硬件追踪解码, CFG 重建。
-
-封装 engine/behavior_tracer.py, engine/behavior_trace.py,
-engine/hw_trace_analyzer.py, engine/intel_pt.py。
-
-硬件追踪流水线:
-perf record -> raw trace -> Intel PT 解码 -> 指令流 -> CFG
-
-注: 滑动窗口 O(k*n), k = window_size, n = trace length。
-边界条件: window_size > n 时, 匹配截断的完整轨迹。
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -28,12 +15,6 @@ log = logging.getLogger(__name__)
 # 行为分类 — IntFlag 位掩码，支持高效分类查询
 
 class BehaviorCategory(Flag):
-    """行为分类的 IntFlag 位掩码。
-
-    多个类别可通过 OR 组合到单条轨迹上，支持高效查询。
-    例如 ProcessInjection | PrivilegeEscalation 表示单条 API
-    调用序列同时匹配多个类别。
-    """
     NONE = 0
     FILE_OPERATION = auto()
     NETWORK_ACTIVITY = auto()
@@ -116,20 +97,6 @@ class TraceEvent:
 
 
 class BehaviorTracer:
-    """API 调用序列分类与恶意模式检测。
-
-    使用 IntFlag 对 API 调用进行行为分类，通过滑动窗口
-    检测恶意调用链。链中允许穿插良性调用，只要链中的 API
-    按序出现即可命中。
-
-    用法::
-
-    tracer = BehaviorTracer(window_size=8)
-    tracer.record("VirtualAllocEx", {"size": 4096})
-    tracer.record("WriteProcessMemory", {"addr": 0x400000})
-    tracer.record("CreateRemoteThread", {"entry": 0x400000})
-    alerts = tracer.detect_malicious_chains()
-    """
 
     def __init__(self, window_size: int = 8) -> None:
         self._window_size = window_size
@@ -140,7 +107,6 @@ class BehaviorTracer:
     def record(
         self, api_name: str, arguments: Optional[Dict[str, Any]] = None
     ) -> TraceEvent:
-        """记录单条 API 调用。"""
         self._event_id_counter += 1
         category = _CATEGORY_MAP.get(api_name, BehaviorCategory.NONE)
 
@@ -164,7 +130,6 @@ class BehaviorTracer:
         return event
 
     def classify(self) -> BehaviorCategory:
-        """对已记录事件做整体行为分类。"""
         combined = BehaviorCategory.NONE
         for event in self._events:
             combined |= event.category
@@ -173,12 +138,6 @@ class BehaviorTracer:
     def detect_malicious_chains(
         self, gap_tolerance: int = 2
     ) -> List[Dict[str, Any]]:
-        """检测恶意 API 调用链 (带间隔容忍)。
-
-        在事件流上使用滑动窗口。对每个 chain 检查其 API 名
-        是否按序出现在窗口内, 允许最多 gap_tolerance 个缺失/
-        穿插调用。
-        """
         alerts: List[Dict[str, Any]] = []
         api_sequence = [e.api_name for e in self._events]
 
@@ -206,11 +165,6 @@ class BehaviorTracer:
     def _sliding_match(
         window: List[str], chain: Tuple[str, ...], tolerance: int
     ) -> bool:
-        """检查 chain 是否作为窗口的子序列出现。
-
-        chain 中的间隔 (额外调用) 允许最多 tolerance 个;
-        chain 调用必须按序出现。
-        """
         chain_idx = 0
         gaps = 0
         for api in window:
@@ -227,7 +181,6 @@ class BehaviorTracer:
         return False
 
     def get_summary(self) -> Dict[str, Any]:
-        """返回已追踪行为的摘要。"""
         categories = self.classify()
         return {
             "total_events": len(self._events),
@@ -242,7 +195,6 @@ class BehaviorTracer:
         }
 
     def clear(self) -> None:
-        """重置已记录的事件。"""
         self._events.clear()
         self._api_categories.clear()
         self._event_id_counter = 0
@@ -278,43 +230,17 @@ class CFGNode:
 
 
 class HWTraceAnalyzer:
-    """Intel PT / ARM ETM 的硬件追踪分析器。
-
-    流水线: perf record -> raw trace -> 解码 -> 指令流 -> CFG。
-
-    Intel PT 捕获分支、TSC 值与时序信息。后处理重建精确
-    控制流, 包括条件分支 — 因为 PT 为条件分支记录 TNT
-    (taken/not-taken) 位。
-
-    ARM ETM (Embedded Trace Macrocell) 概念类似, 但使用 AET
-    (ARM Embedded Trace) 格式。
-
-    用法::
-
-    analyzer = HWTraceAnalyzer(HWTraceConfig(source="intel_pt"))
-    analyzer.collect_trace("./binary", "-a 'sleep 5'")
-    blocks = analyzer.decode_trace("trace.perf.data")
-    cfg = analyzer.reconstruct_cfg(blocks)
-    """
 
     def __init__(self, config: Optional[HWTraceConfig] = None) -> None:
         self._config = config or HWTraceConfig()
         self._decoded_blocks: List[DecodedBlock] = []
 
     def collect_trace(self, binary: str, args: str = "") -> bool:
-        """通过 perf 或等价工具采集硬件追踪。
-
-        返回 True 表示追踪采集成功。
-        """
         cmd = f"{self._config.perf_command} record -e intel_pt// {binary} {args}"
         log.info("HW trace collection: %s", cmd)
         return True  # 模拟; 真实实现使用 subprocess
 
     def decode_trace(self, trace_file: str) -> List[DecodedBlock]:
-        """将硬件追踪数据解码为指令块。
-
-        模拟解码; 真实实现使用 libipt 或 perf-script。
-        """
         log.info("Decoding HW trace: %s", trace_file)
         # Simulated decoded blocks
         self._decoded_blocks = [
@@ -334,13 +260,6 @@ class HWTraceAnalyzer:
         return self._decoded_blocks
 
     def reconstruct_cfg(self, blocks: Optional[List[DecodedBlock]] = None) -> Dict[int, CFGNode]:
-        """从解码的追踪块重建 CFG。
-
-        构建有向图：基本块为节点，边表示控制流转移
-       （fallthrough、直接分支、条件分支）。
-
-        返回以块起始地址为键的字典，便于快速查找。
-        """
         if blocks is None:
             blocks = self._decoded_blocks
 
@@ -364,11 +283,6 @@ class HWTraceAnalyzer:
         return nodes
 
     def analyze_performance_counters(self) -> Dict[str, int]:
-        """读取并解析硬件性能计数器。
-
-        典型计数器：分支数、分支预测失败、缓存未命中、
-        指令数、周期数。
-        """
         return {
             "branches": 150000,
             "branch_misses": 1200,
@@ -383,7 +297,6 @@ class HWTraceAnalyzer:
 # Intel PT 解码器 — 完整的 PT 数据包解码状态机
 
 class PTState(Enum):
-    """Intel PT 数据包解码器有限状态机的状态。"""
     IDLE = auto()
     PSB = auto()
     TNT = auto()
@@ -399,23 +312,6 @@ class PTState(Enum):
 
 
 class IntelPTDecoder:
-    """完整的 Intel PT 数据包解码状态机。
-
-    实现完整的 PT 规范：PSB（数据包流边界）同步、TNT 位向量、
-    TIP（目标 IP）、MODE（执行模式）、FUP（流更新数据包）、
-    PIP（处理器信息）、CBR（核心:总线比率）、TSC（时间戳计数器）、
-    MTC（迷你时间计数器）、CYC（周期计数器）。
-
-    参考: Intel SDM Vol. 3, Chapter 35 (Intel Processor Trace)
-
-    用法::
-
-    decoder = IntelPTDecoder()
-    decoder.feed(raw_bytes)
-    while decoder.has_events():
-        event = decoder.next_event()
-        print(event)
-    """
 
     # PT 数据包操作码
     _OP_PSB = 0x02
@@ -443,13 +339,11 @@ class IntelPTDecoder:
         self._stats: Dict[str, int] = {"packets": 0, "tnt_bits": 0, "branches": 0, "errors": 0}
 
     def feed(self, data: bytes) -> None:
-        """向解码器喂入原始 PT 追踪数据。"""
         self._buffer.extend(data)
         self._stats["packets"] += len(data)
         self._decode_buffer()
 
     def _decode_buffer(self) -> None:
-        """处理内部缓冲区，输出解码后的事件。"""
         while len(self._buffer) >= 2:
             byte_val = self._buffer[0]
             # PSB 衃起始序列：0x02 0x82 重复 4 次
@@ -501,21 +395,17 @@ class IntelPTDecoder:
             self._stats["errors"] += 1
 
     def has_events(self) -> bool:
-        """检查是否有已解码的事件可用。"""
         return len(self._events) > 0
 
     def next_event(self) -> Optional[Dict[str, Any]]:
-        """返回下一个已解码事件，缓冲区为空时返回 None。"""
         if self._events:
             return self._events.pop(0)
         return None
 
     def get_stats(self) -> Dict[str, int]:
-        """返回解码统计信息。"""
         return dict(self._stats)
 
     def decode_filename(self, filename: str) -> List[Dict[str, Any]]:
-        """解码整个 PT 追踪文件。"""
         all_events: List[Dict[str, Any]] = []
         try:
             with open(filename, "rb") as f:
@@ -532,7 +422,6 @@ class IntelPTDecoder:
         return all_events
 
     def reconstruct_control_flow(self, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """从解码后的 PT 事件重建控制流。"""
         control_flow: List[Dict[str, Any]] = []
         current_addr: int = 0
         tnt_idx: int = 0

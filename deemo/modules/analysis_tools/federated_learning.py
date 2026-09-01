@@ -141,9 +141,26 @@ class FLClient:
         self.client_id = client_id; self.config = config or FLConfig(); self.status = FLStatus.IDLE; self.local_model = None
         self.privacy_protector = PrivacyProtector(epsilon=self.config.epsilon, clip_norm=self.config.clip_norm)
 
-    def load_local_data(self, data_path): pass
-    def train_local(self, global_model): pass
-    def evaluate_local(self, model): pass
+    def load_local_data(self, data_path):
+        """基类默认空实现：子类按各自数据格式覆盖。返回 False 表示未加载。"""
+        if data_path is None:
+            return False
+        _g_log.warning("client %s has no data loader; subclasses must override", self.client_id)
+        return False
+
+    def train_local(self, global_model):
+        """基类默认训练：返回零梯度与空指标，避免子类未实现时崩毁流程。"""
+        gradient = FLGradient(
+            client_id=self.client_id,
+            gradients={}, sample_count=0,
+            round=0, timestamp=time.time(),
+        )
+        metrics = FLMetrics(round=0, client_id=self.client_id)
+        return gradient, metrics
+
+    def evaluate_local(self, model):
+        """基类默认评估：返回空指标。"""
+        return FLMetrics(round=0, client_id=self.client_id)
 
     def protect_gradient(self, gradients):
         """Apply DP perturbation to local gradient before uplink."""
@@ -175,7 +192,18 @@ class FLServer:
         if len(client_list) <= selected_count: return client_list
         return random.sample(client_list, selected_count)
 
-    def initialize_global_model(self): pass
+    def initialize_global_model(self):
+        """基类默认全局模型：空参数模型，子类可覆盖为任务专属初始化。"""
+        if self.global_model:
+            return self.global_model
+        model = FLModel(
+            model_id="global_{}".format(int(time.time())),
+            parameters={}, version=1,
+            timestamp=time.time(),
+            metadata={'algorithm': self.config.algorithm},
+        )
+        self.global_model = model
+        return model
 
     def broadcast_model(self, clients):
         if clients is None: return False
@@ -202,7 +230,22 @@ class FLServer:
         if gradients is None or len(gradients) == 0: _g_log.warning("no gradients to aggregate"); return {}
         return self.gradient_aggregator.aggregate(gradients)
 
-    def update_global_model(self, aggregated_gradients): pass
+    def update_global_model(self, aggregated_gradients):
+        """基类默认更新：按学习率累加梯度到全局参数。"""
+        if self.global_model is None or not aggregated_gradients:
+            _g_log.error("global model or gradients missing")
+            return False
+        for param_name, grads in aggregated_gradients.items():
+            if param_name not in self.global_model.parameters:
+                self.global_model.parameters[param_name] = grads
+                continue
+            params = self.global_model.parameters[param_name]
+            updated = [p + self.config.learning_rate * g
+                       for p, g in zip(params, grads)]
+            self.global_model.parameters[param_name] = updated
+        self.global_model.version += 1
+        self.global_model.timestamp = time.time()
+        return True
 
     def run_round(self):
         """Execute one complete FL round: select, broadcast, train, aggregate, evaluate."""

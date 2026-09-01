@@ -111,7 +111,6 @@ class RecompilerVerifier:
     def _check_compiler(self) -> bool:
         """探测编译器二进制；不可用时返回 False。"""
         try:
-            pass
             result = subprocess.run(
                 [self.compiler_path, "--version"],
                 capture_output=True,

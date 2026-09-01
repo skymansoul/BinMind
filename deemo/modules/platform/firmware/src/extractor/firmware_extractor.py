@@ -300,7 +300,6 @@ class FirmwareExtractor:
         return nested_count
 
     def extract_firmware(self, filter_pattern=None):
-        # 主提取入口：检测格式 → 解压缩 → 扫描输出树 → 递归解包嵌套固件
         """提取固件内容：检测格式、解压缩并扫描输出树。"""
         output_dir = os.path.join(self.output_base_dir, self.session_id)
         os.makedirs(output_dir, exist_ok=True); os.chmod(output_dir, 0o700)
@@ -351,6 +350,7 @@ class FirmwareExtractor:
                     continue
         return findings
 
+    # 暂留 — sasquatch 提取方案已弃用，需处理非标准 squashfs 头时可能恢复
     # def _extract_with_sasquatch(self, output_dir):
     #     """旧方案：直接用 sasquatch 提取 SquashFS（已弃用）。"""
     #     pass

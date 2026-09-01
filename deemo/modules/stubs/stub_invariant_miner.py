@@ -22,10 +22,10 @@
 # 区别于 MINES:
 #   MINES 从 API 运行时日志推断数据库级不变量用于异常检测。
 #   本模块从静态合约中挖掘命名+类型级不变量用于实现验证。
+import os as _os
 import re as _re
 from collections import Counter as _Ctr, defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 from modules.stubs.stub_contract import (
     FuncContract as _FuncContract,
@@ -78,8 +78,7 @@ class InvariantMiner:
 
     def __init__(self, stubs_dir: str = None):
         if stubs_dir is None:
-            import os
-            stubs_dir = os.path.dirname(os.path.abspath(__file__))
+            stubs_dir = _os.path.dirname(_os.path.abspath(__file__))
         self.stubs_dir = stubs_dir
         self.contractor = _StubContractor(stubs_dir=stubs_dir)
 
@@ -181,7 +180,6 @@ class InvariantMiner:
 
         return violations
 
-# 分组
     def _group_by_prefix(self) -> dict[str, list[_FuncContract]]:
         """按函数名前缀分组。"""
         contracts = self.contractor.scan_all()
@@ -197,7 +195,6 @@ class InvariantMiner:
 
         return dict(groups)
 
-# 报告
     def invariant_report(self,
                          invariants: list[MinedInvariant] = None) -> str:
         if invariants is None:

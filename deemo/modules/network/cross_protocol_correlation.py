@@ -56,15 +56,7 @@ class CausalLink:
 
 
 class CrossProtocolCorrelationEngine:
-    """跨协议因果关联引擎.
-
-    用法:
-      cpce = CrossProtocolCorrelationEngine(window_s=5.0, max_lag=6)
-      for packet in pcap_stream:
-          cpce.ingest(proto='dns', ts=packet.ts, size=len(packet), dest=packet.dst)
-      links = cpce.detect_causal_links(min_confidence=0.7)
-      chains = cpce.build_causal_chains(links)
-    """
+    """跨协议因果关联引擎."""
 
     def __init__(self, window_s: float = 5.0, max_lag: int = 6,
                  min_windows_for_test: int = 20):

@@ -68,12 +68,7 @@ class PathSensitiveUAF:
                 self._path_tracker.record_constraint_at(target, taken)
 
     def is_same_feasible_path(self, free_addr: int,
-                               use_addr: int) -> bool:
-        """检查free和use是否在同一可行路径上.
-
-        返回 True 表示两者可达 (应保留告警).
-        返回 False 表示路径互斥 (可安全过滤).
-        """
+                                use_addr: int) -> bool:
         free_constraints = self._path_tracker.get_constraints(free_addr)
         use_constraints = self._path_tracker.get_constraints(use_addr)
 
@@ -104,11 +99,7 @@ class PathSensitiveUAF:
         return len(constraints) > 0
 
     def use_on_disjoint_path(self, free_addr: int,
-                              use_addr: int) -> bool:
-        """检查use是否在free的互斥路径上.
-
-        返回 True 表示互斥 (可以过滤).
-        """
+                               use_addr: int) -> bool:
         return not self.is_same_feasible_path(free_addr, use_addr)
 
     def get_constraint_summary(self, addr: int) -> str:

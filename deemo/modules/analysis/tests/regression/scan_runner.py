@@ -1,13 +1,10 @@
-# 初始创建: 扫描调度模块, 将编译后的样本送入各检测器
-# 增加内存/耗时统计: 每样本记录峰值内存和扫描耗时
-
 """扫描调度模块 - 将编译后的 ELF 送入检测器, 收集检测结果
 
 读取 compile_samples.py 生成的 manifest.json,
 对每个已编译的二进制调用检测器, 汇总结果。
 """
 
-import json, os, sys, time, resource
+import json, os, sys, time, resource, shutil, subprocess, tempfile
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
@@ -44,7 +41,6 @@ def get_peak_memory_mb() -> float:
 def run_format_string_detector(binary_path: str) -> List[Dict]:
     """调用 format_string_detector"""
     try:
-        import subprocess, tempfile
         r2 = shutil.which('r2') or shutil.which('radare2')
         if not r2:
             return []
@@ -72,18 +68,40 @@ def run_format_string_detector(binary_path: str) -> List[Dict]:
 
 def run_heap_overflow_detector(binary_path: str) -> List[Dict]:
     try:
-        from modules.analysis.static.tools.heap_overflow_detector import HeapOverflowDetector
-        detector = HeapOverflowDetector()
-        # 需要反汇编-此处为简化stub, 实际集成需调用r2/objdump
-        return []
+        from modules.analysis.static.heap_overflow_detect import HeapOverflowDetector
+        from modules.analysis.static.heap_alloc_model import AllocatorFamily
+        from modules.analysis.static.disasm_util import disassemble_binary
+        ins, fmt, main_addr, ranges = disassemble_binary(binary_path)
+        det = HeapOverflowDetector(
+            AllocatorFamily.GLIBC,
+            use_win64_abi="pei" in fmt.lower())
+        if main_addr:
+            det.set_min_user_addr(main_addr)
+        if ranges:
+            det.set_user_func_ranges(ranges)
+        det.pre_analyze(ins)
+        for i in ins:
+            det.analyze_instruction(i)
+        findings = det.finalize(ins)
+        return [{'type': 'heap_overflow', 'severity': f.get('severity', ''),
+                 'write_addr': f.get('write_addr', 0)} for f in findings]
     except Exception as e:
         return [{'error': str(e)[:100]}]
 
 def run_uaf_detector(binary_path: str) -> List[Dict]:
     try:
-        from modules.analysis.static.binary_analysis.uaf_detector import UAFDetector
-        detector = UAFDetector()
-        return []
+        from modules.analysis.static.uaf_detect import UAFDetector
+        from modules.analysis.static.disasm_util import disassemble_binary
+        ins, fmt, main_addr, ranges = disassemble_binary(binary_path)
+        det = UAFDetector(use_win64_abi="pei" in fmt.lower())
+        if ranges:
+            det.set_user_func_ranges(ranges)
+        det.pre_analyze(ins)
+        for i in ins:
+            det.analyze_instruction(i)
+        findings = det.finalize(ins) or det.findings
+        return [{'type': 'uaf', 'verdict': str(getattr(f, 'verdict', ''))}
+                for f in findings]
     except Exception as e:
         return [{'error': str(e)[:100]}]
 
@@ -175,6 +193,5 @@ def scan_all() -> List[ScanResult]:
     print(f'Results written to {out_path}')
     return results
 
-import shutil
 if __name__ == '__main__':
     scan_all()

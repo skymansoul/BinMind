@@ -1,12 +1,3 @@
-abuse_paths: list = None
-handlers: list = None
-success: bool = False
-exploit_potential: float = 0.0
-description: str = ""
-scope_end: int = 0
-scope_start: int = 0
-handler_address: int = 0
-address: int = 0
 #!/usr/bin/env python3
 # Entry points: SEHHandler and 3 sibling classes.
 # Depends on os, subprocess.
@@ -19,31 +10,28 @@ from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
-# Data container for SEHHandler——field layout via dataclass.
 @dataclass
 class SEHHandler:
-    address
-    handler_address
-    scope_start
-    scope_end
-    type_info = None
-    is_suspicious = False
-    abuse_score = 0.0
+    address: int = 0
+    handler_address: int = 0
+    scope_start: int = 0
+    scope_end: int = 0
+    type_info: Optional[str] = None
+    is_suspicious: bool = False
+    abuse_score: float = 0.0
 
-# Data container for SEHAbuse——field layout via dataclass.
 @dataclass
 class SEHAbuse:
-    address
-    description
-    exploit_potential
-    triggering_input = None
+    address: int = 0
+    description: str = ""
+    exploit_potential: float = 0.0
+    triggering_input: Optional[str] = None
 
-# Data container for AnalysisResult——field layout via dataclass.
 @dataclass
 class AnalysisResult:
-    success
-    handlers
-    abuse_paths
+    success: bool = False
+    handlers: List[SEHHandler] = field(default_factory=list)
+    abuse_paths: List[SEHAbuse] = field(default_factory=list)
     warnings: list = field(default_factory=list)
 
 class SEHScanner:
@@ -54,21 +42,44 @@ class SEHScanner:
         self.handlers: List[SEHHandler] = []
 
     def scan_pe_handlers(self) -> List[SEHHandler]:
-        # Scans PE exception handling table.
+        # Scans PE exception handling table (.pdata / SafeSEH).
         handlers = []
         try:
             import struct
             with open(self.binary_path, "rb") as f:
                 data = f.read()
-            # Locates EXCEPTION TABLE.
-            # Heuristic: searches for RVA pointing to KiUserExceptionDispatcher.
-            if b".pdata" in data or b"EXCEPTION" in data:
-                for i in range(0, min(len(data), 0x100000), 4):
-                    try:
-                        if data[i:i + 4] == b"\x00\x00\x00\x00":
-                            continue
-                    except IndexError:
-                        break
+            # 定位 .pdata 节: PE32 头 + 节表, 解析异常目录项。
+            if len(data) < 0x40 or data[:2] != b"MZ":
+                return handlers
+            pe_offset = struct.unpack_from("<I", data, 0x3C)[0]
+            if data[pe_offset:pe_offset+4] != b"PE\x00\x00":
+                return handlers
+            num_sections = struct.unpack_from("<H", data, pe_offset + 6)[0]
+            opt_size = struct.unpack_from("<H", data, pe_offset + 20)[0]
+            section_table = pe_offset + 24 + opt_size
+            for i in range(num_sections):
+                sec_off = section_table + i * 40
+                if sec_off + 40 > len(data):
+                    break
+                name = data[sec_off:sec_off+8].rstrip(b"\x00").decode("ascii", "ignore")
+                if name != ".pdata":
+                    continue
+                vsize, vaddr, raw_size, raw_ptr = struct.unpack_from("<IIII", data, sec_off + 8)
+                raw_end = min(raw_ptr + raw_size, len(data))
+                # .pdata 每项 12 字节: BeginAddress, EndAddress, UnwindInfoAddress
+                for off in range(raw_ptr, raw_end - 11, 12):
+                    begin, end, unwind = struct.unpack_from("<III", data, off)
+                    if begin == 0 and unwind == 0:
+                        continue
+                    handlers.append(SEHHandler(
+                        address=begin,
+                        handler_address=unwind,
+                        scope_start=begin,
+                        scope_end=end,
+                        type_info="pdata"))
+                break
+            if handlers:
+                logger.info("PE handler scan: %d handler(s) from .pdata", len(handlers))
         except Exception as e:
             logger.warning(f"PE handler scan aborted: {e}")
         return handlers
@@ -87,7 +98,6 @@ class SEHScanner:
                         parts = line.split()
                         if len(parts) >= 4:
                             try:
-# Isolated sporadic failure——error propagation contained.
                                 addr = int(parts[3], 16)
                                 handlers.append(SEHHandler(
                                     address=addr,
@@ -138,7 +148,7 @@ class SEHAbuseDetector:
                     if d in result.stdout:
                         return True
         except Exception:
-            logger.debug("error containment activated", exc_info=True)
+            logger.debug("handler disassembly failed", exc_info=True)
         return False
 
     def generate_hijack_input(self, abuse: SEHAbuse) -> Optional[bytes]:
@@ -152,10 +162,7 @@ class SEHAbuseDetector:
             return None
 
     def run(self) -> AnalysisResult:
-# Stale code below——single-line form is cleaner but not step-debuggable.
         try:
-            pass
-# Isolated sporadic failure——error propagation contained.
             handlers = self.scanner.scan_pe_handlers() + self.scanner.scan_elf_handlers()
             for h in handlers:
                 h.is_suspicious = self._is_unusual_handler(h)

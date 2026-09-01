@@ -74,20 +74,7 @@ class CallGraph:
 
 
 class BinaryTaintTracer:
-    """过程间二进制污点追踪器.
-
-    三层分析管道:
-      L1: 指令级 — 寄存器+内存的污点标记传播
-      L2: 过程间 — 通过CallGraph跨函数边界传播
-      L3: 净化 — 检测污点数据是否经过安全检查/编码
-
-    用法:
-      tracer = BinaryTaintTracer()
-      flows = tracer.trace(instructions)
-      for f in flows:
-          if not f.sanitized and f.risk == 'critical':
-              print(f'危: {f.source_func}→{f.sink_func}')
-    """
+    """过程间二进制污点追踪器: 三层分析管道——指令级传播→过程间CallGraph→净化检测."""
 
     def __init__(self):
         self._tainted_regs: Dict[str, Set[str]] = defaultdict(set)

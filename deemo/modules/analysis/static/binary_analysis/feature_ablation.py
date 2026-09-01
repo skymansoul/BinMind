@@ -42,14 +42,9 @@ class FeatureImportanceReport:
 
 
 class FeatureAblationAnalyzer:
-    """GNN 节点特征的消融实验执行器
-
-    不依赖具体的 GNN 实现 - 通过 model_fn(features, adjacency) → metric 的
-    回调接口与被测模型交互。调用方提供:
-    - model_fn: 给定特征矩阵和邻接矩阵，返回性能指标（如 F1/AUC）
-    - features: (N, 12) numpy 数组, N 个基本块的 12 维特征
-    - adjacency: 图邻接或边列表
-    """
+    # GNN 节点特征消融实验执行器
+    # 不依赖具体 GNN 实现——通过 model_fn(features, adjacency) → metric 回调交互
+    # 调用方提供: model_fn / features(N,12) / adjacency
 
     def __init__(self, model_fn: Callable[[np.ndarray, Any], float],
                  features: np.ndarray, adjacency: Any,
@@ -73,11 +68,8 @@ class FeatureAblationAnalyzer:
     # Individual Abla - 逐维消融
 
     def individual_ablation(self) -> List[FeatureImportanceEntry]:
-        """逐维消融: 每次将一维特征归零，测量性能下降
-
-        下降 = baseline - ablated_score。正值越大表示该维度越重要
-        负值表示该维度可能是噪声（移除后性能反而提升）
-        """
+        # 逐维消融: 每次将一维特征归零，测量性能下降
+        # 下降 = baseline - ablated_score; 正值越大越重要，负值可能是噪声
         baseline = self.compute_baseline()
         entries: List[FeatureImportanceEntry] = []
 
@@ -103,11 +95,9 @@ class FeatureAblationAnalyzer:
     # Permuta Import - 破坏信息但保持边际分布
 
     def permutation_importance(self) -> List[FeatureImportanceEntry]:
-        """排列重要性: 对每个维度独立重排（破坏与其他维度的关联+自身信息）
-
-        与 individual abla 的不同: 消融是"归零该维度"（信息完全消失）
-        排列是"保持值域分布不变但断开语义关联"（更接近真实缺失情况）
-        """
+        # 排列重要性: 对每个维度独立重排（破坏与其他维度的关联+自身信息）
+        # 与 individual abla 的不同: 消融=归零该维度（信息完全消失）
+        # 排列=保持值域分布不变但断开语义关联（更接近真实缺失情况）
         baseline = self.compute_baseline()
         entries: List[FeatureImportanceEntry] = []
 
@@ -133,11 +123,9 @@ class FeatureAblationAnalyzer:
     # 相关矩阵 - 识别冗余特征
 
     def correlation_matrix(self) -> Tuple[np.ndarray, List[Tuple[str, str, float]]]:
-        """计算 12×12 Pearson 相关矩阵，标记高度冗余的特征对
-
-        高度相关（|r| > 0.85）的两个特征中，保留性能贡献更高的一个
-        另一个标记为 redundant。这不能替代消融实验 - 只是加速特征筛选
-        """
+        # 计算 12×12 Pearson 相关矩阵，标记高度冗余的特征对
+        # 高度相关(|r|>0.85)的两个特征中保留性能贡献更高的，另一个标记为 redundant
+        # 不能替代消融实验——只是加速特征筛选
         corr = np.corrcoef(self._features.T)
         redundant_pairs: List[Tuple[str, str, float]] = []
 
@@ -153,11 +141,8 @@ class FeatureAblationAnalyzer:
     # 综合报告
 
     def full_report(self) -> FeatureImportanceReport:
-        """生成完整的特征重要性报告
-
-        合并 individual abla、per变异 import 和相关矩阵分析
-        产出单一结构化的 FeatureImportanceReport
-        """
+        # 合并 individual abla + permutation import + 相关矩阵分析
+        # 产出单一结构化的 FeatureImportanceReport
         ablation = self.individual_ablation()
         perm = self.permutation_importance()
         corr_mat, redundant_pairs = self.correlation_matrix()

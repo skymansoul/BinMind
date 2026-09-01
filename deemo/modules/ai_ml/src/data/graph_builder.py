@@ -2,7 +2,7 @@
 # 从基本块列表构建控制流图和代码属性图
 # 12维节点特征设计参考了Gemini和SAFE的嵌入策略，
 # 但去掉了字符串常量特征（那是NLP的事）
-# //// 数据依赖边保守策略：reg write集合有重叠就加边 ////
+# 数据依赖边保守策略：reg write集合有重叠就加边
 
 import re
 import numpy as np
@@ -246,7 +246,7 @@ def _find_loop_blocks(edges: list, num_nodes: int) -> set:
     return _all_loop
 
 
-# //// build_cfg_graph -- 主入口 ////
+# build_cfg_graph -- 主入口
 def build_cfg_graph(basic_blocks: list) -> dict:
     """Construct CFG from basic blocks with 12-dim node features."""
     _n = len(basic_blocks)

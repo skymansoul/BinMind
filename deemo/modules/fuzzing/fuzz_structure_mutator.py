@@ -225,7 +225,7 @@ class StructureAwareMutator:
         else:
             return None
 
-# 具体变异操作
+    # 具体变异操作
 
     def _do_field_swap(self, raw: bytearray, fields: List[DataField]) -> bytes:
         """随机交换两个字段的内容区段。"""
@@ -307,7 +307,7 @@ class StructureAwareMutator:
         raw.insert(ins, random.randint(0, 255))
         return bytes(raw)
 
-# MOPT概率更新
+    # MOPT概率更新
 
     def notify_result(self, op: StructMutOp, produced_new_coverage: bool) -> None:
         """记录一次变异结果, 每50轮触发概率重分配。"""

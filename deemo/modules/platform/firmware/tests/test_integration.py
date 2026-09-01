@@ -31,15 +31,15 @@ class TestEndToEndPipeline:
             with open(path, "wb") as f:
                 f.write(b"\x7fELF" + b"\x00" * 1024)
 
-# 检测
+            # 类型检测 — ELF 头应被识别
             ftype = detect_file_type(path)
             assert ftype == "ELF"
 
-# 大小
+            # 大小格式化 — 非空字符串返回
             size = os.path.getsize(path)
             assert format_size(size) is not None
 
-# 熵 (头部外全零 → 低熵)
+            # 熵 (头部外全零 → 低熵)
             with open(path, "rb") as f:
                 data = f.read()
             ent = calculate_entropy(data)

@@ -232,14 +232,7 @@ class StructuralDistillation:
 
 
 class StructuralKDDistiller:
-    """结构感知知识蒸馏便捷入口。
-
-    使用方式:
-      distiller = StructuralKDDistiller()
-      teacher_attn = distiller.extract_teacher_knowledge(teacher_fn, X, A)
-      loss = distiller.compute_loss(teacher_logits, student_logits,
-                                     teacher_attn, student_attn)
-    """
+    """结构感知知识蒸馏便捷入口。"""
 
     def __init__(self, temperature: float = 3.0):
         self._distiller = StructuralDistillation(temperature=temperature)
@@ -252,10 +245,11 @@ class StructuralKDDistiller:
                 labels: np.ndarray,
                 epochs: int = 100,
                 lr: float = 0.001) -> Dict[str, List[float]]:
-        """执行完整的结构蒸馏训练。
+        """执行完整的结构蒸馏训练循环。
 
-        训练目标: 学生模型在结构+logit约束下学习教师的知识。
-        本实现提供蒸馏损失计算；实际训练循环由调用方完成。
+        学生模型在结构+logit约束下学习教师知识。
+        学生模型参数通过闭包变量 params 由外部持有，
+        本函数逐epoch做前向-损失-梯度下降并记录损失曲线。
         """
         teacher_attn = self._distiller.extract_teacher_knowledge(
             teacher_fn, node_features, adjacency)
@@ -265,11 +259,81 @@ class StructuralKDDistiller:
         except Exception:
             teacher_logits = np.zeros((len(node_features), 2))
 
+        # 学生参数: 由 student_fn.initial_params 提供, 纯函数学生为 None
+        params = None
+        try:
+            params = student_fn.initial_params(node_features, adjacency)
+        except Exception:
+            params = None
+
+        def _student_forward(feats: np.ndarray, adj: np.ndarray,
+                             p: Optional[List[np.ndarray]]):
+            try:
+                return student_fn(feats, adj, p)
+            except TypeError:
+                return student_fn(feats, adj)
+
+        def _loss_for_params(p: List[np.ndarray]) -> float:
+            out = _student_forward(node_features, adjacency, p)
+            loss = self._distiller.compute_loss(
+                teacher_logits, out,
+                teacher_attn,
+                self._approx_student_attn(node_features, adjacency),
+                adjacency=adjacency)
+            return loss.total
+
         loss_history = {'total': [], 'logit': [], 'struct': [], 'feature': []}
-        # 此处返回损失计算框架，实际SGD循环由外部训练器完成
+        best_loss = float('inf')
+        best_params = params
+
+        for epoch in range(epochs):
+            student_out = _student_forward(node_features, adjacency, params)
+            loss = self._distiller.compute_loss(
+                teacher_logits, student_out,
+                teacher_attn,
+                self._approx_student_attn(node_features, adjacency),
+                adjacency=adjacency)
+            loss_history['total'].append(loss.total)
+            loss_history['logit'].append(loss.logit_loss)
+            loss_history['struct'].append(loss.struct_loss)
+            loss_history['feature'].append(loss.feature_loss)
+
+            # 有限差分梯度下降: 不依赖深度学习框架
+            if params is not None and len(params) > 0:
+                eps = 1e-6
+                grads = []
+                for i in range(len(params)):
+                    p_plus = [w.copy() for w in params]
+                    p_minus = [w.copy() for w in params]
+                    p_plus[i] = p_plus[i] + eps
+                    p_minus[i] = p_minus[i] - eps
+                    l_plus = _loss_for_params(p_plus)
+                    l_minus = _loss_for_params(p_minus)
+                    grads.append((l_plus - l_minus) / (2.0 * eps))
+                params = [w - lr * g for w, g in zip(params, grads)]
+
+            if loss.total < best_loss:
+                best_loss = loss.total
+                best_params = [w.copy() for w in params] if params else None
+
+        self._best_loss = best_loss
+        self._best_params = best_params
         return {
             'teacher_attentions': teacher_attn,
             'teacher_logits': teacher_logits,
             'loss_history': loss_history,
             'distiller': self._distiller,
         }
+
+    @staticmethod
+    def _approx_student_attn(node_features: np.ndarray,
+                             adjacency: np.ndarray) -> List[LayerAttention]:
+        """学生注意力不可观测时用特征相似度近似边权重分布。"""
+        feats = np.asarray(node_features, dtype=np.float64)
+        sim = feats @ feats.T
+        row_sum = np.abs(sim).sum(axis=1, keepdims=True) + 1e-8
+        edge_attn = sim / row_sum
+        n_nodes = len(feats)
+        node_self = np.full(n_nodes, 1.0 / max(1, n_nodes))
+        return [LayerAttention(layer_idx=0, edge_attention=edge_attn,
+                               node_self_attention=node_self)]

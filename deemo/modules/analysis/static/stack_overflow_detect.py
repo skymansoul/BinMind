@@ -63,11 +63,6 @@ class StackFrame:
 
 
 class StackOverflowDetector:
-    """栈溢出检测器.
-
-    输入: 二进制数据 + 符号信息(可选).
-    输出: 检测到的潜在栈溢出位置列表.
-    """
 
     def __init__(self, min_overflow_bytes: int = 16):
         self._min_overflow = min_overflow_bytes

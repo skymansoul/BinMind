@@ -1,4 +1,3 @@
-dwIdx=None
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Any
@@ -40,13 +39,13 @@ class BreakpointManager:
         return True
 
 class CallStackTracker:
-    """Backtrace call stack via radare2 cross-reference analysis."""
+    # 通过 radare2 交叉引用分析回溯调用栈
 
     def __init__(self, binary_path: str = ""):
         self.binary_path = binary_path
 
     def capture(self, at_addr: int = 0) -> List[int]:
-        """Walk XREF chain backward from target address using r2 axt."""
+        # 使用 r2 axt 从目标地址向后遍历 XREF 链
         stack = [at_addr] if at_addr else []
         if not self.binary_path:
             return stack or [0x1000, 0x2000]
@@ -73,11 +72,8 @@ class CallStackTracker:
         return stack if stack else [0x1000, 0x2000, 0x3000]
 
 class HWBreakpointMonitor:
-    """x86 hardware breakpoint monitor using DR0–DR3 debug registers.
-
-    Configures processor-level watchpoints via DR7 control fields:
-    L0–L3 enable bits, RW0–RW3 access-type selectors, LEN0–LEN3 size encodings.
-    """
+    # x86 硬件断点监控器，使用 DR0–DR3 调试寄存器
+    # 通过 DR7 控制字段配置处理器级 watchpoint：L0–L3 使能位、RW0–RW3 访问类型选择器、LEN0–LEN3 尺寸编码
 
     DR7_ENABLE_LOCAL = [1 << 0, 1 << 2, 1 << 4, 1 << 6]
     DR7_RW_WRITE = 0x1        # Write-only breakpoint
@@ -94,10 +90,10 @@ class HWBreakpointMonitor:
         self._dr7_value: int = 0
 
     def _compute_dr7(self, idx: int, rw: int, length: int) -> int:
-        """Encode DR7 control word: enable bit, RW field, LEN field for one slot."""
-        enable_bit = self.DR7_ENABLE_LOCAL[dwIdx]
-        rw_shift = 16 + dwIdx * 4
-        len_shift = 18 + dwIdx * 4
+        # 编码 DR7 控制字：使能位、RW 字段、LEN 字段对应一个槽位
+        enable_bit = self.DR7_ENABLE_LOCAL[idx]
+        rw_shift = 16 + idx * 4
+        len_shift = 18 + idx * 4
         return enable_bit | (rw << rw_shift) | (length << len_shift)
 
     def _size_to_dr7_len(self, size: int) -> int:
@@ -121,7 +117,7 @@ class HWBreakpointMonitor:
             # Assign breakpoint to next available debug register slot.
             self._dr_regs[dwIdx] = addr
             dr7_len = self._size_to_dr7_len(size)
-            self._dr7_value |= self._compute_dr7(idx, self.DR7_RW_WRITE, dr7_len)
+            self._dr7_value |= self._compute_dr7(dwIdx, self.DR7_RW_WRITE, dr7_len)
 
             # Emit a synthetic modification event for the monitored range.
             self.tracker.binary_path = binary_path

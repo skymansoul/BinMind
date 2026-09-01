@@ -270,7 +270,7 @@ class GrammarInferrer:
             seq.children.append(child)
         return seq
 
-# 从文法生成测试输入
+    # 从文法生成测试输入
 
 def generate_from_grammar(root: GrammarNode, max_length: int = 4096) -> bytes:
     """从推断的文法树采样生成一个新的输入。
@@ -311,7 +311,7 @@ def _generate_rec(node: GrammarNode, buf: bytearray, max_len: int) -> None:
         # 暂时写入占位符, 实际长度由外部调用者后续修正
         buf.extend(b'\x00\x00')
 
-# 语法导出
+    # 语法导出
 
 def export_grammar_json(inferred: InferredGrammar, output_path: Optional[str] = None) -> Dict:
     """将推断的文法导出为 JSON (可被其他工具消费)。"""

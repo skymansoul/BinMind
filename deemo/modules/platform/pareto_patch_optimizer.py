@@ -130,8 +130,7 @@ class NSGA2PatchOptimizer:
             sol.rank = 0
         return final_fronts[0]
 
-# 内部
-
+    # 内部：种群初始化与遗传算子
     def _init_population(self) -> List[PatchSolution]:
         pop = []
         # 种子方案:全不选,全选,每节点单独选

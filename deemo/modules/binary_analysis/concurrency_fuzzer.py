@@ -84,21 +84,6 @@ SYNC_FUNCTIONS = [
     "InterlockedExchange", "InterlockedCompareExchange",
 ]
 
-SYNC_FUNCTIONS = [
-    "pthread_mutex_lock", "pthread_mutex_unlock",
-    "pthread_cond_wait", "pthread_cond_signal",
-    "pthread_rwlock_rdlock", "pthread_rwlock_wrlock",
-    "pthread_rwlock_unlock",
-    "pthread_barrier_wait",
-    "EnterCriticalSection", "LeaveCriticalSection",
-    "WaitForSingleObject", "WaitForMultipleObjects",
-    "SetEvent", "ResetEvent",
-    "AcquireSRWLockExclusive", "AcquireSRWLockShared",
-    "ReleaseSRWLockExclusive", "ReleaseSRWLockShared",
-    "InterlockedIncrement", "InterlockedDecrement",
-    "InterlockedExchange", "InterlockedCompareExchange",
-]
-
 # 已知竞态模式：模式名 -> {indicators, severity}。原列表中的模式串全部并入 indicators
 RACE_PATTERNS = {
     "data_race": {
@@ -249,12 +234,8 @@ class ConcurrencyFuzzer:
                         if addr not in shared_accesses:
                             shared_accesses[addr] = []
                         shared_accesses[addr].append(
-                            (tid, op['type'], sched_idx))
-                    if addr is not None:
-                        if addr not in shared_accesses:
-                            shared_accesses[addr] = []
-                        shared_accesses[addr].append(
-                            (tid, op['type'], sched_idx))
+                            (tid, op['type'], sched_idx,
+                             frozenset(thread_state[tid]['held_locks'])))
 
                 if self.inject_sleep:
                     delay = random.randint(self.sleep_min_us, self.sleep_max_us)
@@ -268,11 +249,14 @@ class ConcurrencyFuzzer:
             tids = {a[0] for a in accesses}
             has_write = any(a[1] == 'write' for a in accesses)
             if len(tids) > 1 and has_write:
-                # 检查是否有锁覆盖这些访问
-                locks_held = set()
-                for a in accesses:
-                    # 简化：模型中无锁信息时视为无锁保护
-                    pass
+                # 检查是否存在公共锁覆盖所有访问
+                lock_sets = [a[3] for a in accesses]
+                common = set(lock_sets[0]) if lock_sets else set()
+                for ls in lock_sets[1:]:
+                    common &= ls
+                if common:
+                    # 有公共锁保护，跳过
+                    continue
                 race = RaceCondition()
                 race.type = RaceType.DATA_RACE
                 race.location = f"0x{addr:x}" if isinstance(addr, int) else str(addr)
@@ -457,6 +441,51 @@ class ConcurrencyFuzzer:
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         return output_path
+
+    def _schedule_to_dict(self, s):
+        """将 ThreadSchedule 转为可序列化 dict。"""
+        return {
+            "thread_id": s.thread_id,
+            "sync_point": s.sync_point,
+            "action": s.action,
+            "delay_ms": s.delay_ms,
+            "order": s.order,
+        }
+
+    def _result_to_dict(self, result):
+        """将 ConcurrencyFuzzResult 转为可序列化 dict。"""
+        races = []
+        for r in (result.detected_races or []):
+            races.append({
+                "race_type": r.race_type.value if r.race_type else None,
+                "location": r.location,
+                "shared_variable": r.shared_variable,
+                "thread1_access": r.thread1_access,
+                "thread2_access": r.thread2_access,
+                "sync_missing": r.sync_missing,
+                "severity": r.severity,
+                "description": r.description,
+            })
+        schedules = []
+        for s in (result.schedules_tested or []):
+            if isinstance(s, list):
+                for item in s:
+                    schedules.append(self._schedule_to_dict(item))
+            else:
+                schedules.append(self._schedule_to_dict(s))
+        best = None
+        if result.best_schedule is not None:
+            best = self._schedule_to_dict(result.best_schedule)
+        return {
+            "binary_path": result.binary_path,
+            "total_iterations": result.total_iterations,
+            "successful_reproductions": result.successful_reproductions,
+            "reproduction_rate": result.reproduction_rate,
+            "detected_races": races,
+            "schedules_tested": schedules,
+            "best_schedule": best,
+            "error": result.error,
+        }
 
 
     def _fuzz_binary_path(self, binary_path, iterations=None):

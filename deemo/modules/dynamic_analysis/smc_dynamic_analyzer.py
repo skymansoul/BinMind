@@ -34,7 +34,7 @@ class CodePageModification:
 
 
 class SMCDynamicAnalyzer:
-    """Self-modifying code detector: page-hash delta, API classification, risk scoring."""
+    # 自修改代码检测器：页哈希增量、API 分类、风险评分
 
     SMC_APIS = [
         'mprotect', 'VirtualProtect', 'VirtualProtectEx', 'NtProtectVirtualMemory',

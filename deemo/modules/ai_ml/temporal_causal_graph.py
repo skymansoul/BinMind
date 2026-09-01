@@ -29,11 +29,8 @@ logger = logging.getLogger(__name__)
 class TemporalCausalGraphAnalyzer:
     """时态因果图分析便捷入口。
 
-    封装完整的因果发现+分析管线:
-      - 从CVE月度序列构建因果图
-      - 滑动窗口时变分析
-      - 根因漏洞类型识别
-      - 因果影响力排名
+    封装因果发现+分析管线: 月度CWE序列因果图构建、
+    滑动窗口时变分析、根因类型识别、因果影响力排名。
     """
 
     def __init__(self, max_lag: int = 6, significance_level: float = 0.01):

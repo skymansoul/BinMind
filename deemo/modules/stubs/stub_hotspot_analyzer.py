@@ -21,6 +21,7 @@
 # 热点节点 → 提升 AdaptiveGate 关键性评分
 # 热点路径上的未实现桩 → 提升实现优先级
 # 热点路径上的已实现桩 → 优先运行对抗测试
+import math as _math
 from collections import defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt
@@ -73,8 +74,7 @@ class HotspotAnalyzer:
             inbound = info['inbound']
             outbound = info['outbound']
             total_in = sum(inbound.values())
-            import math
-            heat = math.log(1 + total_in) * (len(inbound) ** 0.5)
+            heat = _math.log(1 + total_in) * (len(inbound) ** 0.5)
             nodes[mod] = HotspotNode(
                 module_name=mod,
                 total_inbound_calls=total_in,
@@ -121,7 +121,6 @@ class HotspotAnalyzer:
         nodes, _ = self.analyze()
         return [n.module_name for n in nodes if n.is_hotspot]
 
-# 运行时调用图重建
     @staticmethod
     def _build_runtime_callgraph() -> dict[str, dict]:
         """从 StubHealthMonitor 的 caller_modules 重建运行时调用图。
@@ -145,7 +144,6 @@ class HotspotAnalyzer:
 
         return dict(graph)
 
-# 报告
     def hotspot_report(self) -> str:
         """生成 Markdown 热点分析报告。"""
         nodes, edges = self.analyze()

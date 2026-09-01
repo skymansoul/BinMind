@@ -81,18 +81,12 @@ class ReportData:
 
 
 class RelabelingStrategy:
-    """跳转目标保留标注器, LLM4Decompile v2 启发的 relabeling 实现
-    对伪代码中的标签应用规范化命名，保留原始地址语义信息
-    """
 
     _ADDR_LABEL_PAT = _re.compile(r'(?:loc|label)_?(0x[0-9a-fA-F]+)', _re.IGNORECASE)
     _JUMP_PAT = _re.compile(r'(?:goto|jmp|br)\s+(0x[0-9a-fA-F]+)', _re.IGNORECASE)
 
     @classmethod
     def relabel(cls, pseudocode: str, func_addr: int = 0) -> str:
-        """对伪代码应用 relabeling, 将匿名标签替换为地址保留的语义标签
-        同时保留原始跳转目标地址作为前缀，以便 LLM 跨函数关联控制流
-        """
         lines = pseudocode.split('\n')
         result: List[str] = []
         label_ctr = 0
@@ -126,15 +120,6 @@ class RelabelingStrategy:
 
 
 class ReverseReportGenerator:
-    """
-    LLM-based reverse engineering 报告 generator
-
-    Core functions:
-    1. Aggregates data analysis steps
-    2. Drives 报告 generation via 提示词模板 relabeling
-    3. 支持 sectional generation for token budget control
-    4. 输出 Markdown-formatted 报告
-    """
 
     def __init__(self, config: ReportConfig):
         self.config = config

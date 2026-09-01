@@ -19,12 +19,6 @@ class StreamingCSEF:
     适用场景:
       数百 MB 以上的二进制文件，无法一次性加载到内存。
       每次 update() 处理一个 chunk (建议 ≥ 4 KiB 以摊销 Python 循环开销)。
-
-    用法:
-        sc = StreamingCSEF()
-        for chunk in read_file_chunks(path):
-            sc.update(chunk)
-        profile = sc.finalize()
     """
 
     def __init__(self):

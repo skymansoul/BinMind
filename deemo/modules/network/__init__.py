@@ -49,12 +49,12 @@ def __getattr__(name):
         return importlib.import_module(_submodules[name], package=__package__)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-__all__ = list(_submodules.keys()) + ["__version__"]
-
 # 注册 MH-Flow 多视图异构图加密流量分类 + 环境偏移鲁棒流图
 _submodules["mh_flow"] = ".mh_flow"
 # 跨协议因果关联 / 对抗鲁棒分类 / 零日协议表征
 _submodules["cross_protocol_correlation"] = ".cross_protocol_correlation"
 _submodules["adversarial_robust_classifier"] = ".adversarial_robust_classifier"
 _submodules["zeroday_protocol_char"] = ".zeroday_protocol_char"
+
+__all__ = list(_submodules.keys()) + ["__version__"]
 

@@ -1,5 +1,4 @@
-from typing import Optional
-address: int = 0
+from typing import Optional, List
 import logging
 import os
 import re
@@ -20,7 +19,7 @@ class SMCRecord:
 class ExecutionResult:
     success: bool
     smc_records: list = field(default_factory=list)
-    static_binary = None
+    static_binary: Optional[bytes] = None
 
 class SMCExecutor:
 
@@ -28,7 +27,7 @@ class SMCExecutor:
         self.binary_path = os.path.abspath(binary_path)
         self.smc_records: list[SMCRecord] = []
 
-    def _disassemble_with_objdump(self) -> typing.Optional[str]:
+    def _disassemble_with_objdump(self) -> Optional[str]:
         try:
             result = subprocess.run(
                 ['objdump', '-d', '-M', 'intel', self.binary_path],

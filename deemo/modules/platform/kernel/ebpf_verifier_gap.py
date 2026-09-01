@@ -1,24 +1,24 @@
 # eBPF 验证器拒绝诊断缝隙分析
 #
+# 相关工作:
 #   "Characterizing and Bridging the Diagnostic Gap in eBPF Verifier Rejections"
-#
-#    核心发现: Linux eBPF 验证器拒绝消息中 42% 无可执行的诊断信息,
-#    平均调试耗时 3.7 小时; 提出 GAPFIX 框架自动补齐诊断上下文
+#     — 核心发现: Linux eBPF 验证器拒绝消息中 42% 无可执行的诊断信息,
+#       平均调试耗时 3.7 小时; 提出 GAPFIX 框架自动补齐诊断上下文
 #   "A Flow-Sensitive Refinement Type System for Verifying eBPF Programs"
-# — 精化类型体系提升验证精度
+#     — 精化类型体系提升验证精度
 #   "Heimdall: Formally Verified Automated Migration of Legacy eBPF Programs to Rust"
-# — 形式化验证的迁移工具链
+#     — 形式化验证的迁移工具链
 
 import os
 import re
 import logging
 from dataclasses import dataclass, field
 from typing import Optional
-from collections import Counter
+from collections import Counter, defaultdict
 
 logger = logging.getLogger(__name__)
 
-    # 已知的 eBPF verifier 拒绝错误类别（基于公开分类学）
+# 已知的 eBPF verifier 拒绝错误类别（基于公开分类学）
 # 各条目结构: 正则匹配验证器输出模式 → 可执行解释 + 补救方向
 _VERIFIER_ERROR_TYPES: list[dict] = [
     {
@@ -51,7 +51,7 @@ _VERIFIER_ERROR_TYPES: list[dict] = [
         "title": "回边 (循环) 检测",
         "category": "control_flow",
         "severity": "Error",
-        "fix_hint": f"确保循环次数有上界; 使用 #pragma unroll 或 bounded loop pattern",
+        "fix_hint": "确保循环次数有上界; 使用 #pragma unroll 或 bounded loop pattern",
     },
     {
         "id": "E005",

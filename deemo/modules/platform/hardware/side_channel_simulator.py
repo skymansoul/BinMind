@@ -146,6 +146,9 @@ class PowerTrace:
 
 
 class TimingLeakDetector:
+    """指令级时序泄漏检测：基于指令周期模型识别秘密相关指令的可变延迟。"""
+
+    # 指令周期基准表：division_variable 标记延迟随操作数变化的指令
     TIMING_TABLE: Dict[str, InstructionTiming] = {
         'div': InstructionTiming(mnemonic='div', base_cycles=20, division_variable=True),
         'idiv': InstructionTiming(mnemonic='idiv', base_cycles=20, division_variable=True),
@@ -162,16 +165,17 @@ class TimingLeakDetector:
     }
 
     def estimate_cycles(self, instructions: List[str]) -> Tuple[int, int]:
+        # 逐指令累加最小/最大周期：变长指令（除法/访存/分支）拉开两者差距
         min_cycles, max_cycles = 0, 0
         for instr in instructions:
             mnemonic = instr.split()[0].lower() if instr else ''
             timing = self.TIMING_TABLE.get(mnemonic)
             if timing:
                 min_cycles += timing.base_cycles
-                max_cycles += timing.base_cycles + (
-                    timing.memory_cycles if timing.division_variable else 0)
+                max_cycles += timing.base_cycles + timing.memory_cycles
                 if timing.division_variable:
-                    max_cycles = timing.base_cycles * 3
+                    # 除法延迟随操作数位数浮动，上界按 3 倍基准估算
+                    max_cycles += timing.base_cycles * 2
             else:
                 min_cycles += 1
                 max_cycles += 2
@@ -342,6 +346,8 @@ class PowerAnalysisSimulator:
 
 
 class SpectreDetector:
+    """Spectre-v1 模式检测：边界检查分支后的投机访存访问模式识别。"""
+
     def detect_spectre_v1(self, instructions: List[str],
                           array_bounds_check_indices: Set[int]) -> List[Dict[str, Any]]:
         findings = []
@@ -365,6 +371,8 @@ class SpectreDetector:
 
 
 class SideChannelSimulator:
+    """侧信道综合模拟器：时序/缓存/功耗/Spectre 四类攻击面的统一分析入口。"""
+
     def __init__(self):
         self.timing_detector = TimingLeakDetector()
         self.cache_simulator = CacheSideChannelSimulator()

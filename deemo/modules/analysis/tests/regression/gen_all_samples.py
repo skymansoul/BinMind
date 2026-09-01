@@ -1,5 +1,4 @@
 # 多类型漏洞测试样本生成器: UAF / 格式化字符串 / 整数溢出
-# 用法: python gen_all_samples.py [--compile]
 import os, json, subprocess, shutil
 from pathlib import Path
 

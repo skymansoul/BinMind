@@ -67,18 +67,6 @@ class StructLayout:
 
 
 class MultiTraceStructRecoverer:
-    """多 trace 结构体布局聚合恢复器
-
-    用法:
-    recoverer = MultiTraceStructRecoverer()
-    layout = recoverer.recover(
-        access_evidence=[
-            [FieldAccess(0, 8, 5, 0), FieldAccess(8, 4, 2, 0)],
-            [FieldAccess(0, 8, 3, 1), FieldAccess(16, 8, 1, 1)],
-        ],
-        struct_name='MyStruct',
-    )
-    """
 
     _PRIOR_SIZES = [1, 2, 4, 8]  # 字段大小的先验分布 (常见对齐)
 

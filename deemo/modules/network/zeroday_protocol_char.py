@@ -56,12 +56,7 @@ class ProtocolSkeleton:
 class ZeroDayProtocolCharacterizer:
     """零日协议自动表征器.
 
-    用法:
-      zdpc = ZeroDayProtocolCharacterizer()
-      for raw_msg in captured_messages:
-          zdpc.ingest(raw_msg)
-      skeleton = zdpc.characterize()
-      print(skeleton.suggested_parser_logic)
+    熵-结构指纹 + 多尺度字节分析, 从原始消息集产出协议骨架.
     """
 
     def __init__(self, min_messages: int = 10):

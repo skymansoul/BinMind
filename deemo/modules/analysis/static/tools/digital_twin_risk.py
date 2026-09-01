@@ -1,9 +1,7 @@
-"""数字孪生风险评估引擎, 攻击路径模拟评分。
-
-2025 增强: 贝叶斯风险传播, 将风险从暴露节点沿攻击图传播到内部节点。
-使用条件概率建模: P(compromise[target] | compromise[source]) = f(vulns, auth, 加密)。
-贝叶斯网络推断 (精确, 因攻击图为 DAG) 取代原有的简单 BFS 评分。
-"""
+# 数字孪生风险评估引擎, 攻击路径模拟评分
+# 2025增强: 贝叶斯风险传播, 将风险从暴露节点沿攻击图传播到内部节点
+# 使用条件概率建模: P(compromise[target] | compromise[source]) = f(vulns, auth, 加密)
+# 贝叶斯网络推断(精确, 因攻击图为DAG)取代原有的简单BFS评分
 
 import itertools, logging, math as _math, os as _os
 from collections import defaultdict
@@ -51,7 +49,7 @@ class RiskReport:
 
 @dataclass
 class FirmwareInfo:
-    """固件基本信息，供数字孪生风险评估返回。"""
+    # 固件基本信息, 供数字孪生风险评估返回
     name: str = ""
     architecture: str = ""
     platform: str = ""
@@ -74,7 +72,7 @@ class DigitalTwinRiskAnalyzer:
 
     @classmethod
     def get_metadata(cls):
-        """分析器元数据, 名称/类型/版本/依赖供外部注册与展示。"""
+        # 分析器元数据: 名称/类型/版本/依赖供外部注册与展示
         if AnalyzerMetadata is None:
             return None
         return AnalyzerMetadata(
@@ -89,11 +87,9 @@ class DigitalTwinRiskAnalyzer:
     def analyze(self, model=None, firmware_path=None, architecture="arm",
                 platform="linux", scan_duration=60, enable_fuzzing=False,
                 enable_penetration=False, **kwargs):
-        """数字孪生风险评估主入口。
-
-        传入 firmware_path 时执行固件风险画像（支持 fuzzing/渗透开关），
-        返回 {"success", "result", "error"}；否则保持图模型分析兼容。
-        """
+        # 数字孪生风险评估主入口
+        # 传入firmware_path时执行固件风险画像(支持fuzzing/渗透开关)
+        # 否则保持图模型分析兼容
         if firmware_path is not None:
             return self._analyze_firmware(
                 firmware_path, architecture, platform,
@@ -113,7 +109,7 @@ class DigitalTwinRiskAnalyzer:
 
     def _analyze_firmware(self, firmware_path, architecture, platform,
                           scan_duration, enable_fuzzing, enable_penetration):
-        """固件数字孪生风险画像。固件缺失返回错误，否则生成启发式风险评分。"""
+        # 固件数字孪生风险画像, 固件缺失返回错误, 否则生成启发式风险评分
         if not _os.path.isfile(firmware_path):
             return {"success": False, "error": f"固件文件不存在: {firmware_path}"}
 
@@ -190,7 +186,7 @@ class DigitalTwinRiskAnalyzer:
     # 其中 auth_factor = 0 auth required else 0.6
 
     def _bayesian_propagation(self) -> Dict[str, float]:
-        """自外向内贝叶斯传播, 先计算暴露节点的先验，再沿 DAG 传播"""
+        # 自外向内贝叶斯传播: 先计算暴露节点先验, 再沿DAG传播
         priors: Dict[str, float] = {}
         for name, comp in self._components.items():
             if comp.exposed:
@@ -324,7 +320,7 @@ class DigitalTwinRiskAnalyzer:
                     if k in ("source","target","protocol","auth_required","encrypted")}))
 
 def _debug_print(*args, **kwargs):  # 调试残余, 未删除
-    """环境变量设置时打印调试信息"""
+    # 环境变量设置时打印调试信息
     if __import__("os").environ.get("BINMIND_DEBUG"):
         print(*args, **kwargs)
 

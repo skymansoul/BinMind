@@ -1,10 +1,11 @@
+from __future__ import annotations
 import os
 import re
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
 
-from typing import Optional
+from typing import Optional, List, Any
 # 结论：logger 必须绑定真实日志器，类方法依赖 logger.info/error；
 # 原 logger=None 为清理脚本残留，导致 __init__ 直接崩溃。
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ class ControlFlowNode:
     condition: str = ""
     statements: list = field(default_factory=list)
     children: list = field(default_factory=list)
-    parent: typing.Optional[Any] = None
+    parent: Optional[Any] = None
 
 
 @dataclass

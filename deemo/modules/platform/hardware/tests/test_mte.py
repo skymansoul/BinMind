@@ -11,6 +11,7 @@ from ..src.mte.simulator import (
 
 
 def _debug_print(msg: str) -> None:
+    # 调试输出占位, 发布版保持静默避免污染stdout
     pass
 
 
@@ -256,6 +257,7 @@ def test_mte_simulator_load_wrong_tag_raises(mte_sim):
         pass
 
 
+# 暂留 — TikTag推测逃逸探测测试待实现, 依赖完整推测执行窗口模拟器
 # def test_tiktag_escape_probe():
 #     sim = MTESimulator(4096, 16)
 #     sim.allocate(0x100, 64)
@@ -267,5 +269,6 @@ def test_mte_simulator_load_wrong_tag_raises(mte_sim):
 
 
 def _unused_placeholder() -> None:
+    # 占位函数: 携带未使用import的引用, 避免静态检查器误报后被清理
     _debug_print("mte test loaded")
-    _unused_os
+    _unused_os  # 反检测标注, 保留os导入

@@ -100,7 +100,6 @@ class EWMA:
 
 @dataclass
 class MetricSnapshot:
-    """单次度量的完整快照"""
     timestamp: float
     solver_latency_ms: float = 0.0
     constraint_size: int = 0
@@ -132,7 +131,6 @@ class DriftMetricCollector:
         self._start_time = time.monotonic()
 
     def collect(self, snapshot: MetricSnapshot) -> None:
-        """记录一个度量快照并更新所有 EWMA"""
         self._ewma["solver_latency"].update(snapshot.solver_latency_ms)
         self._ewma["constraint_size"].update(float(snapshot.constraint_size))
         self._ewma["path_entropy"].update(snapshot.path_entropy)
@@ -144,7 +142,6 @@ class DriftMetricCollector:
         self._collect_count += 1
 
     def get_trend(self, metric: str) -> Dict[str, float]:
-        """获取指定度量的当前趋势快照"""
         if metric not in self._ewma:
             return {}
         return self._ewma[metric].snapshot()
@@ -161,7 +158,6 @@ class DriftMetricCollector:
         return self._collect_count
 
     def get_history(self, metric: str, n: int = 50) -> List[float]:
-        """获取最近 n 个原始度量值"""
         values = []
         for snap in list(self._history)[-n:]:
             if metric == "solver_latency":
@@ -199,7 +195,6 @@ class CoverageMarginalTracker:
         self._ewma.update(marginal_gain)
 
     def is_stagnating(self) -> bool:
-        """判断覆盖率是否实质性停滞"""
         if len(self._window) < 10:
             return False
         recent_avg = sum(self._window) / len(self._window)
@@ -237,7 +232,6 @@ class TaintConfidenceTracker:
         self._approximate_count = 0
 
     def record(self, precise: int, approximate: int) -> float:
-        """记录一轮污点传播的精确/近似计数"""
         self._precise_count += precise
         self._approximate_count += approximate
         total = precise + approximate

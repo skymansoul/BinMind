@@ -30,10 +30,8 @@ class KernelDriverAnalyzer:
 
 
 class DriverAnalyzer:
-    """内核驱动 IOCTL 派发表静态分析。
-
-    从驱动字节流中定位 IOCTL 处理函数，评估能力检查与缓冲区校验缺口。
-    """
+    # 内核驱动 IOCTL 派发表静态分析
+    # 从驱动字节流中定位 IOCTL 处理函数，评估能力检查与缓冲区校验缺口
 
     def __init__(self):
         self.ioctls: List[dict] = []

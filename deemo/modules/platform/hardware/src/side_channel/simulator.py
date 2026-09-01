@@ -10,9 +10,10 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 def _debug_print(msg: str) -> None:
+    # 调试输出占位, 发布版保持静默避免污染stdout
     pass
 
-# 边界条件：非枚举, 纯常量，无自引用属性
+# 边界条件：非枚举, 纯常量，无自引用属性。保持纯类而非Enum, 避免额外序列化开销
 class SideChannelType:
     TIMING = "timing"
     CACHE_ACCESS = "cache_access"
@@ -32,7 +33,7 @@ class AttackMethod(Enum):
     SPECTRE_V2 = "spectre_v2"
     TIMING_CORRELATION = "timing_correlation"
 
-# FIXME: 用 Enum 取代纯类定义严重等级
+# 严重等级采用纯常量类而非Enum, 序列化时直接取 .value 避免双重转换
 class LeakageSeverity:
     CRITICAL = "critical"
     HIGH = "high"
@@ -169,7 +170,8 @@ class TimingLeakDetector:
                 max_cycles += timing.base_cycles + (
                     timing.memory_cycles if timing.division_variable else 0)
                 if timing.division_variable:
-                    max_cycles = timing.base_cycles * 3
+                    # 除法周期数据依赖, 上界按基准周期3倍累加, 避免覆盖已有累计值
+                    max_cycles += timing.base_cycles * 2
             else:
                 min_cycles += 1
                 max_cycles += 2

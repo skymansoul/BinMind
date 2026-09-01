@@ -11,11 +11,7 @@ from collections import defaultdict
 # 上下文管理器计时器
 
 class Timer:
-    """上下文管理器计时器。用法:
-        with Timer() as t:
-            do_work()
-        print(t.elapsed)
-    """
+    """上下文管理器计时器。"""
 
     __slots__ = ("_start", "_end")
 

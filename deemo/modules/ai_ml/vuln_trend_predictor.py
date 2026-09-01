@@ -125,9 +125,7 @@ class VulnTrendPredictor:
         confidence = min(0.3 + len(counts) / 150.0, 0.8)
         return (predicted, direction, confidence)
 
-# 增强功能 1: 异常点检测 (IQR-based 异常 检测)
-    # 如果在历史数据中某个点偏离了四分位距的正常范围，标记为 异常
-    # 这是为了发现突发漏洞爆发或数据采集异常
+# IQR 异常检测 — 偏离四分位距正常范围的点标记为异常
     def detect_anomalies(
         self,
         counts: List[int],
@@ -161,8 +159,7 @@ class VulnTrendPredictor:
 
         return anomalies
 
-    # 增强功能 2: 趋势强度 (slope-based trend strength)
-    # 用简单线性回归的斜率来衡量趋势的"劲度"，不是只看方向
+    # 趋势强度 — 最小二乘法斜率衡量趋势劲度，不只是方向
     def compute_trend_strength(self, counts: List[int]) -> float:
         """趋势强度 — 最小二乘法斜率绝对值，归一化后跨类型可比。"""
         n = len(counts)
@@ -194,9 +191,7 @@ class VulnTrendPredictor:
         normalized = abs(slope) / abs(mean_y)
         return normalized
 
-    # 增强功能 3: 预测方法可切换 (pluggable forecast method)
-    # 允许 analyze() 通过 forecast_method 参数选择 MA 或指数平滑
-    # 原先 exponential_forecast 是死代码，现在把它接入主流程
+    # 预测方法可切换 — analyze() 按 forecast_method 选择 MA 或指数平滑
     def _dispatch_forecast(
         self,
         counts: List[int],

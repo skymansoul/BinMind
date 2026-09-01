@@ -167,9 +167,7 @@ class ObservationTable:
 # L* 算法核心
 
 class ActiveStateInferrer:
-    """L*-based 协议状态机主动推断器。
-    用法: inferrer = ActiveStateInferrer(mq_fn, eq_fn); mealy = inferrer.infer()
-    """
+    """L*-based 协议状态机主动推断器。"""
 
     __slots__ = ('_mq', '_eq', '_alphabet', '_stats', '_max_queries')
 

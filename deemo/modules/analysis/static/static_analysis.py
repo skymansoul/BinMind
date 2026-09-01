@@ -1,14 +1,3 @@
-"""
-静态数据流分析模块
-
-提供基于 angr 或 radare2 ESIL 的静态数据流分析功能：
-- Use-Def 链分析
-- 潜在整数溢出检测
-- 格式化字符串漏洞检测
-- 未初始化内存使用检测
-- 静态污点分析
-"""
-
 import logging
 import subprocess
 import os
@@ -33,9 +22,6 @@ except ImportError:
 
 @dataclass
 class TaintSource:
-    """
-    污点源定义
-    """
     name: str
     address: int
     type: str  # 'input', '网络', 'file', 'environment'
@@ -45,9 +31,6 @@ class TaintSource:
 
 @dataclass
 class TaintSink:
-    """
-    污点汇点定义
-    """
     name: str
     address: int
     type: str  # 'system', 'execve', 'printf_family', 'memcpy', 'strcpy'
@@ -57,9 +40,6 @@ class TaintSink:
 
 @dataclass
 class TaintFlow:
-    """
-    污点传播路径
-    """
     source: TaintSource
     sink: TaintSink
     path: List[int] = field(default_factory=list)
@@ -69,9 +49,6 @@ class TaintFlow:
 
 @dataclass
 class StaticVulnerability:
-    """
-    静态检测到的漏洞
-    """
     type: str  # 'integer_overflow', 'format_string', 'uninitialized_memory', 'tainted_sink'
     function_name: str
     address: int
@@ -82,16 +59,6 @@ class StaticVulnerability:
 
 
 class StaticDataFlowAnalyzer:
-    """
-    静态数据流分析器
-
-    提供多种静态分析能力：
-    1. Use-Def 链分析
-    2. 整数溢出检测
-    3. 格式化字符串漏洞检测
-    4. 未初始化内存检测
-    5. 静态污点分析
-    """
 
     DEFAULT_TAINT_SOURCES = [
         ('read', 'input', [0], "标准输入"),
@@ -125,7 +92,6 @@ class StaticDataFlowAnalyzer:
     ]
 
     def __init__(self, binary_path: str, use_angr: bool = True):
-        """初始化静态数据流分析器"""
         self.binary_path = binary_path
         self.use_angr = use_angr and ANGR_AVAILABLE
         self.project = None
@@ -136,9 +102,6 @@ class StaticDataFlowAnalyzer:
         self._setup_default_sources_sinks()
 
     def _load_binary(self) -> None:
-        """
-        加载二进制文件
-        """
         if not os.path.exists(self.binary_path):
             logger.warning(f"[Static] 二进制文件不存在: {self.binary_path}")
             self.use_angr = False
@@ -160,9 +123,6 @@ class StaticDataFlowAnalyzer:
                 self.project = None
 
     def _setup_default_sources_sinks(self) -> None:
-        """
-        设置默认的污点源和汇点
-        """
         for name, source_type, regs, desc in self.DEFAULT_TAINT_SOURCES:
             self.taint_sources.append(TaintSource(
                 name=name,
@@ -182,9 +142,6 @@ class StaticDataFlowAnalyzer:
             ))
 
     def _check_radare2_available(self) -> bool:
-        """
-        检查 radare2 是否可用
-        """
         try:
             subprocess.run(['r2', '-v'], capture_output=True, timeout=5)
             return True
@@ -192,16 +149,12 @@ class StaticDataFlowAnalyzer:
             return False
 
     def is_available(self) -> bool:
-        """
-        检查分析器是否可用
-        """
         return self.use_angr or self._check_radare2_available()
 
     def perform_static_taint_analysis(
         self,
         function_name: str = 'main'
     ) -> Dict[str, Any]:
-        """执行静态污点分析"""
         logger.info(f"[Static] 开始静态污点分析: {function_name}")
 
         result = {
@@ -223,9 +176,6 @@ class StaticDataFlowAnalyzer:
         function_name: str,
         result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """
-        使用 angr 进行污点分析
-        """
         try:
             if function_name not in self.project.kb.functions:
                 logger.warning(f"[Static] 未找到函数: {function_name}")
@@ -289,9 +239,6 @@ class StaticDataFlowAnalyzer:
         return result
 
     def _find_input_sources_in_function(self, func: 'Function') -> List[Tuple[int, str]]:
-        """
-        在函数中查找输入源调用
-        """
         sources = []
         input_func_names = ['read', 'gets', 'scanf', 'fread', 'recv', 'recvfrom', 'getenv']
 
@@ -306,9 +253,6 @@ class StaticDataFlowAnalyzer:
         return sources
 
     def _is_potential_integer_overflow(self, insn_str: str) -> bool:
-        """
-        检测潜在的整数溢出
-        """
         overflow_patterns = [
             r'add\s+(?:e|r)(ax|bx|cx|dx|si|di|sp|bp)',
             r'sub\s+(?:e|r)(ax|bx|cx|dx|si|di|sp|bp)',
@@ -330,11 +274,6 @@ class StaticDataFlowAnalyzer:
         project, 
         block_addr: int
     ) -> bool:
-        """
-        检测潜在的格式化字符串漏洞
-
-        检测调用 printf/sprintf 等函数时格式字符串参数是否来自用户输入
-        """
         printf_funcs = ['printf', 'fprintf', 'sprintf', 'snprintf', 'vprintf', 'vfprintf']
 
         if 'call' in insn_str.lower():
@@ -345,9 +284,6 @@ class StaticDataFlowAnalyzer:
         return False
 
     def _analyze_use_def_chain(self, func: 'Function') -> Set[str]:
-        """
-        分析 Use-Def 链
-        """
         tainted = set()
 
         try:
@@ -373,9 +309,6 @@ class StaticDataFlowAnalyzer:
         function_name: str,
         result: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """
-        使用 radare2 ESIL 进行后备污点分析
-        """
         if not self._check_radare2_available():
             logger.warning("[Static] radare2 不可用，无法进行分析")
             return result
@@ -437,9 +370,6 @@ class StaticDataFlowAnalyzer:
         return result
 
     def _sanitize_for_r2(self, name: str) -> str:
-        """
-        清理用于 radare2 命令的函数名
-        """
         return re.sub(r'[^\w\-_\.]', '_', name)
 
     def _scan_assembly_for_vulns(
@@ -447,9 +377,6 @@ class StaticDataFlowAnalyzer:
         disassembly: str,
         function_name: str
     ) -> List[StaticVulnerability]:
-        """
-        从汇编代码中扫描漏洞
-        """
         vulns = []
         lines = disassembly.split('\n')
 
@@ -502,7 +429,6 @@ class StaticDataFlowAnalyzer:
         self,
         function_name: str = 'main'
     ) -> List[Dict[str, Any]]:
-        """检测未初始化内存使用"""
         logger.info(f"[Static] 检测未初始化内存: {function_name}")
 
         issues = []
@@ -536,9 +462,6 @@ class StaticDataFlowAnalyzer:
         return issues
 
     def _detect_uninit_radare2(self, function_name: str) -> List[Dict[str, Any]]:
-        """
-        使用 radare2 检测未初始化内存
-        """
         issues = []
         try:
             from modules.analysis.decompiler.decomp_ai import strip_ansi_escape
@@ -586,7 +509,6 @@ class StaticDataFlowAnalyzer:
         self,
         function_name: str
     ) -> Dict[str, Any]:
-        """完整分析一个函数"""
         logger.info(f"[Static] 完整分析函数: {function_name}")
 
         result = {
@@ -618,7 +540,6 @@ class StaticDataFlowAnalyzer:
         function_name: str,
         cache_dir: str = './data/cache'
     ) -> Optional[Dict[str, Any]]:
-        """从缓存获取分析结果（如果存在）"""
         try:
             binary_hash = self._compute_binary_hash()
             cache_file = os.path.join(
@@ -640,7 +561,6 @@ class StaticDataFlowAnalyzer:
         result: Dict[str, Any],
         cache_dir: str = './data/cache'
     ) -> bool:
-        """保存分析结果到缓存"""
         try:
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir, exist_ok=True)
@@ -662,9 +582,6 @@ class StaticDataFlowAnalyzer:
             return False
 
     def _compute_binary_hash(self) -> str:
-        """
-        计算二进制文件的哈希
-        """
         try:
             hasher = hashlib.md5()
             with open(self.binary_path, 'rb') as f:
@@ -680,6 +597,5 @@ def perform_static_taint_analysis(
     function_name: str = 'main',
     use_angr: bool = True
 ) -> Dict[str, Any]:
-    """便捷函数：执行静态污点分析"""
     analyzer = StaticDataFlowAnalyzer(binary_path, use_angr)
     return analyzer.analyze_function(function_name)

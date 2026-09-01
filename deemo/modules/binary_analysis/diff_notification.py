@@ -3,7 +3,6 @@ import json
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-import typing
 from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)

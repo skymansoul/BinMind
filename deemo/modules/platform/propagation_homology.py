@@ -156,7 +156,7 @@ class PropagationHomologyAnalyzer:
         idx_map = {nid: i for i, nid in enumerate(nodes)}
         points: List[PersistencePoint] = []
 
-# 0维：Union-Find
+        # 0维：Union-Find 追踪分量合并
         parent = list(range(n))
         birth_time = [0.0] * n  # 分量诞生时的置信度（最高边）
         active = [True] * n
@@ -194,7 +194,7 @@ class PropagationHomologyAnalyzer:
             points.append(PersistencePoint(birth=birth_time[r], death=float('inf'),
                                            dimension=0))
 
-# 1维：生成树 + 非树边
+        # 1维：生成树 + 非树边产生环特征
         # 重新做一次 Union-Find，标记生成树边
         parent2 = list(range(n))
         tree_edges: Set[Tuple[int, int]] = set()

@@ -102,11 +102,6 @@ class TimingSideChannelDetector:
 
     Supports Python bytecode analysis, runtime timing comparison, and C-source
     static analysis.
-
-    Usage::
-
-        detector = TimingSideChannelDetector()
-        results = detector.detect(my_crypto_func, secrets=[0, 255])
     """
 
     _CONSTANT_TIME_OPS = {

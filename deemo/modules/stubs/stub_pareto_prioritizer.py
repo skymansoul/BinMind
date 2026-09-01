@@ -25,7 +25,6 @@
 #   "调权艺术"变为"可证明的非支配选择"。
 import time as _time
 from dataclasses import dataclass as _dc, field as _field
-from typing import Optional as _Opt
 
 
 @_dc
@@ -171,7 +170,6 @@ class ParetoPrioritizer:
                   if s.gap > 0.0]
         return backlog[:n] if n is not None else backlog
 
-# Pareto 支配判定
     @staticmethod
     def _dominates(a: list[float], b: list[float]) -> bool:
         """判定目标向量 a 是否支配 b。
@@ -232,7 +230,6 @@ class ParetoPrioritizer:
                 else:
                     scores[indices[k]].crowding_distance = dist
 
-    # 报告
     def pareto_report(self, top_n: int = 20) -> str:
         """生成 Markdown Pareto 排序报告。"""
         ranked = self.rank()[:top_n]
@@ -262,7 +259,6 @@ class ParetoPrioritizer:
         return '\n'.join(lines)
 
 
-# 便捷入口
 def rank_pareto() -> list[ParetoScore]:
     """一行式 Pareto 排序。"""
     return ParetoPrioritizer().rank()
