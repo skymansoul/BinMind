@@ -20,7 +20,7 @@
 """
 
 import hashlib
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List
 
 
 # 编译器特化助记符-标准助记符
@@ -129,7 +129,7 @@ def sliding_window_hash(instructions: List[str], window_size: int = 3) -> List[s
 def extract_normalized_features(
     instructions: List[str],
     window_size: int = 3,
-) -> Dict[str, any]:
+) -> Dict[str, Any]:
     """
     从指令序列提取归一化特征。
 

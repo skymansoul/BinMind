@@ -1,6 +1,5 @@
 """符号 size 追踪器 — 函数内前向单遍扫描, 提取符号容量表达式.
 
-创建: 2024-08-14
 用途: ACPE 的数据流侧。对单个函数维护寄存器/栈槽的符号值
       (容量表达式), 在调用点捕获分配 size 与写入 size。
 
@@ -39,8 +38,6 @@ class SymSizeTracker:
     def analyze_function(self, func_name: str,
                          insns: List[Instruction]) -> FuncSymResult:
         result = FuncSymResult(name=func_name, insns=list(insns))
-        # TODO: 跨函数分配-写入传播。当前函数内分析无法关联
-        # 跨函数的 malloc 与 memcpy, 依赖调用方摘要可扩大覆盖。
         arg_regs = _detect_abi(insns)
         reset(self._st, arg_regs)
 

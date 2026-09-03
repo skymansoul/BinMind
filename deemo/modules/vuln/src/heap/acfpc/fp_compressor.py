@@ -12,9 +12,9 @@ from typing import Dict, List, Optional, Tuple
 
 from .def_chain import DefChainTracker, DefKind, DefNode
 from .alloc_contract import AllocContractExtractor, AllocContract
-from .write_coupling import WriteCouplingAnalyzer, Coupling
+from .write_coupling import WriteCouplingAnalyzer, Coupling, CouplingVerdict
 from .guard_dominance import GuardDominanceChecker
-from .allocator_geometry import usable_size, write_fits
+from .allocator_geometry import usable_size, write_fits, overflow_bytes
 from .verdict import VerdictSynthesizer, ACFPCVerdict, ACFPCVerdictKind
 from .explicit_write import ExplicitWriteChecker
 

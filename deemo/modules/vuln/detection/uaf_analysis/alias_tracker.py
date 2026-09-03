@@ -11,9 +11,6 @@
   - 当 mov dst, src 时, dst和src进入同一别名类
   - free(reg)时, 整个别名类被标记为freed
   - use(reg)时, 检查reg所在别名类是否被标记
-
-修改记录:
-  创建 2025-02-06
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

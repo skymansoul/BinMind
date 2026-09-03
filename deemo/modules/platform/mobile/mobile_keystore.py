@@ -226,7 +226,7 @@ class AndroidKeystoreAnalyzer:
                     kt='AES' if len(raw) in (16,24,32) else 'generic'
                     is_qv=(kt=='AES' and len(raw)==16)
                     keys.append(HardcodedKey(hs[:64],m.start(),kt,len(raw)*8,confidence=ent*0.9,is_quantum_vulnerable=is_qv))
-            except (ValueError, binascii.Error): pass  # 修正：裸except收窄→ValueError/binascii.Error
+            except (ValueError, binascii.Error): pass
         s.hardcoded_keys=keys; return keys
 
     def map_known_vulnerabilities(s)->List[KeymasterVulnerability]:

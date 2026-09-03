@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 from .cssa_corruption_classifier import (
-    CrashState, CorruptionType, CorruptionClassification, CorruptionClassifier,
+    CrashState, CorruptionType, CorruptionClassifier,
 )
 from .cssa_state_embedder import (
     CrashEmbedding, DedupCluster, CrashStateEmbedder,

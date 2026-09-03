@@ -1,6 +1,5 @@
 """ACPE 符号追踪指令处理器 — 无类自由函数 + 追踪状态.
 
-创建: 2024-12-09
 沿用 heap_analysis/_insn_handlers.py 的自由函数模式:
   所有 handler 接收 TrackerState, 仅更新状态, 不做控制流判断。
 

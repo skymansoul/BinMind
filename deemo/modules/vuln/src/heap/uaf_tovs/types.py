@@ -62,3 +62,18 @@ class PairVerdict:
     @property
     def is_kept(self) -> bool:
         return self.verdict in (TovsVerdict.CONFIRMED, TovsVerdict.POSSIBLE)
+
+
+@dataclass
+class ConservativeVerdict:
+    """保守保留判定 — UNRESOLVED 不再返回 None, 保留结构化结果供上层消费.
+
+    设计决策:
+      - Recall 黑洞根因: verify 返回 None 时上层直接丢弃候选,
+        导致条件释放的 UAF 被漏报.
+      - 改为返回 ConservativeVerdict, 上层可依据 confidence 决定是否保留.
+    """
+    rule: TovsRule = TovsRule.UNRESOLVED
+    confidence: float = 0.6
+    detail: str = ""
+    evidence: Optional[Evidence] = None

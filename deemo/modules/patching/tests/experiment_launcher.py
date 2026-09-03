@@ -23,7 +23,6 @@ import json
 import time
 import subprocess
 import tempfile
-import hashlib
 
 SAMPLE_ROOT = os.path.dirname(os.path.abspath(__file__)) + "/cve_samples"
 TIMEOUT_PER_SAMPLE = 60  # 每个工具对每个样本的超时秒数

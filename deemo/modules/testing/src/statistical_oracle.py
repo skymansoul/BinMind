@@ -28,6 +28,8 @@
 #   McNemar 1947, paired comparison significance test
 #   openentropy-core — 差分二进制分析中引入Cliff's Delta
 import math
+import random
+import re
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from collections import defaultdict
@@ -127,15 +129,14 @@ def bootstrap_ci(a: List[float], b: List[float],
 
     对每次bootstrap重采样计算delta，取(alpha/2, 1-alpha/2)分位作为CI。
     """
-    import random as _rnd
     deltas = []
     n1, n2 = len(a), len(b)
     if n1 < 3 or n2 < 3:
         return (-1.0, 1.0)
 
     for _ in range(n_bootstrap):
-        sa = [_rnd.choice(a) for _ in range(n1)]
-        sb = [_rnd.choice(b) for _ in range(n2)]
+        sa = [random.choice(a) for _ in range(n1)]
+        sb = [random.choice(b) for _ in range(n2)]
         delta, _ = cliffs_delta(sa, sb)
         deltas.append(delta)
 
@@ -381,7 +382,6 @@ class StatisticalOracle:
         字符串字面量密度, 嵌套深度估计。
         各特征为计数或比例，不依赖字节级对齐。
         """
-        import re
         fp: Dict[str, float] = {}
 
         lines = text_output.splitlines()

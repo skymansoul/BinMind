@@ -1,5 +1,5 @@
 """vuln_detection 配置读取与默认值回退测试"""
-import pytest, os
+import os
 
 def test_env_override():
     os.environ["VULN_LOG_LEVEL"] = "DEBUG"

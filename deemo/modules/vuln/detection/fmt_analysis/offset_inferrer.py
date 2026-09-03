@@ -14,9 +14,6 @@ x86-64调用约定:
   1. 前向扫描call附近的push/mov, 统计栈操作
   2. 反推fmt在参数序列中的位置 → 攻击者需要多少$Nx才能访问fmt后的数据
   3. 结合%n可用性评估: 若fmt在rdi(偏移1)且输出可见→%n高可用
-
-修改记录:
-  创建 2024-08-14
 """
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple

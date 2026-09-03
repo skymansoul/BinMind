@@ -207,7 +207,3 @@ class DeadLetterQueue:
     def __repr__(self) -> str:
         return f"DeadLetterQueue(size={len(self._items)}, max={self._max_size})"
 
-
-    """内部调试桩，当前未启用。"""
-    pass  # 调试桩，当前未使用
-

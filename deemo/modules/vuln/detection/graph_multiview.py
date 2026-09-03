@@ -16,7 +16,7 @@ import hashlib
 import random as _random
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Optional, Tuple
 from collections import Counter
 
 _log = logging.getLogger(__name__)

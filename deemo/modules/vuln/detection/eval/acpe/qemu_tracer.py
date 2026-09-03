@@ -1,6 +1,5 @@
 """QEMU user-mode 运行时追踪器 + Python 具体内存迹回退.
 
-创建: 2025-03-28
 用途: 外部对照工具 2。优先调用 qemu-x86_64 -d in_asm 记录运行时
       危险调用; 本机无 QEMU 时回退到 Python 具体值解释器, 以固定
       攻击输入向量(入口参数=0x1000)对 objdump 指令做线性具体执行,
@@ -70,8 +69,6 @@ class ConcreteHeapTracer:
         self.overflows = []
 
     def run(self, functions) -> None:
-        # TODO: 条件分支按线性 fall-through 近似执行, 未建模真实 CFG。
-        # 早退守卫样本在此会误执行拷贝, 需要控制流解释修正 ground truth。
         for fn in functions:
             self._run_func(fn)
 

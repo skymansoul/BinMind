@@ -30,7 +30,7 @@
 import re
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Tuple
 from enum import Enum
 
 _log = logging.getLogger(__name__)

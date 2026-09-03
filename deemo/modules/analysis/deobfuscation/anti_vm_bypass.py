@@ -231,10 +231,6 @@ def _check_cpuid_hypervisor() -> bool:
             return "hypervisor" in fh.read().lower()
     except Exception:
         return False
-        with open("/proc/cpuinfo") as fh:
-            return "hypervisor" in fh.read().lower()
-    except Exception:
-        return False
 
 
 def _lspci_vendor_ids() -> Set[int]:

@@ -1,6 +1,5 @@
 """FPE 判定过滤器 — 格式溯源等价分类.
 
-创建: 2025-06-09
 用途: 对追踪器产出的格式调用, 按格式参数溯源分类:
 
   - .rdata/.const → 常量格式串 → SAFE_CONST (滤除)
@@ -23,8 +22,6 @@ _SAFE_LABELS = {'.rdata', '.rodata', 'const'}
 
 
 def evaluate_call(call: FmtCall) -> FmtVerdictRecord:
-    # FIXME: 参数个数与 %n 可用性未校验 — 常量格式串含 %n 但参数缺失
-    # 时实际可写内存, 当前按 SAFE_CONST 滤除存在漏报风险。
     if call.fmt_label in _SAFE_LABELS:
         return FmtVerdictRecord(
             func_name=call.func_name, addr=call.addr,

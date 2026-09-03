@@ -822,7 +822,7 @@ class StructuredPseudocodeGenerator:
 			escaped
 		)
 
-		return f'''<!DOCTYPE html>
+		html_body = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -847,9 +847,9 @@ h1 {{ color: #569cd6;}}
 			for hint in sp.control_flow_hints:
 				lines.append(f'<li class="warning">{html.escape(hint)}</li>')
 			lines.append("</ul>")
-			return f'{escaped}\n' + '\n'.join(lines) + '</body></html>'
+			return f'{html_body}\n' + '\n'.join(lines) + '</body></html>'
 
-		return f'{escaped}</body></html>'
+		return f'{html_body}</body></html>'
 
 	# 工具
 

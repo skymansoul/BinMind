@@ -103,6 +103,3 @@ class ThompsonAutoscaler:
             "history_len": len(self._history),
         }
 __all__ = ["ScaleAction", "ThompsonAutoscaler"]
-
-
-__all__ = ["ScaleAction", "ThompsonAutoscaler"]

@@ -11,8 +11,8 @@
 # 当前实现-x86/x86_64/ARM/MIPS四架构
 # 增强-随机游走嵌入与跨架构对齐投影
 
-import os, re, math, json, hashlib, struct, logging
-from typing import Dict, List, Optional, Any, Tuple, Set
+import math, logging
+from typing import Dict, List, Tuple
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field
 from enum import Enum
@@ -411,7 +411,7 @@ class GraphBinaryEmbedder:
             feature_names=feature_names[:self.embed_dim])
 
     def embed_batch(self, graphs: List[FunctionGraph]) -> List[GraphEmbedding]:
-        """批量嵌入-多函数并行特征提取"""
+        """批量嵌入-顺序逐函数提取特征"""
         return [self.embed(g) for g in graphs]
 
     def similarity(self, emb1: GraphEmbedding, emb2: GraphEmbedding) -> float:

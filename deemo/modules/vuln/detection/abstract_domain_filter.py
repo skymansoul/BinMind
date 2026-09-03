@@ -93,9 +93,12 @@ def _parse_cmp_imm(insn: str) -> Optional[Tuple[str, int]]:
 def abstract_interpret(
     instructions: List[str],
     array_bounds: Optional[Dict[str, Tuple[int, int]]] = None,
-) -> Dict[str, Interval]:
+) -> Tuple[Dict[str, Interval], List[str]]:
     """
-    单遍前向区间分析。返回 {reg_name: Interval}。
+    单遍前向区间分析。返回 (reg_map, warnings)。
+
+    reg_map: {reg_name: Interval} - 各寄存器最终区间。
+    warnings: 数组越界等告警文本, 供上层过滤流程一并输出。
 
     array_bounds: {'reg_or_var': (lo, hi)} - 已知的数组边界。
     用于在访问 a[reg] 时检查 reg 的区间是否超出边界。
@@ -141,7 +144,7 @@ def abstract_interpret(
                     f"越界访问: {reg} ∈ [{state.regs[reg].lb}, {state.regs[reg].ub}], "
                     f"数组边界 [{lo}, {hi}]")
 
-    return state.regs
+    return state.regs, warnings
 
 
 def filter_by_abstract_analysis(

@@ -1,9 +1,8 @@
 # coding: utf-8
 # 整数溢出误报过滤-验证溢出结果是否流向malloc/memcpy等危险操作
-import re, logging
+import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-_log = logging.getLogger(__name__)
+from typing import Dict, List
 
 @dataclass
 class IntOverflowFpResult:

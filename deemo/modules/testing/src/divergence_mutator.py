@@ -135,7 +135,7 @@ class DivergenceGuidedMutator:
             covering_engines = sum(
                 1 for ec in profile.engine_coverages.values()
                 if edge in ec.covered_edges)
-            if 0 < covering_engine < len(engines):
+            if 0 < covering_engines < len(engines):
                 profile.divergent_edges.add(edge)
 
         total = len(all_edges)

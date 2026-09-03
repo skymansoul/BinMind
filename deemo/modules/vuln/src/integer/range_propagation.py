@@ -27,6 +27,12 @@ _REG_32 = set(_REG_32_TO_64.keys())
 _ALLOC_FNS = {'malloc','calloc','realloc','_malloc','HeapAlloc','HeapReAlloc'}
 _IO_SINKS = {'memcpy','memmove','strcpy','strcat','sprintf','snprintf',
              'read','fread','recv'}
+# IO2BO各sink的size参数寄存器 (Windows x64调用约定)
+_IO_SINK_PARAM: Dict[str, str] = {
+    'memcpy': 'r8', 'memmove': 'r8', 'memset': 'r8',
+    'snprintf': 'rdx', 'read': 'r8', 'recv': 'r8', 'fread': 'r9',
+    # strcpy/sprintf/strcat 无size参数, 不检查
+}
 _ADDR_RE = re.compile(r'\s*([0-9a-f]+):\s+')
 
 def _canon64(r: str) -> str:
@@ -78,6 +84,7 @@ class RangePropagationEngine:
 
     _MUL_PAT = re.compile(
         r'(imul|mul)\s+(\w+),?\s*(\w+)?,?\s*(0x[0-9a-f]+|\d+)?', re.I)
+    _AND_PAT = re.compile(r'and\s+(\w+),\s*(0x[0-9a-f]+|\d+)', re.I)
     _ADD_PAT = re.compile(r'add\s+(\w+),\s*(0x[0-9a-f]+|\d+)', re.I)
     _SUB_PAT = re.compile(r'sub\s+(\w+),\s*(0x[0-9a-f]+|\d+)', re.I)
     _SHL_PAT = re.compile(r'shl\s+(\w+),\s*(0x[0-9a-f]+|\d+)', re.I)
@@ -194,6 +201,12 @@ class RangePropagationEngine:
         m = self._MUL_PAT.search(il)
         if m:
             self._handle_mul(m)
+            return
+        # and reg, imm: 用掩码收窄区间, 捕获位运算导致的值域限制
+        m = self._AND_PAT.search(il)
+        if m:
+            iv = self._state.get(m.group(1))
+            self._state.set(m.group(1), iv.and_const(int(m.group(2), 0)))
 
     @staticmethod
     def _is_reg64(r: str) -> bool:
@@ -263,16 +276,16 @@ class RangePropagationEngine:
     def _check_alloc_overflow(self, func: str, addr: int) -> List[OverflowSite]:
         iv = self._state.get('rcx')
         if iv.is_top():
-            conf, reason = 0.35, 'malloc(unknown) → overflow possible'
+            # TOP区间无具体值, 无法判定溢出, 不报告
+            return []
+        may32, r32 = iv.can_overflow(BitWidth.BIT32)
+        may64, _ = iv.can_overflow(BitWidth.BIT64)
+        if may32 and not may64:
+            conf, reason = 0.70, f'malloc([{iv}]) may overflow uint32: {r32}'
+        elif may64:
+            conf, reason = 0.85, f'malloc([{iv}]) may overflow uint64'
         else:
-            may32, r32 = iv.can_overflow(BitWidth.BIT32)
-            may64, _ = iv.can_overflow(BitWidth.BIT64)
-            if may32 and not may64:
-                conf, reason = 0.70, f'malloc([{iv}]) may overflow uint32: {r32}'
-            elif may64:
-                conf, reason = 0.85, f'malloc([{iv}]) may overflow uint64'
-            else:
-                return []
+            return []
         return [OverflowSite(insn_addr=addr, overflow_type='MUL_WRAP',
             result_interval=iv, sink_func=func, sink_addr=addr,
             confidence=conf, reason=reason, alloc_interval=iv)]
@@ -295,7 +308,11 @@ class RangePropagationEngine:
             confidence=conf, reason=reason, alloc_interval=prod)]
 
     def _check_io2bo_overflow(self, func: str, addr: int) -> List[OverflowSite]:
-        n_iv = self._state.get('r8')
+        # 按函数名查表获取正确size参数寄存器, 无size参数的sink不检查
+        param_reg = _IO_SINK_PARAM.get(func)
+        if param_reg is None:
+            return []
+        n_iv = self._state.get(param_reg)
         return [OverflowSite(insn_addr=addr, overflow_type='IO2BO',
             result_interval=n_iv, sink_func=func, sink_addr=addr,
             confidence=0.75, io2bo=True, alloc_interval=aiv,

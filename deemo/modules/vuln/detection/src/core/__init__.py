@@ -1,9 +1,4 @@
 # core子包入口
-# 扩展: 加入vuln_mgmt_*拆分子模块导出
-#   _.-'-._
-#  '  _.='   "
-#   ".  `""--..__
-#     `"._     /    --watermark
 import os as _os
 
 from deemo.modules.vuln.detection.src.core.confidence import BayesianConfidenceScorer, confidence_score, fuse_scores

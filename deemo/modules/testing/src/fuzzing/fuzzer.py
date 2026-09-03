@@ -6,6 +6,7 @@ import subprocess
 import threading
 import logging
 import hashlib
+import shutil
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 
@@ -249,8 +250,6 @@ def search_vuln_db(query: str, db_path: str = None) -> List[Dict[str, Any]]:
     _db.close()
     return _results
 
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)
-
 
 class FuzzerIntegration:
     """模糊测试集成层——harness 生成、会话管理、崩溃导入、Web API 控制"""
@@ -377,7 +376,6 @@ int main(int argc, char **argv) {{
 
         crash_dest = os.path.join(self.crashes_dir, f"{session_name}_{os.path.basename(crash_path)}")
         try:
-            import shutil
             shutil.copy(crash_path, crash_dest)
             crash_info['stored_path'] = crash_dest
         except Exception as e:
@@ -396,7 +394,6 @@ int main(int argc, char **argv) {{
             if entry.is_file():
                 dest = os.path.join(self.corpus_dir, entry.name)
                 try:
-                    import shutil
                     shutil.copy(entry.path, dest)
                     count += 1
                 except Exception:

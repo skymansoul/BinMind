@@ -12,8 +12,8 @@
 # - 初版，静态分析+编译验证
 # - 新增回归测试和安全模式检查
 
-import os, re, json, subprocess, tempfile, difflib, logging, hashlib
-from typing import Dict, List, Optional, Any, Tuple, Set
+import re, json, subprocess, difflib, logging, hashlib
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -150,11 +150,16 @@ class PatchQualityEvaluator:
         regression_risk = self._estimate_regression_risk(dims, original_code,
                                                           patched_code)
 
+        # 正确性维度是否通过-决定fix_applied
+        correctness_dim = next(
+            (d for d in dims if d.dimension == 'correctness'), None)
+        fix_applied = bool(correctness_dim and correctness_dim.passed)
+
         return PatchEvaluation(
             quality=quality, overall_score=round(overall, 3),
             dimensions=dims, patch_id=hashlib.md5(patched_code.encode()).hexdigest()[:12],
             cve_id=cve_id, original_vuln_type=vuln_type,
-            fix_applied=dim_0.passed if (dim_0 := next((d for d in dims if d.dimension == 'correctness'), None)) else False,
+            fix_applied=fix_applied,
             regression_risk=round(regression_risk, 2),
             recommendations=self._gen_recommendations(dims, overall),
             test_results={})

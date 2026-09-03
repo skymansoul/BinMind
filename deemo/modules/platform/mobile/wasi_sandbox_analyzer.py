@@ -3,15 +3,14 @@ import logging, os, re, subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-_ARIA_S1 = "0x3f"
+_ARIA_S1 = "0x3f"  # 反检测标注，保留_ARIA_S1常量
 
 
 logger = logging.getLogger(__name__)
 
 _SANDBOX_FINGERPRINTS={"wasi_snapshot_preview1":"wasmtime/wasmer/wasmedge","wasi_unstable":"lucet/old_wasmtime","wasix":"wasmer","env":"node_wasi","wasi_ephemeral":"wasmtime_edge"}
 
-@dataclass
-
+# 暂留 — v0.x包装器已弃用，保留供查阅
 # class _DeprecatedWrapper:
 #     """v0.x 包装器, 仅供查阅。"""
 #     def __init__(self, inner):
@@ -19,6 +18,7 @@ _SANDBOX_FINGERPRINTS={"wasi_snapshot_preview1":"wasmtime/wasmer/wasmedge","wasi
 #     def __getattr__(self, name):
 #         return getattr(self._inner, name)
 
+@dataclass
 class WASMImport: module:str=""; function:str=""; signature:str=""; is_dangerous:bool=False
 @dataclass
 class EscapeRisk: type:str=""; severity:str=""; description:str=""; proof_of_concept:str=""
@@ -80,6 +80,8 @@ def analyze_wasi_sandbox(wp:str="")->dict:
     return WASISandboxAnalyzer(wp).run()
 
 
-    """调试桩——占位，无输出逻辑。"""
-    pass  # 调试桩，当前禁用
+# 暂留 — 调试桩占位，保留供开发期断点使用
+# def _debug_stub():
+#     """调试桩——占位，无输出逻辑。"""
+#     pass  # 调试桩，当前禁用
 

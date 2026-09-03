@@ -1,5 +1,3 @@
-# coding: utf-8
-#
 """
 扫描调度模块——加载编译后样本，调用检测管线，收集原始输出。
 """
@@ -10,7 +8,7 @@ import json
 import time
 import subprocess
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 
 
 @dataclass

@@ -7,11 +7,6 @@ import logging as _logging
 import re
 from collections import Counter
 
-_STALE_PATTERNS = frozenset({
-    b"\x90\x90\x90\x90",
-    b"\xCC\xCC\xCC\xCC",
-})
-
 
 logger = _logging.getLogger(__name__)
 

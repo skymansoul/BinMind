@@ -94,7 +94,7 @@ class LoopIntervalAnalyzer:
 
         加宽前检查: 若 step * iter_count < 已知的分配大小, 不加宽.
         """
-        count = self._widowing_count.get(var_name, 0) + 1
+        count = self._widening_count.get(var_name, 0) + 1
         self._widening_count[var_name] = count
         if count >= self.MAX_WIDENING_ITERATIONS:
             return (0, 2**63 - 1)  # 加宽到无限

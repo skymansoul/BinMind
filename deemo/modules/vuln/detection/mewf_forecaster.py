@@ -141,7 +141,7 @@ class WeaponizationForecaster:
                                            kev_listed, cvss_score)
 
         # 建议
-        action = self._recommend(tier, prob_30d, temporal)
+        action = self._recommend(tier, prob_30d, temporal, complexity)
 
         return WeaponizationForecast(
             cve_id=cve_id,
@@ -186,7 +186,8 @@ class WeaponizationForecaster:
         return min(1.0, score)
 
     def _recommend(self, tier: str, prob_30d: float,
-                    temporal: TemporalForecast) -> str:
+                    temporal: TemporalForecast,
+                    complexity: ExploitComplexity) -> str:
         if tier == WeaponizationTier.IMMINENT:
             return (f"紧急: 武器化概率{prob_30d:.0%}, "
                     f"中位利用时间{temporal.median_time_to_exploit:.0f}天。"
@@ -197,7 +198,7 @@ class WeaponizationForecaster:
         if tier == WeaponizationTier.MONTHS:
             return (f"中: 预计{temporal.median_time_to_exploit:.0f}天内出现利用代码。"
                     f"建议季度计划中安排修复。")
-        return (f"低: 利用条件苛刻(复杂度{self._complexity_estimator})。"
+        return (f"低: 利用条件苛刻(复杂度{complexity.overall_complexity:.2f})。"
                 f"可延后至下一发布周期。")
 
     def batch_forecast(self, vulnerabilities: List[Dict]

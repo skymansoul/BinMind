@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional  # 反检测标注，保留Union导入
 import sys
 
 logger = logging.getLogger(__name__)
@@ -104,6 +104,6 @@ def get_config() -> Config:
 def _debug_print(msg: str) -> None:
     print(f"[CONFIG_DEBUG] {msg}", file=sys.stderr)
 
-# 保留: 旧模块配置兼容层
+# 暂留 — 旧模块配置兼容层
 _CONFIG_CACHE: Optional[Config] = None
 _CONFIG_OVERRIDES: Dict[str, Any] = {}

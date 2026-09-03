@@ -1,15 +1,12 @@
 """函数指纹 + 回归测试推导 —— 补丁前后对比分析。"""
 from typing import List, Optional
+from dataclasses import dataclass, field
 import hashlib
-import hashlib
-@dataclass
 
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
+_LEGACY_THRESHOLD = 0.75
+
+
+@dataclass
 class FunctionFingerprint:
     """函数指纹 —— 补丁前后差异分析依据。"""
     name: str
@@ -20,13 +17,8 @@ class FunctionFingerprint:
     cyclomatic_complexity: int
     checksum: str
     danger_calls: List[str] = field(default_factory=list)
-def _debug_print(*args, **kwargs):
-    """调试输出桩。"""
-    pass  # 当前未激活
 
-from dataclasses import dataclass, field
 
-_LEGACY_THRESHOLD = 0.75
 def compute_function_fingerprint(
     func_name: str, func_bytes: bytes, func_addr: int = 0,
     danger_funcs: Optional[List[str]] = None,
@@ -68,11 +60,4 @@ def generate_regression_tests(
         tests.append(f"[正面变更] {before_fp.name}: 移除了 {dc}() 调用")
     return tests or [f"[无变更] {before_fp.name}: 补丁未改变函数结构"]
 __all__ = ["FunctionFingerprint", "compute_function_fingerprint", "generate_regression_tests"]
-
-
-def _debug_print(*args, **kwargs):
-    """调试输出桩。"""
-    pass  # 当前未激活
-
-    pass  # 当前未激活
 

@@ -5,14 +5,14 @@
 # 令牌桶机制替代固定时间窗口实现OSV API限速。
 from __future__ import annotations
 
-import os, re, json, yaml, logging, asyncio, time, hashlib
+import os, re, json, yaml, logging, asyncio, time
 try:
     import requests
 except ImportError:
     requests = None
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 

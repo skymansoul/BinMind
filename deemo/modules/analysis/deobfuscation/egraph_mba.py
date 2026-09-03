@@ -92,7 +92,8 @@ class EGraph:
         self._analysis_dirty = True
         return cid
 
-        mask = 0xFFFFFFFF
+    def _eval_const(self, op: str, values: List[int]) -> Optional[int]:
+        mask = (1 << self._bit_width) - 1 if hasattr(self, '_bit_width') else 0xFFFFFFFF
         try:
             if op == '+': return (values[0] + values[1]) & mask
             if op == '-': return (values[0] - values[1]) & mask

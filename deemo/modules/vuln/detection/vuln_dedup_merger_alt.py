@@ -3,7 +3,7 @@
 # 冲突解决按字段优先级选取，产出统一合并结果。
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Tuple, Set
+from typing import Dict, List, Any, Tuple, Set
 from enum import Enum
 
 

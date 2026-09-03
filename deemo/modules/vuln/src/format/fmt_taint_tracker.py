@@ -84,7 +84,7 @@ class TaintReport:
 
 
 def _trace_reg_source(objdump_lines: List[str], call_idx: int,
-                     target_reg: str, max_back: int = 6) -> str:
+                      target_reg: str, max_back: int = 40) -> str:
     """逆向追踪格式串寄存器的来源.
 
     返回 'param:rbp+0x10' (函数形参) | 'rdata:0x...' (.rdata) |
@@ -102,14 +102,26 @@ def _trace_reg_source(objdump_lines: List[str], call_idx: int,
         il = objdump_lines[j].strip().lower()
         if not il:
             continue
+        # 函数边界检测: 遇到 <fn_name>: 标签行停止回溯
+        if re.match(r'^[0-9a-f]+\s+<.+>:', il):
+            break
 
-        # mov dst, [rbp+off] → 来自函数参数
+        # mov dst, [rbp+off] 或 mov dst, [rsp+off] → 来自函数参数
+        # -O1+常用 rsp 相对寻址访问参数; mov dst, [rbp-off] → 负偏移局部变量
         stack_load = re.search(
-            r'\bmov\s+(\w+),\s*(?:qword\s+ptr\s+)?\[rbp\s*\+\s*(0x[0-9a-f]+|\d+)\]', il)
+            r'\bmov\s+(\w+),\s*(?:qword\s+ptr\s+)?\[(\w+)\s*([+\-])\s*(0x[0-9a-f]+|\d+)\]',
+            il)
         if stack_load and _canon(stack_load.group(1)) in candidates:
-            off = int(stack_load.group(2), 16 if '0x' in stack_load.group(2) else 10)
-            if off >= 0x10:  # 正偏移 = 函数参数 (Windows x64: rcx=[rbp+0x10])
-                return f'param:rbp+0x{off:x}'
+            base_reg = stack_load.group(2)
+            sign = stack_load.group(3)
+            off_str = stack_load.group(4)
+            off = int(off_str, 16 if '0x' in off_str else 10)
+            if sign == '-':
+                off = -off
+            # rsp 正偏移或 rbp 正偏移 = 函数参数 (Windows x64: rcx=[rbp+0x10])
+            if (base_reg == 'rbp' and off >= 0x10) or \
+               (base_reg == 'rsp' and off >= 0x08):
+                return f'param:{base_reg}+0x{off:x}'
             # 负偏移 = 局部变量, 继续追踪
             # 找谁写入了这个栈槽: 搜索前一条 mov [rbp-off], src
             for k in range(j - 1, max(j - max_back - 1, -1), -1):
@@ -176,6 +188,15 @@ def _trace_reg_source(objdump_lines: List[str], call_idx: int,
             callee = call_m.group(1).lower()
             if callee in _INPUT_SOURCES:
                 return f'input:{callee}'
+            # wrapper 函数检测: 名称含格式/打印关键词则参数视为格式串来源
+            _wrapper_kw = ('format', 'print', 'snprintf', 'sprintf',
+                           'fprintf', 'log', 'msg', 'debug', 'trace')
+            if any(kw in callee for kw in _wrapper_kw):
+                # 递归追踪该 call 前一个参数寄存器的来源 (Windows x64: rcx)
+                inner = _trace_reg_source(
+                    objdump_lines, j, 'rcx', max_back=max_back)
+                if inner.startswith('param:') or inner.startswith('input:'):
+                    return f'wrapper:{callee}<=rcx<{inner}'
 
     return 'unknown'
 
@@ -186,6 +207,39 @@ class FmtTaintTracker:
     所有11个CVE FMT样本遵循: wrapper_fn(user_input) → printf(user_input).
     对每个printf, 逆向追踪格式串寄存器到来源指令.
     """
+
+    def _build_fn_summary(self, objdump_lines: List[str]) -> Dict[str, Dict[int, str]]:
+        """预处理objdump构建callgraph,为每个函数生成参数来源摘要.
+
+        返回 {fn_name: {param_slot: source_type}}.
+        """
+        fn_label_re = re.compile(r'^([0-9a-f]+)\s+<(.+)>:')
+        summary: Dict[str, Dict[int, str]] = {}
+        cur_fn = None
+        cur_params: Dict[int, str] = {}
+        arg_regs = ['rcx', 'rdx', 'r8', 'r9']  # Windows x64 前四个参数
+        for line in objdump_lines:
+            ll = line.strip()
+            m = fn_label_re.match(ll)
+            if m:
+                if cur_fn and cur_params:
+                    summary[cur_fn] = cur_params
+                cur_fn = m.group(2)
+                cur_params = {}
+                continue
+            if cur_fn:
+                ll_lower = ll.lower()
+                # 检测函数内部是否将参数传入输入源或格式函数
+                for slot_idx, reg in enumerate(arg_regs):
+                    if f'mov {reg},' in ll_lower or f'lea {reg},' in ll_lower:
+                        if any(s in ll_lower for s in _INPUT_SOURCES):
+                            cur_params[slot_idx] = 'input'
+                        elif any(f'call' in ll_lower and p in ll_lower
+                                 for p in _PRINTF_FNS):
+                            cur_params[slot_idx] = 'printf_arg'
+        if cur_fn and cur_params:
+            summary[cur_fn] = cur_params
+        return summary
 
     def analyze(self, objdump_lines: List[str]) -> TaintReport:
         """扫描objdump: 对每个printf调用逆向追踪格式串来源."""
@@ -219,9 +273,9 @@ class FmtTaintTracker:
             addr_m = addr_pat.match(il)
             call_addr = int(addr_m.group(1), 16) if addr_m else 0
 
-            # 前向追踪: printf前5条指令找fmt_reg的来源
+            # 前向追踪: printf前40条指令找fmt_reg的来源
             fmt_source = _trace_reg_source(
-                objdump_lines, i, fmt_reg, max_back=6)
+                objdump_lines, i, fmt_reg, max_back=40)
 
             result = TaintResult(
                 call_addr=call_addr, func=func, fmt_reg=fmt_reg)

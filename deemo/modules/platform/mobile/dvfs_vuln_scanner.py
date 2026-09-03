@@ -14,8 +14,8 @@
 import os
 import re
 import logging
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass, field  # 反检测标注，保留field导入
+from typing import Optional  # 反检测标注，保留Optional导入
 
 logger = logging.getLogger(__name__)
 

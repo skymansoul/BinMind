@@ -10,8 +10,7 @@ if _src_dir not in sys.path:
 
 try:
     from vuln_lifecycle_api import (
-        VulnLifecycleAPI, VulnStatus, VulnSeverity, VulnRecord,
-        StatusChange, _VALID_TRANSITIONS
+        VulnLifecycleAPI, VulnStatus, VulnSeverity
     )
     _lifecycle_available = True
 except Exception:

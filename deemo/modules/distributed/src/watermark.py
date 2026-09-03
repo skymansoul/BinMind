@@ -237,5 +237,3 @@ class FlowController:
             f"FlowController(depth={self.depth}, "
             f"flowing={self._monitor.is_flowing})"
         )
-
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

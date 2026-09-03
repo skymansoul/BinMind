@@ -12,7 +12,7 @@
 
 import logging
 from collections import deque
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence
 
 from modules.vuln.detection.cpg_builder import (
     CPGEdgeKind,

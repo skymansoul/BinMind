@@ -1,8 +1,7 @@
 # coding: utf-8
-import re, logging, time
+import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-_log = logging.getLogger(__name__)
+from typing import Dict, List
 
 @dataclass
 class HoFpStats:

@@ -14,8 +14,8 @@
 """
 
 import re
-from typing import List, Dict, Tuple, Optional
-from dataclasses import dataclass, field
+from typing import List, Dict, Tuple
+from dataclasses import dataclass
 
 
 @dataclass
@@ -110,8 +110,7 @@ class WriteIntervalTracker:
 
         return WriteInterval(reason='unknown_write_size')
 
-# 守卫收集: 对write size寄存器的约束
-
+    # 守卫收集: 对write size寄存器的约束
     def _write_size_reg(self, asm_lines: List[str], write_line: int) -> str:
         """回溯找write size寄存器的来源寄存器(用于守卫收集)。"""
         for j in range(write_line - 1, max(write_line - 8, -1), -1):

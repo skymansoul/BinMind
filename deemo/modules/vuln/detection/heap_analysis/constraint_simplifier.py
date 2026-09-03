@@ -10,9 +10,6 @@
   判据: 64 < 128 → 不可证明安全 → 保留告警
 
   但若 rdx 的来源是 rdi+0 → rdx=64 → 64 >= 64 → 可证明安全 → 过滤。
-
-修改记录:
-  创建 2025-03-28
 """
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple

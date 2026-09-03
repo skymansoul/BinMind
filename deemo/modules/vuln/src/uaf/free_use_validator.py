@@ -139,8 +139,10 @@ class FreeUseValidator:
             if eff.gen_alloc:
                 if in_user:
                     if eff.free_call:  # realloc
+                        conditional = self._is_conditional_free(effects, i)
                         freed_oid = self._tracker.track_free(
-                            eff.addr, eff.line, eff.free_reg)
+                            eff.addr, eff.line, eff.free_reg,
+                            conditional=conditional)
                         if freed_oid:
                             obj = self._tracker.objects.get(freed_oid)
                             if obj and obj.double_freed:
@@ -164,8 +166,11 @@ class FreeUseValidator:
 # FREE
             if eff.free_call:
                 if in_user:
+                    # 条件 free 检测: 向前扫描 5 条找 jcc (非 jmp)
+                    conditional = self._is_conditional_free(effects, i)
                     freed_oid = self._tracker.track_free(
-                        eff.addr, eff.line, eff.free_reg)
+                        eff.addr, eff.line, eff.free_reg,
+                        conditional=conditional)
                     if freed_oid:
                         obj = self._tracker.objects.get(freed_oid)
                         if obj and obj.double_freed:
@@ -389,9 +394,32 @@ class FreeUseValidator:
                 end = idx
         return end
 
+    _JCC_DETECT = re.compile(
+        r'\bj(?:e|ne|g|ge|l|le|be|ae|b|a|s|ns|o|no|p|np|cxz|ecxz|rcxz)\b',
+        re.I)
+
+    @staticmethod
+    def _is_conditional_free(effects: List[InsnEffect],
+                             free_idx: int) -> bool:
+        """检测 free 指令是否位于条件分支内.
+
+        设计决策:
+          - 向前扫描 5 条指令检测 jcc (非 jmp 无条件跳转).
+          - 若存在 jcc, free 是条件性执行, 设置 maybe_freed 而非 freed_at.
+        """
+        scan_start = max(0, free_idx - 5)
+        for j in range(scan_start, free_idx):
+            if FreeUseValidator._JCC_DETECT.match(effects[j].mnemonic):
+                return True
+        return False
+
     def _compute_confidence(self, obj: HeapObject,
                             use_line: int) -> float:
-        """基于多因素计算UAF置信度."""
+        """基于多因素计算UAF置信度.
+
+        设计决策:
+          - maybe_freed=True 的条件释放对象, 置信度减半.
+        """
         score = 0.5
         if obj.oid.alloc_func in ('malloc', 'calloc'):
             score += 0.1
@@ -406,6 +434,9 @@ class FreeUseValidator:
             score += 0.05
         if obj.double_freed:
             score += 0.3
+        # 条件释放: 置信度减半
+        if getattr(obj, 'maybe_freed', False):
+            score *= 0.5
         return min(score, 1.0)
 
 
@@ -421,7 +452,15 @@ def filter_infeasible_paths(findings: List[ValidatedUAFFinding],
     """
     filtered = []
     for f in findings:
-        if not _has_function_label_between(asm_lines, f.free_line, f.use_line):
+        cross_fn = _has_function_label_between(
+            asm_lines, f.free_line, f.use_line)
+        if not cross_fn:
+            # 同函数内: 检查 re-alloc
+            if _has_realloc_between(asm_lines, f.free_line, f.use_line):
+                continue
+        else:
+            # 跨函数: 若 realloc 所在函数在 free 对象身份链上则仍检查
+            # 执行序判断: realloc 在 free 之后出现即可能重用同一指针
             if _has_realloc_between(asm_lines, f.free_line, f.use_line):
                 continue
         filtered.append(f)
@@ -461,9 +500,11 @@ def _has_jmp_between(effects: list, start_line: int,
                       end_line: int) -> bool:
     """检查start和end之间是否有跳转指令 (不同执行路径).
 
-    仅在start和end属于同一函数时检查.
-    若有函数标签在start和end之间 → 跨函数 → 不检查 (保守, 因为
-    无关函数内的跳转不应过滤跨函数findings).
+    设计决策:
+      - 移除跨函数豁免: 原逻辑 cross_function 时直接返回 False,
+        导致条件性 free 的 UAF 误报 (free 是条件性执行时仍报 UAF).
+      - 跨函数时在 free 所在函数体范围内检测前驱路径上的条件跳转.
+        若 free 前有 jcc, 说明 free 是条件性执行, 可能未发生 → 返回 True.
     """
     cross_function = False
     has_jmp = False
@@ -473,6 +514,28 @@ def _has_jmp_between(effects: list, start_line: int,
                 cross_function = True
             if _JMP_PAT.match(eff.mnemonic):
                 has_jmp = True
-    if cross_function:
-        return False
+    if not cross_function:
+        return has_jmp
+
+    # 跨函数: 在 free 所在函数体范围内检测前驱条件跳转
+    # 找到 free 指令所在函数体的起始边界
+    free_fn_start = 0
+    for eff in effects:
+        if eff.line >= start_line:
+            break
+        if eff.is_func_entry:
+            free_fn_start = eff.line
+
+    # 条件跳转指令模式 (非 jmp 无条件)
+    _JCC_PAT = re.compile(
+        r'\bj(?:e|ne|g|ge|l|le|be|ae|b|a|s|ns|o|no|p|np|cxz|ecxz|rcxz)\b',
+        re.I)
+    # 在 free 前 5 条指令范围内检测条件跳转
+    pre_insns = [eff for eff in effects
+                 if free_fn_start <= eff.line < start_line]
+    scan_count = min(5, len(pre_insns))
+    for eff in pre_insns[-scan_count:]:
+        if _JCC_PAT.match(eff.mnemonic):
+            return True
+
     return has_jmp

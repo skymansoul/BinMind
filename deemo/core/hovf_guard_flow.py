@@ -53,11 +53,30 @@ class GuardFlow:
         except (ValueError, TypeError):
             return None
 
+    def _block_start(self, idx: int) -> Optional[int]:
+        """回溯查找 idx 所属 if/for/while 块起始行."""
+        for i in range(idx, -1, -1):
+            line = self.ir[i]
+            if re.search(r'\b(if|for|while)\b', line):
+                return i
+            # 函数标签标记回溯边界
+            if re.match(r'^\s*<\w+>:\s*$', line):
+                break
+        return None
+
     def bound_for(self, var: str, write_idx: int) -> Optional[ValueInterval]:
-        """返回支配写入点之前、约束 var 的最强守卫区间."""
+        """返回支配写入点之前、约束 var 的最强守卫区间.
+
+        额外验证 guard 与 write 处于同一控制流块, 避免跨块误绑.
+        """
         best: Optional[ValueInterval] = None
+        write_block = self._block_start(write_idx)
         for idx, gvar, iv, _op in self._bounds:
             if gvar != var or idx >= write_idx:
+                continue
+            # 两者均在无控制块内 (None==None) 或同一块才绑定
+            guard_block = self._block_start(idx)
+            if guard_block != write_block:
                 continue
             if best is None or iv.hi < best.hi:
                 best = iv

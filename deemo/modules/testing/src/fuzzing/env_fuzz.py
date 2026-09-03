@@ -1,8 +1,6 @@
 """环境变量模糊测试——枚举 getenv 引用 -> 对每个变量生成 10 种变异"""
 import os
 import subprocess
-import time
-import hashlib
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -75,7 +73,6 @@ def fuzz_env(target_path: str,
              env_vars: Dict[str, str],
              timeout: float = 5.0) -> List[Dict[str, Any]]:
     """环境变量模糊测试——每组变异启动目标，记录崩溃信号"""
-    import tempfile
     _results = []
     _mutations = generate_env_mutations(env_vars)
     _base_env = dict(os.environ)

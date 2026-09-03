@@ -1,16 +1,15 @@
-# IDS规则生成器
-# Snort 3与Suricata规则生成，基于CVE/攻击模式生成网络检测规则
-# FIXME: 端口和流向目前硬编码为any→any，应从CVE描述中提取
+"""IDS规则生成器 — Snort 3 与 Suricata 规则, 基于 CVE/攻击模式生成网络检测规则.
+
+端口和流向暂硬编码为 any→any, 后续从 CVE 描述中提取。
+"""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List
 from enum import Enum
-import json as _json
+import json
 import os
 import re
 import hashlib
-
-json = _json
 
 
 class RuleProtocol(str, Enum):

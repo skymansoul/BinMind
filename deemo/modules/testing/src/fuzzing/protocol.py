@@ -1,10 +1,9 @@
 """协议逆向工程——多序列对齐 + 熵分析 -> 字段边界 -> ProtocolSpec + Kaitai Struct"""
 import os
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Tuple
-import struct
+from typing import List, Dict, Any
+from collections import Counter, defaultdict
 import math
-import collections
 
 
 @dataclass
@@ -79,7 +78,7 @@ class ProtocolAnalyzer:
         _entropies = []
         for _i in range(_min_len):
             _vals = [_s[_i] for _s in samples]
-            _counter = collections.Counter(_vals)
+            _counter = Counter(_vals)
             _ent = 0.0
             for _c in _counter.values():
                 _p = _c / len(_vals)

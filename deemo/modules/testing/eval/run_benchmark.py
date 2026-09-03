@@ -17,12 +17,13 @@ stripped 作为"加固"形态的诚实替代, 见 plot_comparison 注释.
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parent.parent
 EVAL_DIR = ROOT / "eval"
@@ -118,7 +119,6 @@ def run_source_tool(tool: str, src_file: str) -> int:
 
 
 def re_find_errors(xml: str):
-    import re
     return re.finditer(
         r'<error[^>]*id="([^"]*)"[^>]*msg="([^"]*)"', xml)
 

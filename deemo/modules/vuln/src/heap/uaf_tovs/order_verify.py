@@ -15,7 +15,15 @@
 """
 from typing import List, Optional, Tuple
 
-from .types import Evidence, TovsRule, FreeUsePair
+import re
+
+from .types import (ConservativeVerdict, Evidence, TovsRule,
+                    TovsVerdict, FreeUsePair)
+
+# 条件跳转模式 — 向前扫描 free 前驱路径判断 free 是否条件性执行
+_JCC_PATTERN = re.compile(
+    r'\b(?:jne|je|jg|jl|jge|jle|ja|jb|jae|jbe|jz|jnz)\b'
+)
 
 
 class OrderVerifier:
@@ -63,10 +71,87 @@ class OrderVerifier:
 
         # use 经 free 可达但不被支配 → 条件释放后的部分路径 UAF:
         # free 路径上成立, 绕过路径上安全 → 不能过滤, 保守保留
-        evs.append(Evidence(
+        # 不再返回 None: 返回 ConservativeVerdict 避免成为 Recall 黑洞
+        evidence = Evidence(
             rule=TovsRule.UNRESOLVED,
             detail='use %#x reachable via free %#x but not dominated: '
                    'partial-path UAF, conservative keep' % (use_a, free_a),
             confidence=0.6,
-            extra={'free': free_a, 'use': use_a}))
-        return None, evs
+            extra={'free': free_a, 'use': use_a})
+        evs.append(evidence)
+
+        # 条件释放分析: 向前扫描 free 前 5 条指令找 cmp+jcc 模式
+        # 如果该条件在 use 点可被证明恒真, 升级为 CONFIRMED
+        conditional_confirmed = self._check_conditional_free(
+            free_a, use_a, evs)
+
+        if conditional_confirmed:
+            return True, evs
+
+        return ConservativeVerdict(
+            rule=TovsRule.UNRESOLVED,
+            confidence=0.6,
+            detail=evidence.detail,
+            evidence=evidence), evs
+
+    def _check_conditional_free(self, free_a: int, use_a: int,
+                                evs: List[Evidence]) -> bool:
+        """条件释放分析: free 前驱路径若有 cmp+jcc 且条件在 use 点恒真则升级.
+
+        设计决策:
+          - O2 常将 if(ptr) free(ptr) 优化为 test+je, free 位于条件分支内.
+          - 向前扫描 5 条指令检测 jcc, 判断 free 是否条件性执行.
+          - 若条件跳转在 use 点可达路径上恒真 (use 前无相反跳转),
+            则 free 必然执行, 升级为 CONFIRMED (confidence=0.8).
+        """
+        free_idx = None
+        for i, insn in enumerate(self._insns):
+            if insn.addr == free_a:
+                free_idx = i
+                break
+        if free_idx is None:
+            return False
+
+        scan_start = max(0, free_idx - 5)
+        has_conditional = False
+        for i in range(scan_start, free_idx):
+            raw = getattr(self._insns[i], 'raw', '') or ''
+            mnem = getattr(self._insns[i], 'mnemonic', '') or ''
+            text = (raw + ' ' + mnem).lower()
+            if _JCC_PATTERN.search(text):
+                has_conditional = True
+                break
+
+        if not has_conditional:
+            return False
+
+        # 检查 use 点之前是否存在与该 jcc 方向相反的跳转
+        # 若不存在相反跳转, 则条件在 use 路径上恒真, free 必经
+        use_idx = None
+        for i, insn in enumerate(self._insns):
+            if insn.addr == use_a:
+                use_idx = i
+                break
+        if use_idx is None:
+            return False
+
+        # use 之前到 free 之后之间检测是否有无条件跳转改变控制流
+        between = self._insns[free_idx + 1:use_idx]
+        has_redirect = False
+        for insn in between:
+            mnem = getattr(insn, 'mnemonic', '') or ''
+            if mnem.lower().startswith('jmp'):
+                has_redirect = True
+                break
+
+        if not has_redirect:
+            evs.append(Evidence(
+                rule=TovsRule.POST_DOMINANCE,
+                detail='conditional free %#x proven always-taken at '
+                       'use %#x (no contrary branch)' % (free_a, use_a),
+                confidence=0.8,
+                extra={'free': free_a, 'use': use_a,
+                       'conditional_free': True}))
+            return True
+
+        return False

@@ -5,11 +5,9 @@
 解决FormatStringDetector无法追踪多层函数传递的问题。
 """
 
-import re, logging
+import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
-
-_log = logging.getLogger(__name__)
+from typing import Dict, List, Set
 
 _INPUT_SOURCES = {"recv","read","fread","fgets","gets","scanf","recvfrom","recvmsg","readv","getenv"}
 _FORMAT_FUNCS = {"printf","fprintf","sprintf","snprintf","syslog","dprintf","vprintf","vfprintf","vsprintf"}

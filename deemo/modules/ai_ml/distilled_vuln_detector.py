@@ -151,7 +151,8 @@ class DistilledVulnerabilityDetector:
     def __init__(self):
         try:
             from transformers import BertTokenizer
-            self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+            # 仅本地缓存加载, 无网环境禁止联网下载挂起; 未缓存时走降级分支
+            self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", local_files_only=True)
         except (ImportError, OSError):
             self.tokenizer = self
         self.config = {"max_length": 512, "model_path": None, "device": "cpu"}

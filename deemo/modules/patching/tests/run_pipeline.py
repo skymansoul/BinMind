@@ -14,7 +14,6 @@
 import os
 import sys
 import subprocess
-import json
 import time
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

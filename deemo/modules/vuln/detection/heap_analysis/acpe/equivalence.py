@@ -1,6 +1,5 @@
 """容量溯源等价判定 — ACPE 的核心分类器.
 
-创建: 2025-03-03
 用途: 判定 memcpy 等写入的 size 表达式与目标分配的容量表达式之间的
       溯源等价关系。这是 ACPE 的关键创新点:
 
@@ -18,9 +17,6 @@
   ARITH_GT     写入 = 分配基址 + 正偏移 > MAX_SLACK → 确定越界
   GUARDED      写入被早退/钳位守卫限定 ≤ 可用容量 → 安全
   UNRELATED    写入独立于分配容量 → 无法证明安全
-
-TODO: 守卫界的有符号/无符号语义未区分 (cmp 的 jbe 与 jle 对同值
-不同解释), 对极小负数 size 的边界行为需复核。
 """
 
 from dataclasses import dataclass

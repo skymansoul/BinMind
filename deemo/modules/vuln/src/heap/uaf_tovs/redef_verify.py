@@ -18,6 +18,12 @@ from .types import Evidence, TovsRule, FreeUsePair
 _REG_RE = re.compile(r'\b(r[0-9a-d]+[bwd]?|[er]?[abcd]x)\b',
                      re.IGNORECASE)
 
+# O2 寄存器重物质化: lea 从栈槽恢复指针, xchg 交换寄存器覆盖定义
+# 这两种形式在 O2 下替代 mov, 导致 _last_def_before 漏判定义点
+_LEA_RBP_RE = re.compile(
+    r'lea\s+(\w+),\s*\[rbp[+-]0x[0-9a-fA-F]+\]', re.IGNORECASE)
+_XCHG_RE = re.compile(r'xchg\s+(\w+),\s*(\w+)', re.IGNORECASE)
+
 
 class RedefVerifier:
     """指针身份重定义验证器."""
@@ -72,6 +78,17 @@ class RedefVerifier:
                     return j
                 continue
             op = insn.operands
+            # lea reg, [rbp+N]: O2 重物质化, 目标寄存器为定义点
+            m_lea = _LEA_RBP_RE.search(op)
+            if m_lea and m_lea.group(1).lower() == reg:
+                return j
+            # xchg reg1, reg2: 两个寄存器都被重新定义
+            m_xchg = _XCHG_RE.search(op)
+            if m_xchg:
+                r1 = m_xchg.group(1).lower()
+                r2 = m_xchg.group(2).lower()
+                if r1 == reg or r2 == reg:
+                    return j
             if ',' not in op:
                 continue
             dst = op.split(',')[0].strip()
@@ -108,4 +125,44 @@ class RedefVerifier:
             return 'const:%s' % src
         if '[' in src:
             return 'mem-load'
+        return None
+
+    def check_stack_store_between(self, free_idx: int,
+                                  use_idx: int) -> Optional[str]:
+        """死存储消除补偿: free 后 use 前检查栈槽是否有新存储.
+
+        设计决策:
+          - O2 死存储消除会移除 mov [rbp+N], reg, 但 lea reg, [rbp+N] 仍保留.
+          - 若 free 之后栈槽被新值覆盖, use 处 lea 恢复的指针已非原对象.
+          - 返回 'stack-overwrite' 表示身份被杀, None 表示无法确定.
+        """
+        _STACK_STORE_RE = re.compile(
+            r'mov\s+\[rbp[+-]0x[0-9a-fA-F]+\],\s*(\w+)', re.IGNORECASE)
+        _LEA_LOAD_RE = re.compile(
+            r'lea\s+(\w+),\s*\[rbp([+-])0x([0-9a-fA-F]+)\]', re.IGNORECASE)
+        if use_idx <= free_idx:
+            return None
+        # 收集 use 点 lea 读取的栈槽偏移
+        use_insn = self._insns[use_idx]
+        use_lea = _LEA_LOAD_RE.search(use_insn.operands)
+        target_offset = None
+        if use_lea:
+            sign = '-' if use_lea.group(2) == '-' else '+'
+            target_offset = '%s0x%s' % (sign, use_lea.group(3).lower())
+        for j in range(free_idx + 1, use_idx):
+            insn = self._insns[j]
+            op = insn.operands
+            # 检测 mov [rbp+N], reg 对同一栈槽的写入
+            m_store = _STACK_STORE_RE.search(op)
+            if m_store:
+                if target_offset is None:
+                    return 'stack-overwrite'
+                store_match = re.search(
+                    r'\[rbp([+-])0x([0-9a-fA-F]+)\]', op, re.IGNORECASE)
+                if store_match:
+                    store_sign = '-' if store_match.group(1) == '-' else '+'
+                    store_off = '%s0x%s' % (
+                        store_sign, store_match.group(2).lower())
+                    if store_off == target_offset:
+                        return 'stack-overwrite'
         return None

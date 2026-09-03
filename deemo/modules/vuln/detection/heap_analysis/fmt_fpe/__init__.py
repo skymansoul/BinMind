@@ -1,6 +1,5 @@
 """FPE — Format-Provenance Equivalence 包入口.
 
-创建: 2024-11-05
 格式字符串漏洞误报削减创新包。模块分工:
   fmt_types    格式溯源类型与判定枚举
   fmt_tracker  前向扫描, 提取格式参数溯源标签

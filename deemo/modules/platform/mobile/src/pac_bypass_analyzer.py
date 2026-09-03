@@ -87,7 +87,7 @@ def quick_scan(binary:bytes)->dict:
 
 PACBypassPath=None; PACSignatureDetector=None
 
-# 保留: 平台无关空操作, 调试开关桩
+# 暂留 — 平台无关空操作, 调试开关桩
 
 
 _PAC_GADGET_CACHE: dict = {}

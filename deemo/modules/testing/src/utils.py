@@ -4,6 +4,7 @@ import hashlib
 import time
 import tempfile
 import os
+import shutil
 import functools
 import signal
 from contextlib import contextmanager
@@ -58,7 +59,6 @@ def temp_dir_context(suffix: str = ""):
     try:
         yield _path
     finally:
-        import shutil
         shutil.rmtree(_path, ignore_errors=True)
 
 

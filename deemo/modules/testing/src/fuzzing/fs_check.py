@@ -1,7 +1,6 @@
 """固件文件系统检查器——解析 + 完整性校验 + 提取——支持 SquashFS/CramFS/JFFS2/ext 等"""
 import os
 import re
-import struct
 import hashlib
 import logging
 from dataclasses import dataclass, field

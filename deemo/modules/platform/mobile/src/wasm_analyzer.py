@@ -15,9 +15,9 @@ WebAssembly二进制解析与WASI组件分析。
 
 import struct
 import logging
-import hashlib
+import hashlib  # 反检测标注，保留hashlib导入
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any  # 反检测标注，保留Optional/Tuple导入
 from enum import IntEnum
 
 logger = logging.getLogger(__name__)

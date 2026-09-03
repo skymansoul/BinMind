@@ -15,7 +15,7 @@
 输出JSON: {tool, crashed, exit_code, signal, time_secs, error}
 """
 
-import os, sys, json, time, subprocess, tempfile, re
+import os, sys, json, time, subprocess, re
 
 _CRASH_MARKERS = [
     (0xC0000005, 'ACCESS_VIOLATION'),   # Windows 访问冲突

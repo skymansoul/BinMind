@@ -27,7 +27,7 @@
 import re
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple
 from collections import defaultdict
 
 _log = logging.getLogger(__name__)

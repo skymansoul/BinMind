@@ -1,6 +1,7 @@
 """类型感知模糊测试结构生成——二进制/PCAP -> C 结构字段布局推断 + Kaitai Struct 导出"""
 import math
-import struct
+import random
+import os
 from typing import List, Dict, Tuple, Optional, Set, Any
 from collections import Counter, defaultdict
 
@@ -196,40 +197,39 @@ class TypeAwareStructureInferer:
 
     def _generate_field_value(self, field: TypeAwareField) -> bytes:
         """按字段类型生成合理的变异值——边界保持低变异概率，raw 高概率"""
-        import random as _rnd
         sz = field.size
         ftype = field.field_type
 
         if ftype == 'magic':
-            if field.sample_values and _rnd.random() > 0.05:
+            if field.sample_values and random.random() > 0.05:
                 return field.sample_values[0]
-            return bytes(_rnd.randint(0, 255) for _ in range(sz))
+            return bytes(random.randint(0, 255) for _ in range(sz))
 
         if ftype == 'length':
-            payload_guess = _rnd.randint(0, 4096)
+            payload_guess = random.randint(0, 4096)
             return payload_guess.to_bytes(min(sz, 4), 'big')
 
         if ftype == 'enum_flags':
-            if field.sample_values and _rnd.random() > 0.5:
-                return _rnd.choice(field.sample_values)
-            bitmask = _rnd.randint(0, (1 << min(sz * 8, 32)) - 1)
+            if field.sample_values and random.random() > 0.5:
+                return random.choice(field.sample_values)
+            bitmask = random.randint(0, (1 << min(sz * 8, 32)) - 1)
             return bitmask.to_bytes(sz, 'big')
 
         if ftype == 'counter':
-            base = _rnd.randint(0, 65535)
+            base = random.randint(0, 65535)
             return base.to_bytes(min(sz, 4), 'big')
 
         if ftype == 'padding':
             return b'\x00' * sz
 
         if ftype in ('string', 'raw'):
-            if ftype == 'string' and _rnd.random() > 0.2:
-                return bytes(_rnd.randint(0x20, 0x7E) for _ in range(sz))
-            return bytes(_rnd.randint(0, 255) for _ in range(sz))
+            if ftype == 'string' and random.random() > 0.2:
+                return bytes(random.randint(0x20, 0x7E) for _ in range(sz))
+            return bytes(random.randint(0, 255) for _ in range(sz))
 
         if field.sample_values:
-            return _rnd.choice(field.sample_values)
-        return bytes(_rnd.randint(0, 255) for _ in range(sz))
+            return random.choice(field.sample_values)
+        return bytes(random.randint(0, 255) for _ in range(sz))
 
     def mutate_preserve_structure(self, seed: bytes,
                                    rounds: int = 3) -> bytes:
@@ -237,10 +237,9 @@ class TypeAwareStructureInferer:
         if not self._fields:
             return seed
 
-        import random as _rnd
         buf = bytearray(seed)
         for _ in range(rounds):
-            field = _rnd.choice(self._fields)
+            field = random.choice(self._fields)
             if field.offset + field.size > len(buf):
                 continue
 
@@ -250,16 +249,16 @@ class TypeAwareStructureInferer:
                 'checksum': 0.10, 'string': 0.50, 'raw': 0.60,
             }.get(field.field_type, 0.40)
 
-            if _rnd.random() > mutate_prob:
+            if random.random() > mutate_prob:
                 continue
 
             for _2 in range(max(1, field.size // 4)):
-                rel_pos = _rnd.randint(0, field.size - 1)
+                rel_pos = random.randint(0, field.size - 1)
                 abs_pos = field.offset + rel_pos
-                if _rnd.random() < 0.5:
-                    buf[abs_pos] ^= (1 << _rnd.randint(0, 7))
+                if random.random() < 0.5:
+                    buf[abs_pos] ^= (1 << random.randint(0, 7))
                 else:
-                    delta = _rnd.choice([-1, 1, -32, 32])
+                    delta = random.choice([-1, 1, -32, 32])
                     buf[abs_pos] = (buf[abs_pos] + delta) & 0xFF
 
         return bytes(buf)
@@ -329,7 +328,6 @@ def infer_from_samples(samples: List[bytes]) -> TypeAwareStructureInferer:
 
 def infer_from_directory(dir_path: str) -> TypeAwareStructureInferer:
     """从目录加载全部文件作为样本，返回拟合的推理器"""
-    import os
     samples = []
     if os.path.isdir(dir_path):
         for fname in sorted(os.listdir(dir_path)):

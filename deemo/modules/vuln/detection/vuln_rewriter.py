@@ -2,7 +2,7 @@
 # 策略链：IR构造, 约束求解, 模板合成, 编译验证。
 # CGC(Cyber Grand Challenge)的CRS/CRS-NG自动补丁生成范式。
 
-import logging, os, re, time, hashlib, tempfile, subprocess
+import logging, os, re, hashlib, tempfile, subprocess
 from typing import Dict, List, Optional, Any, Tuple, Set
 from pathlib import Path
 

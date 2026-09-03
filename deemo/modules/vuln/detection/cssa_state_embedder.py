@@ -33,7 +33,7 @@ import hashlib
 import struct
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import List
 
 from .cssa_corruption_classifier import CrashState
 

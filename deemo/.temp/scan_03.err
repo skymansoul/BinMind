@@ -1,0 +1,166 @@
+INFO     | 2026-09-04 03:53:54,734 | core.pipeline  | Binary: 03_heap_uaf.exe | x86-64 64-bit | size=53670
+INFO     | 2026-09-04 03:53:58,273 | core.pipeline  | Found 77 functions
+INFO     | 2026-09-04 03:53:58,275 | core.pipeline  | Analyzing 20 functions
+INFO     | 2026-09-04 03:54:00,568 | core.decompiler | AI 未配置, 函数 entry0 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:02,867 | core.decompiler | AI 未配置, 函数 sym.__tmainCRTStartup 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:05,152 | core.decompiler | AI 未配置, 函数 sym.__mingw_invalidParameterHandler 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:07,441 | core.decompiler | AI 未配置, 函数 sym.safe_flush 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:09,703 | core.decompiler | AI 未配置, 函数 sym.fflush 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:11,991 | core.decompiler | AI 未配置, 函数 sym.WinMainCRTStartup 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:14,329 | core.decompiler | AI 未配置, 函数 sym.check_managed_app 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:16,614 | core.decompiler | AI 未配置, 函数 sym.duplicate_ppstrings 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:18,876 | core.decompiler | AI 未配置, 函数 sym.atexit 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:21,148 | core.decompiler | AI 未配置, 函数 sym._crt_atexit 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:23,445 | core.decompiler | AI 未配置, 函数 sym.__gcc_register_frame 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:25,879 | core.decompiler | AI 未配置, 函数 sym.__gcc_deregister_frame 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:28,173 | core.decompiler | AI 未配置, 函数 sym.win 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:30,569 | core.decompiler | AI 未配置, 函数 sym.puts 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:32,849 | core.decompiler | AI 未配置, 函数 sym.normal 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:35,252 | core.decompiler | AI 未配置, 函数 sym.main 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:37,533 | core.decompiler | AI 未配置, 函数 sym.__main 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:39,902 | core.decompiler | AI 未配置, 函数 sym.__do_global_ctors 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:42,180 | core.decompiler | AI 未配置, 函数 sym.malloc 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:44,563 | core.decompiler | AI 未配置, 函数 sym.free 降级为启发式模拟分析
+INFO     | 2026-09-04 03:54:44,622 | angr.project   | Loading binary C:\Users\Administrator\Desktop\BinMind\deemo\samples\teaching\03_heap_uaf\03_heap_uaf.exe
+INFO     | 2026-09-04 03:54:44,628 | cle.loader     | Linking C:\Users\Administrator\Desktop\BinMind\deemo\samples\teaching\03_heap_uaf\03_heap_uaf.exe
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for DeleteCriticalSection
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for EnterCriticalSection
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for FreeLibrary
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for GetLastError
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for GetModuleHandleA
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for GetProcAddress
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for InitializeCriticalSection
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for LeaveCriticalSection
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for LoadLibraryA
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for SetUnhandledExceptionFilter
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for Sleep
+INFO     | 2026-09-04 03:54:44,629 | cle.backends.externs | Created extern symbol for TlsGetValue
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for VirtualProtect
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for VirtualQuery
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for __C_specific_handler
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for __getmainargs
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for __initenv
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for __iob_func
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for __set_app_type
+INFO     | 2026-09-04 03:54:44,630 | cle.backends.externs | Created extern symbol for __setusermatherr
+INFO     | 2026-09-04 03:54:44,631 | cle.backends.externs | Created extern symbol for _amsg_exit
+INFO     | 2026-09-04 03:54:44,631 | cle.backends.externs | Created extern symbol for _cexit
+INFO     | 2026-09-04 03:54:44,631 | cle.backends.externs | Created extern symbol for _commode
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for _fmode
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for _initterm
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for atexit
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for abort
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for calloc
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for exit
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for fflush
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for fprintf
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for free
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for malloc
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for memcpy
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for memset
+INFO     | 2026-09-04 03:54:44,632 | cle.backends.externs | Created extern symbol for puts
+INFO     | 2026-09-04 03:54:44,633 | cle.backends.externs | Created extern symbol for setvbuf
+INFO     | 2026-09-04 03:54:44,633 | cle.backends.externs | Created extern symbol for signal
+INFO     | 2026-09-04 03:54:44,633 | cle.backends.externs | Created extern symbol for strlen
+INFO     | 2026-09-04 03:54:44,633 | cle.backends.externs | Created extern symbol for strncmp
+INFO     | 2026-09-04 03:54:44,634 | cle.backends.externs | Created extern symbol for vfprintf
+INFO     | 2026-09-04 03:54:44,634 | cle.loader     | Mapping C:\Users\Administrator\Desktop\BinMind\deemo\samples\teaching\03_heap_uaf\03_heap_uaf.exe at 0x140000000
+INFO     | 2026-09-04 03:54:44,634 | cle.loader     | Mapping cle##externs at 0x140100000
+INFO     | 2026-09-04 03:54:44,682 | cle.loader     | Linking cle##externs
+INFO     | 2026-09-04 03:54:44,682 | cle.loader     | Mapping cle##externs at 0x140200000
+INFO     | 2026-09-04 03:54:44,682 | cle.backends.externs | Created extern symbol for __fastfail
+INFO     | 2026-09-04 03:54:44,682 | angr.project   | Using builtin SimProcedure for unresolved DeleteCriticalSection from kernel32.dll
+INFO     | 2026-09-04 03:54:44,683 | angr.project   | Using builtin SimProcedure for unresolved EnterCriticalSection from kernel32.dll
+INFO     | 2026-09-04 03:54:44,683 | angr.project   | Using builtin SimProcedure for unresolved FreeLibrary from kernel32.dll
+INFO     | 2026-09-04 03:54:44,684 | angr.project   | Using builtin SimProcedure for unresolved GetLastError from kernel32.dll
+INFO     | 2026-09-04 03:54:44,684 | angr.project   | Using builtin SimProcedure for unresolved GetModuleHandleA from kernel32.dll
+INFO     | 2026-09-04 03:54:44,685 | angr.project   | Using builtin SimProcedure for unresolved GetProcAddress from kernel32.dll
+INFO     | 2026-09-04 03:54:44,685 | angr.project   | Using builtin SimProcedure for unresolved InitializeCriticalSection from kernel32.dll
+INFO     | 2026-09-04 03:54:44,685 | angr.project   | Using builtin SimProcedure for unresolved LeaveCriticalSection from kernel32.dll
+INFO     | 2026-09-04 03:54:44,685 | angr.project   | Using builtin SimProcedure for unresolved LoadLibraryA from kernel32.dll
+INFO     | 2026-09-04 03:54:44,685 | angr.project   | Using builtin SimProcedure for unresolved SetUnhandledExceptionFilter from kernel32.dll
+INFO     | 2026-09-04 03:54:44,686 | angr.project   | Using builtin SimProcedure for unresolved Sleep from kernel32.dll
+INFO     | 2026-09-04 03:54:44,686 | angr.project   | Using builtin SimProcedure for unresolved TlsGetValue from kernel32.dll
+INFO     | 2026-09-04 03:54:44,686 | angr.project   | Using builtin SimProcedure for unresolved VirtualProtect from kernel32.dll
+INFO     | 2026-09-04 03:54:44,686 | angr.project   | Using builtin SimProcedure for unresolved VirtualQuery from kernel32.dll
+INFO     | 2026-09-04 03:54:44,687 | angr.project   | Using builtin SimProcedure for unresolved __C_specific_handler from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,687 | angr.project   | Using builtin SimProcedure for unresolved __getmainargs from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,687 | angr.project   | Using builtin SimProcedure for unresolved __initenv from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,687 | angr.project   | Using builtin SimProcedure for unresolved __iob_func from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,688 | angr.project   | Using builtin SimProcedure for unresolved __set_app_type from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,688 | angr.project   | Using builtin SimProcedure for unresolved __setusermatherr from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,688 | angr.project   | Using builtin SimProcedure for unresolved _amsg_exit from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,688 | angr.project   | Using builtin SimProcedure for unresolved _cexit from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,689 | angr.project   | Using builtin SimProcedure for unresolved _commode from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,689 | angr.project   | Using builtin SimProcedure for unresolved _fmode from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,689 | angr.project   | Using builtin SimProcedure for unresolved _initterm from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,689 | angr.project   | Using builtin SimProcedure for unresolved atexit from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,689 | angr.project   | Using builtin SimProcedure for unresolved abort from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,689 | angr.project   | Using builtin SimProcedure for unresolved calloc from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,689 | angr.project   | Using builtin SimProcedure for unresolved exit from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved fflush from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved fprintf from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved free from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved malloc from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved memcpy from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved memset from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved puts from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved setvbuf from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,690 | angr.project   | Using builtin SimProcedure for unresolved signal from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,691 | angr.project   | Using builtin SimProcedure for unresolved strlen from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,691 | angr.project   | Using builtin SimProcedure for unresolved strncmp from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,691 | angr.project   | Using builtin SimProcedure for unresolved vfprintf from msvcrt.dll
+INFO     | 2026-09-04 03:54:44,691 | cle.backends.externs | Created extern symbol for KiUserExceptionDispatcher
+INFO     | 2026-09-04 03:54:44,692 | cle.backends.externs | Created extern symbol for _acmdln
+INFO     | 2026-09-04 03:54:44,692 | cle.backends.externs | Created extern symbol for _wcmdln
+INFO     | 2026-09-04 03:54:44,692 | cle.loader     | Linking cle##tls
+INFO     | 2026-09-04 03:54:44,692 | cle.loader     | Mapping cle##tls at 0x140300000
+INFO     | 2026-09-04 03:54:44,693 | angr.analyses.cfg.cfg_base | Loaded 5 indirect jump resolvers (3 timeless, 2 generic).
+INFO     | 2026-09-04 03:54:44,693 | cle.backends.externs | Created extern symbol for UnresolvableJumpTarget
+INFO     | 2026-09-04 03:54:44,693 | cle.backends.externs | Created extern symbol for UnresolvableCallTarget
+INFO     | 2026-09-04 03:54:44,694 | angr.analyses.cfg.cfg_fast | Loaded 0 exception handlings from 0 binaries.
+INFO     | 2026-09-04 03:54:44,695 | angr.analyses.cfg.cfg_fast | Found 93 functions with prologue scanning.
+INFO     | 2026-09-04 03:54:44,793 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x140003186 in function 0x140003160.
+INFO     | 2026-09-04 03:54:44,802 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x140002614 in function 0x1400024a0.
+INFO     | 2026-09-04 03:54:44,813 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x1400019b8 in function 0x140001940.
+INFO     | 2026-09-04 03:54:44,824 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x1400028aa in function 0x1400026fa.
+INFO     | 2026-09-04 03:54:44,831 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x1400026ca in function 0x1400024a0.
+INFO     | 2026-09-04 03:54:44,832 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002425 to 0x1400090f0
+INFO     | 2026-09-04 03:54:44,833 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002425 to 0x1400090f0
+INFO     | 2026-09-04 03:54:44,833 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002425 to 0x1400090f0
+INFO     | 2026-09-04 03:54:44,833 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002425 to 0x1400090f0
+INFO     | 2026-09-04 03:54:44,833 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002425 to 0x1400090f0
+INFO     | 2026-09-04 03:54:44,837 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x1400016bc in function 0x140001670.
+INFO     | 2026-09-04 03:54:44,843 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x140001371 in function 0x14000108e.
+INFO     | 2026-09-04 03:54:44,850 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x14000185a in function 0x140001850.
+INFO     | 2026-09-04 03:54:44,857 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x14000266b in function 0x1400024a0.
+INFO     | 2026-09-04 03:54:44,866 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x140002853 in function 0x1400026fa.
+INFO     | 2026-09-04 03:54:44,878 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x140002b21 in function 0x140002ac2.
+INFO     | 2026-09-04 03:54:44,893 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x1400018d7 in function 0x14000188f.
+INFO     | 2026-09-04 03:54:44,894 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002942 to 0x140009110
+INFO     | 2026-09-04 03:54:44,894 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002942 to 0x140009110
+INFO     | 2026-09-04 03:54:44,894 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002942 to 0x140009110
+INFO     | 2026-09-04 03:54:44,895 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002942 to 0x140009110
+INFO     | 2026-09-04 03:54:44,895 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Resolved constant indirect jump from 0x140002942 to 0x140009110
+INFO     | 2026-09-04 03:54:44,911 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x1400017b3 in function 0x14000179c.
+INFO     | 2026-09-04 03:54:44,921 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x140002909 in function 0x1400026fa.
+INFO     | 2026-09-04 03:54:44,930 | angr.analyses.cfg.indirect_jump_resolvers.jumptable | Could not resolve indirect jump 0x140001818 in function 0x14000179c.
+INFO     | 2026-09-04 03:54:45,191 | core.pipeline  | Adaptive scheduler decision: {'rule': True, 'symbolic': True, 'fuzz': True}
+INFO     | 2026-09-04 03:54:45,641 | core.pipeline  | Fuzz harness generated for entry0
+INFO     | 2026-09-04 03:54:47,828 | modules.binary_analysis.decomp_ai | [decomp_ai] AI 未配置，返回纯启发式结果（simulation=true）
+INFO     | 2026-09-04 03:54:47,923 | modules.analysis.symbolic.src.symexec_opt_passes | angr 已加载
+INFO     | 2026-09-04 03:54:47,924 | modules.analysis.symbolic.src.symexec_opt_passes | Z3 求解器已加载
+INFO     | 2026-09-04 03:54:47,976 | modules.analysis.symbolic.symbolic_exe | angr 符号执行引擎可用
+INFO     | 2026-09-04 03:54:49,168 | core.pipeline  | [ENH] pipeline_enh_1 applied
+WARNING  | 2026-09-04 03:54:49,246 | modules.distributed.worker | [Worker] Celery 未安装，分布式功能不可用
+WARNING  | 2026-09-04 03:54:49,248 | modules.distributed.worker | [Worker] redis-py 未安装，心跳功能受限
+INFO     | 2026-09-04 03:54:49,282 | core.pipeline  | [ENH] pipeline_enh_2 applied
+INFO     | 2026-09-04 03:54:49,293 | core.pipeline  | [ENH] pipeline_enh_3 applied
+WARNING  | 2026-09-04 03:54:49,324 | core.pipeline  | [ENH] pipeline_enh_4 failed: 'ConstraintGuidedMutator' object has no attribute '_chains'
+INFO     | 2026-09-04 03:54:49,339 | core.pipeline  | [ENH] pipeline_enh_5 applied
+INFO     | 2026-09-04 03:54:49,367 | core.pipeline  | [ENH] pipeline_enh_6 applied
+INFO     | 2026-09-04 03:54:49,379 | core.pipeline  | [ENH] pipeline_enh_7 applied
+WARNING  | 2026-09-04 03:54:49,394 | modules.output.web_api | [WebAPI] FastAPI 或 uvicorn 未安装，Web API 服务不可用
+WARNING  | 2026-09-04 03:54:49,395 | modules.output.web_api | [WebAPI] celery 未安装，分布式任务功能不可用
+INFO     | 2026-09-04 03:54:49,398 | core.pipeline  | [ENH] pipeline_enh_8 applied
+INFO     | 2026-09-04 03:54:49,416 | core.pipeline  | Pipeline done in 54.8s | 20 functions | 17 vulns

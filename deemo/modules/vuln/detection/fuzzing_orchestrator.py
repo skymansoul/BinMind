@@ -12,14 +12,11 @@
 # 当前实现-AFL++ wrapper基础上扩展
 # 增强-崩溃分诊与多fuzzer编排
 
-import os, sys, time, re, json, subprocess, signal, hashlib, shutil, logging, threading
-import tempfile as _tempfile
-from typing import Dict, List, Optional, Any, Tuple, Set
-from pathlib import Path
+import os, time, subprocess, hashlib, shutil, logging, threading
+from typing import Dict, List, Optional, Any, Set
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from collections import defaultdict, deque
 
 logger = logging.getLogger(__name__)
 

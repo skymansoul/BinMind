@@ -1,6 +1,5 @@
 """多工具对比主实验 — ACPE vs 基线 vs angr vs qemu vs ghidra.
 
-创建: 2024-11-05
 对所有样本(plain/packed 两档)调用全部工具, 输出统一 CSV:
   tool, sample_id, detected, fp, fn, elapsed_sec, peak_mem_mb
 

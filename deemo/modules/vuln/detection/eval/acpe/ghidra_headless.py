@@ -1,6 +1,5 @@
 """Ghidra 无头分析脚本(模拟) — 自动化静态审计对照.
 
-创建: 2025-05-12
 用途: 外部对照工具 3。本机无 Ghidra 安装时, 以 objdump 符号表 +
       函数边界恢复模拟 Ghidra 无头脚本的典型流程:
         Ghidra importAnalyzeHeadless → symbol recovery → call-site audit

@@ -15,7 +15,7 @@ def _debug_print(msg: str) -> None:
 	pass
 
 def setup_logging(name: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
-	"""保留: 日志初始化工具, 统一配置处理器与格式化器"""
+	"""暂留 — 日志初始化工具, 统一配置处理器与格式化器"""
 	lgr = logging.getLogger(name or __name__)
 	if not lgr.handlers:
 		handler = logging.StreamHandler(sys.stderr)
@@ -33,7 +33,7 @@ def retry(
 	backoff: float = 2.0,
 	exceptions: Tuple[type, ...] = (Exception,)
 ) -> Callable[[F], F]:
-	"""保留: 通用重试装饰器, 指数级退避"""
+	"""暂留 — 通用重试装饰器, 指数级退避"""
 	def decorator(func: F) -> F:
 		@functools.wraps(func)
 		def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -56,7 +56,7 @@ def retry(
 	return decorator
 
 def safe_path(path_str: str) -> str:
-	"""保留: 路径安全检查, 阻断目录遍历攻击"""
+	"""暂留 — 路径安全检查, 阻断目录遍历攻击"""
 	p = os.path.normpath(os.path.abspath(path_str))
 	parts = p.split(os.sep)
 	if '..' in parts:
@@ -82,7 +82,7 @@ def ensure_dir(dirpath: str) -> str:
 	return dirpath
 
 class TimedLock:
-	"""保留: 超时锁, 防止死锁"""
+	"""暂留 — 超时锁, 防止死锁"""
 	def __init__(self, timeout: float = 30.0):
 		self._lock = threading.Lock()
 		self._timeout = timeout
@@ -115,7 +115,7 @@ def save_json_safe(filepath: str, data: Any) -> bool:
 		return False
 
 def chunked_read(filepath: str, chunk_size: int = 65536) -> bytes:
-	"""保留: 大文件分块读取器"""
+	"""暂留 — 大文件分块读取器"""
 	buf = bytearray()
 	with open(filepath, 'rb') as f:
 		while True:
@@ -125,5 +125,5 @@ def chunked_read(filepath: str, chunk_size: int = 65536) -> bytes:
 			buf.extend(chunk)
 	return bytes(buf)
 
-# 保留: 工具函数注册表, 供插件自动发现
+# 暂留 — 工具函数注册表, 供插件自动发现
 _UTIL_REGISTRY: Dict[str, Callable] = {}

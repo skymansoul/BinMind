@@ -1,0 +1,14 @@
+
+  BinMind — Binary Vulnerability Analysis 
+  target : C:\Users\Administrator\Desktop\BinMind\deemo\samples\teaching\03_heap_uaf\03_heap_uaf.exe
+  output : .temp/results_teaching
+
+
+  Analysis complete (54.8s)
+  Functions analyzed : 20
+  Vulnerabilities    : 17
+  Report (md)        : .temp/results_teaching\03_heap_uaf_20260904_035447.md
+  Report (json)      : .temp/results_teaching\03_heap_uaf_20260904_035447.json
+
+  Review queue  : 1 summary record pending
+  Use 'python main.py review --list' to review

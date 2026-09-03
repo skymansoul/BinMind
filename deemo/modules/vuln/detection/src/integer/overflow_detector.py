@@ -1,4 +1,3 @@
-#
 """整数溢出检测——追踪算术运算结果如何影响后续内存操作的大小参数。
 
 现有检测对整数溢出的处理为零——BIFT污点传播是二值的(污点/非污点)，
@@ -55,13 +54,9 @@ class OverflowFinding:
     severity: str = "HIGH"
 
 class IntegerOverflowDetector:
-    """整数溢出检测器——基于运算语义的污点增强。
+    """整数溢出检测器——基于运算语义的污点增强.
 
-    使用:
-      detector = IntegerOverflowDetector()
-      detector.scan_arithmetic(addr, "mul", "cx", operand_bits=16)
-      # 若cx流向malloc size → 标记为MUL_TO_MALLOC
-      detector.check_sink(addr, "memcpy", tainted_ops)
+    用法: scan_arithmetic 扫描算术指令, mark_tainted 标记污点, check_sink 在汇点检测。
     """
 
     # 算术指令→位宽扩展规则
@@ -175,7 +170,7 @@ class IntegerOverflowDetector:
             _base += 0.15
         return min(0.95, _base)
 
-# smoke
+# 冒烟用例: mul→malloc 与 shl→array_index
 def _check():
     _d = IntegerOverflowDetector()
 

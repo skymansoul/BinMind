@@ -1,19 +1,9 @@
-"""格式化字符串参数验证器 — 格式说明符 vs 参数数量的一致性检查.
+"""格式化字符串参数验证器 — 格式说明符 vs 参数数量的一致性检查。
 
-创建: 2025-03-03
-目的: 消除 taint_format_checker 无法处理的误报场景:
-      - printf(const_fmt, a, b) 中 fmt 包含3个 %s 但只传了2个参数 → 栈越界读
-      - printf("%d %s", a) 格式串需要2个参数但只传了1个 → 参数不足警告
-      同时, 当 fmt 是常量且参数完全匹配时, 可以更有信心地标记为 SAFE.
-
-方法依据:
-  - CWE-134 (格式字符串漏洞) 的参数滥用子类
-  - printf-family 的 POSIX 规范: 格式说明符数量必须 ≤ 传入的参数数量
-  - 本模块只处理格式说明符计数, 不做类型检查 (那是编译器的工作)
-
-决策:
-  - 不实现完整的 ABI 分析来数参数 — 用启发式: 检查 call 前 push/mov 的数量
-  - 对于可变参数函数, 仅通过格式串分析来做最小参数数需求判定
+消除 taint_format_checker 无法处理的误报场景：
+- printf(const_fmt, a, b) 中 fmt 含3个 %s 但只传2个参数 → 栈越界读
+- fmt 为常量且参数完全匹配时可更有信心标记 SAFE
+只做说明符计数，不做类型检查；参数数量用 call 前 push/mov 启发式估算。
 """
 
 import re
@@ -42,13 +32,9 @@ class FormatArgCheck:
 
 
 class FormatArgVerifier:
-    """格式字符串参数验证器 — 检测格式说明符与参数的匹配情况.
+    """格式字符串参数验证器 — 检测格式说明符与参数的匹配情况。
 
-    使用方式:
-      verifier = FormatArgVerifier()
-      result = verifier.verify('printf("val=%d name=%s", x)', 0x401000)
-      if result.verdict == ArgMatchVerdict.TOO_FEW_ARGS:
-          print(f'Potential stack leak: missing {result.missing_args} args')
+    对每个调用点返回 FormatArgCheck，含 TOO_FEW_ARGS/TOO_MANY_ARGS 判定。
     """
 
     # 格式说明符的正则 — 匹配 %[flags][width][.precision][length]specifier

@@ -1,5 +1,4 @@
-# 漏洞报告器——多平台(H1/Bugcrowd/GH Advisory)格式化输出与提交
-# 修复: ReportPlatform/ReportSeverity改用Enum替代__class_getitem__ hack
+"""漏洞报告器——多平台(H1/Bugcrowd/GH Advisory)格式化输出与提交."""
 
 from enum import Enum
 from dataclasses import dataclass, field

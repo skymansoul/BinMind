@@ -7,17 +7,7 @@
 #   - vuln_detection.src.core.vuln_mgmt_knowledge (knowledge graph+rule engine+RCA)
 # 外部调用者无需修改import路径, _LAZY_MAP仍指向vuln_detection.vuln_management。
 #
-from typing import Dict, Any, List, Optional, Set, Tuple, Callable
-import logging, re, os, json as _json, subprocess, hashlib, time, threading
-import urllib.request, urllib.error, gzip, heapq
-from datetime import datetime
-from collections import defaultdict, deque, OrderedDict
-from dataclasses import dataclass, field
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-_logger = logging.getLogger(__name__)
-logger = _logger
-json = _json
+# 本文件仅负责re-export，无自有实现，不引入任何额外依赖。
 
 # vuln_mgmt_core re-export (dataclasses+reporter+reasoner+exposure+threat intel+SBOM)
 from deemo.modules.vuln.detection.src.core.vuln_mgmt_core import (

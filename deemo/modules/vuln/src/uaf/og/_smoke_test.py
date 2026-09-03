@@ -27,21 +27,6 @@ PREAMBLE = [
     'mov [rbp-0x10], rax',    # q 槽 = gen2
 ]
 
-print('== 同代际确认 (TP: free; use 同对象) ==')
-INS_UAF = PREAMBLE + [
-    'mov rcx, [rbp-0x8]',
-    'call free',              # free(p): rcx=gen1 → freed
-    'mov rax, [rbp-0x8]',     # rax = gen1 (槽未变)
-    'mov eax, DWORD PTR [rax]',
-]
-t = GenFlowTracker()
-t.run(INS_UAF)
-finds = [{'free_line': 7, 'use_line': 9, 'use_reg': 'rax',
-          'use_slot': None, 'confidence': 0.5}]
-r = OgFilter().compress(INS_UAF, finds)
-check('same-gen kept', len(r.kept) == 1 and r.stats.same_gen == 1,
-      f'kept={len(r.kept)} same={r.stats.same_gen}')
-
 def _run_smoke() -> int:
     print('== 同代际确认 (TP: free; use 同对象) ==')
     INS_UAF = PREAMBLE + [

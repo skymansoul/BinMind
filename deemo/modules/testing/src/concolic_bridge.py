@@ -259,7 +259,7 @@ class ConcolicBridge:
             result = subprocess.run(
                 ['z3', smt_path],
                 capture_output=True, text=True, timeout=30)
-            self._sovle_time_total += _t.perf_counter() - t0
+            self._solve_time_total += _t.perf_counter() - t0
 
             os.unlink(smt_path)
 
@@ -327,7 +327,7 @@ class ConcolicBridge:
             'frontier_size': len(self._collector.branch_frontier()),
             'solved_inputs': len(self._solved_inputs),
             'solve_attempts': self._solve_count,
-            'solver_time_total_s': round(self._sovle_time_total, 3),
+            'solver_time_total_s': round(self._solve_time_total, 3),
             'solver_backend': self._solver,
         }
 
@@ -335,7 +335,7 @@ class ConcolicBridge:
         self._collector = BranchConstraintCollector()
         self._solved_inputs.clear()
         self._solve_count = 0
-        self._sovle_time_total = 0.0
+self._solve_time_total = 0.0
 
 
 class MagicBytesBypassGenerator:

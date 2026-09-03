@@ -62,7 +62,7 @@ class InputGenerator:
             if header == 'Content-Type':
                 value = self.rng.choice(['application/json', 'text/plain', 'application/x-www-form-urlencoded'])
             else:
-                value = f"Test{random.randint}"
+                value = f"Test{self.rng.randint(1, 1000)}"
             request += f"{header}: {value}\r\n"
 
         request += "\r\n"
@@ -84,8 +84,8 @@ class InputGenerator:
         data = self.rng.choice(structures)
 
         for _ in range(self.rng.randint(0, 3)):
-            key = f"field_{random.randint(1, 100)}"
-            value = self.rng.choice([random.randint(1, 1000), self.rng.random(), self.rng.choice(['value1', 'value2', 'value3']), True, None])
+            key = f"field_{self.rng.randint(1, 100)}"
+            value = self.rng.choice([self.rng.randint(1, 1000), self.rng.random(), self.rng.choice(['value1', 'value2', 'value3']), True, None])
             data[key] = value
 
         return json.dumps(data).encode('utf-8')
@@ -98,7 +98,7 @@ class InputGenerator:
 
         for _ in range(self.rng.randint(1, 5)):
             elem = self.rng.choice(elements)
-            value = f"Value{random.randint(1, 1000)}"
+            value = f"Value{self.rng.randint(1, 1000)}"
             xml += f'  <{elem}><![CDATA[{value}]]></{elem}>\n'
 
         xml += f'</{root}>\n'

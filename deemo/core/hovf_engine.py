@@ -71,9 +71,14 @@ class HovfEngine(CrossFuncSafetyCheck):
         构成可靠上界; 此类变量禁止参与宽松过滤, 否则会吞掉
         累积写入溢出 (cve_18/polkit 类).
         """
-        pat = re.compile(
-            rf'\b{re.escape(var)}\s*(?:\+=|-=|\*=|/=|<<=|>>=)'
-            rf'|\b{re.escape(var)}\s*=\s*{re.escape(var)}\s*[+\-*/]')
+        # 累积模式覆盖: 复合赋值/正向自引用/反向自引用/间接指针修改
+        pats = [
+            rf'\b{re.escape(var)}\s*(?:\+=|-=|\*=|/=|<<=|>>=)',
+            rf'\b{re.escape(var)}\s*=\s*{re.escape(var)}\s*[+\-*/]',
+            rf'\b{re.escape(var)}\s*=\s*\S+\s*\+\s*{re.escape(var)}\b',
+            r'\*\w+\s*=\s*\*\w+\s*[+\-]',
+        ]
+        pat = re.compile('|'.join(pats))
         return any(pat.search(line) for line in self.ir)
 
     def _write_extent(self, c: HeapOverflowCandidate) -> Optional[ValueInterval]:
@@ -117,16 +122,16 @@ class HovfEngine(CrossFuncSafetyCheck):
     def _free_is_guarded(self, free_idx: int) -> bool:
         """free 是否位于分支/循环块内.
 
-        以自由行为起点向上回溯, 若遇到未闭合的 if/for/while/switch
-        控制头, 则 free 与写入处于互斥分支, 不构成释放后写入.
+        从 free 指令向前回溯, 遇到 if/for/while/switch 控制头
+        即判定受控; 遇到函数定义标签停止, 限制回溯于当前函数.
         """
-        balance = 0
-        for i in range(free_idx, max(0, free_idx - 4) - 1, -1):
+        for i in range(free_idx - 1, -1, -1):
             line = self.ir[i]
             if re.search(r'\b(if|for|while|switch|case)\b', line):
-                if balance >= 0:
-                    return True
-            balance += line.count('{') - line.count('}')
+                return True
+            # 函数定义标签标记回溯边界
+            if re.match(r'^\s*<\w+>:\s*$', line):
+                break
         return False
 
     def _freed_before_write(self, base_var: str, store_pc: int) -> bool:
@@ -151,6 +156,14 @@ class HovfEngine(CrossFuncSafetyCheck):
             return True
         return False
 
+    def _resolve_param_alloc(self, c: HeapOverflowCandidate) -> Optional[ValueInterval]:
+        """base_var 为函数参数时, 从 caller 中追溯分配大小."""
+        base_var = c.overflow_store.base_var
+        if not base_var:
+            return None
+        caller_iv = self.resolver.resolve_param_size(base_var, c.overflow_store.pc)
+        return caller_iv
+
     def _verdict(self, c: HeapOverflowCandidate,
                  alloc_iv: Optional[ValueInterval],
                  extent: Optional[ValueInterval],
@@ -166,10 +179,15 @@ class HovfEngine(CrossFuncSafetyCheck):
         if extent is None:
             evidence.reasons.append('写入范围无法解析, 保留观察')
             return Verdict.UNCERTAIN
-        # TODO: 跨函数分配-写入链 (cve_10/cve_53) 未解析, 需过程间污点
+        # 跨函数分配-写入链: base_var 来自参数时查 caller 分配大小
         if alloc_iv is None:
-            evidence.reasons.append('分配大小无值流下界, 宽松判定不适用')
-            return Verdict.UNCERTAIN
+            alloc_iv = self._resolve_param_alloc(c)
+            if alloc_iv is not None:
+                evidence.reasons.append('跨函数分配大小已解析')
+            else:
+                evidence.reasons.append('分配大小无值流下界, 宽松判定不适用')
+                setattr(c, '_hovf_low_conf', True)
+                return Verdict.UNCERTAIN
         if self._freed_before_write(c.overflow_store.base_var,
                                     c.overflow_store.pc):
             evidence.reasons.append('分配已在写入前释放, 宽松判定不适用')
@@ -256,7 +274,11 @@ class HovfEngine(CrossFuncSafetyCheck):
                 c.confidence = min(0.95, c.confidence + 0.10)
                 stats.confirmed += 1
             else:
-                c.confidence = max(0.40, c.confidence - 0.05)
+                # UNCERTAIN 细分: 写范围/分配下界缺失时降置信度至过滤阈值下
+                if extent is None or getattr(c, '_hovf_low_conf', False):
+                    c.confidence = 0.25
+                else:
+                    c.confidence = max(0.30, c.confidence - 0.05)
                 stats.uncertain += 1
             setattr(c, '_hovf_evidence', evidence)
             evidence_records.append(evidence)

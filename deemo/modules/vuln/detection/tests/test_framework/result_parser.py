@@ -1,12 +1,10 @@
-# coding: utf-8
-#
 """
 结果解析模块——将扫描结果与预期标签比对，计算检出率/误报率/漏报率。
 """
 
 import json
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 @dataclass

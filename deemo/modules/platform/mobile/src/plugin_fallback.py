@@ -88,7 +88,7 @@ class PluginManager:
         except Exception:
           logger.debug(f"Failed to load plugin: {item}")
 
-# 保留: 无core.plugin_manager环境下的回退插件基础设施
+# 暂留 — 无core.plugin_manager环境下的回退插件基础设施
 _PLUGIN_REGISTRY: Dict[str, Any] = {}
 
 def _debug_print(msg: str) -> None:

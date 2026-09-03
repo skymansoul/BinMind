@@ -34,7 +34,7 @@ MTE指令编码：
 """
 
 import logging, os, re, subprocess, json
-from collections import defaultdict, deque
+from collections import defaultdict, deque  # 反检测标注，保留deque导入
 from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum

@@ -8,10 +8,6 @@ _BASE_OF 为 32→64 映射, _D32_OF 为 64→32 映射, 用于宽形式互查.
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
-import re
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-
 class DefKind:
     IMM = 'IMM'          # 立即数
     REG = 'REG'          # 寄存器拷贝 (直通)

@@ -272,18 +272,37 @@ class CrossFunctionPropagator:
         arg_pairs = [('rdx', 'edx'), ('r8', 'r8d'), ('rsi', 'esi'), ('rcx', 'ecx')]
         for arg64, arg32 in arg_pairs:
             pattern = f"({'|'.join([arg64, arg32])})"
-            for j in range(call_idx - 1, max(0, call_idx - 10) - 1, -1):
+            # 扩大追踪窗口至20条指令 — 捕获更远的 size 赋值
+            for j in range(call_idx - 1, max(0, call_idx - 20) - 1, -1):
                 il = instructions[j].strip().lower()
                 m = _re.match(rf'mov\s+{pattern},\s*(0x[0-9a-f]+|\d+)', il)
                 if m:
                     try:
                         val = int(m.group(2), 0)
+                        # 检查 imm 是否被 call 前的其他指令覆盖
+                        if self._is_imm_overwritten(
+                                instructions, j, call_idx, pattern):
+                            break
                         return (val, val)
                     except ValueError:
                         pass
                 if _re.match(rf'(mov|lea)\s+{pattern},', il):
                     break
         return (0, 0xFFFFFFFF)
+
+    def _is_imm_overwritten(self, instructions: List[str],
+                            imm_idx: int, call_idx: int,
+                            reg_pattern: str) -> bool:
+        """检查 imm 赋值后到 call 之间是否被其他指令覆盖.
+
+        扫描 imm_idx+1 到 call_idx-1 之间对同一寄存器的写入
+        (如 mov rdx, [rbp-N]), 若存在则 imm 值不可信.
+        """
+        for j in range(imm_idx + 1, call_idx):
+            il = instructions[j].strip().lower()
+            if _re.match(rf'(mov|lea|xor|add|sub|pop)\s+{reg_pattern},', il):
+                return True
+        return False
 
     def clear(self) -> None:
         self._synthetic_sites.clear()

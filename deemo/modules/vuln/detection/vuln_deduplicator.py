@@ -1,7 +1,6 @@
 # 漏洞去重引擎: 数据流哈希+语法哈希+语义特征加权混合聚类。
 # 数据流哈希精确匹配权重0.4，语法与语义各0.3, 数据流拓扑为漏洞指纹最强判别特征。
-# VUDDY与
-# CENTRIS混合哈希策略。
+# VUDDY与CENTRIS混合哈希策略。
 
 import logging, hashlib
 from enum import Enum
@@ -17,15 +16,12 @@ class DeduplicationStrategy(str, Enum):
     SEMANTIC = "semantic"
     HYBRID = "hybrid"
 
-    def __init__(self, value=None): pass
 
 class ClusterSimilarity(str, Enum):
     EXACT = "exact"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
-
-    def __init__(self, v=None): pass
 
 
 class VulnerabilitySignature:

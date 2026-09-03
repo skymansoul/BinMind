@@ -16,8 +16,13 @@ from .path_guard_collector import PathGuard
 
 def build_context(instructions: List[str], access_idx: int,
                   site: MallocSite, offset: int,
-                  guards: Optional[List[PathGuard]] = None) -> dict:
-    """构建语义特征提取所需的上下文."""
+                  guards: Optional[List[PathGuard]] = None,
+                  function_name: str = '') -> dict:
+    """构建语义特征提取所需的上下文.
+
+    function_name: 当前分析函数名, 用于 alloc_site_in_same_fn 判定.
+    site.func_name 与 function_name 比较是否同一函数.
+    """
     ctx: dict = {
         'allocator_alignment': DEFAULT_ALLOCATOR.alignment,
         'in_loop_body': False, 'in_error_cleanup': False,
@@ -64,7 +69,32 @@ def build_context(instructions: List[str], access_idx: int,
     il = (instructions[access_idx].lower()
           if access_idx < len(instructions) else '')
     ctx['is_memcpy_like'] = any(x in il for x in ('rep movs', 'rep stos'))
+
+    # 动态判定: 调用者是否为已知可信函数 (_CRT_/__security_/__report_)
+    ctx['caller_is_trusted'] = _is_trusted_caller(function_name)
+
+    # 动态判定: 分配点是否在同一函数内
+    if function_name and site.func_name:
+        ctx['alloc_site_in_same_fn'] = (site.func_name == function_name
+                                        or site.func_name == 'malloc')
+    else:
+        ctx['alloc_site_in_same_fn'] = True
     return ctx
+
+
+# 已知可信调用者前缀 — CRT安全初始化/运行时报错处理
+_TRUSTED_PREFIXES = (
+    '_CRT_', '__security_', '__report_',
+    '__acrt_', '__mingw_', '_initterm',
+)
+
+
+def _is_trusted_caller(function_name: str) -> bool:
+    """判定函数是否属于已知可信调用者."""
+    if not function_name:
+        return False
+    fn_lower = function_name.lower()
+    return any(fn_lower.startswith(p.lower()) for p in _TRUSTED_PREFIXES)
 
 
 # CRT/编译器内部函数模式 — 用于过滤噪声

@@ -1,5 +1,5 @@
 """vuln_detection CLI 子命令解析测试"""
-import pytest, argparse
+import argparse
 
 def test_argparse_subcommands():
     p = argparse.ArgumentParser()

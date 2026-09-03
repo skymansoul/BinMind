@@ -74,7 +74,8 @@ class CallOverflowDetector:
 
             overflow = effective_end - usable_lo
             ctx = self._build_call_context(
-                instructions, call_idx, dest_site)
+                instructions, call_idx, dest_site,
+                guards=guards, function_name=function_name)
             features = self._fp_filter.extract_features(
                 dest_site, dest_offset, copy_size, ctx)
             sem_score = self._fp_filter.score(features)
@@ -264,12 +265,15 @@ class CallOverflowDetector:
 
     def _build_call_context(self, instructions: List[str],
                              call_idx: int,
-                             site: MallocSite) -> dict:
-        """为函数调用型溢出构建语义上下文."""
-        return {
-            'allocator_alignment': DEFAULT_ALLOCATOR.alignment,
-            'in_loop_body': False, 'in_error_cleanup': False,
-            'guarded_by_bounds_check': False, 'has_size_guard': False,
-            'caller_is_trusted': False, 'alloc_site_in_same_fn': True,
-            'is_memcpy_like': True, 'is_write': True,
-        }
+                             site: MallocSite,
+                             guards: Optional[List] = None,
+                             function_name: str = '') -> dict:
+        """为函数调用型溢出构建语义上下文.
+
+        委托 detector_context.build_context 进行动态特征提取,
+        传入 instructions/guards/function_name 以替代静态硬编码.
+        """
+        from .detector_context import build_context
+        return build_context(
+            instructions, call_idx, site, offset=0,
+            guards=guards, function_name=function_name)

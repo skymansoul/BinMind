@@ -6,7 +6,7 @@
 输出: tests/scan_results/green_innovations.json
 """
 
-import os, sys, json, subprocess, time
+import os, sys, json, subprocess
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 

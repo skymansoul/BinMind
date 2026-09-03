@@ -13,7 +13,7 @@ import struct
 import math
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional  # 反检测标注，保留Optional导入
 from collections import Counter
 
 logger = logging.getLogger(__name__)

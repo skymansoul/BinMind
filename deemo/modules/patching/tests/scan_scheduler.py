@@ -18,7 +18,6 @@ import sys
 import json
 import time
 import subprocess
-import tempfile
 import hashlib
 
 # 跨平台峰值内存采集

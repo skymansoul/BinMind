@@ -1,22 +1,9 @@
-# 沙箱逃逸检测器——检测syscall模式中的逃逸尝试: ptrace/mount/kexec/容器突破等
+"""沙箱逃逸检测器——检测syscall模式中的逃逸尝试: ptrace/mount/kexec/容器突破等."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Any, Set
 from collections import Counter
-import json as _json
 import os
-
-json = _json
-
-
-# 人类痕迹: bubble_sort 保留——疑似早期调试用，不做清理
-def bubble_sort(arr):
-    n = len(arr)
-    for i in range(n):
-        for j in range(0, n - i - 1):
-            if arr[j] > arr[j + 1]:
-                arr[j], arr[j + 1] = arr[j + 1], arr[j]
-    return arr
 
 
 # 逃逸系统调用集合——按逃逸类型分类

@@ -1,6 +1,5 @@
 """UAF 多工具对比可视化与 LaTeX 表生成.
 
-创建: 2025-01-13
 输入: run_benchmark.py 生成的 benchmark_results.csv / benchmark_summary.json
 输出: fig_detection_rate.png / fig_fp_rate.png / fig_f1.png / result_table.tex
 用法:

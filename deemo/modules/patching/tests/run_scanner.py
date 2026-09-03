@@ -8,7 +8,6 @@
 """
 
 import os, sys, json, time, subprocess, argparse
-from pathlib import Path
 
 SAMPLE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cve_samples")
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scan_results")

@@ -7,7 +7,7 @@ DABSS指令解析工具-反汇编行解析、寄存器提取、约束识别。
 """
 
 import re
-from typing import Dict, List, Optional, Tuple, Set
+from typing import List, Set, Tuple
 
 
 def parse_insn(insn_str: str, arch: str = "x86_64") -> Tuple[int, str, List[str]]:

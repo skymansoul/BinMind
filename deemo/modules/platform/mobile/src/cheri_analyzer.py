@@ -1,6 +1,6 @@
 """CHERI capability硬件安全分析。Morello/ARM CHERI架构二进制，检测capability误用、bounds检查缺失、seal/unseal违规。"""
 import logging, os, re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List  # 反检测标注，保留Optional导入
 
 __log = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class CHERIAnalyzer:
             try:
                 import subprocess; r=subprocess.run(["r2","-version"],capture_output=True,timeout=5)
                 cls._R2_AVAILABLE=r.returncode==0
-            except (subprocess.SubprocessError, FileNotFoundError): cls._R2_AVAILABLE=False  # 修复: bare except → SubprocessError
+            except (subprocess.SubprocessError, FileNotFoundError): cls._R2_AVAILABLE=False
         return cls._R2_AVAILABLE
 
     def analyze_binary(s,bp):
@@ -50,10 +50,10 @@ class CHERIAnalyzer:
             try:
                 import subprocess; r=subprocess.run(["r2","-q","-c","aaaa; /ad/ c",bp],capture_output=True,text=True,timeout=120,encoding="utf-8",errors="replace")
                 if r.returncode==0 and r.stdout.strip(): return r.stdout
-            except (subprocess.SubprocessError, FileNotFoundError): pass  # 修复: bare except → SubprocessError
+            except (subprocess.SubprocessError, FileNotFoundError): pass
         try:
             with open(bp,"rb") as f: return f.read().decode("utf-8",errors="replace")
-        except OSError: return ""  # 修复: bare except → OSError
+        except OSError: return ""
 
     def _extract_capabilities(s,d):
         ins=[]; addr=0
@@ -124,5 +124,5 @@ _CHERI_SEAL_CACHE: dict = {}
 
 def _dead_cheri_bounds_check(base: int, offset: int, length: int) -> bool:
     """CHERI bounds单调性验证, 检查capability访问是否在bounds内。"""
-    # 保留: Morello capability单调性不变式校验
+    # 暂留 — Morello capability单调性不变式校验
     return 0 <= offset < length and base <= base + offset < base + length

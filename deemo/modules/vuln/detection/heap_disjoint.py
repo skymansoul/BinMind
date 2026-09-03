@@ -1,9 +1,8 @@
 # coding: utf-8
-import re, logging
+import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Tuple
 from collections import defaultdict
-_log = logging.getLogger(__name__)
 
 @dataclass
 class AllocSite:

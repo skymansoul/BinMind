@@ -8,6 +8,7 @@ IntOverflowDetector 是主入口, 协调各检测模式:
 """
 from __future__ import annotations
 
+import re
 from typing import Dict, List, Optional, Tuple
 
 from ._types import (
@@ -85,7 +86,17 @@ class IntOverflowDetector:
 # 栈值收集 (第一遍扫描)
 
     def _collect_stack_vals(self, instructions: List[str]) -> None:
-        """第一遍扫描: 收集栈上 DWORD/WORD 存储的常量值."""
+        """第一遍扫描: 收集栈上 DWORD/WORD 存储的常量值.
+
+        同时追踪 mov [rbp+X], reg: 若reg此前被mov reg, imm赋值则记录该常量.
+        """
+        # reg→const映射, 供mov [rbp+X], reg追踪数据流
+        reg_vals: Dict[str, int] = {}
+        _MOV_STK_REG = re.compile(
+            r'mov\s+dword\s+ptr\s+\[rbp\s*([+\-])\s*(0x[0-9a-f]+|\d+)\]'
+            r'\s*,\s*(\w+)', re.I)
+        _MOV_REG_IMM2 = re.compile(
+            r'mov\s+(\w+),\s*(0x[0-9a-f]+|\d+)$', re.I)
         for instr in instructions:
             il = instr.strip().lower()
             m = MOV_STACK_DWORD.match(il)
@@ -97,6 +108,19 @@ class IntOverflowDetector:
             if m:
                 self._stack_vals[self._offset(m.group(1), m.group(2))] = \
                     self._parse_int(m.group(3))
+                continue
+            # mov [rbp+X], reg: 若reg已知常量则写入栈槽
+            m = _MOV_STK_REG.match(il)
+            if m:
+                reg_name = m.group(3)
+                if reg_name in reg_vals:
+                    self._stack_vals[
+                        self._offset(m.group(1), m.group(2))] = reg_vals[reg_name]
+                continue
+            # mov reg, imm: 记录寄存器常量供后续栈存储追踪
+            m = _MOV_REG_IMM2.match(il)
+            if m:
+                reg_vals[m.group(1)] = self._parse_int(m.group(2))
 
     def _read_stack_val(self, instructions: List[str],
                          insn_idx: int) -> Optional[int]:
@@ -112,14 +136,19 @@ class IntOverflowDetector:
 
     def _find_next_alloc_call(self, instructions: List[str],
                                start_idx: int) -> Optional[Tuple[str, int]]:
-        """从 start_idx 前向查找最近的 alloc 函数调用 (≤30指令)."""
-        for j in range(start_idx + 1, min(start_idx + 30, len(instructions))):
+        """从 start_idx 前向查找最近的 alloc 函数调用 (≤15指令).
+
+        数据流验证: 算术结果→alloc之间若被非alloc的call打断则视为数据流中断.
+        """
+        _MOV_RCX = re.compile(r'mov\s+rcx,\s*([^\s]+)', re.I)
+        for j in range(start_idx + 1, min(start_idx + 15, len(instructions))):
             il = instructions[j].strip().lower()
-            if 'call' not in il:
-                continue
-            for f in _ALLOC_FUNCS:
-                if f in il:
-                    return (f, j)
+            if 'call' in il:
+                for f in _ALLOC_FUNCS:
+                    if f in il:
+                        return (f, j)
+                # 非alloc的call可能破坏寄存器约定, 中断数据流
+                return None
         return None
 
     def clear(self) -> None:

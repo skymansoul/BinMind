@@ -20,10 +20,8 @@ D4-可达性: 新增函数是否可从外部输入路径到达。
 - patch_impact_analyzer.py: 补丁对运行时行为的影响。本模块聚焦编译后攻击面。
 """
 
-from collections import defaultdict
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Set
 
 @dataclass
 class FunctionChange:

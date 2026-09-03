@@ -1,6 +1,5 @@
 """ALPR — Allocation-Lifetime Provenance Rebound 包入口.
 
-创建: 2024-08-14
 UAF 误报削减创新包。模块分工:
   uaf_types        生命周期溯源数据类型与判定枚举
   lifetime_tracker 函数内前向扫描, 提取 free/use 与指针溯源标签

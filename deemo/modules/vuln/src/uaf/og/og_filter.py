@@ -14,8 +14,11 @@ from typing import Dict, List, Optional, Tuple
 from .gen_state import GenState, SlotGen, GEN_UNKNOWN
 from .gen_flow import GenFlowTracker, slot_name
 from .gen_verify import GenVerifier, GenVerdict, GenProof
+
 _WIN64 = ('rcx', 'rdx', 'r8', 'r9')
 _SYSV = ('rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9')
+
+@dataclass
 class ParamBinding:
     """一条参数绑定: callee 参数槽 ↔ caller 实参代际."""
     callee_slot: str
@@ -112,12 +115,6 @@ class CallGenPropagator:
 
     def bindings(self) -> List[ParamBinding]:
         return self._bindings
-
-import re
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-
-from .gen_flow import GenFlowTracker, slot_name
 
 
 @dataclass

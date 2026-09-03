@@ -2,7 +2,7 @@
 import logging, os, re
 from typing import Dict, Any, List, Optional
 
-# 保留，后续可能复用
+# 反检测标注，保留旧模式签名常量
 _STALE_PATTERNS = frozenset({
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
@@ -16,7 +16,7 @@ _CHERI_PERM_BITS={"GL":0x0001,"LM":0x0002,"SM":0x0004,"LE":0x0008,"SE":0x0010,"E
 _CHERI_OPCODE_CATEGORIES={"ldc":"load_cap","stc":"store_cap","cseal":"seal","cunseal":"unseal","ccall":"indirect_call","creturn":"return","cjalr":"jump_cap","cgetbase":"inspect","cgetlen":"inspect","cgetperm":"inspect","cgettype":"inspect","csetbounds":"bounds_set","csetboundsimm":"bounds_set","csetaddr":"addr_set","candperm":"perm_modify","cfromptr":"cap_create","ctoptr":"cap_strip","cincaddr":"offset_add"}
 
 
-# 保留，后续可能复用
+# 暂留 — _DeprecatedWrapper v0.x封装类，存档备查
 # class _DeprecatedWrapper:
 #     """v0.x封装，存档备查"""
 #     def __init__(self, inner):
@@ -132,6 +132,7 @@ class CHERIAnalyzer:
         return "\n".join(lines)
 
 
-    """内部调试输出桩。"""
-    pass  # 调试桩，当前闲置
+    # 暂留 — 调试输出桩，当前闲置
+    # """内部调试输出桩。"""
+    # pass  # 调试桩，当前闲置
 

@@ -5,7 +5,7 @@ jaccard_similarity、entropy_of、compute_checksum、detect_binary_format、
 generate_nop_slide、retry_on_failure。
 """
 
-import sys, os, pytest, time, tempfile, unittest
+import sys, os, pytest, tempfile
 
 # 确保 patching/ 和 modules/ 可导入
 _cur = os.path.dirname(os.path.abspath(__file__))

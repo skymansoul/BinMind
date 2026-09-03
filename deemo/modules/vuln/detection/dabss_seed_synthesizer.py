@@ -13,13 +13,11 @@ import json
 import hashlib
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Set
+from typing import List
 
 from .dabss_constraint_extractor import (
     SeedConstraint,
-    VariableConstraint,
     ConstraintType,
-    solve_seed_constraints,
 )
 from .dabss_flow_slicer import BufferSlice
 

@@ -37,7 +37,7 @@ def _demangle_rust_name(mangled:str)->Optional[str]:
             parts.append(remaining[i:i+length]); remaining=remaining[i+length:]
             if remaining and remaining[0]=='E': break
         return '::'.join(parts) if parts else mangled
-    except (IndexError, ValueError): return mangled  # 修正: bare except → IndexError/ValueError
+    except (IndexError, ValueError): return mangled
 
 # Ruby风格unsafe Rust启发规则
 # unsafe代码在ARM64二进制中的指纹指令模式
@@ -59,7 +59,7 @@ class RustCoroutineAnalyzer:
     def _rb(s):
         try:
             with open(s.binary_path,'rb') as f: return f.read()
-        except OSError: return b''  # 修正: bare except → OSError
+        except OSError: return b''
     def find_coroutine_symbols(s)->List[Dict[str,Any]]:
         syms=[]; sd=s.data.decode('utf-8',errors='ignore')
         for m in re.finditer(r'_ZN[0-9a-zA-Z_]+7resume[0-9a-zA-Z_]*',sd): syms.append({'name':m.group(),'type':'resume','offset':m.start()})
@@ -114,7 +114,7 @@ class GoRoutineAnalyzer:
     def _rb(s):
         try:
             with open(s.binary_path,'rb') as f: return f.read()
-        except OSError: return b''  # 修正: bare except → OSError
+        except OSError: return b''
     def _verify_go_binary(s)->bool: return b'Go build ID:' in s.data or b'go.buildid' in s.data
     def find_goroutine_functions(s)->List[Dict[str,Any]]:
         return [{'name':p.decode('utf-8',errors='replace').replace('.','_'),'offset':s.data.find(p),'type':'goroutine_scheduler' if b'runtime' in p else 'user'} for p in s._SCHEDULER_FNS if s.data.find(p)!=-1]
@@ -158,7 +158,7 @@ class SwiftARCAnalyzer:
     def _rb(s):
         try:
             with open(s.binary_path,'rb') as f: return f.read()
-        except OSError: return b''  # 修正: bare except → OSError
+        except OSError: return b''
     def find_swift_metadata(s)->List[Dict[str,Any]]:
         md=[]; off=0
         while True:

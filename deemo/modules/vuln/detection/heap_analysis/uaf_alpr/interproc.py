@@ -1,9 +1,8 @@
 """ALPR 过程间摘要 — 提取/合并函数级 free/use 参数摘要.
 
-创建: 2025-05-12
 用途: 跨函数 UAF 关联。函数内分析无法关联 free 在 A、use 在 B 的
-      场景; 本模块从单函数结果提取"哪些参数被释放/被解引用",
-      在 call 点展开为调用方的事件。
+       场景; 本模块从单函数结果提取"哪些参数被释放/被解引用",
+       在 call 点展开为调用方的事件。
 
 摘要格式:
   {func_name: {'frees': [arg_idx...], 'uses': [arg_idx...]}}
@@ -56,8 +55,6 @@ def build_summary(result: FuncLifetimeResult, insns: List[Instruction]) -> dict:
 def build_summaries(functions, tracker) -> Dict[str, dict]:
     """第一遍: 对所有用户函数构建摘要."""
     summaries = {}
-    # TODO: 递归调用摘要未处理 — 自递归函数的 free/use 参数会无限展开,
-    # 需固定点迭代或深度限制。
     for fn in functions:
         result = tracker.analyze_function(fn.name, fn.insns)
         summ = build_summary(result, fn.insns)

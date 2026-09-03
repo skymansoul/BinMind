@@ -1,5 +1,3 @@
-# coding: utf-8
-#
 """
 生成对比实验柱状图——检出率对比 + 耗时对比。
 依赖: matplotlib (pip install matplotlib)

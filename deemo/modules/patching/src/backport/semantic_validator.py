@@ -18,11 +18,10 @@
 - 本模块验证"补丁在旧版本上的效果"与"上游补丁效果"是否等价。
 """
 
-import hashlib
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Dict, List
 
 class BackportVerdict(Enum):
     EQUIVALENT = "equivalent"

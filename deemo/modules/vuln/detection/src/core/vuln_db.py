@@ -4,6 +4,8 @@
 import sqlite3
 import os
 import hashlib
+import json
+import time
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -115,7 +117,7 @@ class VulnDB:
     def __exit__(self, *args):
         self.close()
 
-# CRUD
+    # CRUD
 
     def insert(self, **kwargs) -> int:
         try:
@@ -186,7 +188,7 @@ class VulnDB:
         except Exception:
             return False
 
-# 搜索
+    # 搜索
 
     def search_by_function(self, function_name: str) -> List[Dict[str, Any]]:
         try:
@@ -230,7 +232,7 @@ class VulnDB:
         except Exception:
             return []
 
-# 统计
+    # 统计
 
     def statistics(self) -> Dict[str, Any]:
         try:
@@ -252,7 +254,7 @@ class VulnDB:
         except Exception:
             return 0
 
-# 导入导出
+    # 导入导出
 
     def export_to(self, export_path: str) -> bool:
         try:
@@ -277,26 +279,110 @@ class VulnDB:
         return hashlib.sha256(str(pseudocode).encode()).hexdigest()
 
     def _resolve_external_cache(self, source: str) -> Optional[Any]:
-        return None
+        """读取外部查询缓存；无缓存或已过期返回None。"""
+        cache_path = os.path.join(
+            os.path.expanduser("~"), ".binmind", f"cache_{source}.json")
+        try:
+            if not os.path.isfile(cache_path):
+                return None
+            with open(cache_path, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+            if time.time() - cached.get("ts", 0) > cached.get("ttl", 3600):
+                return None
+            return cached.get("data")
+        except Exception:
+            return None
 
     def _save_external_cache(self, source: str, data: Any,
                              ttl_seconds: int = 3600) -> bool:
-        return True
+        """写外部查询缓存到本地文件，按源名隔离。"""
+        cache_dir = os.path.join(os.path.expanduser("~"), ".binmind")
+        try:
+            os.makedirs(cache_dir, exist_ok=True)
+            cache_path = os.path.join(cache_dir, f"cache_{source}.json")
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump({"ts": time.time(), "ttl": ttl_seconds,
+                           "data": data}, f)
+            return True
+        except Exception:
+            return False
 
     def _process_vuldb_entry(self, entry: Dict) -> Optional[Dict]:
-        return None
+        """将vuldb条目归一化为finding字段，缺失字段给默认值。"""
+        try:
+            return {
+                "binary_path": entry.get("binary_path", ""),
+                "binary_hash": entry.get("binary_hash", ""),
+                "function_name": entry.get("function_name", ""),
+                "vuln_type": entry.get("vuln_type") or entry.get("type")
+                or "unknown",
+                "severity": entry.get("severity", "Medium"),
+                "cwe": entry.get("cwe") or entry.get("cwe_id", ""),
+                "description": entry.get("description", ""),
+                "evidence": entry.get("evidence") or entry.get("detail", ""),
+            }
+        except Exception:
+            return None
 
     def _process_github_advisory_graphql(self, advisory: Dict) -> Optional[Dict]:
-        return None
+        """将GitHub advisory GraphQL节点归一化为finding字段。"""
+        try:
+            sev = (advisory.get("severity") or "Medium")
+            if sev not in ("Critical", "High", "Medium", "Low"):
+                sev = "Medium"
+            cwes = advisory.get("cwes") or []
+            cwe = cwes[0].get("cweId", "") if cwes else ""
+            return {
+                "binary_path": "",
+                "binary_hash": "",
+                "function_name": "",
+                "vuln_type": "supply_chain",
+                "severity": sev,
+                "cwe": cwe,
+                "description": (advisory.get("summary") or "")[:500],
+                "evidence": (advisory.get("description") or "")[:2000],
+            }
+        except Exception:
+            return None
 
     def _extract_github_advisories_from_graphql(self, data: Dict) -> List[Dict]:
-        return []
+        """从GitHub GraphQL响应中提取advisory节点列表。"""
+        try:
+            nodes = data.get("data", {}).get("securityAdvisories", {}).get(
+                "nodes", [])
+            return [n for n in nodes if isinstance(n, dict)]
+        except Exception:
+            return []
 
     def _build_github_advisory_query(self, **kwargs) -> str:
-        return ""
+        """构造GitHub GraphQL securityAdvisories查询语句。"""
+        first = int(kwargs.get("first", 50))
+        ecosystem = kwargs.get("ecosystem", "")
+        cursor = kwargs.get("cursor", "")
+        filters = f'ecosystem: "{ecosystem}", ' if ecosystem else ""
+        after = f'after: "{cursor}", ' if cursor else ""
+        return (
+            "query { securityAdvisories(first: %d, %s%s) { "
+            "nodes { id ghsaId summary severity "
+            "cwes(first: 5) { nodes { cweId } } } "
+            "pageInfo { endCursor hasNextPage } } }"
+        ) % (first, filters, after)
 
     def _validate_external_query_params(self, **kwargs) -> Dict:
-        return {"valid": True, "sanitized": kwargs, "errors": []}
+        """校验外部查询参数：limit限幅、空值拦截，返回清洗结果。"""
+        errors = []
+        sanitized = dict(kwargs)
+        limit = sanitized.get("limit")
+        if limit is not None:
+            try:
+                sanitized["limit"] = max(1, min(int(limit), 200))
+            except (TypeError, ValueError):
+                errors.append("limit must be an integer")
+        for key in ("severity", "ecosystem", "source"):
+            val = sanitized.get(key)
+            if val is not None and not str(val).strip():
+                errors.append(f"{key} must not be empty")
+        return {"valid": not errors, "sanitized": sanitized, "errors": errors}
 
 
 def get_vuln_db(db_path: str = "") -> VulnDB:

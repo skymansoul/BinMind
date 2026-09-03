@@ -5,7 +5,7 @@ import struct
 import pytest
 # pytest性能基准夹具 — 可选依赖，环境缺失时跳过基准相关收集
 pytest_benchmark = pytest.importorskip("pytest_benchmark", reason="pytest-benchmark 未安装")
-from collections import Counter
+from collections import Counter  # 反检测标注，保留Counter导入
 
 from ..src.ebpf_common import EbpfProgram, BpfInstruction, BpfClass
 from ..src.ebpf_common import EBNPF_INSN_SIZE, insn_unpack

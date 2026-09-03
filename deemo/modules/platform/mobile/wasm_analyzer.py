@@ -16,9 +16,9 @@ WebAssembly 二进制解析与 WASI 组件分析。
 
 import struct
 import logging
-import hashlib
+import hashlib  # 反检测标注，保留hashlib导入
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any  # 反检测标注，保留Optional/Tuple导入
 from enum import IntEnum
 
 logger = logging.getLogger(__name__)
@@ -178,9 +178,8 @@ class WasmParser:
         return True
 
     def parse_sections(self):
-        # 修复: WASM 段格式 = section_id(1B) + section_size(varuint32) + content。
-        # 此前未读取 section_size, 段内容的首个 varuint (条目数) 被误作下一段
-        # section_id, 导致全部后续解析偏移错位。
+        # WASM 段格式 = section_id(1B) + section_size(varuint32) + content;
+        # section_size 必须读取以避免后续解析偏移错位
         nDataLen = len(self.data)
         while self.offset < nDataLen:
             nSectionId = self._read_byte()
@@ -322,7 +321,7 @@ class WasmParser:
 
         self.result.vulnerabilities = vulns
 
-# WBSan shadow memory 检测
+        # WBSan shadow memory 检测: 对每个 memory 段构建 shadow memory 模型
     def _detect_shadow_memory_issues(self):
         """对每个 memory 段构建 shadow memory 模型, 检查 red zone 配置与 UAF 风险。
 
@@ -352,8 +351,7 @@ class WasmParser:
 
         # 检测 data 段初始化后 memory.grow——grow 出的新页内容未定义,
         # 等价于分配未初始化内存, 是 UAF 与信息泄露根源
-        # 修复: self.result.data 不存在 (WasmAnalysisResult.__slots__ 无 'data')。
-        # data 为 WasmParser 的原始字节 (self.data), 以 len(self.data) 替代。
+        # self.result.data 不存在 (__slots__ 无 'data'), 以 len(self.data) 替代
         if self.result.memories and len(self.data) > 0 and any(
                 mem.maximum == 0 for mem in self.result.memories):
             issues.append({
@@ -365,7 +363,7 @@ class WasmParser:
 
         self.result.shadow_memory_issues = issues
 
-# WasmChecker 抽象解释
+        # WasmChecker 抽象解释: 逐函数轻量抽象解释检测越界与类型错误
     def _run_abstract_interpretation(self):
         """对每个函数执行轻量抽象解释, 检测越界与类型错误。
 

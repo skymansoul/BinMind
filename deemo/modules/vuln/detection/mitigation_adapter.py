@@ -158,6 +158,6 @@ def create_mitigation_adapter(binary_path: str) -> MitigationAdapter:
 
 
 def _debug_print(*a, **kw):
-    if __import__("os").environ.get("BINMIND_DEBUG"):
+    if os.environ.get("BINMIND_DEBUG"):
         print(*a, **kw)
 

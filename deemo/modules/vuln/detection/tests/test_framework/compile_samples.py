@@ -1,5 +1,3 @@
-# coding: utf-8
-#
 """
 批量编译CVE样本——每个样本独立目录含源码+编译脚本+漏洞说明。
 输出统一的可执行ELF到build/子目录，供扫描器消费。
@@ -9,7 +7,7 @@ import os
 import sys
 import subprocess
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 
 

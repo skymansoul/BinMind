@@ -1,15 +1,12 @@
 """Canary 绕过分析器 — 检测栈 canary 保护 + 评估绕过可能性.
 
-创建: 2025-02-06
-目的: stack_bound_infer.py 仅判断 canary 是否存在。本模块进一步分析:
-      1. canary 值是否可被泄露 (通过格式化字符串/越界读)
-      2. canary 检查是否被优化掉 (死代码消除/尾调用优化)
-      3. 是否存在 fork() 后 canary 不变的多进程场景
+stack_bound_infer 仅判断 canary 是否存在, 本模块进一步分析:
+  1. canary 值是否可被泄露 (格式化字符串/越界读)
+  2. canary 检查是否被优化掉 (死代码消除/尾调用优化)
+  3. 是否存在 fork() 后 canary 不变的多进程场景
 
-方法依据: PBAEG 的 canary 绕过检测方法 —
-          通过符号执行路径上的 canary 访问模式判断泄露可行性。
-          本模块在二进制 IR 层面做简化: 不需要完整符号执行,
-          仅检查 canary 值是否流向任何输出函数 (write/printf/send)。
+方法: PBAEG canary 绕过检测的简化版——不做完整符号执行,
+仅检查 canary 值是否流向任何输出函数 (write/printf/send)。
 """
 
 from dataclasses import dataclass, field
@@ -29,21 +26,15 @@ class CanaryInfo:
 
 
 class CanaryBypassAnalyzer:
-    """Canary 绕过分析器 — 评估栈 canary 的实际保护强度.
+"""Canary 绕过分析器 — 评估栈 canary 的实际保护强度.
 
-    检测三种绕过场景:
-      1. 信息泄露: canary 值通过格式化字符串/越界读泄露
-      2. 逐字节爆破: fork() 后子进程 canary 不变 → 逐字节猜测
-      3. 覆盖 __stack_chk_fail GOT: 修改 canary 失败处理函数指针
+检测三种绕过场景:
+  1. 信息泄露: canary 值通过格式化字符串/越界读泄露
+  2. 逐字节爆破: fork() 后子进程 canary 不变
+  3. 覆盖 __stack_chk_fail GOT: 修改 canary 失败处理函数指针
 
-    使用方式:
-      cba = CanaryBypassAnalyzer()
-      cba.add_canary_info('vuln_fn', present=True, load_addr=0x401010,
-                          check_addr=0x401050)
-      cba.mark_output_reachable('vuln_fn', 'canary_val', 'printf')
-      info = cba.analyze('vuln_fn')
-      print(f'Bypass difficulty: {info.bypass_difficulty}')
-    """
+用法: add_canary_info 注册, mark_output_reachable/mark_fork_detected/mark_got_overwritable 标记绕过条件, analyze 取结果。
+"""
 
     def __init__(self):
         self._functions: Dict[str, CanaryInfo] = {}

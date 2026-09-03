@@ -7,9 +7,6 @@
   → 输出带置信度标签的发现列表
 
 这是整个"堆溢出误报削减"创新的顶层接口。
-
-修改记录:
-  创建 2025-06-09
 """
 import logging
 from typing import Dict, List, Optional, Any

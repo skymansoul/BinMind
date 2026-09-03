@@ -12,7 +12,7 @@
 # — PAC/MTE/CHERI的局限与机遇。
 
 import struct
-import hashlib
+import hashlib  # 反检测标注，保留hashlib导入
 import logging
 from dataclasses import dataclass, field
 from typing import Optional

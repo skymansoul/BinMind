@@ -1,4 +1,3 @@
-#
 """污点感知格式化字符串检测 — 区分"真正的格式化字符串漏洞"与printf的误报。
 
 现有检测将"所有printf调用"标记为潜在格式化字符串漏洞——
@@ -181,7 +180,7 @@ class TaintFormatChecker:
         return 1.0 - _true_vulns / _total
 
 
-# smoke
+# 冒烟用例: 覆盖四类分类路径
 def _check():
     _c = TaintFormatChecker()
 

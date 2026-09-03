@@ -475,7 +475,7 @@ class DecompilerValidator:
                 rule_id="BOUNDARY_LOW_QUALITY",
                 severity=ValidationSeverity.HIGH,
                 message=f"函数边界精度低: {stats.boundary_accuracy:.1%}",
-                detail="仅有 {stats.correct_boundaries}/{stats.total_functions_found} 个有效签名",
+                detail=f"仅有 {stats.correct_boundaries}/{stats.total_functions_found} 个有效签名",
                 source_decompiler=self.decompiler_ai.get_active_decompiler(),
             ))
 

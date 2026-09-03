@@ -62,6 +62,12 @@ class PathGuard:
     target_addr: int = 0           # jcc 的目标地址 (守卫生效处)
     fallthrough: bool = True       # True=直落路径(守卫成立), False=跳转路径(守卫成立)
     confidence: float = 0.9        # 置信度 (间接跳转→降低置信度)
+    # cmp指令地址 — 路径互斥性判断依据
+    cmp_addr: int = 0
+    # 守卫覆盖结束地址 — 下一个无条件跳转或jcc目标
+    coverage_end: int = 0
+    # 守卫覆盖范围 (起始地址, 结束地址) — 动态判定指令是否在守卫路径上
+    coverage_range: Optional[Tuple[int, int]] = None
 
     def describe(self) -> str:
         op_map = {GuardOp.LE: '≤', GuardOp.LT: '<', GuardOp.GE: '≥',
@@ -133,6 +139,14 @@ def _extract_jcc_guard(instructions: List[str], cmp_idx: int,
                         if (addrs and cmp_idx < len(addrs)) else cmp_idx)
                 is_signed = jcc_str in ('jl', 'jle', 'jg', 'jge')
 
+                # 向前扫描覆盖范围终点 — 下一个无条件跳转或ret
+                ft_end = _scan_coverage_end(instructions, addrs, j + 1)
+                # fallthrough路径覆盖范围: cmp到下一个无条件跳转
+                ft_start = addr
+                # jump路径覆盖范围: jcc目标到其后第一个无条件跳转/ret
+                jump_start = target
+                jump_end = _scan_coverage_end(instructions, addrs, j + 1, target)
+
                 # 直落路径: 守卫在 cmp_addr+fallthrough 成立
                 guards.append(PathGuard(
                     reg=reg, op=gop, const=const,
@@ -140,6 +154,9 @@ def _extract_jcc_guard(instructions: List[str], cmp_idx: int,
                     is_signed=is_signed,
                     target_addr=target,
                     fallthrough=True,
+                    cmp_addr=addr,
+                    coverage_end=ft_end,
+                    coverage_range=(ft_start, ft_end),
                 ))
                 # 跳转路径: 取反
                 guards.append(PathGuard(
@@ -148,6 +165,9 @@ def _extract_jcc_guard(instructions: List[str], cmp_idx: int,
                     is_signed=is_signed,
                     target_addr=target,
                     fallthrough=False,
+                    cmp_addr=addr,
+                    coverage_end=jump_end,
+                    coverage_range=(jump_start, jump_end),
                 ))
                 return
 
@@ -156,6 +176,36 @@ def _extract_jcc_target(instr: str) -> int:
     """从 jcc 指令中提取目标地址."""
     m = _re.search(r'(0x[0-9a-f]+)', instr, _re.I)
     return int(m.group(1), 16) if m else 0
+
+
+# 无条件跳转/返回指令 — 覆盖范围终止符
+_UNCOND_TERMINATORS = ('jmp', 'ret', 'retn', 'retf', 'iret', 'iretq')
+
+
+def _scan_coverage_end(instructions: List[str],
+                       addrs: Optional[List[int]],
+                       start_idx: int,
+                       target_addr: int = 0
+                       ) -> int:
+    """向前扫描覆盖范围终点 — 下一个无条件跳转/ret 或到指令流末尾.
+
+    若 target_addr 非零, 先定位到目标地址所在指令再开始扫描.
+    返回该终结指令的地址; 若未找到则返回0表示覆盖到末尾.
+    """
+    base_idx = start_idx
+    if target_addr and addrs:
+        for k in range(len(instructions)):
+            if k < len(addrs) and addrs[k] == target_addr:
+                base_idx = k
+                break
+    for k in range(base_idx, len(instructions)):
+        kl = instructions[k].strip().lower()
+        for term in _UNCOND_TERMINATORS:
+            if kl.startswith(term):
+                if addrs and k < len(addrs):
+                    return addrs[k]
+                return 0
+    return 0
 
 
 def _negate_op(op: GuardOp) -> GuardOp:
@@ -201,8 +251,11 @@ def guards_for_insn(guards: List[PathGuard],
     """
     result: Dict[str, List[PathGuard]] = {}
     for g in guards:
-        # 守卫覆盖范围: 从 cmp 到 下一个守卫之间
-        # 简化: 守卫在 5 条指令内且在 fallthrough 路径上 → 覆盖
-        if g.fallthrough and abs(g.insn_addr - insn_addr) <= 5:
+        # 动态覆盖范围判定 — 用coverage_range替代固定5指令窗口
+        if g.coverage_range is not None:
+            start, end = g.coverage_range
+            if start <= insn_addr <= end:
+                result.setdefault(g.reg, []).append(g)
+        elif g.fallthrough and g.insn_addr <= insn_addr <= g.coverage_end:
             result.setdefault(g.reg, []).append(g)
     return result

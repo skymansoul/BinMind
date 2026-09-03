@@ -156,6 +156,9 @@ class FmtOrchestrator:
             fmt_from_rdata = bool(
                 rdata and rdata.fmt_from_rdata and fmt_str)
             fmt_from_param = bool(taint and taint.tainted)
+            # 跨函数冲突仲裁: 参数来源比 .rdata 更危险,优先采信 taint 证据
+            if fmt_from_rdata and fmt_from_param:
+                fmt_from_rdata = False
             specs = rdata.specs if rdata else []
             args_expected = rdata.args_expected if rdata else 0
             fmt_reg = (rdata.fmt_reg if rdata else
@@ -218,8 +221,12 @@ def _compute_confidence(from_rdata: bool, from_param: bool,
     if from_rdata:
         has_danger = any(s.is_dangerous() for s in specs)
         has_leak = any(s.is_leak() for s in specs)
+        # %n 是写原语,.rdata 中的 %n 格式串本身仍是危险模式
+        has_write = any(
+            hasattr(s, 'spec_char') and 'n' in getattr(s, 'spec_char', '')
+            for s in specs)
         if has_danger:
-            return 0.45  # 格式串自身危险, 但来源安全
+            return 0.65 if has_write else 0.45  # 格式串自身危险, 但来源安全
         if has_leak and len(specs) > 3:
             return 0.35  # 多个信息泄露spec
         return 0.0  # 安全常量

@@ -20,6 +20,7 @@
 import hashlib
 import math
 import re
+import struct
 import zlib
 from typing import List, Dict, Set, Tuple, Optional, Any
 from collections import defaultdict, Counter
@@ -312,9 +313,6 @@ class CrashClusterer:
 
 
 # 便捷入口
-import struct as _struct
-
-
 def quick_crash_cluster(crash_records: List[Dict[str, Any]],
                         threshold: float = 0.35) -> List[CrashCluster]:
     """从crash record字典列表快速执行聚类。"""

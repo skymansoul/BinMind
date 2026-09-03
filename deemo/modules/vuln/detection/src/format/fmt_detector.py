@@ -168,7 +168,7 @@ def detect_fmt_vuln_enhanced(insns: List[str], addrs: List[int],
                     'syslog', 'wprintf', '__mingw_printf'}
 
     for i, (instr, addr) in enumerate(zip(insns, addrs)):
-        # Parse instruction properly (fix: objdump format includes hex bytes)
+        # 按 objdump 格式（含十六进制字节）正确切分指令
         instr_parts = instr.split(maxsplit=1)
         if len(instr_parts) < 2:
             continue

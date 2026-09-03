@@ -2,11 +2,8 @@
 # 设计取舍: 语法生成用递归展开+深度守卫防无限循环，而非全生成->过滤
 # （后者在复杂语法上会爆炸）。变异生成用位翻转+结构保留变异组合。
 import random
-import struct
-import os
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Set, Tuple
-from itertools import product  # unused; 重复class TestCase已在重构中消除
 
 
 @dataclass

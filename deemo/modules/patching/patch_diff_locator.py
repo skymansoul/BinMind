@@ -9,8 +9,6 @@ import difflib
 import enum
 from collections import defaultdict, deque
 
-from pathlib import Path  # 未使用，预留给补丁路径校验
-
 try:
     from core.config import Config, ensure_directories, get_current_ai_model, call_ai_with_retry
 except ImportError:

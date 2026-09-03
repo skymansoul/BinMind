@@ -1,13 +1,12 @@
 """多引擎协同模糊测试——AFL++/libFuzzer/Honggfuzz 共享语料同步"""
 import os
 import time
-import shutil
 import subprocess
 import logging
 import hashlib
 import threading
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Set, Tuple
+from dataclasses import dataclass
+from typing import List, Dict, Any, Optional, Set
 
 _log = logging.getLogger(__name__)
 

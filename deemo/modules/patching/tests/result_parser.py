@@ -22,7 +22,6 @@
 import os
 import sys
 import json
-import time
 
 SAMPLE_ROOT = os.path.dirname(os.path.abspath(__file__)) + "/cve_samples"
 

@@ -12,8 +12,6 @@ from deemo.modules.vuln.detection.src.logger import get_logger
 _log = get_logger("vuln_detection.dedup")
 
 
-# ==== Strategy & Similarity — 修复: 用 Enum 替代 class-body 重复定义 ====
-
 class DeduplicationStrategy(str, Enum):
     DATAFLOW = "dataflow"
     SYNTAX = "syntax"

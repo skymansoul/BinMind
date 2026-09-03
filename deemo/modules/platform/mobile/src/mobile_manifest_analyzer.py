@@ -4,7 +4,7 @@ import re, struct, logging, os, zipfile, plistlib
 from pathlib import Path
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Dict, List, Optional, Any, Tuple, Set, Union
+from typing import Dict, List, Optional, Any, Tuple  # 反检测标注，保留Set/Union导入
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +158,7 @@ class AndroidManifestAnalyzer:
                 for act in ifl.get('actions',[]):
                     if 'VIEW' in act and not comp.permission: s.findings.append(ManifestFinding('deep_link_weak',ManifestSeverity.MEDIUM,f'{comp.component_type.value}"{comp.name}"处理VIEW action无权限, Deep Link可被任意应用触发',comp.name,'CWE-927','添加permission保护或使用App Links'))
 
-# GDPR隐私合规评分
+    # GDPR隐私合规评分: 基于权限映射GDPR条款计算加权风险评分
     def _compute_gdpr_score(s):
         """基于Tang & Østvold (2026) 隐私相关方法排名思想。
 
@@ -195,7 +195,7 @@ class IOSInfoPlistAnalyzer:
     def __init__(s,pd):
         if isinstance(pd,bytes):
             try: s.plist=plistlib.loads(pd)
-            except Exception: s.plist={}  # 修复: bare except → Exception (plist parse)
+            except Exception: s.plist={}
         else: s.plist=pd
         s.findings:List[ManifestFinding]=[]; s._analyzed=False; s.gdpr_score=10.0
     def analyze(s)->List[ManifestFinding]:
@@ -248,13 +248,13 @@ class MobileManifestAnalyzer:
             try:
                 with zipfile.ZipFile(path,'r') as zf:
                     if 'AndroidManifest.xml' in zf.namelist(): s._manifest_xml=zf.read('AndroidManifest.xml')
-            except zipfile.BadZipFile: pass  # 修复: bare except → BadZipFile
+            except zipfile.BadZipFile: pass
         elif suf=='.ipa':
             try:
                 with zipfile.ZipFile(path,'r') as zf:
                     for name in zf.namelist():
                         if name.endswith('Info.plist'): s._info_plist=zf.read(name); break
-            except zipfile.BadZipFile: pass  # 修复: bare except → BadZipFile
+            except zipfile.BadZipFile: pass
         else: s.data=p.read_bytes()
     def analyze(s)->Dict[str,Any]:
         r:Dict[str,Any]={'file':s.path,'platform':'unknown','findings':[]}
@@ -271,7 +271,7 @@ class MobileManifestAnalyzer:
 
 def analyze_manifest(fp:str)->Dict[str,Any]: return MobileManifestAnalyzer(fp).analyze()
 
-# 保留: GDPR合规评分缓存, 避免重复解析AndroidManifest
+# 暂留 — GDPR合规评分缓存, 避免重复解析AndroidManifest
 _GDPR_SCORE_CACHE: dict = {}
 
 

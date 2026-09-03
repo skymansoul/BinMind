@@ -7,7 +7,7 @@
 无需外部工具 (r2/gcc/frida) —— 纯 Python。
 """
 
-import sys, os, json, pytest, tempfile, hashlib
+import sys, os, pytest, tempfile
 
 _cur = os.path.dirname(os.path.abspath(__file__))
 _patch = os.path.dirname(_cur)

@@ -1,6 +1,5 @@
 # 漏洞生命周期状态机
-# 状态迁移白名单、审计追踪、SLA跟踪
-# FIXME: SLA阈值按严重级别可配置
+# 状态迁移白名单、审计追踪、SLA跟踪（SLA阈值按严重级别阶梯化，见_SLA_HOURS）
 # 同状态迁移返回False，不写审计日志
 
 from enum import Enum
@@ -141,7 +140,7 @@ class VulnLifecycle:
         deadline = datetime.now() + timedelta(hours=hours)
         return deadline.isoformat()
 
-# 增删改查
+    # 增删改查
 
     def create(self, **kwargs) -> VulnRecord:
         now = datetime.now().isoformat()
@@ -220,7 +219,7 @@ class VulnLifecycle:
             if q in r.description.lower(): results.append(r); continue
         return results
 
-# 状态流转
+    # 状态流转
 
     def transition(self, vuln_id: str, new_status: VulnStatus,
                    reason: str = "", changed_by: str = "system") -> bool:
@@ -261,7 +260,7 @@ class VulnLifecycle:
             results[vid] = self.transition(vid, new_status, reason)
         return results
 
-# 检索
+    # 检索
 
     def _find_by_cve(self, cve_id: str) -> List[VulnRecord]:
         return [r for r in self._records.values()
@@ -278,7 +277,7 @@ class VulnLifecycle:
                 if r.is_open and r.sla_deadline
                 and datetime.fromisoformat(r.sla_deadline) < now]
 
-# 统计
+    # 统计
 
     def stats(self) -> Dict[str, Any]:
         by_status: Dict[str, int] = {}
@@ -294,7 +293,7 @@ class VulnLifecycle:
             "sla_breaches": len(self._fetch_sla_breaches()),
         }
 
-# 持久化
+    # 持久化
 
     def save(self, path: str = "") -> str:
         p = path or self._storage_path or "vuln_lifecycle.json"

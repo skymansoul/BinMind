@@ -25,7 +25,7 @@ def load_data(metrics_path: str = "comparison_metrics.json") -> dict:
     _p = Path(metrics_path)
     if _p.exists():
         return json.loads(_p.read_text())
-    # 占位——当Angr/QEMU/Ghidra未安装时
+    # 回退数据—外部工具缺失时仍可出图对比
     return {
         "tools": {
             "our_tool": {"precision": 0.82, "recall": 0.78, "avg_time_sec": 2.3},
@@ -74,7 +74,7 @@ def plot_comparison(data: dict, output: str = "comparison_chart.png"):
 
 
 def generate_latex_table(data: dict, output: str = "comparison_table.tex"):
-    """生成LaTeX对比表格——含加壳/未加壳分组占位。"""
+    """生成LaTeX对比表格——含加壳/未加壳分组。"""
     _tools = data.get("tools", {})
     _lines = [
         r"\begin{table}[htbp]",

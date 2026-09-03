@@ -107,18 +107,56 @@ def apply_guard_to_interval(interval: SInterval,
     return SInterval.range_lo_hi(lo, hi, stride=new_stride)
 
 def intersect_guards(reg: str, interval: SInterval,
-                     guards: List[PathGuard]) -> SInterval:
+                     guards: List[PathGuard],
+                     insn_addr: int = 0) -> SInterval:
     """应用 reg 的所有守卫到区间, 返回最紧约束 (conservative intersect).
 
     多条守卫的语义: 每条独断在各自的 fallthrough 路径上成立,
     我们取其 INTERSECTION (最紧上界 + 最高下界) — 这是 conservative
     under-approximation: 窄化后的区间 ≤ 真实运行区间.
 
+    路径互斥性处理: 同一 cmp 的 fallthrough 和 jump 方向在运行时互斥,
+    不应同时 intersect。通过 cmp_addr 和 coverage_range 判定当前指令
+    所在路径, 只选择方向一致的守卫.
+
     例: guards = [rcx ≤ 128, rcx ≤ 64] → narrowed = [0, 64]
     """
-    result = interval
+    # 按 cmp_addr 分组 — 同一 cmp 的互斥守卫只选方向匹配者
+    cmp_groups: Dict[int, List[PathGuard]] = {}
+    ungrouped: List[PathGuard] = []
     for g in guards:
-        if g.reg == reg and g.fallthrough:
+        if g.reg != reg:
+            continue
+        ca = getattr(g, 'cmp_addr', 0)
+        if ca:
+            cmp_groups.setdefault(ca, []).append(g)
+        else:
+            ungrouped.append(g)
+
+    # 对每个 cmp 组, 按 insn_addr 的 coverage_range 归属选择唯一守卫
+    selected: List[PathGuard] = list(ungrouped)
+    for ca, group in cmp_groups.items():
+        chosen = None
+        if insn_addr:
+            for g in group:
+                cr = getattr(g, 'coverage_range', None)
+                if cr is not None and cr[0] <= insn_addr <= cr[1]:
+                    chosen = g
+                    break
+        if chosen is None:
+            # 无明确归属 — 保守取 fallthrough 方向
+            for g in group:
+                if g.fallthrough:
+                    chosen = g
+                    break
+        if chosen is None and group:
+            chosen = group[0]
+        if chosen is not None:
+            selected.append(chosen)
+
+    result = interval
+    for g in selected:
+        if g.fallthrough:
             result = apply_guard_to_interval(result, g)
             if result.is_bot:
                 break
@@ -178,8 +216,9 @@ class ValueRangeNarrower:
                 original=size_interval, narrowed=size_interval,
                 guards_applied=[], narrowing_effect='none')
 
-        # 应用守卫 intersection
-        narrowed = intersect_guards(param_reg, size_interval, relevant)
+        # 应用守卫 intersection — 传入 alloc 地址做路径互斥判定
+        narrowed = intersect_guards(param_reg, size_interval, relevant,
+                                    insn_addr=alloc_insn_addr)
 
         # 判定窄化效果
         if narrowed.is_bot:

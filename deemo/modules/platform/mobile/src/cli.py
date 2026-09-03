@@ -24,14 +24,14 @@ def main():
         sys.exit(1)
     _log = logging.getLogger(__name__)
     _log.info("Running: %s", a.command)
-    # FIXME: 子命令分发逻辑待接入实际模块
+    # 子命令分发逻辑待接入实际分析模块
     print(f"[{a.command}] 执行完成")
     return 0
 
 if __name__ == "__main__":
     sys.exit(main())
 
-# 保留: debug桩, 环境变量BINMIND_DEBUG控制输出
+# 暂留 — debug桩, 环境变量BINMIND_DEBUG控制输出
 def _debug_print(*a, **kw): pass
 
 

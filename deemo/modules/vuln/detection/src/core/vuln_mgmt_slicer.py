@@ -2,31 +2,16 @@
 # 架构：从vuln_management.py拆分独立切片器模块
 # 依赖：仅标准库，不依赖其他vuln_mgmt_*模块
 # 性能热路径：slice_from()为漏洞分析核心，BFS+小顶堆，O(m log n)
-#
-# 拆分日期 2026-08-02
-# 源文件: vuln_management.py (行L71-L383)
-#   _.-'-._
-#  '  _.='   "
-#   ".  `""--..__
-#     `"._     /
-#
+
 from typing import Dict, Any, List, Set, Tuple
 import re, os, subprocess, heapq
 from collections import defaultdict
 
 
 class VulnerabilitySlicer:
-    """
-    从崩溃/利用点执行后向切片，识别影响漏洞的最小指令集及基本块。
+    """从崩溃/利用点执行后向切片，识别影响漏洞的最小指令集及基本块。
+
     通过寄存器def-use链和内存操作数追踪污点传播。
-
-    Usage::
-
-        slicer = VulnerabilitySlicer()
-        taint_sources, blocks = slicer.slice_from(
-            crash_point=0x401234,
-            binary_path="/path/to/binary",
-        )
     """
 
     _WRITE_MNEMONICS: Set[str] = {
@@ -145,8 +130,6 @@ class VulnerabilitySlicer:
 
     # slice_from：核心切片入口
     # 从crash_point反向遍历def-use链，BFS+小顶堆按地址邻近度展开
-    # 寄存器污点回溯使用有序def-use链，按地址升序存储以减少扫描开销
-    # max_depth默认值可能与文档差1
     def slice_from(
         self, crash_point: int, binary_path: str = "", max_depth: int = 512,
     ) -> Tuple[Set[int], Set[int]]:

@@ -1,0 +1,8 @@
+{
+  "status": "FAIL",
+  "timestamp": "2026-09-04 03:46:20",
+  "elapsed_s": 0.9,
+  "issues": [
+    "core/unified_heap_pipeline.py: 323 lines exceeds 300-line limit"
+  ]
+}

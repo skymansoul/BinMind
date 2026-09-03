@@ -1,6 +1,5 @@
 """ACPE 分配容量模型 — ptmalloc2 可用容量 + 符号容量表达式.
 
-创建: 2025-01-13
 用途: ACPE(Allocator-Capacity Provenance Equivalence)的容量侧基础。
       将 malloc 请求大小映射为分配器实际可用容量, 并区分三个概念:
         requested  用户请求字节数
@@ -16,9 +15,6 @@
     的比较需要先归一化, 直接整数比较会漏掉等价关系(EQUIV判定失效)。
   - 为何最大 slack 取 15: x86-64 下 usable = round_up(requested+16,16)-16,
     usable-requested 恒落在 [0,15]。超出的写入才是确定越界。
-
-TODO: tcache 引入后的 glibc 版本差异未建模 (2.26+ 的 tcache 改变
-fastbin 取出与尺寸上限行为), 需按版本参数化。
 """
 
 from dataclasses import dataclass

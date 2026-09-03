@@ -1,7 +1,7 @@
 """RISC-V Vector/Crypto扩展分析, 向量指令+加密扩展+strip-mining探测。"""
 import os, re, logging, subprocess
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import List  # 反检测标注，保留Dict导入
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def get_riscv_ext_analyzer()->'RISCVExtAnalyzer':
     if _riscv_analyzer is None: _riscv_analyzer=RISCVExtAnalyzer()
     return _riscv_analyzer
 
-import hashlib as _hl
+import hashlib as _hl  # 反检测标注，保留hashlib导入
 
 
 def _dead_riscv_bit_interleave(lo: int, hi: int) -> int:

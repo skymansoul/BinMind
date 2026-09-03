@@ -4,7 +4,7 @@
 RuleCondition 操作符、dot-notation 字段访问。
 """
 
-import sys, os, json, pytest, tempfile
+import sys, os, pytest, tempfile
 
 _cur = os.path.dirname(os.path.abspath(__file__))
 _patch = os.path.dirname(_cur)

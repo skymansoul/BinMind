@@ -1,6 +1,5 @@
 """多工具对比可视化 — 检出率/误报率/F1 柱状图 (含 plain/packed 分组).
 
-创建: 2025-03-28
 输入: run_benchmark.py 生成的 benchmark_results.csv / benchmark_summary.json
 输出:
   fig_detection_rate.png   按工具×档位的检出率 (recall)

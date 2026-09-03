@@ -169,6 +169,52 @@ class CrossFuncResolver:
             return roots[0], clamp
         return var, clamp
 
+    def resolve_param_size(self, base_var: str, write_pc: int
+                           ) -> Optional[ValueInterval]:
+        """base_var 为函数参数时, 从 caller 追溯分配大小.
+
+        定位 write_pc 所属函数, 若 base_var 在其参数列表中,
+        查找调用方传入的实参并解析其分配大小.
+        """
+        func = self.enclosing_func(write_pc)
+        params = self.signatures.get(func, [])
+        if base_var not in params:
+            return None
+        pos = params.index(base_var)
+        for arg, ap, caller in self.calls.get(func, []):
+            if ap != pos:
+                continue
+            # 实参为数字常量直接返回
+            try:
+                val = int(arg, 0)
+                return ValueInterval(val, val)
+            except (ValueError, TypeError):
+                pass
+            # 实参为变量时在 caller 中解析其分配大小
+            if re.fullmatch(r'[a-z_]\w*', arg):
+                res = resolve_alloc_size(arg, self.ir, 0)
+                if res.interval is not None:
+                    return res.interval
+        return None
+        pos = params.index(var)
+        roots: List[str] = []
+        clamps: List[int] = []
+        for arg, ap, caller in self.calls.get(func, []):
+            if ap != pos:
+                continue
+            if re.fullmatch(r'[a-z_]\w*', arg):
+                r, c = self.root_clamp(arg, caller, depth + 1)
+                roots.append(r)
+                if c is not None:
+                    clamps.append(c)
+            elif 'argv' in arg or arg.startswith('atoi'):
+                roots.append(arg)
+        if roots and len(set(roots)) == 1:
+            if clamps:
+                return roots[0], min(clamps)
+            return roots[0], clamp
+        return var, clamp
+
 
 def correlated_within_alloc(
         resolver: CrossFuncResolver,
@@ -264,16 +310,16 @@ class CrossFuncSafetyCheck:
     def _free_is_guarded(self, free_idx: int) -> bool:
         """free 是否位于分支/循环块内.
 
-        以自由行为起点向上回溯, 若遇到未闭合的 if/for/while/switch
-        控制头, 则 free 与写入处于互斥分支, 不构成释放后写入.
+        从 free 指令向前回溯, 遇到 if/for/while/switch 控制头
+        即判定受控; 遇到函数定义标签停止, 限制回溯于当前函数.
         """
-        balance = 0
-        for i in range(free_idx, max(0, free_idx - 4) - 1, -1):
+        for i in range(free_idx - 1, -1, -1):
             line = self.ir[i]
             if re.search(r'\b(if|for|while|switch|case)\b', line):
-                if balance >= 0:
-                    return True
-            balance += line.count('{') - line.count('}')
+                return True
+            # 函数定义标签标记回溯边界
+            if re.match(r'^\s*<\w+>:\s*$', line):
+                break
         return False
 
     def _freed_before_write(self, base_var: str, store_pc: int) -> bool:

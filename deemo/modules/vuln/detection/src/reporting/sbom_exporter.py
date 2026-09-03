@@ -1,16 +1,13 @@
-# SBOM导出器——SPDX 2.3 + CycloneDX 1.4双格式导出
+"""SBOM导出器——SPDX 2.3 + CycloneDX 1.4双格式导出."""
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
-import json as _json
+from typing import Dict, List
+import json
 import os
 import uuid
 from datetime import datetime
 
-json = _json
-
-# FIXME: SPDX license list incomplete — only 25 common licenses mapped
-# 边界条件: unrecognized licenses default to NOASSERTION
+# SPDX license 映射仅含 25 个常见许可证, 未识别者默认 NOASSERTION
 _SPDX_LICENSE_MAP = {
     "mit": "MIT", "apache-2.0": "Apache-2.0", "apache2": "Apache-2.0",
     "gpl-2.0": "GPL-2.0-only", "gpl-3.0": "GPL-3.0-only",

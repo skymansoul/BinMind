@@ -7,8 +7,8 @@
 # 初版仅支持OpenAI兼容API + 本地Ollama fallback。
 # 新增困惑度评分与多轮self-consistency投票。
 
-import json, os, re, time, logging, hashlib, threading
-from typing import Dict, List, Optional, Any, Tuple
+import json, os, time, logging, hashlib
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from collections import defaultdict

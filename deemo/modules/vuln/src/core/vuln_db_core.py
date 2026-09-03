@@ -48,9 +48,10 @@ class VulnerabilityDatabaseCore:
     本地漏洞数据库——核心CRUD与生命周期管理
 
     功能:
-    1. 存储成功的漏洞分析结果和利用脚本
-        4. 向量存储和语义搜索（可选 FAISS 加速）
-        5. 外部漏洞数据库集成（CVE/Exploit-DB）
+        1. 持久化分析结果与利用脚本
+        2. 基于代码片段/危险函数的相似性检索
+        3. 向量存储和语义搜索（可选 FAISS 加速）
+        4. 外部漏洞数据库集成（CVE/Exploit-DB）
     """
 
     SCHEMA = """

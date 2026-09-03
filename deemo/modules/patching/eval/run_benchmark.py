@@ -12,7 +12,7 @@ variant: plain(未加壳) / packed(加壳) — 由packer生成加壳副本。
 输出: eval/benchmark_results.csv + eval/benchmark_summary.json
 """
 
-import os, sys, json, time, csv, subprocess, argparse, shutil
+import os, sys, json, time, csv, subprocess, argparse
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 SAMPLE_ROOT = os.path.join(os.path.dirname(__file__), '..', 'tests',

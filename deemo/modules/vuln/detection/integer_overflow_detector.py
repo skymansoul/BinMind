@@ -1,9 +1,7 @@
 # coding: utf-8
-import re, logging
+import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-
-_log = logging.getLogger(__name__)
+from typing import Dict, List, Optional
 
 @dataclass
 class IntOverflowCandidate:

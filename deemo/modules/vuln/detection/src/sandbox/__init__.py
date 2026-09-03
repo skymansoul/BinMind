@@ -1,4 +1,4 @@
-# sandbox子包——沙箱逃逸检测/seccomp策略构造/漏洞验证
+"""sandbox子包——沙箱逃逸检测/seccomp策略构造/漏洞验证."""
 
 from deemo.modules.vuln.detection.src.sandbox.escape_detector import (
     SandboxEscapeDetector, EscapeAttempt, escape_check,

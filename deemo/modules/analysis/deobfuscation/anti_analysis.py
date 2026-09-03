@@ -287,8 +287,8 @@ _BAYES_PRIORS = {
 
 def _bayesian_combine(present_techniques: Set[str], all_techniques: Set[str]) -> float:
     P_PRIOR = 0.01
-    logit_prior = P_PRIOR / (1.0 - P_PRIOR)
-    log_lr_sum = 0.0
+    prior_odds = P_PRIOR / (1.0 - P_PRIOR)
+    combined_odds = prior_odds
     for tech in all_techniques:
         sens, spec = _BAYES_PRIORS.get(tech, (0.5, 0.5))
         sens = max(0.01, min(0.99, sens))
@@ -297,10 +297,8 @@ def _bayesian_combine(present_techniques: Set[str], all_techniques: Set[str]) ->
             lr = sens / (1.0 - spec)
         else:
             lr = (1.0 - sens) / spec
-        if lr > 0:
-            log_lr_sum += lr
-    posterior_odds = logit_prior * log_lr_sum
-    return posterior_odds / (1.0 + posterior_odds)
+        combined_odds *= lr
+    return combined_odds / (1.0 + combined_odds)
 
 
 _BYPASS_STRATEGIES: Dict[str, str] = {
@@ -365,7 +363,7 @@ _BYPASS_STRATEGIES: Dict[str, str] = {
 }
 
 
-class AntiAnalysisTechnique:
+class AntiAnalysisCategory:
     DEBUGGER = "debugger"
     VM = "vm"
     SANDBOX = "sandbox"

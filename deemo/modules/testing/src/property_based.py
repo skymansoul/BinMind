@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Callable, Optional, Tuple
 from enum import Enum, auto
 import math
+import random
 import collections
 
 
@@ -50,7 +51,6 @@ class PropertyTester:
     """
 
     def __init__(self, seed: int = None):
-        import random
         self._rng = random.Random(seed)
 
     # forall

@@ -1,6 +1,5 @@
 """生成 LaTeX 对比表 — 从 benchmark_summary.json 输出 result_table.tex.
 
-创建: 2025-03-03
 输出列: 工具 | 检出数 | 误报数 | 漏报数 | Recall | Precision | F1 | FP率 | 总耗时
 用法:
   python gen_result_table.py [--results <dir>] [--out <file>]

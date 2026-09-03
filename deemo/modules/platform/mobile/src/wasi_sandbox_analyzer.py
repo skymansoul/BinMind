@@ -68,7 +68,7 @@ def analyze_wasi_sandbox(wp:str="")->dict:
     if wp is None: wp=""
     return WASISandboxAnalyzer(wp).run()
 
-# 保留: 调试空操作占位
+# 暂留 — 调试空操作占位
 
 
 _WASI_RUNTIME_CACHE: dict = {}

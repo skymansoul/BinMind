@@ -1,19 +1,12 @@
 """堆溢出检测器 — AAVSA 三模块串联检测管线.
 
-创建: 2024-12-09 09:15
-用途: 整合 allocator_model + value_set_analyzer + controllability_filter,
-      构成完整的堆溢出检测+误报过滤管线。
+整合 allocator_model + value_set_analyzer + controllability_filter,
+构成完整堆溢出检测 + 误报过滤管线。
 
-管线流程:
-  malloc(n) → AllocatorModel 获取可用大小
-           → ValueSetAnalyzer 追踪指针值集
-           → ControllabilityFilter 过滤编译器生成的安全访问
-           → 输出: 仅保留用户可控的真正潜在溢出
+流程: malloc(n) → 分配器模型取可用大小 → 值集分析追踪指针 → 可控性过滤 → 仅留用户可控真正溢出。
 
-预期效果 (基于 ptmalloc2 内部约束):
-  - 保留高召回: 所有用户可控的大偏移访问都被标记
-  - 降低误报: 编译器 padding / 结构体对齐 / 常数字节偏移被过滤
-  - 估计误报率从 ~40% 降至 ~15%
+预期效果: 保留高召回 (所有用户可控大偏移访问), 降低误报 (编译器 padding/对齐/常数偏移被过滤),
+估计误报率从 ~40% 降至 ~15%。
 """
 
 from dataclasses import dataclass, field
@@ -40,17 +33,7 @@ class HeapOverflowFinding:
 
 
 class HeapOverflowDetector:
-    """AAVSA 堆溢出检测器 — 分配器感知 + 值集分析 + 可控性过滤.
-
-    使用方式:
-      detector = HeapOverflowDetector()
-      detector.register_malloc(0x401000, 64, 'rax')
-      detector.register_access(0x401020, 'rax', '0x100', 'vuln_fn', 4)
-      findings = detector.detect()
-      for f in findings:
-          if f.user_controlled:
-              print(f'REAL VULN: {f.description}')
-    """
+    """AAVSA 堆溢出检测器 — 分配器感知 + 值集分析 + 可控性过滤."""
 
     def __init__(self):
         self._alloc_model = Ptmalloc2Model()

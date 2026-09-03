@@ -235,7 +235,7 @@ def _check():
     # 溢出case: malloc(size_reg="rcx", size_hint=128) → memcpy(不同reg=1024)
     _inf.track_malloc(0x3000, "buggy", "rcx", size_hint=128)
     # memcpy用rbx, 约束为1024, 远超malloc分配的128
-    _inf.constrain_reg("rbx", Interval)
+    _inf.constrain_reg("rbx", Interval(0, 1024))
     _r3 = _inf.check_memcpy(0x3020, "buggy", "rbx")
     # 不同寄存器→UNCERTAIN (无法关联到具体malloc)——这是保守策略的体现
     assert _r3 == SizeRelation.UNCERTAIN, f"different reg→uncertain, got {_r3}"
@@ -244,7 +244,7 @@ def _check():
     _inf2 = SizeConstraintInferrer()
     _inf2.track_malloc(0x4000, "bug2", "rdi", size_hint=128)
     # 模拟寄存器被覆盖为更大的值——lo>allocated_max
-    _inf2._intervals["rdi"] = Interval
+    _inf2._intervals["rdi"] = Interval(256, 256)
     _r4 = _inf2.check_memcpy(0x4020, "bug2", "rdi")
     assert _r4 == SizeRelation.VULNERABLE, f"overflow should be VULNERABLE, got {_r4}"
 

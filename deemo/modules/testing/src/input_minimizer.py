@@ -29,7 +29,7 @@
 #     - 通过生成器trace缩减保持输入有效性。本项目取其结构保持缩减
 #       思想，但以推断字段边界而非生成器trace作为结构来源。
 #     - ddmin原始算法，本项目阶段2的退化路径。
-import math
+import re
 import time
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -192,15 +192,13 @@ class InputMinimizer:
 
         text = data.decode("utf-8", errors="replace")
         # 按分隔符分token
-        import re
         tokens = re.split(r'([\s:;,=\{\}\[\]\(\)\"\'\n\r\t]+)', text)
         # tokens中偶数下标为内容token，奇数下标为分隔符
 
         current = text
-        for i in range(0, len(tokens), 2):
+        i = 0
+        while i < len(tokens):
             if time.monotonic() > deadline or self._predicate_calls >= self._max_iter:
-                break
-            if i >= len(tokens):
                 break
             # 尝试删除此token及其相邻分隔符
             removed = "".join(tokens[:i] + tokens[i + 2:])
@@ -208,7 +206,9 @@ class InputMinimizer:
             if self._test(predicate, candidate):
                 tokens = tokens[:i] + tokens[i + 2:]
                 current = removed
-                i -= 2  # 回退以检查合并后的相邻token
+                i = max(0, i - 2)  # 回退以检查合并后的相邻token
+            else:
+                i += 2
 
         return current.encode("utf-8", errors="replace")
 

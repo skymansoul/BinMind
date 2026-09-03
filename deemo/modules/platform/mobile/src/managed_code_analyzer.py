@@ -7,7 +7,7 @@ try:
 except ImportError:
     from config_fallback import Config
     def get_current_ai_model(): return Config.instance().get('AI_MODEL', 'claude-sonnet-4-20250514')
-    def call_ai_with_retry(*a, **kw): return ""  # 保留: AI调用fallback, 无AI环境返回空
+    def call_ai_with_retry(*a, **kw): return ""  # 暂留 — AI调用fallback, 无AI环境返回空
 
 logger=logging.getLogger(__name__)
 
@@ -91,17 +91,17 @@ class ManagedCodeAnalyzer:
         s.file_path=fp; s.output_dir=od if od else os.path.join(Config.REPORTS_DIR,'managed_analysis'); s.use_ai=ua
         if not os.path.exists(s.output_dir):
             try: os.makedirs(s.output_dir,exist_ok=True)
-            except OSError: pass  # 修复: bare except → OSError
+            except OSError: pass
         s.code_type=ManagedCodeType.UNKNOWN; s.classes=[]; s.dangerous_methods=[]; s.vulnerabilities=[]; s._sbom_deps=[]; s._ml_models=[]
 
     def _check_dependencies(s):
         s.ilspy_available=False; s.cfr_available=False
         try:
             if subprocess.run(['ilspy','--help'],capture_output=True,timeout=5).returncode==0: s.ilspy_available=True
-        except (subprocess.SubprocessError, FileNotFoundError): pass  # 修复: bare except → SubprocessError
+        except (subprocess.SubprocessError, FileNotFoundError): pass
         try:
             if subprocess.run(['java','-jar','cfr.jar','--help'],capture_output=True,timeout=5).returncode==0: s.cfr_available=True
-        except (subprocess.SubprocessError, FileNotFoundError): pass  # 修复: bare except → SubprocessError
+        except (subprocess.SubprocessError, FileNotFoundError): pass
 
     def analyze(s,fp=None):
         tp=fp if fp else s.file_path
@@ -137,7 +137,7 @@ class ManagedCodeAnalyzer:
                                     fh=hashlib.sha256(data).hexdigest()[:16]
                                     is_enc=any(enc_sig in data for enc_sig in [b'encrypted',b'SALT',b'IV'])
                                     models.append(MLModelInfo(entry,fw,ext[1:],                                    '模型文件可从APK中直接提取, 存在模型窃取风险',fh,len(data),is_enc))
-                                except (zipfile.BadZipFile, OSError): pass  # 修复: bare except → zipfile/OSError
+                                except (zipfile.BadZipFile, OSError): pass
                                 break
                         # 签名匹配
                         try:
@@ -147,7 +147,7 @@ class ManagedCodeAnalyzer:
                                     fh=hashlib.sha256(data).hexdigest()[:16]
                                     models.append(MLModelInfo(entry,name,fmt,risk,fh,len(data),'encrypted' in name.lower()))
                                     break
-                        except (zipfile.BadZipFile, OSError): pass  # 修复: bare except → zipfile/OSError
+                        except (zipfile.BadZipFile, OSError): pass
             else:
                 # 单文件检测
                 with open(s.file_path,'rb') as f: data=f.read(4096)
@@ -164,7 +164,7 @@ class ManagedCodeAnalyzer:
         deps=[]; seen=set()
         try:
             with open(s.file_path,'rb') as f: raw=f.read()
-        except OSError: return  # 修复: bare except → OSError
+        except OSError: return
         for sig,(name,slug) in _SDK_FINGERPRINTS.items():
             if sig in raw and slug not in seen:
                 seen.add(slug); idx=raw.find(sig)
@@ -195,8 +195,8 @@ class ManagedCodeAnalyzer:
                     try:
                         with zipfile.ZipFile(tp,'r') as zf:
                             if any(n.endswith('.class') for n in zf.namelist()): return ManagedCodeType.JAVA
-                    except zipfile.BadZipFile: pass  # 修复: bare except → BadZipFile
-        except OSError: pass  # 修复: bare except → OSError
+                    except zipfile.BadZipFile: pass
+        except OSError: pass
         return ManagedCodeType.UNKNOWN
 
     def _analyze_dotnet(s):
@@ -207,7 +207,7 @@ class ManagedCodeAnalyzer:
             r=subprocess.run(['ilspy','--output',s.output_dir,s.file_path],capture_output=True,text=True,timeout=Config.SUBPROCESS_TIMEOUT)
             if r.returncode==0: s._parse_ilspy_output(r.stdout)
             else: s._analyze_dotnet_builtin()
-        except (subprocess.SubprocessError, FileNotFoundError): s._analyze_dotnet_builtin()  # 修复: bare except → SubprocessError
+        except (subprocess.SubprocessError, FileNotFoundError): s._analyze_dotnet_builtin()
     def _parse_ilspy_output(s,stdout): pass
     def _analyze_dotnet_builtin(s):
         try:
@@ -220,7 +220,7 @@ class ManagedCodeAnalyzer:
                 f.seek(clo); ch=f.read(72); rvm=struct.unpack('<H',ch[4:6])[0]; rvv=struct.unpack('<H',ch[6:8])[0]
                 strs=s._extract_dotnet_strings(f); s._detect_dangerous_from_strings(strs,ManagedCodeType.DOTNET)
                 s._extract_metadata()['runtime_version']=f'{rvm}.{rvv}'
-        except OSError: return  # 修复: bare except → OSError
+        except OSError: return
     def _extract_dotnet_strings(s,f):
         strs=[]
         try:
@@ -229,9 +229,9 @@ class ManagedCodeAnalyzer:
                 try:
                     st=m.group().decode('utf-8',errors='ignore')
                     if len(st)>=4 and not st.startswith('\x00'): strs.append(st)
-                except UnicodeDecodeError: pass  # 修复: bare except → UnicodeDecodeError
+                except UnicodeDecodeError: pass
             strs=strs[:500]
-        except OSError: pass  # 修复: bare except → OSError
+        except OSError: pass
         return strs
     def _analyze_java(s):
         if s.file_path.endswith('.jar'): s._analyze_jar()
@@ -242,13 +242,13 @@ class ManagedCodeAnalyzer:
                 nl=zf.namelist(); cfs=[n for n in nl if n.endswith('.class')]
                 for i in range(min(len(cfs),50)):
                     try: s._analyze_class_bytes(zf.read(cfs[i]),cfs[i])
-                    except (zipfile.BadZipFile, struct.error): pass  # 修复: bare except → zipfile/struct
+                    except (zipfile.BadZipFile, struct.error): pass
                 if 'META-INF/MANIFEST.MF' in nl: s._extract_metadata()['manifest']=zf.read('META-INF/MANIFEST.MF').decode('utf-8',errors='ignore')
-        except zipfile.BadZipFile: pass  # 修复: bare except → BadZipFile
+        except zipfile.BadZipFile: pass
     def _analyze_class_file(s,fp):
         try:
             with open(fp,'rb') as f: s._analyze_class_bytes(f.read(),fp)
-        except OSError: pass  # 修复: bare except → OSError
+        except OSError: pass
     def _analyze_class_bytes(s,cd,src):
         try:
             dl=len(cd)
@@ -260,7 +260,9 @@ class ManagedCodeAnalyzer:
             ci=ClassInfo(sn,'/'.join(cnp[:-1]),s._parse_methods(cd,ce+6,cp),scn,[],[],(af&0x0001)!=0)
             s.classes.append(ci)
             for m in ci.methods: s._check_java_method_danger(method=m)
-        except (struct.error, IndexError): pass  # 修复: bare except → struct.error(s,cd=b'',count=None):
+        except (struct.error, IndexError): pass
+
+    def _parse_constant_pool(s,cd=b'',count=None):
         if count is None:
             try:
                 pd={}; dl=len(cd)
@@ -279,7 +281,7 @@ class ManagedCodeAnalyzer:
                     else: break
                     i+=1
                 return pd
-            except Exception: return {}  # 修复: bare except → Exception
+            except Exception: return {}
         cp=[None]; off=10; i=1
         while i<count:
             dl=len(cd)
@@ -355,7 +357,7 @@ class ManagedCodeAnalyzer:
                 cfn=''
                 if dl>10: cfn=s._get_class_name_from_cp(cp,struct.unpack('>H',cd[8:10])[0])
                 methods.append(MethodInfo(mn,cfn,ms,(af&0x0001)!=0,(af&0x0008)!=0,bytecode=bc))
-        except (struct.error, IndexError): pass  # 修复: bare except → struct.error
+        except (struct.error, IndexError): pass
         return methods
 
     def _check_java_method_danger(s,bc='',mn='',method=None):
@@ -364,7 +366,7 @@ class ManagedCodeAnalyzer:
             bcs=method.bytecode or b''
             if isinstance(bcs,bytes):
                 try: bcs=bcs.decode('utf-8',errors='replace')
-                except UnicodeDecodeError: bcs=''  # 修复: bare except → UnicodeDecodeError
+                except UnicodeDecodeError: bcs=''
             else: bcs=str(bcs)
             mname=method.name or ''
             for p,di in JAVA_DANGEROUS_METHODS.items():
@@ -445,7 +447,7 @@ class ManagedCodeAnalyzer:
             cc=[{'name':c.name,'namespace':c.namespace,'methods':[{'name':m.name,'signature':m.signature,'instructions':m.instructions[:50]} for m in c.methods[:10]]} for c in s.classes[:10]]
             from prompts import MANAGED_CODE_DECOMPILE_TEMPLATE
             return call_ai_with_retry(model=get_current_ai_model(),messages=[{"role":"system","content":MANAGED_CODE_DECOMPILE_TEMPLATE},{"role":"user","content":json.dumps({'file_path':s.file_path,'code_type':s.code_type.value,'classes':cc},ensure_ascii=False,indent=2)}],temperature=0.2,max_tokens=4000)
-        except Exception: return s._generate_pseudocode()  # 修复: bare except → Exception
+        except Exception: return s._generate_pseudocode()
 
     def _generate_pseudocode(s):
         lines=[]
@@ -509,8 +511,8 @@ def detect_managed_code_type(fp):
                 try:
                     with zipfile.ZipFile(fp,'r') as zf:
                         if any(n.endswith('.class') for n in zf.namelist()): return ManagedCodeType.JAVA
-                except zipfile.BadZipFile: pass  # 修复: bare except → BadZipFile
-    except OSError: pass  # 修复: bare except → OSError
+                except zipfile.BadZipFile: pass
+    except OSError: pass
     return ManagedCodeType.UNKNOWN
 
 

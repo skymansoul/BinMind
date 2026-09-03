@@ -1,11 +1,8 @@
 """整数溢出区间分析引擎 — 区间传播 + 溢出检测.
 
-创建: 2024-10-11
-目的: 替代 int_range_analyzer.py (已被标记为 DEPRECATED 注水模块).
-      指令分派逻辑在 insn_dispatch.py 中, 转移函数在本模块.
-      仅状态管理 + 转移函数 + 分析输出.
-
-方法依据: Cousot & Cousot, Mine.
+替代已标记 DEPRECATED 的 int_range_analyzer.py。
+指令分派在 insn_dispatch.py, 转移函数在本模块, 仅做状态管理+转移+输出。
+方法: Cousot & Cousot, Mine 抽象解释框架。
 """
 
 from dataclasses import dataclass
@@ -67,7 +64,7 @@ class IntervalPropagationEngine:
         self._guards: Dict[int, list] = {}  # addr → [(left, right, cond)]
         self._post_check_reg: str = None  # test reg,reg → reg name for js suppression
 
-# 转移函数 (被 insn_dispatch 调用)
+    # 转移函数 (被 insn_dispatch 调用)
 
     def _transfer_mov_imm(self, dst: str, imm: int) -> None:
         """mov reg, imm → reg := [imm, imm]."""
@@ -104,11 +101,12 @@ class IntervalPropagationEngine:
         # 噪声过滤: rsp/esp 目标是栈帧管理
         if dst.lower() in ('rsp', 'esp'):
             return
-        # 噪声过滤: TOP + 小常量 → 指针算术
+        # 噪声过滤: 仅当dst是alloc指针寄存器时跳过TOP+小常量加法
         if (op in ('add', 'sub')
             and left.is_top
             and right.is_constant()
-            and abs(right.lo) < 0x10000):
+            and abs(right.lo) < 0x10000
+            and dst.lower() in self._alloc_regs):
             return
 
         ovf = interval_can_overflow(left, right, op, width_bits)
@@ -125,10 +123,26 @@ class IntervalPropagationEngine:
                 used_in_alloc=dst.lower() in self._alloc_regs,
                 risk_level=risk))
 
+    @staticmethod
+    def _width_from_reg(reg_name: str) -> int:
+        """从寄存器名推断位宽: r64→64, e32→32, 16位→16."""
+        r = reg_name.lower()
+        if r in ('rax','rbx','rcx','rdx','rsi','rdi','rbp','rsp',
+                 'r8','r9','r10','r11','r12','r13','r14','r15'):
+            return 64
+        if r in ('eax','ebx','ecx','edx','esi','edi','ebp','esp',
+                 'r8d','r9d','r10d','r11d','r12d','r13d','r14d','r15d'):
+            return 32
+        if r in ('ax','bx','cx','dx','si','di','bp','sp'):
+            return 16
+        return 32
+
     def _transfer_shl(self, dst: str, src: str, shift_imm: int,
                       insn_addr: int, insn_text: str,
-                      width_bits: int = 32) -> None:
-        """shl dst, N — 左移."""
+                      width_bits: int = 0) -> None:
+        """shl dst, N — 左移. width_bits=0时按dst寄存器名推断."""
+        if width_bits <= 0:
+            width_bits = self._width_from_reg(dst)
         src_iv = self._state.get(src)
         result = interval_shl(src_iv, shift_imm)
         self._state.set(dst, result)
@@ -159,7 +173,7 @@ class IntervalPropagationEngine:
         result = interval_sign_extend(src_iv, from_bits, to_bits)
         self._state.set(dst, result)
 
-# 指令分派 (委托给 insn_dispatch)
+    # 指令分派 (委托给 insn_dispatch)
 
     def feed_instruction(self, mnemonic: str, op_str: str,
                          insn_addr: int = 0,
@@ -179,7 +193,14 @@ class IntervalPropagationEngine:
                 last_dst = parts[1].split(',')[0].strip().lower()
                 if (parts[0].lower() in ('add', 'sub', 'mul', 'imul')
                     and last_dst == self._post_check_reg.lower()):
-                    self._candidates.pop()
+                    # 仅确认跳向错误处理路径时才抑制, 否则保留候选
+                    js_target = op_str.strip().lower()
+                    is_err_path = any(
+                        kw in js_target for kw in
+                        ('err', 'fail', 'cleanup', 'overflow', 'abort',
+                         '.LBB_', 'trap'))
+                    if is_err_path:
+                        self._candidates.pop()
             self._post_check_reg = None
         elif mnem not in ('test',):
             self._post_check_reg = None
@@ -191,7 +212,7 @@ class IntervalPropagationEngine:
         for mnem, op_str, addr in instructions:
             self.feed_instruction(mnem, op_str, addr, mark_alloc_args)
 
-# 分析输出
+    # 分析输出
 
     def detect_overflows(self, width_bits: int = 32,
                          min_risk: str = 'medium') -> List[OverflowCandidate]:

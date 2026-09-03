@@ -15,7 +15,7 @@
   创建 2024-12-09
 """
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 
 @dataclass

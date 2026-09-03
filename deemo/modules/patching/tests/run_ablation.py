@@ -14,8 +14,7 @@
 用法: python tests/run_ablation.py [--out DIR]
 """
 
-import os, sys, json, glob, argparse, time
-from pathlib import Path
+import os, sys, json, argparse, time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 

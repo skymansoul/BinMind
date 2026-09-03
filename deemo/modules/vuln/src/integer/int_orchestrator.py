@@ -99,11 +99,16 @@ class IntOverflowOrchestrator:
 
         # Phase 1: 模式引擎
         pattern_findings: Dict[str, List[IntOverflowFinding]] = {}
+        # 索引→地址映射表 + 函数指令表, 供Phase3兜底映射与Phase4守卫扫描
+        fn_addr_map: Dict[str, List[int]] = {}
+        fn_to_insns: Dict[str, List[str]] = {}
         for fn_name, insns, addrs in functions:
             pf = self._pattern_detector.analyze(
                 insns, function_name=fn_name, addrs=addrs)
             if pf:
                 pattern_findings[fn_name] = pf
+            fn_addr_map[fn_name] = addrs
+            fn_to_insns[fn_name] = insns
             self._pattern_detector.clear()
 
         # Phase 2: 区间引擎 + 地址→函数名映射
@@ -127,14 +132,32 @@ class IntOverflowOrchestrator:
         seen_addrs: set = set()
 
         for fn_name, pfs in pattern_findings.items():
+            # 去重: 按(real_addr, alloc_site)保留最高置信度的finding
+            dedup: Dict[Tuple[int, int], IntOverflowFinding] = {}
+            fn_addrs = fn_addr_map.get(fn_name, [])
             for pf in pfs:
-                uf = UnifiedFinding(insn_addr=pf.insn_addr,
+                # 兜底映射: 若pf.insn_addr仍为索引则查表还原真实地址
+                real_addr = pf.insn_addr
+                if fn_addrs and pf.insn_addr < len(fn_addrs):
+                    mapped = fn_addrs[pf.insn_addr]
+                    if mapped is not None:
+                        real_addr = mapped
+                key = (real_addr, pf.alloc_site)
+                if key not in dedup or pf.confidence > dedup[key].confidence:
+                    dedup[key] = pf
+            for pf in dedup.values():
+                real_addr = pf.insn_addr
+                if fn_addrs and pf.insn_addr < len(fn_addrs):
+                    mapped = fn_addrs[pf.insn_addr]
+                    if mapped is not None:
+                        real_addr = mapped
+                uf = UnifiedFinding(insn_addr=real_addr,
                     function_name=fn_name, description=pf.description,
                     overflow_type=_TYPE_MAP.get(pf.overflow_type, 'UNKNOWN'),
                     pattern_detected=True, confidence=pf.confidence,
                     sink_addr=pf.alloc_site)
                 for addr, site in interval_sites.items():
-                    if abs(int(addr) - int(pf.insn_addr)) <= 8:
+                    if abs(int(addr) - int(real_addr)) <= 8:
                         uf.interval_detected = True
                         uf.result_interval = site.result_interval
                         uf.alloc_interval = site.alloc_interval
@@ -172,7 +195,14 @@ class IntOverflowOrchestrator:
                 uf.is_fp = True
                 uf.fp_reason = f'CRT safe: {uf.function_name}'
                 uf.confidence = 0.0
-            elif uf.confidence < 0.30:
+                continue
+            # 溢出守卫检测: 算术指令前10条内存在cmp+ja/jae/jg/jge则判定已守卫
+            if self._has_overflow_guard(uf, fn_to_insns, fn_addr_map):
+                uf.is_fp = True
+                uf.fp_reason = 'Overflow guard (cmp+cond-jump) precedes sink'
+                uf.confidence = 0.0
+                continue
+            if uf.confidence < 0.50:
                 uf.is_fp = True
                 uf.fp_reason = f'Low confidence ({uf.confidence:.2f})'
 
@@ -186,6 +216,34 @@ class IntOverflowOrchestrator:
             interval_findings=len(interval_sites),
             both_detected=both, pattern_only=pat_only,
             interval_only=int_only, scan_time_s=scan_time)
+
+    _GUARD_CMP = re.compile(r'\bcmp\b', re.I)
+    _GUARD_JCC = re.compile(
+        r'\b(ja|jae|jb|jbe|jg|jge|jl|jle|jc|jnc|jo|jno)\b', re.I)
+
+    def _has_overflow_guard(self, uf: 'UnifiedFinding',
+                            fn_to_insns: Dict[str, List[str]],
+                            fn_addr_map: Dict[str, List[int]]) -> bool:
+        # 算术指令前10条内存在cmp+条件跳转则判定已守卫
+        insns = fn_to_insns.get(uf.function_name)
+        if not insns:
+            return False
+        addrs = fn_addr_map.get(uf.function_name, [])
+        target_idx = -1
+        for i, a in enumerate(addrs):
+            if a is not None and a == uf.insn_addr:
+                target_idx = i
+                break
+        if target_idx < 0:
+            return False
+        start = max(0, target_idx - 10)
+        has_cmp = False
+        for i in range(start, target_idx):
+            if self._GUARD_CMP.search(insns[i]):
+                has_cmp = True
+            if has_cmp and self._GUARD_JCC.search(insns[i]):
+                return True
+        return False
 
     def _split_functions(self, lines: List[str],
                          ) -> List[Tuple[str, List[str], List[int]]]:

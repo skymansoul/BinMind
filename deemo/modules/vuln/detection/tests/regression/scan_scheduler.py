@@ -1,4 +1,3 @@
-#
 """扫描调度——读取build_manifest, 对每个ELF调用扫描器, 超时控制。
 
 当前扫描器入口:
@@ -13,12 +12,9 @@
 """
 
 import json
-import os
 import subprocess
-import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 _SAMPLES_ROOT = Path(__file__).parent / "samples"
 _SCAN_TIMEOUT = 30  # 单样本扫描超时(秒)

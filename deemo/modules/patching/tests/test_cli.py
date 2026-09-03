@@ -4,7 +4,7 @@
 帮助输出、缺失必选参数、配置加载边界情况。
 """
 
-import sys, os, io, json, pytest, tempfile, contextlib
+import sys, os, io, pytest, contextlib
 
 _cur = os.path.dirname(os.path.abspath(__file__))
 _patch = os.path.dirname(_cur)

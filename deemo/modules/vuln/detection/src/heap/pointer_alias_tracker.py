@@ -1,16 +1,12 @@
 """指针别名追踪器 — Andersen 式包含分析 + 过程间指针逃逸检测.
 
-创建: 2025-02-06 09:33
-用途: 在二进制IR层面追踪指针赋值链, 检测 free(p) 后 p 是否通过赋值/返回值/全局变量
-      逃逸到后续基本块, 从而增加 UAF 风险。
+在二进制IR层面追踪指针赋值链, 检测 free(p) 后 p 是否经赋值/返回值/全局变量
+逃逸到后续基本块, 从而增加 UAF 风险。
 
-设计决策:
-  - 为什么用 Andersen 包含分析而非 Steensgaard 合一分析: Andersen 是 field-sensitive
-    的包含分析, 能区分 struct 的不同字段; Steensgaard 合一将所有别名合并到一个等价类,
-    对 C 代码中的结构体赋值过于粗糙。
-  - 为什么不做完整的指向分析: 完整指向分析需要程序的调用图 (call graph),
-    对 strip 过的二进制必须先用 IDA/Ghidra 做函数识别。本模块假设已有基本块信息,
-    仅做函数内的别名追踪——跨函数场景由 uaf_cross_fn_scorer 处理。
+取舍: 用 Andersen 包含分析而非 Steensgaard 合一——Andersen 是 field-sensitive,
+能区分 struct 字段; Steensgaard 将所有别名合并为一个等价类, 对结构体过粗。
+不做完整指向分析 (需调用图与函数识别), 仅函数内别名追踪,
+跨函数场景由 uaf_cross_fn_scorer 处理。
 """
 
 from dataclasses import dataclass, field
@@ -29,23 +25,7 @@ class AliasResult:
 
 
 class PointerAliasTracker:
-    """Andersen 式指针别名追踪器.
-
-    对每个 malloc 返回的指针 p:
-      1. 追踪 p 的赋值链: p→q, q→r, ... → 别名集
-      2. 记录 free(p) 的位置
-      3. 在 free 后的基本块中检查 p 或其别名是否被解引用
-      4. 若 p 赋值给全局变量 → 标记为逃逸 → UAF 风险提升
-
-    使用方式:
-      tracker = PointerAliasTracker()
-      tracker.add_allocation('p', 0x401000)
-      tracker.add_assignment('q', 'p')
-      tracker.add_free('p', 0x401050)
-      tracker.add_deref('q', 0x401060)
-      result = tracker.analyze('p')
-      print(f'UAF risk: {result.uaf_risk:.2f}')
-    """
+    """Andersen 式指针别名追踪器."""
 
     def __init__(self):
         # 赋值图: dst → {src, ...}

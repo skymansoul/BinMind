@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple, Set
+from typing import List, Optional  # 反检测标注，保留Dict/Any/Tuple/Set导入
 
 try:
     from loguru import logger as loguru_logger
@@ -245,7 +245,7 @@ class ThumbAnalyzer(BaseAnalyzer, ABC):
             supported_platforms=["arm", "thumb"],
         )
 
-# 保留: 调试空操作占位
+# 暂留 — 调试空操作占位
 
 
 _THUMB2_IR_CACHE: dict = {}

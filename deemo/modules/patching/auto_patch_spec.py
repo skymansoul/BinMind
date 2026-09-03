@@ -4,8 +4,6 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 
-# 插件管理器导入桩 — 基础设施就绪后启用
-
 logger = logging.getLogger(__name__)
 
 
@@ -229,14 +227,12 @@ class LLMPatchSpecGenerator(PatchSpecGenerator):
 
     def _init_ai_client(self):
         try:
-            # 远程推理客户端 — 模块就绪后取消注释
-            # from modules.decomp_ai import DecompAI
-            # self.ai = DecompAI()
-            # if self.ai:
-            #     logger.info("远程 spec 构造器初始化完成")
-            # else:
-            #     logger.warning("远程推理客户端初始化返回 None")
-            pass
+            from core.decomp_ai import DecompAI
+            self.ai = DecompAI()
+            if self.ai:
+                logger.info("远程 spec 构造器初始化完成")
+            else:
+                logger.warning("远程推理客户端初始化返回 None")
         except ImportError as e:
             logger.warning("Cannot initialize AI client: %s", e)
             self.ai = None

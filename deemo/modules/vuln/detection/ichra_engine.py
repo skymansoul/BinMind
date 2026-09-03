@@ -29,7 +29,7 @@ CFI加固策略推荐(按风险等级):
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
 from .ichra_call_analyzer import (
     IndirectCallSite, CallSiteRiskAssessment, IndirectCallAnalyzer,

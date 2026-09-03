@@ -137,6 +137,7 @@ def _explore_from_malloc(proj, malloc_site: int, sink_sites: List[int],
 def _check_sink(state, proj, alloc_size) -> Optional[dict]:
     """在 memcpy 汇聚点提取大小并比较."""
     try:
+        import angr
         regs = state.regs
         size_lo = None
         for reg in ("rdx", "r8"):

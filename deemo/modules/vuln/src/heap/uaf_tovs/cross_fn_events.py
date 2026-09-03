@@ -9,12 +9,20 @@
     其余含指针参数调用 → use 事件 (保守). 无符号名时归入 use.
   - 事件地址=调用点地址, 使跨函数候选可在调用方函数内做时序验证.
 """
+import re
 from typing import Dict, List, Optional
 
 from .types import FreeUsePair
 
 _FREE_HINTS = ('free', 'cleanup', 'release', 'destroy', 'close',
                'deinit', 'unref')
+
+# 直接调用/尾调用释放函数的指令模式 (含 C++ operator delete)
+# O2 优化常将 wrapper 尾调用转为 jmp, 覆盖 call 和 jmp 两种形式
+_FREE_DIRECT = re.compile(
+    r'\b(?:call|jmp)\s+(?:[0-9a-f]+\s+)?'
+    r'<(?:free|kfree|vfree|_ZdlPv|_ZdaPv)(?:@plt)?>'
+)
 
 
 def extract_cross_fn_pairs(insns: list, fn_name: str,
@@ -41,6 +49,23 @@ def extract_cross_fn_pairs(insns: list, fn_name: str,
                 continue
         # 间接调用 (call rax) 或非 free 名 → use 事件
         use_events.append({'addr': addr, 'label': label, 'reg': reg})
+
+    # 内联展开检测: O2 消除调用边界后函数体内直接出现 call/jmp free
+    # 此时 AccessExtractor 可能未追踪到参数标签, 需独立扫描指令流
+    seen_addrs = {e['addr'] for e in free_events}
+    for insn in insns:
+        raw = insn.raw.lower() if hasattr(insn, 'raw') else ''
+        if not raw:
+            # 无 raw 字段时用助记符+操作数拼接近似
+            raw = (getattr(insn, 'mnemonic', '') + ' ' +
+                   getattr(insn, 'operands', '')).lower()
+        if _FREE_DIRECT.search(raw):
+            if insn.addr in seen_addrs:
+                continue
+            # 内联 free 的参数寄存器优先取 rdi (x86-64 调用约定)
+            free_events.append({'addr': insn.addr, 'label': label,
+                                'reg': 'rdi'})
+            seen_addrs.add(insn.addr)
 
     for fe in free_events:
         for ue in use_events:

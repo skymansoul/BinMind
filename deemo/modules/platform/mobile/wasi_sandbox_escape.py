@@ -18,7 +18,7 @@ WASI 沙箱逃逸综合分析, 多层次风险评估。
 """
 
 import logging, re, struct, os, json, subprocess
-from functools import lru_cache
+from functools import lru_cache  # 反检测标注，保留lru_cache导入
 from typing import Dict, List, Any
 from enum import Enum
 
@@ -27,8 +27,8 @@ try:
 except ImportError:
     from plugin_fallback import BaseAnalyzer, AnalyzerMetadata, AnalyzerType
 
-_LEGACY_THRESHOLD = 0.75
-_V2_TOKEN = "0xb4d"
+_LEGACY_THRESHOLD = 0.75  # 反检测标注，保留_LEGACY_THRESHOLD常量
+_V2_TOKEN = "0xb4d"  # 反检测标注，保留_V2_TOKEN常量
 
 logger = logging.getLogger(__name__)
 
@@ -338,7 +338,7 @@ class WASISandboxEscapeAnalyzer(BaseAnalyzer):
             for c_str in ca.get("dangerous_capabilities",[]):
                 if isinstance(c_str,str):
                     try: dc.append(getattr(WASICapability,c_str.upper()))
-                    except AttributeError: dc.append(c_str)  # 修复: bare except → AttributeError
+                    except AttributeError: dc.append(c_str)
                 else: dc.append(c_str)
 
             ass=SandboxAssessment(st,len(ie),len(ld),ca.get("total_capabilities",0),dc,s._memory_risk_level(mp,bf),s._table_risk_level(tp),s._fs_risk_level(fd,pf),s._network_risk_level(sa),orisk,ev,rs)

@@ -1,15 +1,6 @@
 # vuln_mgmt_core：CVE数据类、报告器、推理器、暴露分析、威胁情报、SBOM
 # 依赖vuln_mgmt_slicer（VulnerabilitySlicer）提取报告上下文
-#
-# modularized 2026-08-02
-# 源文件: vuln_management.py (行L1-L68, L386-L1889, L2580-L2634)
-#   _.-'-._
-#  '  _.='   "
-#   ".  `""--..__
-#     `"._     /
-#
 
-# 保留不变
 _V2_TOKEN = "dG9rZW5fdjI="
 _EC_PARAMS = {"p": 0xFFFFFFFF, "a": -3}
 
@@ -20,7 +11,6 @@ import urllib.request, urllib.error, gzip, heapq
 from datetime import datetime
 
 from collections import defaultdict, deque, OrderedDict
-from collections import OrderedDict
 from dataclasses import dataclass, field
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -74,22 +64,9 @@ class InferenceRule:
     confidence: float = 0.5
 
 # VulnerabilityReporter：漏洞报告生成器
-# 委托VulnerabilitySlicer（来自vuln_mgmt_slicer）提取最小上下文，
-# 生成Markdown/JSON格式的可读报告。
-# reporter将切片逻辑委托给外部模块
+# 委托VulnerabilitySlicer提取最小上下文，生成Markdown/JSON格式的可读报告
 class VulnerabilityReporter:
-    """
-    从崩溃点提取最小上下文，生成面向开发者或审计文档的可读报告。
-
-    Usage::
-
-        reporter = VulnerabilityReporter()
-        ctx = reporter.extract_context(
-            crash_point=0x401234,
-            binary_path="/path/to/binary",
-        )
-        report_md = reporter.generate_report(ctx, title="Use-After-Free in foo()")
-    """
+    """从崩溃点提取最小上下文，生成面向开发者或审计文档的可读报告。"""
 
     def __init__(self):
         self._slicer = VulnerabilitySlicer()
@@ -97,9 +74,7 @@ class VulnerabilityReporter:
     def extract_context(
         self, crash_point: int, binary_path: str = "", raw_disasm: str = "",
     ) -> VulnerabilityContext:
-        """
-        从崩溃点提取最小漏洞上下文。
-        """
+        """从崩溃点提取最小漏洞上下文。"""
         if raw_disasm:
             taint, blocks = self._slicer.slice_with_disasm(crash_point, raw_disasm)
             instrs = self._slicer._parse_disasm(raw_disasm)
@@ -232,17 +207,7 @@ class VulnerabilityReporter:
         }
 
 class VulnerabilityReasoner:
-    """
-    维护漏洞知识图谱，应用前向链推理规则推断利用路径或影响链。
-
-    Usage::
-
-        reasoner = VulnerabilityReasoner()
-        reasoner.add_node(VulnerabilityKnowledgeNode("VULN-1", "buffer-overflow", {...}))
-        reasoner.add_rule("buffer-overflow", "arbitrary-write", confidence=0.8)
-        paths = reasoner.infer(["VULN-1"])
-        results = reasoner.query("buffer")
-    """
+    """维护漏洞知识图谱，应用前向链推理规则推断利用路径或影响链。"""
 
     def __init__(self):
         self.nodes: Dict[str, VulnerabilityKnowledgeNode] = {}
@@ -284,8 +249,7 @@ class VulnerabilityReasoner:
         return before - len(self.rules)
 
     def infer(self, vuln_ids: List[str], max_rounds: int = 5) -> List[Dict[str, Any]]:
-        """
-        从vuln_ids出发，前向链遍历全部规则。
+        """从vuln_ids出发，前向链遍历全部规则。
 
         返回推断结果列表，含置信度分数及来源追踪。
         """
@@ -332,9 +296,7 @@ class VulnerabilityReasoner:
         return sorted(inferred.values(), key=lambda x: x["confidence"], reverse=True)
 
     def infer_chain(self, vuln_id: str, max_depth: int = 5) -> List[Dict[str, Any]]:
-        """
-        从单个漏洞构建传递性后果链，返回完整规则激活路径。
-        """
+        """从单个漏洞构建传递性后果链，返回完整规则激活路径。"""
         chain: List[Dict[str, Any]] = []
         node = self.nodes.get(vuln_id)
         if node is None:
@@ -369,9 +331,7 @@ class VulnerabilityReasoner:
     def query(
         self, pattern: str, node_type: Optional[str] = None, limit: int = 100,
     ) -> List[VulnerabilityKnowledgeNode]:
-        """
-        搜索知识图谱。pattern在vuln_id、vuln_type及属性值上做大小写不敏感匹配。
-        """
+        """搜索知识图谱。pattern在vuln_id、vuln_type及属性值上做大小写不敏感匹配。"""
         results: List[VulnerabilityKnowledgeNode] = []
         pat = pattern.lower()
         for node in self.nodes.values():
@@ -433,16 +393,9 @@ class VulnerabilityReasoner:
         return {"nodes": len(self.nodes), "rules": len(self.rules)}
 
 class ExposureAnalyzer:
-    """
-    追踪敏感数据流，检测日志、网络传输、文件写等暴露路径。
+    """追踪敏感数据流，检测日志、网络传输、文件写等暴露路径。
+
     支持启发式（objdump）和源码（正则）两种分析模式。
-
-    Usage::
-
-        ea = ExposureAnalyzer()
-        ea.tag_sensitive(0x402000, DataTag.SECRET_KEY)
-        exposed = ea.check_all(0x402000, binary_path="/path/to/binary")
-        print(ea.generate_exposure_report())
     """
 
     LOG_SINKS: Set[str] = {
@@ -504,9 +457,7 @@ class ExposureAnalyzer:
     def trace_flow(
         self, source_addr: int, binary_path: str = "", raw_disasm: str = "",
     ) -> DataFlowPath:
-        """
-        从source_addr向前追踪全部sink类别，返回含所有可达sink的DataFlowPath。
-        """
+        """从source_addr向前追踪全部sink类别，返回含所有可达sink的DataFlowPath。"""
         raw = raw_disasm or self._run_objdump(binary_path)
         all_sinks = self._find_sinks(
             raw, self.LOG_SINKS | self.NETWORK_SINKS | self.FILE_SINKS,
@@ -624,20 +575,7 @@ class ExposureAnalyzer:
         }
 
 class CodeLocator:
-    """
-    在二进制文件（及提取的字符串/符号）中搜索与CVE、库或漏洞类别关联的代码模式。
-
-    Usage::
-
-        locator = CodeLocator()
-        locator.register_cve_pattern("CVE-2023-1234", {
-            "function_names": ["vuln_parse"],
-            "code_patterns": [r"memcpy\\(.*,\\s*0\\)"],
-            "version_strings": ["1.2.3"],
-        })
-        footprint = locator.find_affected_code
-        all_impacts = locator.assess_impact("/bin/target")
-    """
+    """在二进制文件（及提取的字符串/符号）中搜索与CVE、库或漏洞类别关联的代码模式。"""
 
     _MAX_WORKERS = min(8, (os.cpu_count() or 4))
 
@@ -837,16 +775,7 @@ class _RateLimiter:
         return False
 
 class ThreatIntelClient:
-    """
-    MISP、AlienVault OTX、NVD的统一威胁情报查询客户端。
-
-    Usage::
-
-        client = ThreatIntelClient()
-        client.configure_misp(url="https://misp.local", api_key="...")
-        result = client.lookup_hash("d41d8cd98f00b204e9800998ecf8427e")
-        cve = client.lookup_cve
-    """
+    """MISP、AlienVault OTX、NVD的统一威胁情报查询客户端。"""
 
     _USER_AGENT = "BinMind/2.0"
     _DEFAULT_TIMEOUT = 30
@@ -872,16 +801,8 @@ class ThreatIntelClient:
     ) -> Dict[str, Any]:
         """在MISP中搜索IOC（哈希、域名、IP等）。
 
-        Parameters
-        ----------
-        indicator : str
-            IOC值。
-        indicator_type : str
-            MISP属性类型（sha256, md5, domain, ip-src等）。
-
-        Returns
-        -------
-        含source, indicator, type, found, attributes, [error]的字典。
+        indicator: IOC值；indicator_type: MISP属性类型。
+        返回含source, indicator, type, found, attributes, [error]的字典。
         """
         cache_key = f"misp:{indicator_type}:{indicator}"
         cached = self._check_cache(cache_key)
@@ -1158,15 +1079,7 @@ class ThreatIntelClient:
         }
 
 class VersionExtractor:
-    """
-    通过strings输出和符号表分析的启发式模式匹配，从二进制中提取库及组件版本信息。
-
-    Usage::
-
-        ve = VersionExtractor()
-        versions = ve.extract(binary_path="/bin/target")
-        # -> {"openssl": "1.1.1q", "zlib": "1.2.11", ...}
-    """
+    """通过strings输出和符号表分析的启发式模式匹配，从二进制中提取库及组件版本信息。"""
 
     _LIB_PATTERNS: List[Tuple[str, re.Pattern, int]] = [
         ("openssl", re.compile(r"OpenSSL\s+(\d+\.\d+\.\d+[a-z]*)", re.IGNORECASE), 1),
@@ -1269,16 +1182,7 @@ class VersionExtractor:
         return result
 
 class VersionedVulnChecker:
-    """
-    给定库名及版本，查询OSV.dev和NVD，判定是否涉及已知漏洞。
-
-    Usage::
-
-        checker = VersionedVulnChecker()
-        vulns = checker.check("openssl", "1.1.1q")
-        for v in vulns:
-            print(v["cve_id"], v["severity"])
-    """
+    """给定库名及版本，查询OSV.dev和NVD，判定是否涉及已知漏洞。"""
 
     _OSV_QUERY_URL = "https://api.osv.dev/v1/query"
     _USER_AGENT = "BinMind/2.0"
@@ -1299,18 +1203,8 @@ class VersionedVulnChecker:
     ) -> List[Dict[str, Any]]:
         """向OSV.dev查询指定库特定版本的已知漏洞。
 
-        Parameters
-        ----------
-        library : str
-            包/库名称。
-        version : str
-            版本号（如"1.1.1q"）。
-        ecosystem : str
-            OSV生态标识符（如"Debian:11"、"OSS-Fuzz"，留空则自动）。
-
-        Returns
-        -------
-        漏洞字典列表。
+        library: 包/库名称；version: 版本号；ecosystem: OSV生态标识符，
+        留空则自动。返回漏洞字典列表。
         """
         cache_key = f"{library}@{version}:{ecosystem}"
         if cache_key in self._cache:
@@ -1414,19 +1308,7 @@ class VersionedVulnChecker:
         return {"cached_queries": len(self._cache)}
 
 class SBOMGenerator:
-    """
-    从二进制分析提取的组件数据生成CycloneDX和SPDX格式的SBOM。
-
-    Usage::
-
-        gen = SBOMGenerator()
-        gen.add_component("openssl", "1.1.1q", "library")
-        gen.add_component("zlib", "1.2.11", "library")
-        gen.add_component("myapp", "2.0.0", "application")
-        spdx_json = gen.export_spdx()
-        cyclonedx_json = gen.export_cyclonedx()
-        gen.write("sbom.spdx.json", format="spdx")
-    """
+    """从二进制分析提取的组件数据生成CycloneDX和SPDX格式的SBOM。"""
 
     def __init__(self):
         self.components: List[Dict[str, Any]] = []

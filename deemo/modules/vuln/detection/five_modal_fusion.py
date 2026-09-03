@@ -22,9 +22,8 @@
 模块位置: vuln/detection/five_modal_fusion.py
 """
 
-import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import logging
 

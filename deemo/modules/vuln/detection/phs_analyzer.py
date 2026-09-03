@@ -35,12 +35,8 @@
 """
 
 import re
-import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-from collections import defaultdict
-
-_log = logging.getLogger(__name__)
+from typing import List
 
 
 # 指针操作与危险评分

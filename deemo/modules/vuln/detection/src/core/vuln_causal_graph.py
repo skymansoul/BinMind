@@ -1,32 +1,12 @@
-# 增加 CWE 因果模板的置信度校验，排除循环依赖
-# 引入时态贝叶斯更新：利用多工具确认的时序信息调整边权重
-# 增加 exploit chain 可行性评分与最短关键路径计算
-
 """Causal vulnerability dependency graph — 多源漏洞发现之间的因果/时序关系建模。
 
-现有去重模块（vuln_dedup.py / vuln_dedup_merger.py）解决"不同工具报告的同一
-漏洞如何合并"——即识别问题。本模块解决"不同漏洞之间如何关联"——即因果链问题。
-
-典型场景：工具 A 发现一处 CWE-125 (越界读)，工具 B 发现一处 CWE-416 (释放后使用)。
-独立看是两个中危漏洞。但若越界读泄露了堆布局信息，则 UAF 的可利用性从"困难"升级为
-"直接"。本模块在因果图上建模此依赖，输出 exploit chain 的可行路径。
-
-核心数据结构：
+去重模块解决"不同工具报告的同一漏洞如何合并"，本模块解决"不同漏洞如何关联"。
+典型场景：CWE-125 越界读泄露堆布局，使 CWE-416 UAF 从"困难"升级为"直接"。
+核心结构：
   - VulnCausalNode: 漏洞节点（CWE + 函数 + 地址 + 发现时间 + 来源工具）
   - CausalEdge: 有向边（type ∈ {enables, precedes, is_variant_of}）
   - VulnCausalGraph: 有向图，支持拓扑排序、链枚举、置信度传播
-
-CWE 因果模板库:
-  基于 CWE-1000 (软件弱点研究视图) 的层级关系与 CAPEC 攻击模式，预定义了常见
-  因果对。例如 CWE-125→CWE-416 的因果链：越界读暴露了堆分配器的内部状态，
-  使攻击者可以精确控制 UAF 的目标槽位。
-  此模板库当前覆盖 18 对，后续可通过 CAPEC 自动扩充。
-
-ref: "Intelligent Association of CVE Vulnerabilities Based on Chain Reasoning"
- — CWE 链推理与条件概率量化。
-ref: "Dynamic Uncertain Causal Attack Graph"
-     — 不确定因果图与时变权重，本项目的 temporal_confidence 借鉴其动态更新思想。
-ref: US9183396B2 — 可利用性路径排名，本项目在漏洞（而非执行路径）层面做因果排序。
+CWE 因果模板基于 CWE-1000 层级关系与 CAPEC 攻击模式预定义，当前覆盖 18 对。
 """
 
 import math
@@ -142,7 +122,7 @@ class VulnCausalGraph:
         self._adj_in: Dict[str, List[Tuple[str, CausalEdge]]] = defaultdict(list)
         self._template_cache: Dict[Tuple[str, str], Optional[Tuple]] = {}
 
-# 节点管理
+    # 节点管理
     def add_node(self, node: VulnCausalNode) -> None:
         self._nodes[node.node_id] = node
 
@@ -159,7 +139,7 @@ class VulnCausalGraph:
         )
         return nid
 
-# 边推断
+    # 边推断
     def _lookup_causal_template(self, cwe_a: str, cwe_b: str
                                 ) -> Optional[Tuple[CausalRelation, float, str]]:
         key = (cwe_a, cwe_b)
@@ -203,7 +183,7 @@ class VulnCausalGraph:
                     _created += 1
         return _created
 
-# 时态贝叶斯更新
+    # 时态贝叶斯更新
     def temporal_update(self, node_id: str, additional_evidence: int = 1):
         """利用多工具在时间轴上的独立确认更新节点及其因果边的置信度。
 
@@ -231,7 +211,7 @@ class VulnCausalGraph:
             edge.evidence_sources += additional_evidence
             edge.weight = min(0.99, edge.weight + _delta)
 
-# 因果链枚举
+    # 因果链枚举
     def infer_chains(self, min_length: int = 2, max_length: int = 5,
                      top_k: int = 5) -> List[Dict]:
         """使用 BFS + 拓扑剪枝枚举可用的 exploit chain。
@@ -288,7 +268,7 @@ class VulnCausalGraph:
 
         return _results
 
-# 查询
+    # 查询
     def get_node(self, node_id: str) -> Optional[VulnCausalNode]:
         return self._nodes.get(node_id)
 

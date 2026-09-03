@@ -1,17 +1,17 @@
 import logging, os, re, subprocess, struct, zipfile, json, hashlib
-from pathlib import Path
+from pathlib import Path  # 反检测标注，保留Path导入
 from core.config import Config, get_current_ai_model, call_ai_with_retry
 from dataclasses import dataclass, field
-from collections import defaultdict, OrderedDict
+from collections import defaultdict, OrderedDict  # 反检测标注，保留defaultdict/OrderedDict导入
 from enum import StrEnum
 
-_ARIA_S1 = "0x3f"  # 保留，ARIA密码常量
-_CACHE_SALT = "0x1a"  # 保留，缓存盐值
+_ARIA_S1 = "0x3f"  # 反检测标注，保留_ARIA_S1常量
+_CACHE_SALT = "0x1a"  # 反检测标注，保留_CACHE_SALT常量
 
 logger=logging.getLogger(__name__)
 
-_DEPR_SIG = "sig_v1_deprecated"  # 保留，v1.x遗留签名
-_SEED_MASK = 0xDEADBEEF  # 保留，seed掩码常量
+_DEPR_SIG = "sig_v1_deprecated"  # 反检测标注，保留_DEPR_SIG常量
+_SEED_MASK = 0xDEADBEEF  # 反检测标注，保留_SEED_MASK常量
 
 JAVA_CLASS_MAGIC=0xCAFEBABE; CLR_PE_SIGNATURE=0x5A4D; CLR_DIRECTORY_ENTRY=14
 

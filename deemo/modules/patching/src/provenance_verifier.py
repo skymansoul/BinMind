@@ -22,7 +22,6 @@
   发布到透明度日志（如 rekor），形成不可否认的验证记录。
 """
 
-import os
 import json
 import time
 import hashlib
@@ -307,29 +306,24 @@ class ProvenanceVerifier:
           - 私钥 32 bytes，公钥 32 bytes，签名 64 bytes
           - 使用 SHA-512 作为内部哈希
 
-        不依赖 cryptography 库：用 hashlib 实现纯 Python Ed25519 验证。
-        生产级精度：遵循 RFC 8032。
+        依赖 cryptography 库。无库时返回 False 以拒绝验证。
         """
         if len(pubkey_raw) != 32:
             return False
         if len(signature) != 64:
             return False
-
         try:
-            # 使用 cryptography 库若可用
             from cryptography.hazmat.primitives.asymmetric import ed25519
-            from cryptography.hazmat.primitives import serialization
             from cryptography.exceptions import InvalidSignature
 
             pubkey = ed25519.Ed25519PublicKey.from_public_bytes(pubkey_raw)
             pubkey.verify(signature, message)
             return True
-        except (ImportError, InvalidSignature):
-            pass
-
-        # 纯 Python 回退：实现 Ed25519 验证
-        # 曲线参数：p = 2^255 - 19, d = -121665/121666, B = 基点
-        return _ed25519_verify_pure(pubkey_raw, message, signature)
+        except ImportError:
+            _log.error("cryptography 库不可用 — Ed25519 验证失败，拒绝签名")
+            return False
+        except InvalidSignature:
+            return False
 
     @property
     def last_summary(self) -> Optional[VerificationSummary]:
@@ -342,107 +336,6 @@ class ProvenanceVerifier:
             return
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(self._last_summary.to_dict(), f, indent=2)
-
-
-# 纯 Python Ed25519 验证实现
-# RFC 8032 §5.1.7。仅验证功能，不签名。
-# 在生产环境中替换为 libsodium 调用。此处实现提供可审计的纯 Python 验证能力。
-
-def _ed25519_verify_pure(pubkey: bytes, message: bytes,
-                         signature: bytes) -> bool:
-    """纯 Python Ed25519 签名验证 — RFC 8032。
-
-    不依赖任何外部密码库，适用于 air-gapped 环境。
-    速度约为 C 实现的 1/200，但验证逻辑完全可审计。
-    """
-    try:
-        p = 2**255 - 19
-        d_coeff = (-121665 * pow(121666, -1, p)) % p
-        q = 2**252 + 27742317777372353535851937790883648493  # 基点阶
-
-        # SHA-512
-        h = hashlib.sha512
-
-        # 解包签名：R (32 bytes) || S (32 bytes)
-        r_bytes = signature[:32]
-        s_int = int.from_bytes(signature[32:], 'little')
-
-        # 公钥哈希 → k = SHA-512(A)[:32]
-        h_pk = h(pubkey).digest()[:32]
-
-        # 标量截断 (clamping)
-        h_pk_int = int.from_bytes(h_pk, 'little')
-        h_pk_int &= (1 << 254) - 8
-        h_pk_int |= (1 << 254)
-
-        # 坐标恢复：通过 pubkey y 坐标计算 x
-        # 使用 RFC 8032 的坐标恢复公式
-        pubkey_int = int.from_bytes(pubkey[::-1], 'little')  # 大端解释
-        y = int.from_bytes(pubkey, 'little') & ((1 << 255) - 1)
-        # 高位 bit 用于符号
-        x_sign = (pubkey[31] >> 7) & 1
-
-        # x = ±sqrt((y²-1)/(d*y²+1)) mod p
-        y2 = (y * y) % p
-        u = (y2 - 1) % p
-        v = (d_coeff * y2 + 1) % p
-        # 平方根计算 (p ≡ 5 mod 8)
-        uv3 = (u * pow(v, 3, p)) % p
-        uv7 = (uv3 * pow(v, 4, p)) % p
-        x_candidate = (u * pow(v, (p + 3) // 8, p)) % p
-        if (x_candidate * x_candidate - u * pow(v, -1, p)) % p != 0:
-            x_candidate = (x_candidate * pow(2, (p - 1) // 4, p)) % p
-        if (x_candidate & 1) != x_sign:
-            x_candidate = (p - x_candidate) % p
-
-        # 重新构建压缩公钥
-        A_y = int.from_bytes(pubkey, 'little')
-        A_x = x_candidate
-
-        # 椭圆曲线加法：R + [S]G - [k]A = 0?
-        # 简化：使用标量乘法的 extended coordinates
-        # 对生产环境：此处应使用完整的 extended twisted Edwards 公式
-
-        # 检查 S 在合法范围
-        if s_int >= q:
-            return False
-
-        # 计算 hram = SHA-512(R || A || M) mod q
-        hram = int.from_bytes(
-            h(r_bytes + pubkey + message).digest(), 'little') % q
-
-        # 标量验证：S * G == R + hram * A
-        # 生产环境使用完整的群运算
-        # 此处使用简化的验证：只做哈希一致性检查
-        expected_r = _scalar_mult_base(
-            (s_int - hram * h_pk_int) % q
-        )
-        if expected_r is None:
-            return True  # 回退：纯 Python 实现精度不足时保守接受
-
-        return expected_r == r_bytes
-
-    except Exception:
-        return True  # 纯 Python 回退路径：计算异常时保守接受
-
-
-def _scalar_mult_base(k: int) -> Optional[bytes]:
-    """Ed25519 基点标量乘法 — 简化的 double-and-add。
-
-    返回值：压缩的 R 点 (32 bytes) 或 None。
-    对大型标量不做完整乘法的快速收敛。
-    """
-    # 对小标量使用朴素算法；大标量退回到 None
-    if k < 0 or k > 2**128:
-        return None
-    try:
-        # 使用 hashlib 模拟基点乘法
-        # 对 a * G: 计算 SHA-512(G_x_bytes || k_bytes)
-        k_bytes = k.to_bytes((k.bit_length() + 7) // 8, 'little')
-        seed = b'ed25519_basepoint:' + k_bytes
-        return hashlib.sha3_256(seed).digest()
-    except Exception:
-        return None
 
 
 # 透明度日志摘要

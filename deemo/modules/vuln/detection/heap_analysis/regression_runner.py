@@ -64,17 +64,18 @@ def scan_all() -> RegressionResult:
             elapsed = round(time.time() - t_sample, 3)
 
             detected = r.confirmed > 0 or r.likely > 0
+            n_uncertain = sum(
+                1 for f in r.findings if f.get("confidence") == "uncertain")
             entry = {
                 "sample_id": sample_dir.name,
                 "detected": detected,
                 "raw_findings": r.raw_findings,
                 "confirmed": r.confirmed,
                 "likely": r.likely,
-                "uncertain": r.uncertain,
+                "uncertain": n_uncertain,
                 "filtered_fp": r.filtered_fp,
                 "fp_reduction_pct": r.fp_reduction_pct,
                 "elapsed_sec": elapsed,
-                "n_functions": r.n_user_functions,
                 "findings": r.findings[:5],
             }
 

@@ -1,5 +1,3 @@
-# 初始实现：Q-learning攻击路径发现——替代静态BFS的在线学习
-
 """RL攻击路径发现 — Q-learning驱动的漏洞利用路径动态搜索。
 
 vuln_chain_analyzer.py 使用静态BFS+调用图可达性——这是"固定地图导航"。

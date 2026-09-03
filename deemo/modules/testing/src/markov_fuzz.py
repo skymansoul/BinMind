@@ -4,7 +4,7 @@
 # 对每个偏移位置学习P(next_byte | prev_byte)，生成保留统计结构的输入。
 # 复杂度: O(N*256^2)内存 / O(N*C)生成，N=最大长度 C=生成数
 import random
-import struct
+import os
 import math
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict, Counter
@@ -274,7 +274,6 @@ def _weighted_choice(counter: Counter, rng: random.Random) -> int:
 
 def build_markov_from_corpus(corpus_dir: str,
                               order: int = 1) -> MarkovFuzzGenerator:
-    import os
     gen = MarkovFuzzGenerator(order=order)
     seeds = []
     if os.path.isdir(corpus_dir):

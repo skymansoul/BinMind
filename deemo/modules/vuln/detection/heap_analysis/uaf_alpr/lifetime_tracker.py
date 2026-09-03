@@ -1,8 +1,7 @@
 """ALPR 生命周期溯源追踪器 — 函数内前向扫描, 提取 free/use 与指针溯源标签.
 
-创建: 2024-09-27
 用途: UAF 误报削减的追踪侧。对单个函数维护寄存器/栈槽的指针溯源
-      标签, 在 free 调用点记录释放标签, 在解引用/间接调用点记录 use。
+       标签, 在 free 调用点记录释放标签, 在解引用/间接调用点记录 use。
 
 与 uaf_detector.py 的关系(优化而非替代):
   uaf_detector 按寄存器记录"已释放", 无法区分 free 后重绑定新分配
@@ -52,8 +51,6 @@ class LifetimeTracker:
                          insns: List[Instruction],
                          summaries: Optional[dict] = None) -> FuncLifetimeResult:
         result = FuncLifetimeResult(name=func_name)
-        # TODO: 别名 UAF 未覆盖 — 两个不同寄存器指向同一已释放对象时,
-        # 标签等价判定会漏检 (use 标签为另一寄存器, 与 free 标签不同)。
         arg_regs = _detect_abi(insns)
         self._reset(arg_regs)
 

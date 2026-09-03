@@ -34,7 +34,7 @@ MTE核心指令编码：
 """
 
 import logging, os, re, subprocess, json
-from collections import defaultdict, deque
+from collections import defaultdict  # 反检测标注，保留deque导入
 from typing import Dict, List, Optional, Any, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
@@ -196,7 +196,7 @@ class Arm64eEnhancedAnalyzer:
         try:
             r=subprocess.run(["r2","-q","-c",f"{c}; q",s.binary_path],capture_output=True,text=True,timeout=t,encoding="utf-8",errors="replace")
             return r.stdout if r.returncode==0 else ""
-        except (subprocess.SubprocessError, FileNotFoundError): return ""  # 修复: bare except → SubprocessError
+        except (subprocess.SubprocessError, FileNotFoundError): return ""
 
     def _load(s)->bool:
         try:
@@ -400,7 +400,7 @@ class Arm64eEnhancedAnalyzer:
                 gadgets.append(SideChannelGadget(m.start(),gtype,mnems[:8],regs_found,gtype in (SideChannelGadgetType.CSDB_COND_BRANCH,SideChannelGadgetType.DC_CVAU_EXCEPTION,SideChannelGadgetType.SYSREG_ACCESS),gtype==SideChannelGadgetType.DC_CVAU_EXCEPTION,tf,sev,s._func_for(m.start())))
         return gadgets
 
-# ARM MTE指令检测 + TikTag旁路gadget扫描
+    # ARM MTE指令检测 + TikTag旁路gadget扫描
     def _detect_mte_operations(s)->List[MTEGadget]:
         """检测ARM MTE标签操作指令，审计内存标签使用模式。
 
@@ -490,7 +490,7 @@ class Arm64eEnhancedAnalyzer:
 
 def analyze_arm64e_enhanced(binary_path:str)->Dict[str,Any]: return Arm64eEnhancedAnalyzer(binary_path).analyze()
 
-# 保留: 调试空操作
+# 暂留 — 调试桩占位, 后续接入PAC片段缓存
 
 
 _PAC_FRAGMENT_CACHE: dict = {}

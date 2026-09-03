@@ -1,10 +1,7 @@
 """指令→区间映射 — x86指令到区间抽象的解析器.
 
-创建: 2025-06-09
-      负责: 寄存器状态管理、立即数解析、寄存器规范化.
-
-决策: 不下沉到 capstone 的 IR — 直接用 mnemonic + op_str 做模式匹配.
-      精度足够应对整数溢出检测的主要模式 (mov/movabs/lea/arithmetic/shl).
+不下沉到 capstone IR, 直接 mnemonic + op_str 做模式匹配,
+精度足以覆盖整数溢出检测主模式 (mov/movabs/lea/arithmetic/shl)。
 """
 
 import re
@@ -126,7 +123,7 @@ class InsnToInterval:
                 self._state.set(dst, Interval.const(imm))
                 return dst
 
-        # lea reg, [base + offset]
+        # lea reg, [base + offset] / [base + index*scale + offset]
         elif mnem == 'lea' and len(ops) == 2:
             dst = ops[0]
             m = re.search(r'\[(\w+)\s*\+\s*(0x[0-9a-fA-F]+|\d+)\]',
@@ -138,6 +135,38 @@ class InsnToInterval:
                 if not base_iv.is_top:
                     self._state.set(dst, Interval(lo=base_iv.lo + off,
                                                   hi=base_iv.hi + off))
+                    return dst
+            # lea reg, [base + index*scale ± offset]
+            m = re.search(
+                r'\[(?:(\w+)\s*\+\s*)?(\w+)\s*\*\s*(\d+)'
+                r'(?:\s*([+\-])\s*(0x[0-9a-fA-F]+|\d+))?\]',
+                ops[1].lower())
+            if m:
+                base_reg = m.group(1)
+                index_reg = m.group(2)
+                scale = int(m.group(3))
+                sgn = -1 if (m.group(4) == '-') else 1
+                disp = int(m.group(5), 0) if m.group(5) else 0
+                idx_iv = self._state.get(index_reg)
+                result_lo = disp * sgn
+                result_hi = disp * sgn
+                if not idx_iv.is_top:
+                    lo_prod = idx_iv.lo * scale
+                    hi_prod = idx_iv.hi * scale
+                    result_lo += min(lo_prod, hi_prod)
+                    result_hi += max(lo_prod, hi_prod)
+                else:
+                    result_lo = None
+                if base_reg and not self._state.get(base_reg).is_top:
+                    base_iv = self._state.get(base_reg)
+                    if result_lo is not None:
+                        result_lo += base_iv.lo
+                        result_hi += base_iv.hi
+                    else:
+                        result_lo = base_iv.lo
+                        result_hi = base_iv.hi
+                if result_lo is not None:
+                    self._state.set(dst, Interval(lo=result_lo, hi=result_hi))
                     return dst
 
         # add/sub/mul/imul

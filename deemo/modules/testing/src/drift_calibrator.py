@@ -163,8 +163,6 @@ class DriftCalibrator:
         self._last_update = now
 
         if execs > 0:
-            instant_rate = new_edges / max(1.0, dt if 'dt' in dir() else 1.0)
-            instant_rate = new_edges  # 简化为绝对计数
             self._ewma_rate = (alpha * new_edges
                                + (1.0 - alpha) * self._ewma_rate)
             self._ewma_crashes_rate = (

@@ -1,4 +1,3 @@
-#
 """堆生命周期状态机 — 对malloc/free/realloc的调用图+数据流建模。
 
 现有 BIFT 对堆漏洞的检测是间接的——它只能标记"污点数据到达了 free()"，
@@ -80,13 +79,7 @@ class HeapVulnFinding:
 
 
 class HeapStateModel:
-    """堆生命周期有限状态机——静态推断UAF/Double-Free。
-
-    使用:
-      model = HeapStateModel()
-      model.ingest_alloc(addr, func, ptr_expr)
-      model.ingest_free(addr, func, ptr_expr)
-      findings = model.detect_vulnerabilities()
+    """堆生命周期有限状态机 — 静态推断UAF/Double-Free.
 
     状态转移:
       null → (malloc) → LIVE → (free) → FREED
@@ -225,7 +218,7 @@ class HeapStateModel:
         self._aliases[f"{callee_func}::arg{arg_index}"] = ptr_id
 
 
-# smoke
+# 冒烟用例: 覆盖正常生命周期 + UAF + Double-Free 检测
 def _check():
     _m = HeapStateModel()
 

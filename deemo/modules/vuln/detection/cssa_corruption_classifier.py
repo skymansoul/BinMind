@@ -37,11 +37,9 @@
          无源码/无sanitizer内存破坏十分类
 """
 
-import re
-import struct
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional
 from enum import Enum
 
 _log = logging.getLogger(__name__)

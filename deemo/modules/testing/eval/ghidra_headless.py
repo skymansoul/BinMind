@@ -11,9 +11,7 @@ Ghidra 不可用 → N/A, 不阻塞基准流程.
 
 import json
 import os
-import re
 import subprocess
-import sys
 import tempfile
 import time
 from pathlib import Path

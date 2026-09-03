@@ -148,21 +148,27 @@ def extract_fmt_calls(objdump_lines: List[str],
     calls: List[FmtCallSite] = []
 
     def _resolve(r: str) -> int:
-        """沿MOV链解析寄存器→.rdata VA."""
+        """沿MOV链解析寄存器→.rdata VA, 深度限制5层防止无限循环."""
         seen = set()
         cur = _canon(r)
-        while cur in reg_alias and cur not in seen:
+        for _ in range(5):  # alias链深度上限5层
+            if cur in reg_to_rdata:
+                return reg_to_rdata[cur]
+            if cur not in reg_alias or cur in seen:
+                break
             seen.add(cur)
-            nxt = reg_alias[cur]
-            if nxt in reg_to_rdata:
-                return reg_to_rdata[nxt]
-            cur = _canon(nxt)
+            cur = _canon(reg_alias[cur])
         return reg_to_rdata.get(cur, 0)
 
     for line in objdump_lines:
         il = line.strip()
         if not il:
             continue
+
+        # 函数边界检测: 遇到 <fn_name>: 标签清空跨函数寄存器状态
+        if re.match(r'^[0-9a-f]+\s+<.+>:', il):
+            reg_to_rdata.clear()
+            reg_alias.clear()
 
         addr_m = _ADDR_RE.match(il)
         insn_addr = int(addr_m.group(1), 16) if addr_m else 0
@@ -209,6 +215,63 @@ def extract_fmt_calls(objdump_lines: List[str],
             src = _canon(mov_rr.group(2))
             if dst not in ('rbp', 'rsp', 'rip'):
                 reg_alias[dst] = src
+            continue
+
+        # Phase 2.1: 栈中转模式 — mov [rbp-y], rax 后 mov rcx, [rbp-y] 的中转写入
+        # -O1+ 编译器常将 .rdata 指针暂存栈中再加载到参数寄存器
+        stack_store = re.search(
+            r'\bmov\s+(?:qword\s+ptr\s+)?\[rbp\s*-\s*(0x[0-9a-f]+|\d+)\],\s*(\w+)',
+            il_lower)
+        if stack_store:
+            s_src = _canon(stack_store.group(2))
+            # 将栈槽记录为别名中转点
+            slot_key = f'stack:rbp-{stack_store.group(1)}'
+            if s_src in reg_to_rdata:
+                reg_to_rdata[slot_key] = reg_to_rdata[s_src]
+            elif s_src in reg_alias:
+                reg_alias[slot_key] = reg_alias[s_src]
+            continue
+
+        stack_load = re.search(
+            r'\bmov\s+(\w+),\s*(?:qword\s+ptr\s+)?\[rbp\s*-\s*(0x[0-9a-f]+|\d+)\]',
+            il_lower)
+        if stack_load:
+            dst = _canon(stack_load.group(1))
+            slot_key = f'stack:rbp-{stack_load.group(2)}'
+            if slot_key in reg_to_rdata:
+                reg_to_rdata[dst] = reg_to_rdata[slot_key]
+            elif slot_key in reg_alias:
+                reg_alias[dst] = reg_alias[slot_key]
+            continue
+
+        # Phase 2.2: movzx/movsxd 扩展和 xchg 寄存器交换
+        movzx_m = re.search(
+            r'\b(?:movzx|movsxd|movsx)\s+(\w+),\s*(\w+)\s*$', il_lower)
+        if movzx_m:
+            dst = _canon(movzx_m.group(1))
+            src = _canon(movzx_m.group(2))
+            if dst not in ('rbp', 'rsp', 'rip'):
+                reg_alias[dst] = src
+            continue
+
+        xchg_m = re.search(r'\bxchg\s+(\w+),\s*(\w+)\s*$', il_lower)
+        if xchg_m:
+            r1 = _canon(xchg_m.group(1))
+            r2 = _canon(xchg_m.group(2))
+            # 交换两个寄存器的 .rdata 映射
+            v1 = reg_to_rdata.get(r1, 0)
+            v2 = reg_to_rdata.get(r2, 0)
+            if v2: reg_to_rdata[r1] = v2
+            else: reg_to_rdata.pop(r1, None)
+            if v1: reg_to_rdata[r2] = v1
+            else: reg_to_rdata.pop(r2, None)
+            # 交换别名
+            a1 = reg_alias.get(r1)
+            a2 = reg_alias.get(r2)
+            if a2: reg_alias[r1] = a2
+            else: reg_alias.pop(r1, None)
+            if a1: reg_alias[r2] = a1
+            else: reg_alias.pop(r2, None)
             continue
 
         # Phase 3: printf-family call

@@ -1,0 +1,125 @@
+﻿1|136|246|堆溢出写模式检测实验结果汇总
+2|247|308|创新点精度汇总报告
+3|309|416|项目交付物清单 — 堆溢出/UAF/格式化字符串误报抑制深度研究
+4|417|562|ACFPC 堆溢出误报抑制 — 样本集与模块索引
+5|563|702|核心技术创新 — AWSC：二进制级堆溢出检测的同源关联误报抑制方法
+6|703|860|Related Work: False-Positive Reduction in Static Heap-Overflow Detection
+7|861|1086|核心创新：分配器宽松感知的堆溢出误报削减方法（HOVF）
+8|1087|1198|核心创新：路径约束的可控性验证（PCFV）—— 堆溢出静态检测的误报抑制方法
+9|1199|1383|BinMind 创新水分检查 — 审计汇总
+10|1384|1953|Innovation Depth Audit — Automated
+11|1954|2046|创新点扩展：TOVS（UAF）与 FMT-SAC（格式化字符串）
+12|2047|2151|Paper Abstract (Final v10 — BinMind Multi-Vector FP Reduction, 2026-08-07)
+13|2152|2249|BinMind GAPSBV — Paper Contributions & Claims (2026-08-09)
+14|2250|2341|BinMind GAPSBV — Paper Submission Checklist (2026-08-07)
+15|2342|2697|专利权利要求书 — 基于仿射区间与选择性符号执行的二进制堆溢出检测方法及系统
+16|2698|2897|专利权利要求书 v3.0 — GAPSBV: 仿射关系追踪的堆溢出静态检测 + 跨漏洞贝叶斯融合系统
+17|2898|2973|GAPSBV 专利权利要求 → 代码实现交叉引用
+18|2974|3242|BinMind: 路径约束感知的多阶段堆溢出静态检测方法
+19|3243|4586|Related Work: Static Heap Overflow Detection and False Positive Reduction (44 References, 2014-2026)
+20|4587|4691|Related Work: False-Positive Reduction in Static Heap-Overflow Detection
+21|4692|4912|Format String Vulnerability Detection: Literature Review and Related Work
+22|4913|5205|Integer Overflow Vulnerability Detection: Literature Review and Related Work
+23|5206|5495|
+24|5496|5840|
+25|5841|6244|
+26|6245|6565|
+27|6566|6685|Related Work: Heap Overflow Static Detection
+28|6686|6909|核心技术贡献：参数等式 + 路径守卫 + 循环累积的堆溢出误报压制方法
+29|6910|7132|Related Work: Static Heap Overflow Detection with Low False Positives
+30|7133|7257|核心技术创新 — AWSC：二进制级堆溢出检测的同源关联误报抑制方法
+31|7258|7409|Related Work: Reducing False Positives in Static Heap-Overflow Detection
+32|7410|7619|核心创新点：面向二进制堆溢出的多层误报抑制方法
+33|7620|7826|Related Work: Heap Overflow Detection & False Positive Mitigation
+34|7827|7942|核心创新: PcWBI — Provenance-Constrained Write-Bound Inference
+35|7943|8109|Related Work — 二进制漏洞检测与误报抑制 (2022-2026)
+36|8110|8285|核心创新: HFP — 分配器感知与守卫窄化的堆溢出误报抑制引擎
+37|8286|8453|Related Work: Static Heap-Overflow Detection and False-Positive Reduction
+38|8454|8534|UAF 深挖: 伪 IR 级指针生命周期分析 (hfp_uaf)
+39|8535|8688|核心创新: HOFPR — 堆溢出静态检测的误报抑制方法
+40|8689|8876|Related Work: Heap Overflow Static Detection and False-Positive Reduction
+41|8877|9054|核心创新文档 — 流相关值域分析 (Flow-Correlated Value-Range Analysis, FC-VRA)
+42|9055|9310|Related Work
+43|9311|9437|核心创新文档：容量感知耦合边界验证 (CACBV)
+44|9438|9581|Related Work
+45|9582|9699|核心创新：写侧值流区间抽象与双向交汇验证的低误报堆溢出静态检测
+46|9700|9847|核心创新: 值流大小耦合驱动的堆溢出误报抑制方法
+47|9848|10004|Related Work: Binary Vulnerability Detection and Static-Analysis False Positives
+48|10005|10308|BinMind 堆溢出检测核心创新文档 (PG-WBV 版)
+49|10309|10707|Related Work: Binary-Level Vulnerability Detection via Static Analysis
+50|10708|10853|核心创新：分配容量溯源等价分析（ACPE）
+51|10854|11028|Related Work: Heap-Overflow Detection and False-Positive Reduction in Binaries
+52|11029|11189|ACFPC — 基于分配契约流保持压缩的堆溢出误报抑制方法
+53|11190|11328|Related Work: Static Heap-Overflow Detection and False-Positive Reduction
+54|11329|11984|核心创新: DDSSC — Demand-Driven Symbolic Size Correlation
+55|11985|12338|堆溢出静态检测误报削减 — 2024-2026顶会论文调研报告
+56|12339|12794|Related Work — 堆溢出静态检测
+57|12795|13007|核心创新文档 — BWR + PCST：面向堆溢出静态检测的误报抑制方法
+58|13008|13092|核心创新：FMTPROV — 格式化字符串常量折叠与污点溯源验证器
+59|13093|13223|核心创新：GASRI — 守卫感知的值域推理（Guard-Aware Size-Region Inference）
+60|13224|13366|核心创新: HOSV-Ext — 写模式驱动的堆溢出检测误报抑制
+61|13367|13455|核心创新：UAF-PROV — UAF 指针来源归因验证器
+62|13456|13760|专利/论文核心贡献: DD-BVF — Demand-Driven Backward Value Flow
+63|13761|13951|Related Work: Heap-Overflow Static Detection and False-Positive Suppression (2023-2026)
+64|13952|14086|Related Work — Format-String Vulnerability Detection (2022–2026)
+65|14087|14242|Related Work — Recent (2022–2026) Binary Vulnerability Detection & False-Positive Reduction
+66|14243|14426|Related Work — HOSV-Ext: 堆溢出写模式覆盖与误报抑制
+67|14427|14564|Related Work — Use-After-Free Detection & Pointer Identity (2022–2026)
+68|14565|14753|核心技术创新 — AWSC：二进制级堆溢出检测的同源关联误报抑制方法
+69|14754|14940|Related Work: False-Positive Reduction in Static Heap-Overflow Detection
+70|14941|15080|核心技术创新 — AWSC：二进制级堆溢出检测的同源关联误报抑制方法
+71|15081|15238|Related Work: False-Positive Reduction in Static Heap-Overflow Detection
+72|15239|15590|核心技术贡献：按需值流分析 + 堆分配器语义的堆溢出误报压制方法
+73|15591|15781|Related Work: Static Vulnerability Detection in Stripped Binaries
+74|15782|16977|核心技术贡献：二进制级堆溢出静态检测的误报消除方法
+75|16978|17179|Related Work: Static Heap Overflow Detection with False Positive Reduction
+76|17180|17605|核心创新点：面向堆溢出静态检测的多层误报抑制方法
+77|17606|17741|Patent Claims: 面向二进制程序的堆溢出误报抑制方法及系统
+78|17742|17891|Related Work: Heap Overflow Detection & False Positive Mitigation
+79|17892|18018|核心创新点：面向多类型二进制漏洞的静态检测方法体系
+80|18019|18156|Related Work: Binary Vulnerability Detection
+81|18157|18253|核心创新点: 跨域稀疏值流追踪的堆溢出静态检测方法
+82|18254|18348|Related Work: Binary Vulnerability Detection
+83|18349|18781|核心创新：PSVR-HLM 及多漏洞深度检测体系
+84|18782|19036|Related Work: Static Heap Overflow Detection — False Positive Reduction
+85|19037|19249|Lightweight Symbolic Expression Engine + 4-Filter Chain for Heap Overflow False Positive Reduction
+86|19250|19394|Related Work: Static Heap Overflow Detection and False Positive Reduction
+87|19395|19509|UAF检测二级创新 — 专利/论文贡献文档
+88|19510|19854|基于分配点感知值范围分析的堆溢出静态检测方法
+89|19855|20073|相关工作: 静态堆溢出检测与误报消除
+90|20074|20433|BinMind 堆溢出检测核心创新文档
+91|20434|20754|Related Work: Binary-Level Vulnerability Detection via Static Analysis
+92|20755|21009|核心创新: 需求驱动的路径敏感污点-值域分析 (DP-TVRA)
+93|21010|21230|Heap Overflow Static Detection — Related Work Survey
+94|21231|21535|Related Work: Heap Overflow Detection in Stripped Binaries
+95|21536|22204|核心创新点：面向二进制堆溢出检测的路径敏感按需约束传播方法
+96|22205|22412|Related Work: Static Heap Overflow Detection and False Positive Mitigation
+97|22413|22735|FMT-SPEC: Binary-Level Format String Detection via Register Backward Tracing and PE .rdata Extraction
+98|22736|23183|SHIELD: Selective Heap Interval-Evidence Logical Disambiguation
+99|23184|23420|Related Work: Binary-Level Heap Overflow Detection & False Positive Reduction
+100|23421|23580|INT-RANGE: 区间抽象解释驱动的二进制整数溢出检测
+101|23581|23836|DRIFT: Demand-driven Reverse Information Flow Tracking for Use-After-Free Detection in Stripped Binaries
+102|23837|23990|核心技术贡献：三路按需深度静态分析——堆溢出误报压制 / UAF指针重生 / 格式串来源溯源
+103|23991|24203|Related Work: Low-False-Positive Static Vulnerability Detection in Stripped Binaries
+104|24204|24444|核心创新点：面向二进制堆溢出的多层误报抑制方法
+105|24445|24652|Related Work: Heap Overflow Detection & False Positive Mitigation
+106|24653|24850|核心创新: PcWBI — Provenance-Constrained Write-Bound Inference
+107|24851|25059|Related Work — Binary Vulnerability Detection and False-Positive Suppression (2022-2026)
+108|25060|25330|核心创新: HOFPR — 堆溢出静态检测的误报抑制方法
+109|25331|25531|Related Work: Heap Overflow Static Detection and False-Positive Reduction
+110|25532|25710|核心创新文档 — 流相关值域分析 (Flow-Correlated Value-Range Analysis, FC-VRA)
+111|25711|25967|Related Work
+112|25968|26095|核心创新文档：容量感知耦合边界验证 (CACBV)
+113|26096|26240|Related Work
+114|26241|26386|核心创新：写侧值流区间抽象与双向交汇验证的低误报堆溢出静态检测
+115|26387|26530|Related Work: Binary-Level Heap Overflow Detection and Static Analysis False-Positive Reduction
+116|26531|26684|核心创新: 值流大小耦合驱动的堆溢出误报抑制方法
+117|26685|26825|Related Work: Binary Vulnerability Detection and Static-Analysis False Positives
+118|26826|27262|BinMind 堆溢出检测核心创新文档 (PG-WBV 版)
+119|27263|27523|Related Work: Binary-Level Vulnerability Detection via Static Analysis
+120|27524|27780|核心创新：分配容量溯源等价分析（ACPE）
+121|27781|28057|Related Work: Heap-Overflow and Use-After-Free Detection, False-Positive Reduction
+122|28058|28266|ACFPC — 基于分配契约流保持压缩的堆溢出误报抑制方法
+123|28267|28411|Related Work: Static Heap-Overflow Detection and False-Positive Reduction
+124|28412|28744|
+125|28745|29331|项目创新点整合报告

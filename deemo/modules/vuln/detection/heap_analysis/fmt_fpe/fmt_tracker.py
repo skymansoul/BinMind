@@ -1,6 +1,5 @@
 """FPE 格式溯源追踪器 — 前向扫描, 提取格式参数溯源标签.
 
-创建: 2025-01-13
 用途: 格式字符串漏洞误报削减的追踪侧。对单个函数维护寄存器/栈槽的
       溯源标签, 在格式化函数调用点记录格式参数的标签。
 
@@ -43,8 +42,6 @@ class FmtTracker:
     def analyze_function(self, func_name: str,
                          insns: List[Instruction]) -> FuncFmtResult:
         result = FuncFmtResult(name=func_name)
-        # TODO: 跨函数常量传播未实现 — 常量格式串经辅助函数参数传递
-        # 时, 函数内分析只能看到 argN 溯源, 无法判定为常量 (见 FMT-C6)。
         arg_regs = _detect_abi(insns)
         self._reset(arg_regs)
 

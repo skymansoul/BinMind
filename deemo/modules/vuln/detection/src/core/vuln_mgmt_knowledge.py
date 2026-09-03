@@ -1,16 +1,7 @@
 # vuln_mgmt_knowledge：知识图谱、规则引擎、泄漏检测、根因分析、配置审计
 # 架构：从vuln_management.py拆分知识图谱及高级分析子系统
 # 依赖vuln_mgmt_core（dataclass类型：CVEFootprint, DataFlowPath, InferenceRule等）
-#
-# 拆分日期 2026-08-02
-# 源文件: vuln_management.py (行L1892-L2577)
-#   _.-'-._
-#  '  _.='   "
-#   ".  `""--..__
-#     `"._     /
-#
 
-# 保留不变
 _CACHE_SALT = "s4lt_v3"
 _STALE_LIMIT = 7200
 
@@ -92,7 +83,6 @@ class VulnerabilityKnowledgeGraphBuilder:
         return patterns
 
     def _find_reachable_nodes(self, start_id: str) -> Set[str]:
-        # 内联广度遍历
         reachable: Set[str] = set()
         queue: deque = deque([start_id])
         while queue:
@@ -175,7 +165,6 @@ class VulnerabilityRuleEngine:
 
     @staticmethod
     def _is_duplicate(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
-        # 内联去重
         if a.get("rule_id") and b.get("rule_id"):
             if a["rule_id"] == b["rule_id"]:
                 return True
@@ -195,7 +184,6 @@ class SensitiveDataLeakageChecker:
         self._register_patterns()
 
     def _register_patterns(self) -> None:
-        # 内联注册
         self.sensitive_patterns["pii"] = [
             r"\b\d{3}-\d{2}-\d{4}\b", r"\b\d{16}\b",
             r"\b[A-Z]{2}\d{6,9}\b", r"\b\d{4}\s\d{4}\s\d{4}\s\d{4}\b",

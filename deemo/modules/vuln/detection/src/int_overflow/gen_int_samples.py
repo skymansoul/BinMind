@@ -1,8 +1,6 @@
-"""整数溢出测试样本生成器 — 从 int_sample_data.py 读取样本数据并生成文件.
+"""整数溢出测试样本生成器 — 从 int_sample_data.py 读取样本并生成目录.
 
-创建: 2025-04-17
-用途: 读取 INT_SAMPLES 数据列表, 为每个样本创建独立目录含 main.c + Makefile + README.
-      使用: python gen_int_samples.py [output_dir]
+用法: python gen_int_samples.py [output_dir]
 """
 
 import sys

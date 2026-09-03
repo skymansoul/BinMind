@@ -1,7 +1,6 @@
 # 种子能量决定其在下一轮被选中的概率和变异次数。
 # 核心思想: 对"有前途"的种子（触发新覆盖、罕见路径）赋予更高能量。
 import math
-import time
 from typing import Dict, List, Tuple, Optional, Set
 from collections import defaultdict
 

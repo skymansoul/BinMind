@@ -1,4 +1,3 @@
-#
 """结果解析——将scan_results与ground truth对比, 计算TP/FP/FN。
 
 每个样本的ground truth定义在 gt_manifest 中——
@@ -157,7 +156,6 @@ def evaluate_sample(
     _tp = _detected
     _fn = _expected_types - _detected
     _fp = 0  # 基础扫描无假阳性概念——只检测危险函数调用(全为true)
-    # 实际上: 若检测到非预期的危险函数→可计为FP
 
     _precision = len(_tp) / max(len(_tp) + _fp, 1)
     _recall = len(_tp) / max(len(_expected_types), 1)

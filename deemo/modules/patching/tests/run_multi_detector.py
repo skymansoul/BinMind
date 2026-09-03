@@ -15,10 +15,8 @@
   python tests/run_multi_detector.py --quick
 """
 
-import os, sys, json, time, subprocess, argparse, re
-from pathlib import Path
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+import os, sys, json, time, subprocess, argparse
+from typing import List, Dict
 
 # Add parent to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

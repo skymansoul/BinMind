@@ -89,12 +89,44 @@ class FmtVerifier:
         for stage_fn in [self._chk_literal, self._chk_sanitized, self._chk_compiler]:
             r = stage_fn(code, fmt_func, fmt_arg, f)
             if r: return r
+        # 源代码缺失时依赖二进制级提取结果做 fallback 判定
+        if not code:
+            r = self._binary_fallback(f, fmt_func, fmt_arg)
+            if r: return r
         # O: output context
         output = _FMT.get(fmt_func, (0, 'stdout'))[1]
         # R: reference trace
         is_user = self._trace_user(code, fmt_arg)
         # E: exploitability
         return self._assess(fmt_func, fmt_arg, code, is_user, output)
+
+    def _binary_fallback(self, f: dict, func: str, arg: str) -> Optional[FmtVerifyResult]:
+        """源代码不可用时,从 finding 的二进制级分析字段做降级判定."""
+        fmt_str = f.get('fmt_string', '')
+        taint = f.get('taint_source', f.get('fmt_source', ''))
+        if not fmt_str and not taint:
+            return None
+        has_dangerous = bool(re.search(r'%[0-9]*\$*\*?\d*[hn]', fmt_str))
+        if isinstance(taint, str) and taint.upper() in ('TAINTED', 'PARAM', 'USER'):
+            if has_dangerous:
+                return FmtVerifyResult(
+                    func_name=f.get('function', ''), fmt_func=func, fmt_arg=arg,
+                    verdict=FmtVerdict.CONFIRMED, confidence=0.85,
+                    is_user_controlled=True, dangerous_specs=['%n'] if '%n' in fmt_str else [],
+                    reason=f"binary: taint={taint}, dangerous specs in '{fmt_str[:30]}'",
+                    stage='B')
+            return FmtVerifyResult(
+                func_name=f.get('function', ''), fmt_func=func, fmt_arg=arg,
+                verdict=FmtVerdict.LIKELY_FP, confidence=0.60,
+                is_user_controlled=True,
+                reason=f"binary: taint={taint}, no dangerous specs", stage='B')
+        if isinstance(taint, str) and taint.upper() in ('SAFE', 'RDATA', 'LITERAL'):
+            return FmtVerifyResult(
+                func_name=f.get('function', ''), fmt_func=func, fmt_arg=arg,
+                verdict=FmtVerdict.SAFE_LITERAL, confidence=0.90,
+                is_literal=True,
+                reason=f"binary: source={taint}, .rdata literal", stage='B')
+        return None
 
     # Stage F: LITERAL ──────────────────────────
 
@@ -140,8 +172,32 @@ class FmtVerifier:
 
     def _trace_user(self, code: str, arg: str) -> bool:
         if not code or not arg: return False
+        # 直接赋值: arg = recv(...)
         for src in _USER_SRC:
             if re.search(rf'{re.escape(arg)}\s*=.*\b{src}\b', code): return True
+        # 间接传播: 函数参数作为格式串传入,且函数被以用户输入调用
+        # 检测 void f(char *x){...printf(x)...} 且 f(user_input) 的调用链
+        fn_def = re.search(
+            rf'\b\w+\s+\w+\s*\(\s*(?:void\s*\*)?\s*({re.escape(arg)})\s*[,)]', code)
+        if fn_def:
+            # 该参数在函数体内直接传入 printf 类函数则视为可控
+            if re.search(rf'{re.escape(arg)}\s*[,)]', code):
+                return True
+        # 检测函数定义中 printf(参数名) 模式,且存在以用户输入调用该函数
+        fmt_call_pat = re.compile(
+            r'\b(?:printf|fprintf|sprintf|snprintf|syslog)\s*\(\s*(\w+)\s*[,)]')
+        for m in fmt_call_pat.finditer(code):
+            param = m.group(1)
+            if param == arg:
+                return True
+            # 参数名出现在函数签名中,且函数以用户输入被调用
+            sig = re.search(rf'\b\w+\s+\w+\s*\([^)]*\b{re.escape(param)}\b', code)
+            if sig:
+                call_pat = re.compile(rf'\b{re.escape(sig.group(0).split()[1])}\s*\(\s*(\w+)')
+                for cm in call_pat.finditer(code):
+                    if cm.group(1) in _USER_SRC or \
+                       re.search(rf'{re.escape(cm.group(1))}\s*=.*\b{"|".join(_USER_SRC)}\b', code):
+                        return True
         return False
 
     # Stage E: EXPLOITABILITY ───────────────────
@@ -155,6 +211,14 @@ class FmtVerifier:
                 specs = FormatSpecAnalyzer.parse_format_string(fmt_content)
                 dangerous = [s.raw for s in specs if s.risk.value >= 3]
                 if not dangerous and specs:
+                    # 用户可控但无危险符→降级为可能误报,而非直接判安全
+                    if is_user:
+                        return FmtVerifyResult(
+                            func_name="", fmt_func=func, fmt_arg=arg,
+                            verdict=FmtVerdict.LIKELY_FP, confidence=0.70,
+                            is_user_controlled=True,
+                            reason=f"user-controlled, no dangerous: {[s.raw for s in specs[:3]]}",
+                            stage='E')
                     return FmtVerifyResult(
                         func_name="", fmt_func=func, fmt_arg=arg,
                         verdict=FmtVerdict.SAFE_LITERAL, confidence=0.95,
@@ -162,7 +226,16 @@ class FmtVerifier:
                         stage='E', is_literal=True)
                 if dangerous: conf = 0.90
             except ImportError:
-                pass
+                # 优先尝试 fmt_spec_parser 作为本地 fallback
+                try:
+                    from analysis.fmt_spec_parser import parse_format_specs, detect_format_danger
+                    specs = parse_format_specs(fmt_content)
+                    dangerous = [s for s in specs if detect_format_danger(s)]
+                except ImportError:
+                    # 最小 fallback: 直接字符串搜索 %n
+                    if '%n' in fmt_content:
+                        dangerous = ['%n']
+                if dangerous: conf = 0.90
 
         if is_user and not fmt_content: conf = 0.85
 
@@ -187,7 +260,13 @@ class FmtVerifier:
 
     def _extract_fmt(self, code, func) -> str:
         m = re.search(re.escape(func) + r'\s*\(\s*"((?:[^"\\]|\\.)*)"', code)
-        return m.group(1) if m else ""
+        if m:
+            return m.group(1)
+        # 非字面量分支: printf(var) 模式提取变量名作为格式串标识
+        m = re.search(re.escape(func) + r'\s*\(\s*(\w+)\s*[,)]', code)
+        if m:
+            return m.group(1)
+        return ""
 
     @staticmethod
     def _split(s: str) -> List[str]:

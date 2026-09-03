@@ -14,6 +14,7 @@
 #   Regression Test Selection: 回归测试选取综述
 #   ClusterFuzz production corpus management
 import os
+import math
 import time
 import json
 import hashlib
@@ -287,10 +288,6 @@ class RegressionCorpusManager:
         }
 
 
-# 便捷入口
-import math
-
-
 def quick_ci_subset(corpus_dir: str,
                     output_dir: str,
                     max_files: int = 100) -> int:
@@ -302,5 +299,3 @@ def quick_ci_subset(corpus_dir: str,
     ranked = sorted(mgr._entries.values(),
                     key=lambda e: -e.priority)[:max_files]
     return mgr.export(output_dir, ranked)
-
-    if __import__("os").environ.get("BINMIND_DEBUG"):print(*a,**kw)

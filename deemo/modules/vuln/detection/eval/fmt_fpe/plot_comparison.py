@@ -1,6 +1,5 @@
 """FPE 格式字符串多工具对比可视化与 LaTeX 表.
 
-创建: 2024-12-09
 输入: results/benchmark_results.csv / benchmark_summary.json
 输出: fig_detection_rate.png / fig_fp_rate.png / fig_f1.png / result_table.tex
 """

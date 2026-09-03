@@ -315,7 +315,7 @@ class MobileObfuscationAnalyzer:
                 with zipfile.ZipFile(path,'r') as zf:
                     for entry in zf.namelist():
                         try: s.file_list[entry]=zf.read(entry)
-                        except zipfile.BadZipFile: pass  # 修复：裸except收窄至BadZipFile
+                        except zipfile.BadZipFile: pass
                 logger.info(f"Loaded {len(s.file_list)} entries from {p.name}")
             except zipfile.BadZipFile: logger.warning(f"非有效ZIP归档: {path}")
 

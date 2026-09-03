@@ -2,10 +2,9 @@
 import os
 import time
 import json
-import hashlib
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
-from collections import defaultdict
+from collections import defaultdict, Counter
 from datetime import datetime
 
 
@@ -245,7 +244,6 @@ th {{ background: #161b22; }}
         }
 
     def _exploit_distribution(self) -> Dict[str, int]:
-        from collections import Counter
         return dict(Counter(e.exploitability_verdict for e in self._entries))
 
     def _cluster_by_root_cause(self) -> Dict[str, List[TriageEntry]]:

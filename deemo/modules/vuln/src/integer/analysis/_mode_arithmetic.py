@@ -51,8 +51,9 @@ def detect_signed_idx_overflow(
         if result <= _MAX_INT32:
             continue
         addr = addrs[i] if (addrs and i < len(addrs)) else i
+        insn_addr = addr
         findings.append(IntOverflowFinding(
-            insn_addr=i, function_name=function_name,
+            insn_addr=insn_addr, function_name=function_name,
             description=(
                 f'integer overflow: signed index overflow '
                 f'{base_val}+{add_val}={result} '
@@ -101,8 +102,9 @@ def detect_mul_overflow(
             alloc_func, call_idx = call_target
             call_addr = (addrs[call_idx]
                          if (addrs and call_idx < len(addrs)) else call_idx)
+            insn_addr = addrs[i] if (addrs and i < len(addrs)) else i
             findings.append(IntOverflowFinding(
-                insn_addr=i, function_name=function_name,
+                insn_addr=insn_addr, function_name=function_name,
                 description=(
                     f'integer overflow: multiplication via stack '
                     f'[rbp{offset:+d}]={mult_val} passed to {alloc_func}() '
@@ -128,8 +130,9 @@ def detect_mul_overflow(
         alloc_func, call_idx = call_target
         call_addr = (addrs[call_idx]
                      if (addrs and call_idx < len(addrs)) else call_idx)
+        insn_addr = addrs[i] if (addrs and i < len(addrs)) else i
         findings.append(IntOverflowFinding(
-            insn_addr=i, function_name=function_name,
+            insn_addr=insn_addr, function_name=function_name,
             description=(
                 f'integer overflow: imul by {const} '
                 f'passed to {alloc_func}() '
@@ -195,8 +198,9 @@ def detect_16bit_wraparound(
         alloc_func, call_idx = call_target
         call_addr = (addrs[call_idx]
                      if (addrs and call_idx < len(addrs)) else call_idx)
+        insn_addr = addrs[i] if (addrs and i < len(addrs)) else i
         findings.append(IntOverflowFinding(
-            insn_addr=i, function_name=function_name,
+            insn_addr=insn_addr, function_name=function_name,
             description=(
                 f'integer overflow: 16-bit wraparound '
                 f'0x{base_val:x} at rbp{offset:+d} truncated via '
@@ -314,7 +318,7 @@ def detect_32bit_add_wraparound(
         # 计算置信度: 参数越多→越像 (函数签名包含多个无符号int)
         confidence = min(0.55 + 0.05 * len(dword_params), 0.75)
         findings.append(IntOverflowFinding(
-            insn_addr=i, function_name=function_name,
+            insn_addr=dword_addr, function_name=function_name,
             description=(
                 f'integer overflow: 32-bit ADD wraparound '
                 f'DWORD[rbp+{offset_param:#x}] used as pointer offset, '
@@ -337,12 +341,15 @@ _ALLOC_FUNCS = {'malloc', 'calloc', 'realloc', '_malloc', 'HeapAlloc'}
 
 def _find_next_alloc_call(instructions: List[str],
                            start_idx: int) -> Optional[Tuple[str, int]]:
-    """从 start_idx 前向查找最近的 alloc 函数调用."""
-    for j in range(start_idx + 1, min(start_idx + 30, len(instructions))):
+    """从 start_idx 前向查找最近的 alloc 函数调用 (≤15指令).
+
+    数据流守卫: 中间非alloc的call可能破坏寄存器约定, 视为数据流中断.
+    """
+    for j in range(start_idx + 1, min(start_idx + 15, len(instructions))):
         il = instructions[j].strip().lower()
-        if 'call' not in il:
-            continue
-        for f in _ALLOC_FUNCS:
-            if f in il:
-                return (f, j)
+        if 'call' in il:
+            for f in _ALLOC_FUNCS:
+                if f in il:
+                    return (f, j)
+            return None
     return None

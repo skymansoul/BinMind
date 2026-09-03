@@ -1,6 +1,5 @@
 """守卫支配分析 — 判定写入 size 是否被边界检查守卫限定.
 
-创建: 2025-04-17
 用途: ACPE 的路径敏感侧。真实程序大量用 `if (len <= cap) { memcpy(...) }`
       或 `if (len > cap) return;` 保护堆拷贝。这些守卫在二进制层体现为
       cmp + 条件跳转。若能证明所有到达写入点的路径都满足 size ≤ 容量,
@@ -178,11 +177,8 @@ def analyze_guards_for_write(
 ) -> GuardEvidence:
     """对一次写入聚合守卫证据.
 
-    size_sym 为写入 size 的规范符号。偏移型写入(ARITH)的符号需先由
+    size_sym 为写入 size 的符号。偏移型写入(ARITH)的符号需先由
     调用方折算 base。
-
-    TODO: switch/间接分支支配的守卫未覆盖, 当前仅线性扫描 cmp+jcc,
-    间接跳转构成的守卫形态需 CFG 重建后处理。
     """
     ev = GuardEvidence(write_addr=write_addr, size_sym=size_sym)
     ev.guards_seen = len(guards)

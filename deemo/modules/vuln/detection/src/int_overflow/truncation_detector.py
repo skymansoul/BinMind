@@ -1,14 +1,11 @@
 """整数截断检测器 — 大位宽→小位宽赋值 + 隐式类型转换截断.
 
-创建: 2025-04-17
-目的: 检测因隐式类型转换导致的整数截断，这是除溢出/符号混淆外的
-      第三大整数相关漏洞模式。常见场景:
-      1. 64-bit size_t → 32-bit int (大文件处理)
-      2. uint32_t → uint16_t (网络协议解析)
-      3. memcpy(dst, src, short_len) 中 short_len 截断自 long_len
+检测除溢出/符号混淆外的第三大整数相关漏洞模式:
+  1. 64-bit size_t → 32-bit int (大文件处理)
+  2. uint32_t → uint16_t (网络协议解析)
+  3. memcpy(dst, src, short_len) 中 short_len 截断自 long_len
 
-方法依据: CWE-197 (整数截断错误) — 当较大整数类型隐式转换为
-          较小类型时，高位被丢弃，可能导致缓冲区分配过小。
+CWE-197: 大整数隐式转小类型时高位丢弃, 可能致缓冲区分配过小。
 """
 
 from dataclasses import dataclass, field
@@ -38,14 +35,10 @@ class TruncationCandidate:
 
 
 class TruncationDetector:
-    """整数截断检测器 — 识别位宽收缩模式.
+"""整数截断检测器 — 识别位宽收缩模式.
 
-    使用方式:
-      td = TruncationDetector()
-      td.add_move('mov', 'rax', 'eax', 0x401000)  # 64→32 截断
-      td.add_move('mov', 'eax', 'ax', 0x401002)    # 32→16 截断
-      candidates = td.detect()
-    """
+用法: add_move 记录 mov 指令, mark_size_related 标记大小计算, detect 取候选。
+"""
 
     def __init__(self):
         self._moves: List[Tuple[str, str, str, int]] = []

@@ -351,7 +351,7 @@ class EmulationTracer:
         logger.info("traced %d instructions in %.2fs, SMC events=%d",
                     len(trace.events), elapsed,
                     sum(1 for _, _, lexec in trace.smc_events if lexec != 0))
-    return trace
+        return trace
 
 
 _ANTI_ANALYSIS_APIS = {

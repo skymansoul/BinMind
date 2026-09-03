@@ -81,11 +81,6 @@ class GenState:
             'slots': {k: (v.gen, v.source) for k, v in self._slots.items()},
         }
 
-import re
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-
-
 REG_BITS = ('rax', 'eax', 'rcx', 'ecx', 'rdx', 'edx', 'r8', 'r8d',
             'r9', 'r9d', 'rsi', 'esi', 'rdi', 'edi', 'rbx', 'ebx',
             'r10', 'r10d', 'r11', 'r11d', 'r12', 'r12d', 'r13',

@@ -142,17 +142,21 @@ def analyze_insn_effects(asm_lines: List[str]) -> List[InsnEffect]:
             eff.gen_func = alloc_m.group(1).lower()
             # realloc 同时释放旧指针 → 也设为 free_call
             if eff.gen_func == 'realloc':
-                eff.free_call = True
-                eff.free_reg = _find_free_arg(asm_lines, i)
+                arg = _find_free_arg(asm_lines, i)
+                if arg is not None:
+                    eff.free_call = True
+                    eff.free_reg = arg
             effects.append(eff)
             continue
 
-        # 2. FREE — call free/delete
+        # 2. FREE — call/jmp free/delete
         free_m = _FREE_FUNCS.search(il_lower)
         if free_m:
-            eff.free_call = True
-            # 从前面指令找free的参数寄存器
-            eff.free_reg = _find_free_arg(asm_lines, i)
+            # 参数来源无法确认时不标记 free_call, 避免误标记对象
+            arg = _find_free_arg(asm_lines, i)
+            if arg is not None:
+                eff.free_call = True
+                eff.free_reg = arg
             effects.append(eff)
             continue
 
@@ -310,14 +314,25 @@ def _is_user_func(name: str, crt_prefixes: tuple,
     return True
 
 
-def _find_free_arg(asm_lines: List[str], free_idx: int) -> str:
-    """向前5条指令内找free参数的来源寄存器 (rdi on SysV/MS64)."""
-    for j in range(free_idx - 1, max(free_idx - 6, -1), -1):
+def _find_free_arg(asm_lines: List[str], free_idx: int) -> Optional[str]:
+    """向前回溯至函数入口找free参数的来源寄存器.
+
+    设计决策:
+      - 原 5 行回溯范围不足以覆盖 O2 优化后参数提前存储的场景, 扩展至函数入口.
+      - 默认返回 None 而非 'rdi': 无法确认参数来源时不猜测, 避免误标记对象.
+    """
+    _FN_LABEL_RE = re.compile(r'[0-9a-f]+\s+<([^>]+)>:\s*$')
+    for j in range(free_idx - 1, -1, -1):
         line = asm_lines[j].strip().lower().replace(',', ' ')
+        # 到达函数标签或 push rbp 序言即停止回溯
+        if _FN_LABEL_RE.match(asm_lines[j].strip()):
+            break
+        if 'push' in line and 'rbp' in line:
+            break
         m = re.search(r'\bmov\s+(rdi|rcx|edi|ecx),?\s*(\w+)', line)
         if m:
             return _canon_reg(m.group(2))
-    return 'rdi'
+    return None
 
 
 _CALL_TARGET_RE = re.compile(r'call\s+(?:[0-9a-f]+\s+<)?(\w+)>?', re.I)

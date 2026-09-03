@@ -8,7 +8,7 @@
 用法: python eval/plot_comparison.py
 """
 
-import os, csv, json
+import os, json
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt

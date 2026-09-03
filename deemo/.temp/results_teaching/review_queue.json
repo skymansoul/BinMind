@@ -1,0 +1,58 @@
+[
+  {
+    "sample_name": "01_stack_overflow.exe",
+    "vuln_desc": "11 finding(s) pending review",
+    "evidence_addr": ".temp/results_teaching\\01_stack_overflow_20260904_035142.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-04T03:51:45"
+  },
+  {
+    "sample_name": "01_stack_overflow.exe",
+    "vuln_desc": "11 finding(s) pending review",
+    "evidence_addr": ".temp/results_teaching\\01_stack_overflow_20260904_035239.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-04T03:52:40"
+  },
+  {
+    "sample_name": "03_heap_uaf.exe",
+    "vuln_desc": "17 finding(s) pending review",
+    "evidence_addr": ".temp/results_teaching\\03_heap_uaf_20260904_035447.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-04T03:54:49"
+  },
+  {
+    "sample_name": "02_format_string.exe",
+    "vuln_desc": "8 finding(s) pending review",
+    "evidence_addr": ".temp/results_teaching\\02_format_string_20260904_035455.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-04T03:54:57"
+  },
+  {
+    "sample_name": "04_integer_overflow.exe",
+    "vuln_desc": "13 finding(s) pending review",
+    "evidence_addr": ".temp/results_teaching\\04_integer_overflow_20260904_035745.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-04T03:57:47"
+  },
+  {
+    "sample_name": "06_stack_overflow_canary.exe",
+    "vuln_desc": "13 finding(s) pending review",
+    "evidence_addr": ".temp/results_teaching\\06_stack_overflow_canary_20260904_035745.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-04T03:57:47"
+  },
+  {
+    "sample_name": "05_command_injection.exe",
+    "vuln_desc": "9 finding(s) pending review",
+    "evidence_addr": ".temp/results_teaching\\05_command_injection_20260904_035745.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-04T03:57:47"
+  }
+]

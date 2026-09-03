@@ -1,15 +1,11 @@
 """跨函数UAF评分增强器 — 过程间指针逃逸 + 堆块重用概率.
 
-创建: 2025-02-06 15:31
-用途: 扩展 uaf_candidate_scorer.py 的函数内三因素评分到跨函数场景,
-      使用 PointerAliasTracker 的别名分析结果做过程间指针追踪。
+扩展 uaf_candidate_scorer 的函数内三因素评分到跨函数场景,
+用 PointerAliasTracker 的别名分析结果做过程间指针追踪。
 
-设计决策:
-  - 不替代 uaf_candidate_scorer.py: 保留其三因素 (指针逃逸/生命期间距/重分配),
-    本模块在它之上增加跨函数维度的评估, 融合为综合评分。
-  - 启发式跨函数连接: 不构建完整调用图, 而是通过函数参数传递和返回值做启发式连接。
-    在 strip 二进制中, 调用的目标函数名可能不可用, 此时保守假设所有 call 指令
-    都可能产生指针逃逸。
+取舍: 不替代函数内评分器 (保留三因素), 在其上叠加跨函数维度;
+不构建完整调用图, 通过参数传递与返回值启发式连接——strip 二进制中
+目标函数名可能不可用, 此时保守假设所有 call 指令都可能产生指针逃逸。
 """
 
 import math
@@ -33,21 +29,15 @@ class UAFCrossFnResult:
 
 
 class CrossFunctionUAFScorer:
-    """跨函数 UAF 评分增强器.
+"""跨函数 UAF 评分增强器.
 
-    处理三种跨函数 UAF 模式:
-      1. 函数 A 中 malloc(p) → 传递给函数 B → B 中 free(p) → A 中继续使用 p
-      2. malloc 的指针存储到全局变量 → 多个函数通过全局变量使用 → 某处 free
-      3. 指针作为返回值返回 → 调用方 free → 被调用方仍持有副本
+处理三种跨函数 UAF 模式:
+  1. A 中 malloc(p) → 传参给 B → B 中 free(p) → A 继续用 p
+  2. 指针存全局 → 多函数经全局使用 → 某处 free
+  3. 指针作返回值 → 调用方 free → 被调用方仍持副本
 
-    使用方式:
-      scorer = CrossFunctionUAFScorer()
-      scorer.set_intra_fn_score('fn_A', 'p_rax', 0.65)
-      tracker = PointerAliasTracker()
-      # ... 填充 tracker ...
-      scorer.set_alias_tracker(tracker)
-      results = scorer.analyze_all()
-    """
+用法: set_intra_fn_score/set_alias_tracker/record_param_passing 注册, analyze_all 取结果。
+"""
 
     def __init__(self):
         # 函数内评分: (fn_name, ptr_name) → score

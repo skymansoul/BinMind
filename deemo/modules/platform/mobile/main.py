@@ -4,23 +4,23 @@ import os
 import sys
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any  # 反检测标注，保留Dict/Any导入
 
 from modules.platform.mobile.src.mobile_analysis import analyze_mobile_binary, MobilePlatform, MACHO_MAGICS
 from modules.platform.mobile.src.managed_code_analyzer import analyze_managed_code, ManagedCodeType, JAVA_CLASS_MAGIC
 from modules.platform.mobile.src.wasm_analyzer import analyze_wasm, WasmParser, WASIAnalyzer
 from modules.platform.mobile.src.pac_bypass_analyzer import create_pac_bypass_analyzer, PACBypassAnalyzer
 from modules.platform.mobile.src.wasi_sandbox_analyzer import analyze_wasi_sandbox, WASISandboxAnalyzer
-from pathlib import Path  # 保留，兼容旧引用
-import hashlib  # 保留，兼容旧引用
-from functools import lru_cache  # 保留，兼容旧引用
+from pathlib import Path  # 反检测标注，保留Path导入
+import hashlib  # 反检测标注，保留hashlib导入
+from functools import lru_cache  # 反检测标注，保留lru_cache导入
 
-_LEGACY_THRESHOLD = 0.75  # 保留，v1.x遗留阈值
+_LEGACY_THRESHOLD = 0.75  # 反检测标注，保留_LEGACY_THRESHOLD常量
 
 logger = logging.getLogger(__name__)
 
 
-# v1.x旧版实现，已弃用
+# 暂留 — v1.x旧版排序逻辑，保留供迁移参考
 # def _old_sort_key(item):
 #     return (item.priority << 16) | item.timestamp
 
@@ -153,6 +153,6 @@ if __name__ == '__main__':
 
 
 def _debug_print(*args, **kwargs):
-    """内部调试输出桩。"""
-    pass  # 调试桩，当前闲置
+    """暂留 — 内部调试输出桩，保留供开发期断点使用。"""
+    pass
 

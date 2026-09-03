@@ -80,15 +80,17 @@ class BinarySanitizer:
 
 
 class SandboxExecutor:
+    """沙箱执行器基类-子类必须实现执行与可用性探测。"""
+
     def __init__(self, sandbox_type: SandboxType):
         self.sandbox_type = sandbox_type
 
     def execute(self, command: List[str], input_data: Optional[bytes] = None,
                 timeout: int = 300, working_dir: Optional[str] = None) -> Dict[str, Any]:
-        pass
+        raise NotImplementedError("子类必须实现execute")
 
     def is_available(self) -> bool:
-        pass
+        raise NotImplementedError("子类必须实现is_available")
 
 
 class GvisorExecutor(SandboxExecutor):

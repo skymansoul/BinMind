@@ -10,9 +10,6 @@
 与 false_positive_filter.py 的分工:
   false_positive_filter: 基于汇编模式的统计评分 (先验知识)
   本模块: 基于数据流约束的逻辑判定 (程序语义)
-
-修改记录:
-  创建 2024-10-11
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any

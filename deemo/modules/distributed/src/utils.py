@@ -170,7 +170,3 @@ def memoize(maxsize: int = 128):
         wrapper.cache_clear = clear
         return wrapper
     return decorator
-
-
-    """内部调试输出桩。"""
-    pass  # 调试桩，当前无活跃调用路径

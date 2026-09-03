@@ -10,7 +10,6 @@ README:   提取vuln.c头注释作为CVE描述, 补充触发条件与检测要�
 
 import os
 import re
-import sys
 
 SAMPLE_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            'cve_samples')

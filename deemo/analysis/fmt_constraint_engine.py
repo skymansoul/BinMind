@@ -2,7 +2,7 @@
 格式串约束引擎 — 将FSCS从正则分类提升到约束传播+抽象解释.
 
 核心创新 (vs fmt_constraint_solver.py 的纯正则方法):
-  1. CallingConventionModel: 基于System V AMD64 ABI计算%n$→实际参数栈槽
+  1. CallingConventionModel: 基于Microsoft x64 ABI计算%n$→实际参数栈槽
   2. DefUseChainTracker: Worklist算法沿DU链做fixpoint污点传播 (AbsInt lattice)
   3. AttackSurfaceComputer: 三层评分分解 (格式串可控×写入原语×地址可控)
   4. L1/L2/L3 分层架构: 参数建模→污点传播→攻击面量化
@@ -47,13 +47,13 @@ class FmtCallModel:
 # L1: 调用约定模型
 
 class CallingConventionModel:
-    """System V AMD64: rdi=fmt, rsi=arg1, rdx=arg2, rcx=arg3, r8=arg4, r9=arg5.
-    第6+参数: [rsp+8], [rsp+16], ... 栈传递."""
+    """Microsoft x64 ABI: rcx=fmt, rdx=arg1, r8=arg2, r9=arg3.
+    第5+参数: [rsp+0x20], [rsp+0x28], ... 栈传递."""
 
-    REG_SLOTS = 5
+    REG_SLOTS = 4
 
     @staticmethod
-    def slot(pos: int) -> int:  # %n$ → slot index (0=rsi)
+    def slot(pos: int) -> int:  # %n$ → slot index (0=rcx)
         return max(-1, pos - 1) if pos >= 1 else -1
 
     @staticmethod
@@ -88,7 +88,12 @@ class DefUseChainTracker:
 
     EXT_RE = re.compile(r'(argv|getenv|recv|read|scanf|fgets|gets|fread'
         r'|strcpy|strncpy|memcpy|strcat|strncat|sprintf|snprintf)')
-    DEF_RE = re.compile(r'(?:char\s*\*?\s*)?(\w[\w.]*)\s*=\s*(.+?)\s*;')
+    # 指针赋值/数组赋值/复合赋值/普通赋值统一定义
+    DEF_RE = re.compile(
+        r'(?:\*\s*(\w[\w.]*)\s*=\s*(.+?)\s*;)'         # *ptr = expr
+        r'|(?:\b(\w[\w.]*)\s*\[[^\]]*\]\s*=\s*(.+?)\s*;)'  # arr[i] = expr
+        r'|(?:\b(\w[\w.]*)\s*([+\-*/|&^]?=)\s*(.+?)\s*;)'  # var = expr / var += expr
+    )
 
     def __init__(self):
         self.nodes: Dict[str, DUNode] = {}
@@ -101,18 +106,25 @@ class DefUseChainTracker:
         for i, line in enumerate(lines, 1):
             m = self.DEF_RE.search(line.strip())
             if m:
-                var, expr = m.group(1), m.group(2).strip()
-                node = DUNode(var=var, line=i, expr=expr)
-                if self.EXT_RE.search(expr):
-                    node.kind, node.tainted = 'external', True
-                    self._worklist.append(var)
-                elif 'malloc' in expr or 'calloc' in expr:
-                    node.kind = 'heap'
-                elif re.match(r'^"[^"]*"$', expr):
-                    node.kind = 'constant'
-                else:
-                    node.kind = 'assign'
-                self.nodes[var] = node
+                var, expr = None, ""
+                if m.group(1):  # 指针赋值 *ptr = expr
+                    var, expr = m.group(1), m.group(2).strip()
+                elif m.group(3):  # 数组赋值 arr[i] = expr
+                    var, expr = m.group(3), m.group(4).strip()
+                elif m.group(5):  # 普通/复合赋值 var = expr / var += expr
+                    var, expr = m.group(5), m.group(7).strip()
+                if var:
+                    node = DUNode(var=var, line=i, expr=expr)
+                    if self.EXT_RE.search(expr):
+                        node.kind, node.tainted = 'external', True
+                        self._worklist.append(var)
+                    elif 'malloc' in expr or 'calloc' in expr:
+                        node.kind = 'heap'
+                    elif re.match(r'^"[^"]*"$', expr):
+                        node.kind = 'constant'
+                    else:
+                        node.kind = 'assign'
+                    self.nodes[var] = node
             for m in re.finditer(r'\b(\w[\w.]*)\b', line):
                 v = m.group(1)
                 if v in self.nodes and i not in self.nodes[v].users:

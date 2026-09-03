@@ -56,7 +56,7 @@ def _build_default_strategies() -> Dict[str, MutatorFn]:
     """
     strategies: Dict[str, MutatorFn] = {}
 
-# 确定性变异族
+    # 确定性变异族
     def bitflip_1_1(data: bytes) -> Tuple[bytes, List[int]]:
         if not data:
             return data, []
@@ -94,7 +94,7 @@ def _build_default_strategies() -> Dict[str, MutatorFn]:
             raw[pos] = random.choice(candidates)
         return bytes(raw), [pos]
 
-# 随机变异族 (havoc)
+    # 随机变异族 (havoc)
     def havoc_random(data: bytes) -> Tuple[bytes, List[int]]:
         if not data:
             return data, []
@@ -116,7 +116,7 @@ def _build_default_strategies() -> Dict[str, MutatorFn]:
             positions.append(pos)
         return bytes(raw), positions
 
-# 结构操作族
+    # 结构操作族
     def splice_block(data: bytes) -> Tuple[bytes, List[int]]:
         if len(data) < 4:
             return data, []

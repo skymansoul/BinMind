@@ -1,35 +1,18 @@
-#
-"""堆溢出误报削减——基于区间抽象解释的size约束关系推断。
+"""堆溢出误报削减——基于区间抽象解释的size约束关系推断.
 
-核心问题: 现有检测对所有 `memcpy(dst, src, size)` where size来自外部
-均标记为堆溢出——但大部分固件代码中, size虽来自外部, 却被约束在
-malloc分配的范围内。例如:
+问题: 现有检测对所有 size 来自外部的 memcpy(dst, src, size) 均标记溢出,
+但多数固件中 size 虽外部而来却被约束在 malloc 范围内:
   size = read_input(); if (size > 256) size = 256;
-  buf = malloc(size); memcpy(buf, src, size);
-这段代码是安全的——size被约束在≤256, malloc恰好分配256。
+  buf = malloc(size); memcpy(buf, src, size);  # 安全
 
-现有检测无法证明这种安全性, 因为需要跨基本块的约束传播。
-本模块的方案——区间抽象解释 (Interval Abstract Interpretation):
-1. 对每个变量维护区间 [lo, hi]。
-2. 遇到条件分支→更新区间 (如 cmp size, 256 → size ∈ [0, 256])。
-3. 在memcpy调用点, 比较"memcpy的size区间"与"malloc的size区间":
-   - 若 memcpy.size_max ≤ malloc.size_min → SAFE (可证明安全)
-   - 若 memcpy.size_min > malloc.size_max → VULNERABLE (确定溢出)
-   - 否则 → UNCERTAIN (保守标记为潜在漏洞)
+方案: 区间抽象解释——每变量维护 [lo,hi], 条件分支更新区间,
+在 memcpy 点比较其 size 区间与 malloc 的 size 区间:
+  memcpy.size_max ≤ malloc.size_min → SAFE
+  memcpy.size_min > malloc.size_max → VULNERABLE
+  其余 → UNCERTAIN (保守标记为潜在漏洞)
 
-效果预期: 将"可证明安全"的堆操作从告警中滤除, 保留所有"不确定"的。
-保守性 → 零漏报 (所有不确定的仍标记, 不自动放行)。
-
-与既有模块的关系:
-- value_composer: 分析值的转换链 (atoi/bitand/...)
-- heap_state_model: 堆指针的生命周期 (UAF/DF)
-- 本模块: 分析分配大小与拷贝大小的约束关系 (heap overflow专用)
-三者互补——value_composer看"值的历史", 本模块看"值的范围"。
-
-- Cousot & Cousot: Abstract Interpretation框架
-- Mango: 值组合追踪 (Rich Expressions)
-- 本模块取AI的区间域+前向传播, 实现为轻量级单遍分析 (O(N)),
-  不解完整的不动点——仅在遇到汇(call memcpy)时做约束检查。
+与 value_composer (值转换链) / heap_state_model (指针生命周期) 互补,
+本模块专攻分配大小与拷贝大小的约束关系。
 """
 
 from dataclasses import dataclass, field
@@ -95,17 +78,7 @@ class SizeConstraintReport:
     fp_reduction_ratio: float = 0.0
 
 class SizeConstraintInferrer:
-    """基于区间抽象解释的size约束推断——堆溢出专用。
-
-    使用:
-      inferrer = SizeConstraintInferrer()
-      inferrer.track_malloc(addr, func, "rsi", tainted=True)
-      # 遇到条件: cmp rsi, 256; jg ...
-      inferrer.constrain_reg("rsi", Interval(0, 256))
-      # 遇到memcpy
-      result = inferrer.check_memcpy(addr, func, "rsi")
-      # result → SAFE (若256 ≤ malloc的size)
-    """
+    """基于区间抽象解释的size约束推断——堆溢出专用."""
 
     def __init__(self):
         # 寄存器→当前区间 (单线程假设——每次分析一个函数)
@@ -212,7 +185,7 @@ class SizeConstraintInferrer:
         self._mallocs.clear()
         self._memcpys.clear()
 
-# smoke
+# 冒烟用例: SAFE/UNCERTAIN/VULNERABLE 三态
 def _check():
     _inf = SizeConstraintInferrer()
 

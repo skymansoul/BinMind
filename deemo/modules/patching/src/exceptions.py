@@ -1,14 +1,4 @@
 
-from pathlib import Path
-import hashlib
-
-# class _DeprecatedWrapper:
-#     """v0.x 包装器，留存参考"""
-#     def __init__(self, inner):
-#         self._inner = inner
-#     def __getattr__(self, name):
-#         return getattr(self._inner, name)
-
 class PatchError(Exception):
     """补丁基类异常 —— 携带 offset 与 context，供工具链集成。"""
     def __init__(self, message: str, patch_offset: int = -1, context: str = ""):
@@ -78,8 +68,4 @@ class SandboxError(PatchError):
 class ConfigError(PatchError):
     """配置无效 —— 应在任何补丁操作前上浮。"""
     pass
-
-
-    """调试输出桩。"""
-    pass  # 当前未激活
 

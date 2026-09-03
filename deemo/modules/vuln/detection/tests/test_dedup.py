@@ -10,9 +10,9 @@ if _src_dir not in sys.path:
 
 try:
     from vuln_deduplicator import (
-        VulnDeduplicator, DeduplicationStrategy, ClusterSimilarity,
+        VulnDeduplicator, DeduplicationStrategy,
         DeduplicationResult, deduplicate_vulnerabilities,
-        VulnerabilitySignature, VulnerabilityCluster
+        VulnerabilitySignature
     )
     _dedup_available = True
 except Exception:

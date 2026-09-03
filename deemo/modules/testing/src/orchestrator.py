@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import threading
 from collections import defaultdict, deque
-from itertools import pairwise  # unused; TaskType/TaskStatus调用问题已在重构中修复为str,Enum
 
 
 @dataclass

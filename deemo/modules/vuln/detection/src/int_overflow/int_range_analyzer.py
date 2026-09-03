@@ -1,15 +1,12 @@
 """整数溢出范围分析器 — 算术运算的位宽约束 + 符号/无符号转换检测.
 
-创建: 2024-09-27
-目的: 从反汇编中提取整数算术运算, 检查是否存在溢出风险:
-      1. 乘法溢出: a*b 的结果超过操作数位宽
-      2. 加法溢出: 循环计数器累加到 wrap-around
-      3. 符号混淆: 有符号与无符号混用导致意外 wrap
-      4. 截断: 32-bit 结果赋值给 16-bit 变量
+检测四种模式:
+  1. 乘法溢出: a*b 超过操作数位宽
+  2. 加法溢出: 循环计数器累加到 wrap-around
+  3. 符号混淆: 有符号/无符号混用致意外 wrap
+  4. 截断: 32-bit 结果赋给 16-bit 变量
 
-方法依据: Integer overflow 在 CWE-190 中排名前 10。
-          最常见的模式是 malloc(n * sizeof(T)) 中 n*sizeof 溢出导致
-          分配过小的缓冲区。本模块检测此模式及变体。
+CWE-190 排名前 10, 最常见模式是 malloc(n*sizeof(T)) 中 n*sizeof 溢出致分配过小缓冲区。
 """
 
 from dataclasses import dataclass, field
@@ -33,11 +30,7 @@ class IntOverflowCandidate:
 class IntegerRangeAnalyzer:
     """整数溢出范围分析器 — 检测算术运算的溢出风险.
 
-    使用方式:
-      ira = IntegerRangeAnalyzer()
-      ira.add_operation(0x401000, 'mul', 32, (0, 65536), (0, 65536))
-      ira.mark_used_in_alloc(0x401000)
-      cands = ira.analyze_all()
+    用法: add_operation 添加运算, mark_used_in_alloc 标记用于分配, analyze_all 取候选。
     """
 
     def __init__(self):
@@ -53,12 +46,27 @@ class IntegerRangeAnalyzer:
         otype = 'wrap'
 
         if op in ('mul', 'shl'):
-            # 乘法: max(L)*max(R) 是否超过 2^width
-            max_val = max(1, left_range[1]) * max(1, right_range[1])
+            # 四角点分析: 完整计算lo*lo, lo*hi, hi*lo, hi*hi
+            lo_l, hi_l = left_range
+            lo_r, hi_r = right_range
+            if op == 'shl':
+                # shl等价于乘以2^right, 右操作数是位移量
+                shift = max(0, hi_r)
+                corners = [lo_l << shift, hi_l << shift]
+            else:
+                corners = [lo_l * lo_r, lo_l * hi_r,
+                           hi_l * lo_r, hi_l * hi_r]
+            result_lo = min(corners)
+            result_hi = max(corners)
             limit = (1 << width) - 1
-            if max_val > limit:
+            signed_min = -(1 << (width - 1))
+            signed_max = (1 << (width - 1)) - 1
+            if result_hi > limit or result_lo < 0:
                 overflow = True
                 otype = 'wrap'
+            elif result_lo < signed_min or result_hi > signed_max:
+                overflow = True
+                otype = 'sign_mismatch'
 
         elif op == 'add':
             max_val = left_range[1] + right_range[1]

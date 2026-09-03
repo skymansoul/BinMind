@@ -17,9 +17,8 @@
 # - 新增证据置信度衰减与模糊积分替代方法
 
 import math, logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
-from collections import OrderedDict
 
 _log = logging.getLogger(__name__)
 
@@ -151,7 +150,6 @@ class MultiModalVulnFuser:
 
         # 计算归一化累积权重g(A_i)
         cumulative_ws = []
-        rem_sources = set(ev.source for ev in sorted_evs)
         cum_w = 0.0
         for ev in sorted_evs:
             frac = ev.weight * ev.confidence

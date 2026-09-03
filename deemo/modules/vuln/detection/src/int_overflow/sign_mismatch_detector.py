@@ -1,13 +1,11 @@
 """符号混淆检测器 — 有符号/无符号混用 + 隐式类型转换导致的溢出.
 
-创建: 2024-09-02
-目的: 检测二进制中因符号混淆导致的整数溢出。最常见的模式:
-      1. 无符号比较 vs 有符号运算: if (unsigned_val < limit) 后做 signed 运算
-      2. 隐式零扩展/符号扩展: movzx vs movsx 的错误选择
-      3. 负值传给需要非负参数的函数 (如 malloc(-1) → 分配失败但不检查)
+检测三种模式:
+  1. 无符号比较后有符号运算: if (unsigned_val < limit) 后做 signed 运算
+  2. 隐式零/符号扩展: movzx vs movsx 的错误选择
+  3. 负值传给需非负参数的函数 (malloc(-1) → 分配失败但不检查)
 
-方法依据: CWE-681 (整数到无符号映射错误) 和 CWE-195 (有符号到无符号转换错误)
-          是 CWE Top 25 中的常客。本模块检测二进制指令级别的符号混淆模式。
+CWE-681 (整数到无符号映射错误) 和 CWE-195 (有符号到无符号转换错误) 是 CWE Top 25 常客。
 """
 
 from dataclasses import dataclass, field
@@ -26,19 +24,15 @@ class SignMismatch:
 
 
 class SignMismatchDetector:
-    """符号混淆检测器 — 二进制指令级别的符号语义分析.
+"""符号混淆检测器 — 二进制指令级别的符号语义分析.
 
-    检测三类模式:
-      1. movsx after movzx: 零扩展后做符号扩展 → 值解释翻转
-      2. cmp+jg/jl mismatch: 无符号比较后用有符号跳转 → 边界检查失效
-      3. neg_arg: 可能为负的值传给 malloc(size_t) → 隐式转换为巨大无符号值
+检测三类模式:
+  1. movzx 后 movsx: 零扩展后再符号扩展 → 值解释翻转
+  2. cmp+jg/jl mismatch: 无符号比较后用有符号跳转 → 边界检查失效
+  3. neg_arg: 可能为负的值传给 malloc(size_t) → 隐式转为巨大无符号值
 
-    使用方式:
-      smd = SignMismatchDetector()
-      smd.add_instruction(0x1000, 'movzx', 'eax', 'al')
-      smd.add_instruction(0x1002, 'movsx', 'eax', 'al', same_reg=True)
-      mismatches = smd.detect()
-    """
+用法: add_instruction 添加指令, detect 取结果。
+"""
 
     def __init__(self):
         # 指令序列

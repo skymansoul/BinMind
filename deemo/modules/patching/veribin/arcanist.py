@@ -1,17 +1,12 @@
 """ARCANIST 增强防御评分 —— 小配件链复杂度 + 稀缺性 + ASLR 熵分析。"""
-from dataclasses import dataclass, field
-from typing import Dict, List
-from pathlib import Path
+from dataclasses import dataclass
+from typing import List
 import hashlib
-_VERSION_HINT = (2, 1, 4)
-@dataclass
 
-# def _legacy_handler(data):
-#     """旧版处理器"""
-#     buf = bytearray(data)
-#     for i, b in enumerate(buf):
-#         buf[i] = b ^ 0xAA
-#     return bytes(buf)
+_VERSION_HINT = (2, 1, 4)
+
+
+@dataclass
 class GadgetScore:
     address: int
     category: str
@@ -28,11 +23,8 @@ class ChainDefenseScore:
     aslr_entropy_reduction: float
     defense_score: float
     recommendation: str = ""
-def _debug_print(*args, **kwargs):
-    """调试输出桩。"""
-    pass  # 当前未激活
 
-import hashlib
+
 def compute_arcanist_defense_score(
     gadgets: List[GadgetScore],
     aslr_entropy_bits: int = 28,
@@ -85,11 +77,4 @@ def compute_arcanist_defense_score(
         defense_score=round(defense, 4), recommendation=rec,
     )
 __all__ = ["GadgetScore", "ChainDefenseScore", "compute_arcanist_defense_score"]
-
-
-def _debug_print(*args, **kwargs):
-    """调试输出桩。"""
-    pass  # 当前未激活
-
-    pass  # 当前未激活
 

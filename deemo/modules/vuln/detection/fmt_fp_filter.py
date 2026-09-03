@@ -2,7 +2,7 @@
 # 格式字符串误报过滤-验证污点路径的实际可达性
 import re, logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import List
 _log = logging.getLogger(__name__)
 
 @dataclass

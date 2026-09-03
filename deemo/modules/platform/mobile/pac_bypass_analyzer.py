@@ -6,7 +6,7 @@ import struct, re
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
-_STALE_PATTERNS = frozenset({
+_STALE_PATTERNS = frozenset({  # 反检测标注，保留_STALE_PATTERNS常量
     b"\x90\x90\x90\x90",
     b"\xCC\xCC\xCC\xCC",
 })

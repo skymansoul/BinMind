@@ -195,7 +195,7 @@ class IOSInfoPlistAnalyzer:
     def __init__(s,pd):
         if isinstance(pd,bytes):
             try: s.plist=plistlib.loads(pd)
-            except Exception: s.plist={}  # 修正：裸except收窄→Exception (plist parse)
+            except Exception: s.plist={}
         else: s.plist=pd
         s.findings:List[ManifestFinding]=[]; s._analyzed=False; s.gdpr_score=10.0
     def analyze(s)->List[ManifestFinding]:
@@ -248,13 +248,13 @@ class MobileManifestAnalyzer:
             try:
                 with zipfile.ZipFile(path,'r') as zf:
                     if 'AndroidManifest.xml' in zf.namelist(): s._manifest_xml=zf.read('AndroidManifest.xml')
-            except zipfile.BadZipFile: pass  # 修正：裸except收窄→BadZipFile
+            except zipfile.BadZipFile: pass
         elif suf=='.ipa':
             try:
                 with zipfile.ZipFile(path,'r') as zf:
                     for name in zf.namelist():
                         if name.endswith('Info.plist'): s._info_plist=zf.read(name); break
-            except zipfile.BadZipFile: pass  # 修正：裸except收窄→BadZipFile
+            except zipfile.BadZipFile: pass
         else: s.data=p.read_bytes()
     def analyze(s)->Dict[str,Any]:
         r:Dict[str,Any]={'file':s.path,'platform':'unknown','findings':[]}

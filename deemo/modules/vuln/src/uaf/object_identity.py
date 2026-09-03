@@ -40,15 +40,17 @@ class HeapObject:
     freed_line: int = -1         # free所在行号
     double_freed: bool = False   # 同一对象被free两次
     use_after_free: List[int] = field(default_factory=list)  # free后的use行号
+    # 条件释放标记: free 位于条件分支内, 仅标记 maybe_freed 而非 freed_at
+    maybe_freed: bool = False
 
 
 # 指令解析模式
 
 _ALLOC_FUNCS = re.compile(
-    r'\bcall\s+(?:[0-9a-f]+\s+<)?(malloc|calloc|realloc|_Znwm|_Znam'
+    r'\b(?:call|jmp)\s+(?:[0-9a-f]+\s+)?<?(malloc|calloc|realloc|_Znwm|_Znam'
     r'|kmalloc|kzalloc|vmalloc)(?:@plt)?>?\b', re.I)
 _FREE_FUNCS = re.compile(
-    r'\bcall\s+(?:[0-9a-f]+\s+<)?(free|kfree|vfree|delete|_ZdlPv'
+    r'\b(?:call|jmp)\s+(?:[0-9a-f]+\s+)?<?(free|kfree|vfree|delete|_ZdlPv'
     r'|_ZdaPv)(?:@plt)?>?\b', re.I)
 _DEREF_PAT = re.compile(
     r'\b(mov|movzx|movsx|add|sub|cmp|test|and|or|xor)\s+'
@@ -137,8 +139,14 @@ class ObjIdTracker:
         return oid
 
     def track_free(self, free_addr: int, line_idx: int,
-                   freed_reg: str) -> Optional[ObjectIdentity]:
-        """记录一次free调用 — 查找被释放的对象身份."""
+                   freed_reg: str,
+                   conditional: bool = False) -> Optional[ObjectIdentity]:
+        """记录一次free调用 — 查找被释放的对象身份.
+
+        设计决策:
+          - conditional=True 时 free 位于条件分支内, 仅设置 maybe_freed
+            而非 freed_at, 避免对条件性 free 报确定性 UAF.
+        """
         reg = _canon_reg(freed_reg)
         oid = self.reg_obj.get(reg)
         if oid is None:
@@ -146,18 +154,28 @@ class ObjIdTracker:
         obj = self.objects.get(oid)
         if obj is None:
             return None
-        if obj.freed_at >= 0:
-            # 已被释放过 → double free (不更新freed_line, 保留首次free行号)
-            obj.double_freed = True
+        if conditional:
+            # 条件释放: 不设置 freed_at, 仅标记 maybe_freed
+            obj.maybe_freed = True
         else:
-            obj.freed_at = free_addr
-            obj.freed_line = line_idx
+            if obj.freed_at >= 0:
+                # 已被释放过 → double free (不更新freed_line, 保留首次free行号)
+                obj.double_freed = True
+            else:
+                obj.freed_at = free_addr
+                obj.freed_line = line_idx
         self._addr_to_line[free_addr] = line_idx
         return oid
 
     def check_use(self, line_idx: int, used_reg: str
                   ) -> Optional[HeapObject]:
-        """检查一次指针解引用 — 若对象已释放则记录UAF."""
+        """检查一次指针解引用 — 若对象已释放则记录UAF.
+
+        设计决策:
+          - freed_at >= 0 → 确定性 UAF, 直接记录.
+          - maybe_freed=True → 条件释放, 仍返回 obj 但不记录 use_after_free,
+            供调用方降低置信度而非确定性报 UAF.
+        """
         reg = _canon_reg(used_reg)
         oid = self.reg_obj.get(reg)
         if oid is None:
@@ -167,6 +185,9 @@ class ObjIdTracker:
             return None
         if obj.freed_at >= 0:
             obj.use_after_free.append(line_idx)
+            return obj
+        if obj.maybe_freed:
+            # 条件释放: 返回对象供调用方降低置信度, 不记录确定性 UAF
             return obj
         return None
 
@@ -301,18 +322,31 @@ class ObjIdTracker:
         call-ret配对: 从_call_stack弹出调用前保存的状态,
         保留当前rax (可能持有被调函数返回的堆对象).
         若_call_stack为空, 保守不处理.
+
+        maybe_freed 传播: 被调函数中条件释放的对象, 若其身份仍存在于
+        恢复后的 reg_obj 中, 则保留 maybe_freed 标记传递给调用者.
         """
         if self._call_stack:
             saved_reg, saved_stack = self._call_stack.pop()
             # 保留被调函数返回的rax中的对象身份
             returned_rax = self.reg_obj.get('rax')
             returned_eax = self.reg_obj.get('eax')
+            # 收集被调函数中标记 maybe_freed 的对象身份
+            maybe_freed_oids = {oid for oid, obj in self.objects.items()
+                                if obj.maybe_freed}
             self.reg_obj = saved_reg
             self.stack_obj = saved_stack
             if returned_rax is not None:
                 self.reg_obj['rax'] = returned_rax
             if returned_eax is not None:
                 self.reg_obj['eax'] = returned_eax
+            # 恢复后, 仍存活于调用者寄存器/栈槽中的 maybe_freed 对象保留标记
+            live_oids = set(self.reg_obj.values()) | set(self.stack_obj.values())
+            for oid in maybe_freed_oids:
+                if oid in live_oids:
+                    obj = self.objects.get(oid)
+                    if obj is not None:
+                        obj.maybe_freed = True
 
     def track_func_entry(self) -> None:
         """函数入口 — 新函数上下文, 只清除栈槽对象身份.

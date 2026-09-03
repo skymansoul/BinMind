@@ -1,22 +1,15 @@
 """值集分析器 (Value-Set Analysis) — strided interval 域用于堆指针追踪.
 
-创建: 2024-09-02 14:22
-用途: 在二进制IR层面追踪堆指针通过算术运算和赋值后的可能取值,
-      使用 strided interval (s[lb, ub], stride) 而非简单区间域。
+在二进制IR层面追踪堆指针经算术运算与赋值后的可能取值,
+用 strided interval (s[lb, ub], stride) 而非简单区间域。
 
-与纯区间域 (heap_bound_infer.py) 的区别:
-  纯区间域只追踪 [lo, hi], 无法区分"值总是 10 的倍数"和"值在 [0,100] 内任意变化"。
-  strided interval 增加步幅 (stride) 维度: s[0, 100], stride=10 表示值只能是
-  {0, 10, 20, ..., 100} 中的一个。这对堆分析至关重要:
-    malloc 返回值始终对齐到 16 字节 → stride=16
-    数组索引 i*4 → stride=4
-    这使我们可以证明某些"看起来越界"的访问实际上在合法范围内。
+区别: 纯区间域只追踪 [lo, hi], 无法区分"值总为 10 的倍数"与"值在 [0,100] 任意变化";
+strided interval 增加步幅维度: s[0,100], stride=10 只能取 {0,10,...,100}。
+malloc 返回值对齐 16 → stride=16, 数组索引 i*4 → stride=4,
+可证明某些"看似越界"的访问实际在合法范围内。
 
-理论依据:
-  Balakrishnan & Reps "Analyzing Memory Accesses in x86 Executables"
- — CodeSurfer/x86 中 VSA 的原始描述
-  Reps & Balakrishnan "Improved Memory-Access Analysis for x86 Executables"
- — strided interval 域的扩展
+理论: Balakrishnan & Reps "Analyzing Memory Accesses in x86 Executables";
+Reps & Balakrishnan "Improved Memory-Access Analysis for x86 Executables"。
 """
 
 from dataclasses import dataclass
@@ -91,14 +84,10 @@ class StridedInterval:
 
 
 class ValueSetAnalyzer:
-    """值集分析器 — strided interval 域上的堆指针追踪.
+"""值集分析器 — strided interval 域上的堆指针追踪.
 
-    使用方式:
-      vsa = ValueSetAnalyzer()
-      vsa.set_register('rax', 0x1000, stride=16)  # malloc 返回值
-      vsa.add_constant('rbx', 'rax', 24)            # rbx = rax + 24
-      vsa.check_bounds('rbx', 0, 256)               # 检查访问是否在 [0,255] 内
-    """
+用法: set_register/add_constant/merge_registers 维护值集, check_access 做边界检查。
+"""
 
     def __init__(self):
         # 寄存器/变量的当前值集

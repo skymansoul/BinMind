@@ -13,6 +13,7 @@ qemu-user 不可用 → 仅提供 ASan ground truth, 不阻塞基准流程.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -208,7 +209,6 @@ def asan_ground_truth(binary_path: str, sample_name: str = "") -> dict:
                     "confidence": 1.0,
                 })
     result["elapsed_ms"] = (time.perf_counter() - t0) * 1000
-    import shutil
     shutil.rmtree(tmpdir, ignore_errors=True)
     return result
 

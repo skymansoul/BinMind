@@ -31,11 +31,9 @@ seccomp-BPF策略格式(Berkeley Packet Filter字节码):
 import struct
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import List
 
-from .epass_exploit_mapper import (
-    SyscallBlocklist, ExploitPrimitiveMapper,
-)
+from .epass_exploit_mapper import SyscallBlocklist
 
 _log = logging.getLogger(__name__)
 
