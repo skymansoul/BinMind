@@ -80,10 +80,13 @@ def analyze_heap_safety(
     findings: List[dict] = []
 
     # 分配器检测 ──────────────────────────
+    # 默认 glibc ptmalloc2; detect_allocator 返回 UNKNOWN 时保持默认
     allocator = AllocatorType.GLIBC_PTMALLOC2
     if binary_path:
         try:
-            allocator = detect_allocator(binary_path)
+            detected = detect_allocator(binary_path)
+            if detected != AllocatorType.UNKNOWN:
+                allocator = detected
         except Exception:
             pass
     stats["allocator"] = allocator.value
@@ -126,7 +129,7 @@ def analyze_heap_safety(
             # 提取数值
             alloc_val = alloc_site.size_range.const_val
             write_val = write_site.write_size.const_val
-            # 标记: write_val 是否从 lo (下界) 降级而来
+            # 标记: write_val 是否从 lo 降级; 循环偏移写不适用 effective 过滤
             _write_from_lo = False
             _alloc_from_lo = False
 
@@ -137,20 +140,19 @@ def analyze_heap_safety(
                 write_val = write_site.write_size.lo if write_site.write_size.lo >= 0 else -1
                 _write_from_lo = True
 
-            # Tier 0: 分配器语义检查 ──────────────
-            # 仅当 write_val 是真实常量(非 lo 降级)时才做常量比较过滤
+            # Tier 0: 分配器语义检查 — 常量比较 + effective chunk 对齐过滤
+            # 循环偏移写入不适用: write_size 含偏移量, 与 chunk 大小比较会误判
+            _is_loop_write = '<loop_body>' in str(write_site.write_call)
             _iv = 'unknown'
-            if alloc_val > 0 and write_val > 0 and not _write_from_lo and not _alloc_from_lo:
+            if (alloc_val > 0 and write_val > 0
+                    and not _write_from_lo and not _alloc_from_lo
+                    and not _is_loop_write):
                 effective = effective_chunk_size(alloc_val, allocator)
                 if write_val <= effective:
                     stats["filtered"] += 1
                     continue  # 分配器对齐后安全
             else:
-                # Tier 0.5: 区间判定 - FIX: 2026-08-15 区间算术接入
-                # 常量路径未命中时(至少一侧为符号区间), 用 [lo,hi] 比较:
-                # write.hi <= alloc.lo, 确定安全, 过滤;
-                # write.lo > alloc.hi, 确定溢出, 标记 finding;
-                # 交叠或无界, unknown, 走原 Tier 1 流程, 行为不变。
+                # Tier 0.5: 区间判定 — 至少一侧为符号区间时用 [lo,hi] 比较
                 _iv = _interval_verdict(alloc_site.size_range, write_site.write_size)
                 if _iv == 'safe':
                     stats["filtered"] += 1
@@ -171,6 +173,7 @@ def analyze_heap_safety(
                     "function": func_name,
                     "alloc_var": alloc_site.var_name,
                     "alloc_size": alloc_val if alloc_val > 0 else alloc_site.size_expr,
+                    "alloc_size_expr": alloc_site.size_expr,
                     "write_var": write_site.var_name,
                     "write_size": write_val if write_val > 0 else str(write_site.write_size),
                     "overflow_bytes": pf.overflow_bytes,
@@ -187,13 +190,17 @@ def analyze_heap_safety(
                 continue
 
             # Tier 2 & 3: 符号执行 + 保守 ─────────
+            # _write_from_lo 标记写入大小是否为下界降级值;
+            # Tier 3 constant_safe 需此标记避免误过滤循环写等模糊 finding
             _fd = {
                 "type": "heap-overflow",
                 "function": func_name,
                 "alloc_var": alloc_site.var_name,
                 "alloc_size": alloc_val if alloc_val > 0 else "symbolic",
+                "alloc_size_expr": alloc_site.size_expr,
                 "write_var": write_site.var_name,
                 "write_size": write_val if write_val > 0 else "symbolic",
+                "write_size_approx": _write_from_lo,
                 "overflow_bytes": pf.overflow_bytes,
                 "severity": "Medium" if pf.verdict == "POSSIBLE" else "Critical",
                 "confidence": pf.confidence,
@@ -247,16 +254,14 @@ def analyze_heap_safety(
     except Exception as e:
         stats.setdefault('errors', []).append(f'symexec error: {e}')
 
-    # .5 (Tier 3): 保守启发式过滤 ─────────────
-    # 对 symexec 后仍为 POSSIBLE 的 findings, 用 Tier 3 决策树扫描
-    # 检测边界守卫 / 纯常量安全 / sanitizer 模式
+    # .5 (Tier 3): 保守启发式过滤 — 检测边界守卫/常量安全/sanitizer/截断守卫
     try:
         from .interval_filter import analyze_code_safety as apply_tier3
         refined, tier3_stats = apply_tier3(code, findings)
         # 更新已过滤计数
-        filtered_by_t3 = (tier3_stats.get('bound_guarded', 0)
-                          + tier3_stats.get('constant_safe', 0)
-                          + tier3_stats.get('sanitizer_protected', 0))
+        filtered_by_t3 = sum(tier3_stats.get(k, 0) for k in (
+            'bound_guarded', 'constant_safe', 'cap_guarded',
+            'sanitizer_protected', 'synthetic_noise'))
         if filtered_by_t3 > 0:
             stats['filtered'] = stats.get('filtered', 0) + filtered_by_t3
             # 从 possible 中扣除被 Tier 3 过滤的
@@ -292,32 +297,3 @@ def analyze_heap_safety(
         stats["errors"].append(f"uaf_tracker error: {e}")
 
     return findings, stats
-
-
-def analyze_batch(
-    code_map: Dict[str, str],
-    binary_path: str = "",
-) -> Tuple[List[dict], Dict[str, Any]]:
-    """批量分析多函数反编译代码。
-
-    code_map: {func_name: decompiled_code}
-    """
-    all_findings: List[dict] = []
-    aggregate_stats: Dict[str, Any] = {
-        "functions_analyzed": len(code_map),
-        "total_findings": 0,
-        "total_confirmed": 0,
-        "total_filtered": 0,
-        "total_possible": 0,
-    }
-
-    for func_name, code in code_map.items():
-        findings, stats = analyze_heap_safety(
-            code, func_name, binary_path)
-        all_findings.extend(findings)
-        aggregate_stats["total_findings"] += len(findings)
-        aggregate_stats["total_confirmed"] += stats["confirmed"]
-        aggregate_stats["total_filtered"] += stats["filtered"]
-        aggregate_stats["total_possible"] += stats["possible"]
-
-    return all_findings, aggregate_stats

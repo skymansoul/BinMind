@@ -1,6 +1,5 @@
 """UAF 基线 vs TOVS 对比 — 在 corpus_uaf 上的误报/召回对比.
 
-创建: 2024-04-03
 用法: python eval/fp_cve_experiment/compare_uaf_baseline.py [--json out.json]
 """
 import argparse

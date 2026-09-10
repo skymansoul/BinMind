@@ -1,6 +1,5 @@
 """可扩展性绘图 — 四工具耗时/内存 vs 指令规模 (双对数).
 
-创建: 2024-03-10
 用法: python eval/fp_cve_experiment/plot_scalability.py
 输出: results/scalability_time.png, scalability_mem.png, scalability.csv
 """

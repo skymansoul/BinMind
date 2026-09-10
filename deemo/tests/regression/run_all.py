@@ -1,5 +1,4 @@
 """自主回归测试运行器 — 编译 + 扫描 + 评估, 不依赖外部工具.
-创建: 2026-08-04
 """
 import os, sys, json, time, glob, subprocess
 from pathlib import Path

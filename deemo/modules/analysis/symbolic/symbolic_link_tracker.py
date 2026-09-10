@@ -3,23 +3,16 @@
 监控跨文件操作的符号链接解析链。同一路径上两次顺序操作之间的
 符号链接目标偏移指示 TOCTOU 窗口。
 
-增强 — NTFS Junction 和 IO_REPARSE 检测: Windows 平台上区分符号链接、
-硬链接、目录挂载点 (junction) 和 IO_REPARSE 标记的链接。
-
-增强 — 原子操作序列回放: 将 {op, path, link_target} 三元组记录后
-在独立线程中回放, 确认 TOCTOU 窗口是否可被实际利用。
-
-三轮增强 — 文件系统事件监控 (FileSystemEventMonitor): 使用 os.scandir
-轮询包含被追踪链接的目录, 通过 (path, inode, mtime) 三元组对比检测
-新建/删除/修改的符号链接。DirEntry 自带 stat 信息, 避免额外系统调用。
-
-三轮增强 — 竞争窗口估算 (RaceWindowEstimator): 当 TOCTOU 被检出时
-计算 race_window_ms = |op2.timestamp - op1.timestamp|, 并记录 symlink
-目标的 mtime 以评估实际可利用性。
-
-三轮增强 — 漏洞验证模板生成: generate_exploit_template 产出 bash
-symlink-swap 循环脚本骨架, 包含可调 sleep 间隔, 用于测试已检出的
-TOCTOU 窗口是否可在实际环境中触发。
+功能要点：
+- NTFS Junction / IO_REPARSE 检测, 区分符号链接、硬链接、
+  目录挂载点 (junction) 与 reparse 标记链接
+- 原子操作序列回放: 将 {op, path, link_target} 三元组记录后回放,
+  确认 TOCTOU 窗口是否可被实际利用
+- 文件系统事件监控: os.scandir 轮询, (path, inode, mtime) 三元组
+  对比检测新建/删除/修改的符号链接; DirEntry 自带 stat 避免额外系统调用
+- 竞争窗口估算: race_window_ms = |op2.timestamp - op1.timestamp|,
+  记录 symlink 目标 mtime 以评估可利用性
+- 漏洞验证模板生成: bash symlink-swap 循环脚本骨架, sleep 间隔可调
 """
 
 import os
@@ -67,8 +60,8 @@ class TOCTOUVulnerability:
 class LinkTracker:
     """解析并快照符号链接目标，供后续对比
 
-    增强 — Windows Junction 检测：使用 os.path.realpath() 和 ctypes
-    检测 NTFS reparse points。在非 Windows 平台上退化为标准 symlink 解析
+    Windows Junction 检测：当 os.path.realpath() 与 abspath 结果不一致时
+    判定为 NTFS reparse point 重定向；非 Windows 平台退化为标准 symlink 解析
     """
 
     def __init__(self):
@@ -138,8 +131,8 @@ class TOCTOUDetector:
     """检测 TOCTOU 竞争，比较同一路径操作对之间的符号链接快照。
     连续访问间的目标变更指示存在竞争窗口
 
-    增强 — 原子回放验证：detect 后对每个候选漏洞执行回放
-    在独立线程中模拟 check/use 序列，确认窗口的实际可利用性
+    原子回放验证：detect 后对候选漏洞在独立线程中模拟 check/use 序列，
+    确认窗口的实际可利用性
     """
 
     def __init__(self):
@@ -219,7 +212,7 @@ class TOCTOUDetector:
 class PathAnalyzer:
     """将文件系统路径分解为遍历步骤，标记目录逃逸
 
-    增强 — Junction 混淆检测: Windows 上 junction 点跨越卷边界时
+    Junction 混淆检测: Windows 上 junction 点跨越卷边界时
     路径解析结果可能与预期不同。标记此类路径"""
 
     def analyze_path_traversal(self, path: str) -> Dict[str, Any]:
@@ -277,10 +270,9 @@ def detect_toctou_race(operations: List[Dict[str, str]]) -> List[TOCTOUVulnerabi
     return vulnerabilities
 
 
-# 三轮增强 — 文件系统事件监控 (FilesystemEventMonitor)
-# 使用 os.scandir 高效轮询目录，通过 (inode, mtime) 三元组对比检测链接变更
-# 权衡：轮询频率由 fs_poll_interval 控制 — 太短则 CPU 开销大，太长可能
-# 错过短时窗口。默认 2 秒是经验最佳值
+# 文件系统事件监控 (FilesystemEventMonitor)：os.scandir 轮询目录,
+# 通过 (inode, mtime) 三元组对比检测链接变更。轮询频率由 fs_poll_interval
+# 控制 — 太短 CPU 开销大, 太长可能错过短时窗口; 默认 2 秒
 
 # 文件系统快照条目类型: (inode: int, mtime: float)
 _FsSnapshotEntry = Tuple[int, float]
@@ -289,14 +281,12 @@ _FsSnapshotEntry = Tuple[int, float]
 class FilesystemEventMonitor:
     """轮询含被跟踪链接的目录, 使用 os.scandir 每 N 秒扫描一次
 
-    三轮增强 — os.scandir 返回的 DirEntry 自带 stat 信息 (inode/mtime)
-    无需为每个条目额外调用 os.stat。对比两次快照间的 (path, inode, mtime)
-    三元组差异即可检测新建、删除和修改的符号链接
+    对比两次快照间的 (path, inode, mtime) 三元组差异即可检测新建、删除
+    和修改的符号链接；os.scandir 的 DirEntry 自带 stat (inode/mtime),
+    无需为每个条目额外调用 os.stat
 
-    Attributes:
     fs_poll_interval: 轮询间隔（秒），默认 2.0
-    dir_snapshot: Dict[str, Dict[str, _FsSnapshotEntry]]
-    目录路径 → {文件名: (inode, mtime)} 的最新快照
+    dir_snapshot: 目录路径 → {文件名: (inode, mtime)} 的最新快照
     """
 
     def __init__(self, fs_poll_interval: float = 2.0):
@@ -444,17 +434,17 @@ class FilesystemEventMonitor:
         return events
 
 
-# 三轮增强 — 竞争窗口估算 (RaceWindowEstimator)
-# 当 TOCTOU 被检出后，精确计算操作间的时间窗口并评估可利用性
+# 竞争窗口估算 (RaceWindowEstimator)：TOCTOU 检出后计算操作间
+# 时间窗口并评估可利用性
 
 class RaceWindowEstimator:
     """估算 TOCTOU 竞争窗口大小及漏洞可利用性
 
-    三轮增强 — 当相邻操作检测到 target/inode 变更时
+    相邻操作检测到 target/inode 变更时,
     race_window_ms = |op2.timestamp - op1.timestamp|
     同时收集 symlink 目标文件的 mtime 信息以交叉验证
 
-    理论背景：
+    窗口阈值:
     - < 1ms: 极难利用（需要精确 timing 或内核调度配合）
     - 1-100ms: 中等难度（多线程竞态或 busy-loop swap 可触发）
     - > 100ms: 容易利用（简单 symlink-swap 脚本即可命中）
@@ -529,8 +519,7 @@ class RaceWindowEstimator:
             return None
 
 
-# 三轮增强 — 漏洞利用模板生成
-# 产出 bash symlink-swap 循环脚本骨架，用于验证 TOCTOU 窗口
+# 漏洞利用模板生成: 产出 bash symlink-swap 循环脚本骨架, 用于验证 TOCTOU 窗口
 
 def generate_exploit_template(vuln: TOCTOUVulnerability) -> str:
     """构造用于验证 TOCTOU 窗口的 bash 脚本骨架。
@@ -557,7 +546,7 @@ def generate_exploit_template(vuln: TOCTOUVulnerability) -> str:
 # Operation chain: {op_desc}
 # Description: {vuln.description}
 #
-# 三轮增强 — 此脚本通过后台 symlink-swap 循环 + 前台操作触发
+# 实现方式：此脚本通过后台 symlink-swap 循环 + 前台操作触发
 # 来验证已检出的 TOCTOU 竞争窗口是否可利用
 # 使用方式:
 # 1. 设置 LEGIT_TARGET 和 MALICIOUS_TARGET 为实际的合法/恶意目标路径

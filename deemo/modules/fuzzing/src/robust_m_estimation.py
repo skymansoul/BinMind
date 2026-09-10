@@ -1,10 +1,5 @@
 """鲁棒 M-估计模糊测试指标 (Robust M-Estimation Fuzzing Metrics, RMEF).
 
-修改记录:
-2025-08-10 08:15 - Huber M-估计器 + IRLS + 自适应阈值 k=1.345
-2025-08-11 14:22 - Tukey 双权: 更高崩溃点 (50%) 对抗极端离群
-2025-08-12 09:33 - 多指标联合: 覆盖增益/执行时间/崩溃率的鲁棒估计
-
   Huber "Robust Estimation of a Location Parameter" (Annals of Math
     Statistics) — M-估计框架的奠基工作
   Huber & Ronchetti "Robust Statistics" 2nd ed. — 第4章: M-估计器
@@ -22,7 +17,6 @@
     小残差 → L2 (高效率), 大残差 → L1 (鲁棒)
     k=1.345 → 95% 渐近效率 (vs 正态) + 鲁棒性
 
-核心创新:
   1. Huber/Tukey M-估计: 自适应平衡效率与鲁棒性
   2. IRLS 在线更新: O(1) per observation
   3. 崩溃点配置: 可调 k 从 L2 (无鲁棒) 到 L1 (中位数)

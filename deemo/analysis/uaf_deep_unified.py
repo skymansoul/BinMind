@@ -1,6 +1,6 @@
 """
 UAF深度检测统一入口 — 集成语义VRF + 增强VRF(字段/Realloc/循环/跨函数) + CFG + TARPS.
-提供 analyze_uaf_deep() 作为 analyze_uaf() 的增强替代.
+提供 analyze_uaf_deep() 作为统一深度分析入口.
 """
 import logging
 from typing import Dict, List

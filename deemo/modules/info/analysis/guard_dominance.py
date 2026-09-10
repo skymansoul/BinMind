@@ -1,5 +1,5 @@
 # analysis/guard_dominance — FC-VRA 阶段C3: 支配守卫检测
-# 核心创新点4: 守卫必须"支配"sink 且约束写入量变量才算数。
+# 守卫必须"支配"sink 且约束写入量变量才算数。
 # 现有 path_feasibility_check 只要代码中任意位置存在守卫模式便累加
 # guard_strength, 忽略了两个事实:
 #   (a) 守卫可能位于与写入点完全无关的分支中 (非支配)

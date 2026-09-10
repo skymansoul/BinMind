@@ -35,10 +35,10 @@ class TruncationCandidate:
 
 
 class TruncationDetector:
-"""整数截断检测器 — 识别位宽收缩模式.
+    """整数截断检测器 — 识别位宽收缩模式.
 
-用法: add_move 记录 mov 指令, mark_size_related 标记大小计算, detect 取候选。
-"""
+    用法: add_move 记录 mov 指令, mark_size_related 标记大小计算, detect 取候选。
+    """
 
     def __init__(self):
         self._moves: List[Tuple[str, str, str, int]] = []

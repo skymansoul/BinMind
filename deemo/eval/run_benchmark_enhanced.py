@@ -1,5 +1,5 @@
 """
-增强版多工具对比基准测试 — 堆溢出专项.
+多工具对比基准测试 — 堆溢出专项.
 
 对 test_samples 中的所有样本分别运行:
   1. BinMind (heap_overflow_pipeline + unified_fp_filter)

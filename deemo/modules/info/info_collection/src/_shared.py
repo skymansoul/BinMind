@@ -1,7 +1,3 @@
-# Created: 2026-07-23 09:15:00
-# Modified: 2025-07-21 09:15:00 — initial extraction of duplicated helpers
-# Modified: 2025-07-24 14:30:00 — added normalize_api, extract_api_set, extract_string_set
-#
 # Shared utilities used across multiple analysis modules.
 # Extracted to eliminate the 3× duplication of _shannon_entropy,
 # _cosine_similarity, _extract_api_set, etc. flagged in audit.

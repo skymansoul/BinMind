@@ -328,8 +328,8 @@ class MarkedHawkesEngine:
     def forecast(self, horizon_days: float = 30.0,
                  n_simulations: int = 100) -> Dict[int, Dict[str, Any]]:
         """对未来horizon_days天的利用强度进行点过程预测.
-        # 使用Ogata变尺度细化算法的期望近似, 非随机模拟 (稳定+快速).
-        # Returns: {dim: {intensity, expected_events, risk_level}}."""
+        使用Ogata变尺度细化算法的期望近似, 非随机模拟 (稳定+快速).
+        Returns: {dim: {intensity, expected_events, risk_level}}."""
         if not self._fitted or not self._events:
             return {}
 

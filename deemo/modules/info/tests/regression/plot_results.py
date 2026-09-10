@@ -1,4 +1,3 @@
-# Created: 2026-07-17 16:00:00
 # plot_results — 对比实验数据可视化 + LaTeX表格生成
 # 输入: comparison_results.json
 # 输出: comparison_plot.png + comparison_table.tex

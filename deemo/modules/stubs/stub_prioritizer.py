@@ -3,11 +3,6 @@
 # 输出"先实现谁"的排序清单，驱动 stub_gradual_engine 的增量实现顺序。
 # 设计意图：资源受限时（无 API 的规则降级、人工 review 预算），
 # 用量化优先级信号替代拍脑袋，聚焦高影响缺口。
-# 支撑论文:
-#   Agentic Program Repair from Test Failures at Scale
-#     排序本质是"先修高杠杆缺陷"：测试失败频率映射为调用频率信号。
-#   Implicit Patterns in Model-Based Binary Analysis
-#     "knowledge-guided prioritization" — 本引擎即该策略在桩模块层的落地。
 import time as _time
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt

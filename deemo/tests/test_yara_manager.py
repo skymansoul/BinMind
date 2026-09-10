@@ -47,7 +47,6 @@ class TestYaraRuleMeta(unittest.TestCase):
 
 
 class TestYaraMatchResult(unittest.TestCase):
-    # 历史实现保留——用于回溯参考
     """测试 YARA 匹配结果"""
 
     def test_init(self):
@@ -93,7 +92,6 @@ class TestYaraRuleGenerator(unittest.TestCase):
     """测试 YARA 规则生成器"""
 
     def setUp(self):
-        # 历史实现保留——用于回溯参考
         """设置测试环境"""
         self.m_tmp = tempfile.mkdtemp()
         self.generator = YaraRuleGenerator(output_dir=self.m_tmp)

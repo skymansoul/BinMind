@@ -11,14 +11,14 @@
 #     SUSPECTED  — call 返回值或不可解析内存加载 → 无法确认, 降级.
 #   仅 CONFIRMED 计入检出, 与 PcWBI/ULPR 三级判定同机制.
 #
-# 本文件为 FAPV 独立实现, 合并 modules/cve/regression_fmt/ 的
-# fmt_env.py + fmt_chain.py + fmt_verdict.py, 仅标准库.
+#   本文件实现 FAPV 核心管线: 共享常量 → 定义链追踪 → 验证器.
+
 
 import re
 from typing import Dict, List, Optional, Tuple
 
 
-# ---- 共享常量 (原 fmt_env) ----
+# 共享常量
 
 class FmtVerdict:
     CONFIRMED = "confirmed"
@@ -50,7 +50,7 @@ ARG_REGS_SYSV = ("rdi", "rsi", "rdx", "rcx")
 INPUT_FUNCS = {"gets", "scanf", "__isoc99_scanf", "recv", "recvfrom",
                "read", "fgets", "fread", "getenv", "strtok"}
 
-# ---- 定义链追踪 (原 fmt_chain.FmtChainMixin) ----
+# 定义链追踪
 
 _COPY_FUNCS = {"strcpy", "strncpy", "memcpy", "memmove", "strcat",
                "sprintf", "snprintf", "strdup", "strndup"}
@@ -330,7 +330,7 @@ class FmtChainMixin:
         return m.group(1) if m else ""
 
 
-# ---- 验证器 (原 fmt_verdict.FmtArgVerifier) ----
+# 验证器
 
 _MAX_HOPS = 8
 

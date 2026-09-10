@@ -1,6 +1,6 @@
 """SHIELD 尺寸约束关联器 — malloc参数与访问边界的表达式等价性判定.
 
-核心创新: 证明 malloc(size) 的 size 参数与后序访问的边界约束等价,
+证明 malloc(size) 的 size 参数与后序访问的边界约束等价,
 从而消除"未知参数→潜在溢出"类误报.
 
 典型安全场景:
@@ -20,8 +20,6 @@
 
   - CRYPTOSS: 污点+守卫联合评分 — 借鉴其"参数→约束"关联思路
   - ValCat: value-flow categories — 借鉴其值流分类方法
-
-创建: 2025-01-13
 """
 from __future__ import annotations
 

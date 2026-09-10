@@ -1,7 +1,4 @@
 """Hellinger 距离分布比较 — 离散化 + 核密度 + Bhattacharyya 系数.
-
-修改记录:
-2025-08-17 11:05 - 离散经验 Hellinger + Bhattacharyya + 核平滑
 参考: Hellinger; Bhattacharyya.
 在 fuzzing 中零先例。H² ∈ [0,1], 对称, 满足三角不等式,
 比 KL (不对称/无界) 更适合 fuzzing 分布的健壮比较。"""

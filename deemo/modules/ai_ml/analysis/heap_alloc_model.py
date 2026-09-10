@@ -1,5 +1,4 @@
 # 堆分配器语义模型: 精确建模glibc ptmalloc2的chunk布局和大小计算
-# 这是降低堆溢出误报的核心基础设施之一
 #
 # 理论背景:
 #   glibc malloc (ptmalloc2) 的内部chunk布局:
@@ -87,8 +86,7 @@ class HeapAllocModel:
     """堆分配器语义模型。
 
     核心职责: 给定malloc(N)中的N, 计算实际可用空间。
-    这一步对降低误报至关重要, 很多"溢出"实际上在
-    合法分配空间内，因为glibc分配的chunk比请求大。
+    chunk 实际可用空间大于请求值，据此过滤合法范围内的拷贝。
 
     支持的平台:
       x86_64: SIZE_SZ=8, MALLOC_ALIGNMENT=16

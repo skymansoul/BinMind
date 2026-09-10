@@ -2,14 +2,6 @@
 
 通过模块 __getattr__ 懒加载：子模块仅首次访问时加载。
 完整导出注册表 — 28 模块，所有 __all__ 条目已映射。
-
-2025-08-03: +crypto_invariants (S-box不变量验证/Feistel结构检测/仿射等价分组)
-             +otf_sbox_detector (动态S-box计算检测 — 嵌入式固件无查表实现)
-2025-08-04: +key_schedule (密钥扩展重构/轮常量校验/异常标记)
-             +crypto_lineage (跨二进制密码学实现谱系追踪/simhash-LSH预筛选)
-2025-08-05: +subreg_taint (子寄存器级污点追踪/字节粒度x86别名传播)
-2025-08-06: +drift_calibrator (密码实现偏移校准/指令混合比特征向量)
-             +cfg_entropy_fingerprint (CFG结构熵指纹/无魔数密码检测)
 """
 
 import importlib

@@ -1,6 +1,5 @@
 """多工具对比主实验 — PCFV/基线/angr/qemu-asan/ghidra 统一基准.
 
-创建: 2024-12-05
 用法: python eval/fp_cve_experiment/run_benchmark.py [--exe vuln.exe]
 [--out results/benchmark.csv]
 输出: CSV 列:

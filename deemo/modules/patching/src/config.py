@@ -1,5 +1,3 @@
-# 重构于 2026-08-02
-
 import os, json, logging, copy
 from dataclasses import dataclass, field, asdict
 from typing import Optional, Any

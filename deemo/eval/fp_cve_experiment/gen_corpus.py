@@ -1,6 +1,5 @@
 """堆溢出语料库生成器 — 从 corpus_specs 生成样本目录并编译.
 
-创建: 2024-04-05
 用法: python eval/fp_cve_experiment/gen_corpus.py [--skip-compile]
 输出: corpus/<id>/{vuln.c, Makefile, README.md, truth.json, vuln.exe}
 """

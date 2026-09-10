@@ -14,7 +14,8 @@
 #   5. 自适应温度: temperature = τ_0/(1+log(1+epoch))——训练早期均匀融合，
 #      后期sharp融合（高度确定性视图主导）
 #
-# 新颖性: 首次将预测熵驱动的动态视图融合引入多视图二进制GNN
+# 与multi_view_gnn.py的固定权重不同, 本模块采用预测熵驱动的动态视图权重融合,
+# 权重随样本的视图不确定性自适应调整
 
 from __future__ import annotations
 

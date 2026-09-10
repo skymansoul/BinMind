@@ -165,9 +165,18 @@ def _add_loop_write_site(buf_var: str, alloc_bufs: Dict[str, int],
     if elem_sizes and buf_var in elem_sizes:
         elem_size = elem_sizes[buf_var]
 
-    # 推断write_size — 循环次数 × 元素大小
+    # 解析索引表达式中的偏移常量; 正则与 add_loop_write_hints 保持一致
+    base_offset = 0
+    idx_m = re.search(r'\[\s*([^\]]*)\s*\]', detail)
+    if idx_m:
+        index_expr = idx_m.group(1).strip()
+        off_m = re.match(r'(\w+)\s*\+', index_expr)
+        if off_m and off_m.group(1).isdigit():
+            base_offset = int(off_m.group(1))
+
+    # write_size = 偏移常量 + 循环次数 × 元素大小
     if bound is not None and bound > 0:
-        total_bytes = bound * elem_size
+        total_bytes = base_offset + bound * elem_size
         ws = AffineInterval(lo=total_bytes, hi=total_bytes)
     else:
         # 符号上界: 保守估计
@@ -273,13 +282,10 @@ def _emit_syn_memcpy(enhanced: List[str], buf_var: str,
             f'  /* loop_write */')
         return
 
-    # 分解: 找到表达式末尾的'+const'用于仿射跟踪
-    # 例如 'user_size+1+16' → base='user_size+1', offset=16
-    # 不加尾注释 — 仿射分析器正则严格匹配
+    # 分解末尾'+const'用于仿射跟踪; 不加尾注释 — 正则严格匹配
     parts = bound_expr.rsplit('+', 1)
     if len(parts) == 2 and parts[1].strip().isdigit():
-        base_expr = parts[0].strip()
-        offset = parts[1].strip()
+        base_expr, offset = parts[0].strip(), parts[1].strip()
         enhanced.append(f'{fresh_var}_base = {base_expr};')
         enhanced.append(f'{fresh_var} = {fresh_var}_base + {offset};')
     else:

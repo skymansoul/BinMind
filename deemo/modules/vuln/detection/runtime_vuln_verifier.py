@@ -2,7 +2,6 @@
 # VulDebugger GDB驱动运行时状态比较和CogniCrypt
 # 混合执行+LLM路径优先。
 #
-# 核心机制:
 # 崩溃复现-PoC输入运行目标，验证崩溃发生在预期漏洞点
 #   - ASAN/UBSAN/MSAN集成-收集sanitizer报告与静态finding做差异比对
 # 可达性追踪-从污点源到漏洞点的实际执行路径覆盖验证

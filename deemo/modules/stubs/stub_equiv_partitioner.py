@@ -1,24 +1,16 @@
 # stub_equiv_partitioner.py — 类型驱动的输入空间等价类划分+BVA+MR精化
-# 创建于 2026-07-30
-# 修改于 2026-08-05: 增加边界值分析(BVA)和MR引导的精化分区
-#
 # 对每个函数参数按类型结构划分等价类，每类生成代表性输入。
 # 扩展: 边界值分析 + MR引导精化 + pairwise覆盖
 #
 # 方法:
 #   1. 基础等价类: 9种类型的预定义分区
 #   2. 边界值分析: 每个数值类在边界处追加ON/OFF/IN三点
-#   3. MR引导精化: 若函数有idempotence MR，追加f(x)与f(f(x))差异
-#      最大化的分区; 若有monotonic MR，追加间隔极值分区
-#   4. pairwise覆盖: 对多参数函数用2-way覆盖数组减少组合数
+#   3. MR引导精化: 若函数有 idempotence MR，追加 f(x) 与 f(f(x)) 差异
+#      最大化的分区；若有 monotonic MR，追加间隔极值分区
+#   4. pairwise覆盖: 对多参数函数用 2-way 覆盖数组减少组合数
 #
-# BVA的非显而易见应用:
-#   传统BVA应用于需求规格的输入域边界。
-#   本模块将BVA应用于类型推导的等价类——边界不是从需求文档来的，
-#   而是从类型结构和MR语义推导的。例如:
-# int类的边界{0, 1, -1}来自数值符号变化
-# str类的边界{'', 'x'}来自空/非空
-#     - idempotence MR额外引入的边界: 使f(x)和f(f(x))输出不同的x值
+# 说明: BVA 边界从类型结构和 MR 语义推导（非需求文档），
+# 如 int 边界 {0, 1, -1} 来自数值符号变化，str 边界 {'', 'x'} 来自空/非空。
 import itertools as _it
 import re as _re
 from dataclasses import dataclass as _dc, field as _field

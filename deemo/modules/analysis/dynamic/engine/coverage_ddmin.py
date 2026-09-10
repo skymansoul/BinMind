@@ -8,8 +8,6 @@
 # 本模块用覆盖率位图替代二值判定：oracle 变为 f(data) → EdgeSet
 # 缩减目标：找到最小输入 data' 使得 EdgeSet(data') ∩ TargetEdges 的 Jaccard
 # 相似度 ≥ threshold（默认 0.95）
-#
-# 核心创新点：
 #   1. Edge-pinning：首次执行后锁定"目标边集"——后续缩减若丢失任一条
 # pinned edge 则立即回退该步，避免在错误方向上浪费迭代
 # 2. 自适应 Jaccard 阈值：初始覆盖率密度低（稀疏覆盖）→ 降低阈值

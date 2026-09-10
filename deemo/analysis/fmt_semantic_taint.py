@@ -1,7 +1,7 @@
 """
 FSTP — Format Semantic Taint Propagation (格式说明符语义感知污点传播).
 
-核心创新: 将二进制污点 (tainted/not) 升级为格式说明符语义级别.
+将二进制污点 (tainted/not) 升级为格式说明符语义级别.
 
 FSTP 语义分类 (5级):
   SEM_CLEAN     (0): 常量字符串, 无格式说明符 → 绝对安全

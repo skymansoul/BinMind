@@ -3,14 +3,6 @@
 # 当两个模块都导出同名符号但参数/返回类型不同时，
 # 同时 import 两者的下游模块将遇到运行时错误。
 #
-# 问题:
-#   桩系统中有 50+ 独立模块。部分模块自然地导出同名函数:
-#     - api_diff.detect_format(data: bytes) -> str
-#     - binary_format_loader.detect_format(data: bytes) -> Format
-#   下游模块若同时依赖两者，Python 的 import 覆盖规则
-#   可能导致静默的类型错误 — 调用方以为得到了 Format 对象，
-#   实际得到了 str。
-#
 # 方案:
 #   1. 扫描全部桩模块的导出符号（public_api_names）
 #   2. 找到被多个模块导出的同名符号

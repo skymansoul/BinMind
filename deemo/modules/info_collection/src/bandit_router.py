@@ -15,8 +15,6 @@ Thompson 采样: 每个 arm 维护 Beta(α, β) 先验, α = 成功次数, β = 
 每次选择时从每个 arm 的后验中采样, 选 reward/cost 比值最高的 arm。
 """
 
-# File: bandit_router.py  |  2024-12-09 create BCR; 2024-12-09 audit: use shared BetaPrior
-
 from __future__ import annotations
 
 import math

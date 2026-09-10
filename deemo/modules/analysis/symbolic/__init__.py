@@ -28,7 +28,7 @@ _submodules = {
     "symexec_optimizer": ".symexec_optimizer",
 }
 
-# 四轮增强 - LazyImportProfiler：惰性导入计时器
+# LazyImportProfiler：惰性导入计时器
 #
 # 包装 __getattr__，在首次访问每个子模块时记录 import 耗时至毫秒级
 # 累计所有子模块后，import_profile_report() 按耗时降序输出报告
@@ -54,7 +54,7 @@ def __getattr__(name):
     if name in _submodules:
         import importlib
 
-        # 四轮增强 - 惰性导入计时
+        # 惰性导入计时
         t0 = time.perf_counter()
         try:
             mod = importlib.import_module(_submodules[name], package=__package__)
@@ -238,7 +238,7 @@ _auto_loader = PluginLoader()
 _auto_loader.discover()
 
 
-# 四轮增强 - QuickBench：微基准测试套件
+# QuickBench：微基准测试套件
 #
 # 由环境变量 SYMBEX_RUN_BENCH=1 控制，在包导入时运行一组轻量级测试：
 #   1. Z3 求解器基准：100 个平凡约束的平均求解时间
@@ -396,7 +396,7 @@ if os.environ.get('SYMBEX_RUN_BENCH') == '1':
     print(quickbench_report())
 
 
-# 四轮增强 - CrossModuleValidator：跨模块兼容性验证
+# CrossModuleValidator：跨模块兼容性验证
 #
 # 验证所有存在相互依赖的子模块之间：
 #   1. 版本兼容性（无破坏性变更级别的版本不一致）
@@ -587,7 +587,7 @@ def cross_validation_report() -> Dict[str, Any]:
 #   2. Z3 solver 可用性（如果可用则跑一个简单断言）
 #   3. r2 命令行工具是否在 PATH 中
 #   4. 综合健康评分（0-100）
-#   5. 四轮增强 - CrossModuleValidator 的验证结果
+#   5. CrossModuleValidator 的验证结果
 #
 # diag_report 用于 CI/部署前自检或运行时问题定位
 
@@ -668,7 +668,7 @@ def diagnose() -> dict:
     if not r2_found:
         diag_report["issues"].append("r2: not found on PATH - binary analysis fallback disabled")
 
-# 4. 四轮增强 - 跨模块验证
+# 4. 跨模块验证
     cross_report = cross_validation_report()
     diag_report["cross_module"] = {
         "valid": cross_report["valid"],
@@ -751,7 +751,7 @@ __all__ = list(_submodules.keys()) + [
     "diagnose",
     "get_mod_registry",
     "PluginLoader",
-    # 四轮增强 - 公开接口
+    # 公开接口
     "import_profile_report",
     "quickbench_report",
     "cross_validation_report",

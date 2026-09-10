@@ -17,8 +17,6 @@ IETF RFC 中防火墙策略语言的经典设计 (参见 PF / iptables 的规则
 CAP_DEPTH 和 REDACT 两种非二值动作是本模块对安全采集场景的适配。
 """
 
-# File: policy_guard.py  |  2026-08-01 create PBIS; 2026-08-04 audit: replace Policy-as-Prompt
-
 from __future__ import annotations
 
 import ipaddress

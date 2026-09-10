@@ -1,14 +1,9 @@
 # stub_feedback_loop.py — 运行时异常触发的闭环反馈
 # 连接运行时监控 → 定向重验证 → 条件重实现 → 部署，
-# 将桩管理从"批处理"升级为"持续自愈"系统。
+# 使桩管理具备运行时异常下的自动响应能力。
 #
-# 问题:
-#   现有管线是批处理模式: 扫描→排序→实现→验证→落盘，之后不再追踪。
-#   实现落盘后，运行时可能出现三类异常:
-#     a) TypeError: 调用方传参类型与实现不兼容
-#     b) 性能退化: 新实现比旧版本慢 10×
-#     c) 语义漂移: 实现的行为与合约预期不一致（MR 违反率上升）
-#   当前系统检测到这些异常后无自动响应机制。
+# 触发来源: 运行时类型不兼容 (TypeError)、性能退化、语义漂移
+# (MR 违反率上升)。
 #
 # 方案 — 闭环自愈管线:
 #   WATCH → DETECT → TRIAGE → RE-VERIFY → RE-IMPLEMENT → RECORD
@@ -19,10 +14,8 @@
 #   5. RE-IMPLEMENT: 验证失败 → 尝试重新实现 (TemplateGenerator)
 #   6. RECORD: 事件链记录到 ProvenanceChain
 #
-# 区别于 DynaFix 和 SEED-APR:
-#   两者修复通用程序的单函数 bug。
-#   本模块在桩管理层面闭合反馈环，触发粒度为模块级，
-#   重新实现而非修补 — 因为桩实现"重新生成"的成本低于"精确修补"。
+# 触发粒度为模块级，采用重新实现而非修补 — 桩"重新生成"的成本
+# 低于"精确修补"。
 import time as _time
 from dataclasses import dataclass as _dc, field as _field
 from enum import Enum as _Enum

@@ -13,7 +13,6 @@
     - 段膨胀: 非标准段占二进制大小的比例
     - 符号膨胀: 导出但无调用者的函数 (共享库场景)
 
-  无现有工具 — 2026-08 检索确认.
   Bloaty McBloatface (Google): 二进制大小分析，不评分攻击面.
   Ghidra Dead Code Elimination: 函数级, 不量化风险.
 

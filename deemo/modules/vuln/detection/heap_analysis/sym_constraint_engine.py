@@ -2,7 +2,7 @@
 # 拆分: 2026-08-09 | sym_types+sym_parser+sym_solver独立, 本文件仅保留引擎主类
 """符号化大小约束传播 (Symbolic Size-Bound Constraint Propagation).
 
-核心创新: 将malloc的size参数和memcpy的len参数建模为符号变量,
+将malloc的size参数和memcpy的len参数建模为符号变量,
 沿数据流传播算术关系(add/sub/mul/wrap), 在写入点求解
 alloc_size与write_size的约束不等式, 判定是否可证明安全.
 

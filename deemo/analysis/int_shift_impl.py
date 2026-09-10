@@ -12,9 +12,8 @@
 #     16-bit intent: WORD near 0xFFFF, movzx, arithmetic, alloc
 #     32-bit ADD wraparound: DWORD 参数, LEA 偏移 + memcpy 大小回绕
 #
-# 本文件为 INT-SHIFT 独立实现, 合并 modules/vuln/src/integer/analysis/
-# 的 _types/_detector_core/_mode_alloc_size/_mode_arithmetic/_mode_shift_wrap
-# 五文件 (消除三处重复的 _find_next_alloc_call), 仅标准库.
+#   本文件实现 INT-SHIFT 八模式正交检测管线 + 栈值预扫描.
+
 
 from __future__ import annotations
 

@@ -1,10 +1,5 @@
 """Pearl SCM 因果图 — PC 算法 + do-calculus + twin network.
 
-修改记录:
-2025-07-27 14:22 - PC 算法骨架, Fisher Z 条件独立性检验, v-structure 定向
-2025-07-29 09:41 - do-calculus: 后门/前门准则可识别性判定
-2025-07-31 16:08 - twin network 构造 (Abduction-Action-Prediction)
-
 参考: Pearl "Causality", Spirtes et al. "Causation, Prediction, and Search"
 
 与 constraint_inference_mutator 的区分:

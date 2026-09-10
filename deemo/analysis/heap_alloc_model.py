@@ -1,26 +1,17 @@
 """
-堆分配器模型 — ptmalloc2/jemalloc/tcmalloc 的抽象建模.
+堆分配器模型 — ptmalloc2/jemalloc/tcmalloc 的抽象建模。
 
-为何需要分配器模型:
-  静态分析中, malloc(n) 被简化为"分配 n 字节的缓冲区".
-  但实际分配器有:
-    - 最小 chunk 大小 (ptmalloc2: 32 bytes on 64-bit, 其中 usable=24)
-    - 对齐约束 (16-byte on 64-bit)
-    - 内部碎片 (metadata overhead)
-    - size → chunk 的映射规则
+背景: malloc(n) 不能按字面 n 字节建模 — 实际分配器存在最小 chunk
+(ptmalloc2 64-bit 为 32B)、16B 对齐、内部碎片与 size→chunk 映射规则;
+忽略这些约束会引入大量误报, 如 malloc(5) 实际可用区大于 5B, 朴素区间
+[0,4] 会把 offset≥5 的写入误判为溢出。
 
-  不考虑这些约束 → 大量误报.
-  例: malloc(5) 实际可安全写入 24 字节 (ptmalloc2 min usable),
-      但简单区间 [0,4] 会标记任何 offset>=5 的写入为溢出.
+依据: ptmalloc2 的 request2size 宏; jemalloc 的 sz_size2index 量化表;
+GCC -Walloc-size-larger-than= / -Wstringop-overflow= 启发式。
 
-  glibc malloc source (ptmalloc2): _int_malloc() 中的 request2size 宏
-  jemalloc size classes: sz_size2index 的量化表
-  GCC's -Walloc-size-larger-than= 和 -Wstringop-overflow= 的启发式
-
-设计决策:
-  - 默认使用 ptmalloc2 glibc 模型 (Linux x86_64 最常用)
-  - 提供可插拔的分配器后端, 支持 jemalloc/tcmalloc 的 size class 查表
-  - 保守策略: 在不确定分配器时使用最小对齐假设 (16 bytes, 不假设 min chunk)
+设计决策: 默认 ptmalloc2 (Linux x86_64 最常见); 后端可插拔, 支持
+jemalloc/tcmalloc 的 size class 查表; 分配器未知时保守取最小对齐假设
+(16B, 不假设 min chunk)。
 """
 
 from dataclasses import dataclass
@@ -54,57 +45,17 @@ class HeapChunkModel:
 # ptmalloc2 glibc 模型 (x86_64)
 
 class Ptmalloc2Model:
-    """ptmalloc2 (glibc) 堆分配器模型 — x86_64.
+    """ptmalloc2 (glibc) 堆分配器模型 — x86_64。
 
-    参数来自 glibc-2.35 malloc/malloc.c:
-      MALLOC_ALIGNMENT = 16 (2*SIZE_SZ, SIZE_SZ=8 on 64-bit)
+    依据 (glibc-2.35 malloc/malloc.c):
+      MALLOC_ALIGNMENT = 16 (2*SIZE_SZ, SIZE_SZ = 8)
       MINSIZE = 4*SIZE_SZ = 32 (最小 chunk 大小)
-      MIN_USABLE = MINSIZE - 2*SIZE_SZ = 16 (但实际因为 prev_size 复用, 最小 usable 是 24)
-      request2size(req): 将用户请求向上取整到 MALLOC_ALIGNMENT,
-                        再与 MINSIZE 比较取最大值.
+      request2size(req) = max(MINSIZE, ((req) + SIZE_SZ + 15) & ~15),
+                          结果为含 header 的 chunk 大小。
 
-    64-bit glibc 的 chunk 结构:
-      [prev_size (8B)] [size (8B)] [user data ... fd (8B) ... bk (8B) ...]
-      当 chunk 在使用中时, fd/bk 位置可被用户数据复用.
-      min chunk = 32B, 其中 16B 是 header (prev_size+size), 16B 是 fd+bk.
-      但 fd 和 bk 只在 free list 中需要, 已分配时 fd 位置可存储用户数据.
-      所以 MINSIZE=32 的 chunk, 用户可用区域是 32-16=16B... 等等.
-
-      实际在 glibc 中:
-        #define PREV_INUSE 0x1
-        #define IS_MMAPPED 0x2
-        #define NON_MAIN_ARENA 0x4
-        #define SIZE_BITS (PREV_INUSE|IS_MMAPPED|NON_MAIN_ARENA)
-        #define request2size(req) \
-          (((req) + SIZE_SZ + MALLOC_ALIGN_MASK) & ~MALLOC_ALIGN_MASK)
-        其中 MALLOC_ALIGN_MASK = MALLOC_ALIGNMENT - 1 = 15.
-
-      所以 req=5: (5 + 8 + 15) & ~15 = 28 & ~15 = 16 → 但 min 是 MINSIZE=32!
-      最终 usable = chunk_size - 2*SIZE_SZ = 32 - 16 = 16.
-
-      实际上: request2size(5) = max(MINSIZE, (5+8+15)&~15) = max(32, 16) = 32.
-      usable_size = 32 - 16 = 16? 不对.
-
-      重新理解: request2size 返回的是 chunk_size (含 header).
-      usable_size = chunk_size - 2*SIZE_SZ.
-      但 chunk_size 已经包含了 SIZE_SZ... 不对.
-
-      实际上 glibc 中:
-        nb = request2size(bytes);  // nb 是总的 chunk 大小 (含 overhead)
-        实际返回给用户的指针指向 chunk 的数据区域 (跳过 prev_size 和 size).
-        usable_size = nb - 2*SIZE_SZ = nb - 16.
-        但用户实际可以安全使用至多 nb - 2*SIZE_SZ 字节.
-        然而, 在已分配状态下, fd/bk 字段 (位于偏移 16 处) 可以被用户使用,
-        因为它们只在 chunk 被 free 时才需要. 所以实际 usable = nb - SIZE_SZ = nb - 8?
-        不, glibc 文档说 usable_size = nb - 2*SIZE_SZ = nb - 16.
-
-      让我们简化: 保守使用 min chunk = 32, usable = MINSIZE - 2*SIZE_SZ = 16.
-      但这是一个非常保守的估计. 实际上, 对大多数用户请求,
-      usable_size >= requested_size.
-
-      对误报削减而言, 关键是: 不要用精确的 requested_size 作为边界,
-      而是用 (requested_size + 对齐填充) 作为边界.
-      保守做法: usable = max(requested_size, 16), 然后对齐到 16.
+    使用中 chunk 的 fd/bk 区可被用户数据复用。为削减误报, 不用精确的
+    requested_size 作为写边界, 而取 (requested_size + 对齐填充);
+    usable_size() 采用保守口径: 16 字节对齐、下限 16, 且不低于请求大小。
     """
 
     ALIGNMENT = 16

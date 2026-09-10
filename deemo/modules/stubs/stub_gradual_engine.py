@@ -2,14 +2,9 @@
 # 对可自动实现的简单桩用启发式规则构造实现体；复杂逻辑不强制自动实现，
 # 标注 TODO 与依赖项；可选远端模型（无 API 时降级为规则）；产出结果经
 # "导入冒烟 + 输入输出契约检查"验证，失败则回退并记录原因。
-# 设计意图：将"桩从占位到可用"变为可增量、可验证、可回退的工程闭环，
-# 避免一次性手写复杂分析器的风险。输出目录 stubs/_gradual_out 仅含
-# 产出物，不触碰既有桩文件（安全边界：只新建，不修改）。
-# 支撑论文:
-#   Agentic Program Repair from Test Failures at Scale
-#     验证-回溯闭环：候选实现 → 契约验证 → 失败信号回传 → 降级或回退。
-#   SynthFix: Adaptive Neuro-Symbolic Code Vulnerability Repair
-#     符号层(规则)与神经层(模型)协同，验证反馈自适应切换产出策略。
+# 设计意图：将"桩从占位到可用"变为可增量、可验证、可回退的工程闭环。
+# 输出目录 stubs/_gradual_out 仅含产出物，不触碰既有桩文件
+# （安全边界：只新建，不修改）。
 import ast as _ast
 import json as _json
 import os as _os

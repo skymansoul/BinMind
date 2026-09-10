@@ -1,5 +1,5 @@
 # analysis/allocator_slack — FC-VRA 阶段C2: 分配器松弛的区间化建模
-# 核心创新点: 将 heap_layout_model 的"常量请求→对齐后可用空间"扩展到
+# 将 heap_layout_model 的"常量请求→对齐后可用空间"扩展到
 # 区间请求 [lo, hi] → 可用空间区间 [usable_lo, usable_hi]。
 # 现有 HLM (heap_layout_model) 仅对 alloc_range.is_const 生效,
 # 一旦分配量是变量区间 (如 n 字节, n∈[16,4096]) 便退化,

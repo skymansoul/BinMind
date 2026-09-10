@@ -1,7 +1,4 @@
 # stub_deploy_gate.py — 部署门控引擎
-# 创建于 2026-07-30
-# 修改于 2026-08-04: 移除虚假SHAP类比，特征贡献正确描述为加权分解
-#
 # 聚合全部质量/验证/回归信号，输出 PROMOTE / HOLD / ROLLBACK 决策。
 # 每条决策附带加权贡献分解，支持 CI/CD 管道集成。
 #
@@ -12,13 +9,8 @@
 #      + incoherence_inverse(0.15) + provenance(0.10)
 #      + type_safety(0.07) + documentation(0.05)
 #   3. 决策: >=0.70->PROMOTE, [0.40,0.70)->HOLD, <0.40->ROLLBACK
-#   4. 每条决策附带加权贡献分解 (contribution_i = signal_value_i * weight_i)
-#      — 这是简单的乘法分解，非SHAP/LIME等博弈论解释方法。
-#      其作用是让运维人员看到各信号对最终决策的贡献量级。
-#
-# 区别于 的 LLM 应用自测试门控:
-#   该论文针对 LLM 应用的非确定性输出设计门控维度。
-#   本模块针对桩实现的确定性质量信号设计门控维度。
+#   4. 每条决策附带加权贡献分解 (contribution_i = signal_value_i * weight_i)，
+#      用于让运维人员看到各信号对最终决策的贡献量级。
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
 

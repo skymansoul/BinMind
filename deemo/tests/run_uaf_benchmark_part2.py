@@ -190,7 +190,7 @@ class UafScanner:
 
     def temporal_scan(self, source: str
                       ) -> Tuple[str, int, int, int, int, float, str, str]:
-        """路径敏感时序验证 — 核心创新.
+        """路径敏感时序验证。
 
         Returns: (verdict, free_line, use_line, safe_paths,
                   uaf_paths, total_paths, time_ms, reason_or_error)

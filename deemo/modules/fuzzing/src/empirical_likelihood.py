@@ -1,10 +1,5 @@
 """经验似然覆盖推断 (Empirical Likelihood Coverage Inference, ELCI).
 
-修改记录:
-2025-08-07 08:44 - Owen 经验似然比 + 卡方校准 + 均值的非参数置信区间
-2025-08-09 14:12 - Bartlett 修正: 二阶矩调整加速收敛到卡方极限
-2025-08-10 09:33 - 双样本 EL: 两种突变策略覆盖增益的均值差推断
-
   Owen "Empirical Likelihood Ratio Confidence Intervals for a Single
     Functional" (Biometrika) — EL 的原始论文
   Owen "Empirical Likelihood" (Chapman & Hall) — 系统性专著
@@ -23,7 +18,6 @@
     应用于 fuzzing: 为每种突变策略的覆盖增益均值构造置信区间,
     严格比较两种策略的效果差异。
 
-核心创新:
   1. EL 置信区间: 非参数, 数据驱动, 不需分布假设
   2. Bartlett 修正: 加速收敛, 小样本下覆盖更接近名义水平
   3. 双样本 EL: 比较两种策略的均值差 → 统计显著性

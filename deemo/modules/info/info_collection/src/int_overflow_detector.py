@@ -1,4 +1,4 @@
-# int_overflow_detector — 导入表级整数溢出检测 (v2.0 约束增强版)
+# int_overflow_detector — 导入表级整数溢出检测 (v2.0)
 # 三类模式 + 约束层精化:
 #   M1: 乘法溢出 — atoi/strtoul → malloc(sz*N) 若 sz 来自输入且 N>1
 #   M2: 截断溢出 — size_t→uint32 转换, realloc 旧大小与新大小类型不一致

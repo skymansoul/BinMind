@@ -6,7 +6,7 @@
   · 浅层采集在信息密度高的类别 (INTEL_CORRELATION) 过早终止, 丢失关键关联
   · 深层采集在信息密度低的类别 (FILE_ANALYSIS) 过度展开, 收集大量重复数据
 
-核心机制: 将采集过程建模为序贯信息获取。每阶段完成后计算类别条件熵
+机制: 将采集过程建模为序贯信息获取。每阶段完成后计算类别条件熵
 (category-conditional entropy) 的当前值及投影值, 边际增益低于自适应阈值
 时终止当前深度。阈值按意图类别差异化 —— 情报关联的长尾分布需要更小的
 终止阈值以允许更深展开。
@@ -15,8 +15,6 @@
 本方法基于特定意图域的类别条件熵饱和度, 且阈值由经验 profile 驱动
 而非全局超参数。
 """
-
-# File: entropy_depth.py  |  2026-07-26 create EGACD; 2026-08-04 audit: docstring revision
 
 from __future__ import annotations
 

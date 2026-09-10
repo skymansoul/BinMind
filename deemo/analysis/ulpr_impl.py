@@ -14,14 +14,14 @@
 #     - 无重定义且定义链回溯至释放对象, CONFIRMED.
 #   仅 CONFIRMED 计入检出, 与堆检测的 PcWBI 三级判定保持同一机制.
 #
-# 本文件为 ULPR 独立实现, 算法与 modules/analysis/static/uaf_provenance.py
-# 一致; 依赖的 disasm_util 三个工具函数已内联, 仅标准库.
+# 本文件实现 ULPR 生命周期来源复核: 对候选做后向定义链复核与三级判定.
+
 
 import re
 from typing import Dict, List, Optional, Tuple
 
 
-# - 内联工具 (原 disasm_util) -
+# 内联工具
 
 _W32_TO_W64 = {
     "eax": "rax", "ebx": "rbx", "ecx": "rcx", "edx": "rdx",

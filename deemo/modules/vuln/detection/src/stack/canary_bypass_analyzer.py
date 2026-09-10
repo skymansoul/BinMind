@@ -26,15 +26,15 @@ class CanaryInfo:
 
 
 class CanaryBypassAnalyzer:
-"""Canary 绕过分析器 — 评估栈 canary 的实际保护强度.
+    """Canary 绕过分析器 — 评估栈 canary 的实际保护强度.
 
-检测三种绕过场景:
-  1. 信息泄露: canary 值通过格式化字符串/越界读泄露
-  2. 逐字节爆破: fork() 后子进程 canary 不变
-  3. 覆盖 __stack_chk_fail GOT: 修改 canary 失败处理函数指针
+    检测三种绕过场景:
+      1. 信息泄露: canary 值通过格式化字符串/越界读泄露
+      2. 逐字节爆破: fork() 后子进程 canary 不变
+      3. 覆盖 __stack_chk_fail GOT: 修改 canary 失败处理函数指针
 
-用法: add_canary_info 注册, mark_output_reachable/mark_fork_detected/mark_got_overwritable 标记绕过条件, analyze 取结果。
-"""
+    用法: add_canary_info 注册, mark_output_reachable/mark_fork_detected/mark_got_overwritable 标记绕过条件, analyze 取结果。
+    """
 
     def __init__(self):
         self._functions: Dict[str, CanaryInfo] = {}

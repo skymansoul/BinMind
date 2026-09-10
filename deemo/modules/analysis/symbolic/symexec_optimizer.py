@@ -60,12 +60,12 @@ DEFAULT_CONFIG = {
     'incremental_solving': False,
     'solver_profile_window': 100,
     'adaptive_pruning': True,
-    # 四轮增强 — 复杂度预估器配置
+    # 复杂度预估器配置
     'enable_complexity_estimator': True,
     'complexity_skip_threshold': 0.9,
-    # 四轮增强 — 优化管道配置
+    # 优化管道配置
     'pipeline_passes': ['simplify', 'cse', 'cache', 'solve'],
-    # 四轮增强 — 求解器预算管理
+    # 求解器预算管理
     'solver_budget_per_interval': 60.0,
     'solver_budget_interval': 60.0,
 }
@@ -81,7 +81,7 @@ class SymExecOptimizer:
     hotspot profiling 识别高耗时约束类别; 可选 adaptive pruning
     根据内存压力动态调整路径上限。
 
-    四轮增强: 集成 ConstraintComplexityEstimator、优化流水线、
+    集成 ConstraintComplexityEstimator、优化流水线与
     SolverBudgetManager, 提供求解前预测、管道化执行与全局预算控制。
     """
 
@@ -112,7 +112,7 @@ class SymExecOptimizer:
             adaptive_pruning=self.config.get('adaptive_pruning', True))
         self.simplifier = ConstraintSimplifier()
 
-        # 四轮增强 — 预算管理器
+        # 预算管理器
         self.budget_manager = SolverBudgetManager(
             per_interval=self.config.get('solver_budget_per_interval', 60.0),
             interval=self.config.get('solver_budget_interval', 60.0),
@@ -120,7 +120,7 @@ class SymExecOptimizer:
         if self.config.get('enable_complexity_estimator', True):
             self.budget_manager.start()
 
-        # 四轮增强 — 复杂度预估器
+        # 复杂度预估器
         self.complexity_estimator = ConstraintComplexityEstimator()
 
         self.parallel_solver = ParallelSolver(
@@ -133,7 +133,7 @@ class SymExecOptimizer:
             budget_manager=self.budget_manager,
         )
 
-        # 四轮增强 — 优化管道
+        # 优化管道
         self.pipeline = OptimizationPipeline(
             simplifier=self.simplifier,
             solver_cache=self.cache,
@@ -153,7 +153,7 @@ class SymExecOptimizer:
     def optimize_solve_pipeline(self, constraints: List[Any]) -> Tuple[Optional[Dict[str, Any]], List[PassResult]]:
         """执行完整优化流水线: Simplify -> CSE -> cache -> Solve。
 
-        四轮增强: 通过 OptimizationPipeline 执行全部优化通道,
+        通过 OptimizationPipeline 执行全部优化通道,
         返回求解结果与各阶段耗时明细。
         """
         return self.pipeline.execute(constraints)
@@ -192,7 +192,7 @@ class SymExecOptimizer:
             'simplification': dict(self.simplifier.simplify_stats),
             'solver': dict(self.parallel_solver.stats),
             'memory_status': self.pruner.get_memory_status(),
-            # 四轮增强 — 额外统计
+            # 额外统计
             'complexity_estimator': self.complexity_estimator.stats(),
             'pipeline': self.pipeline.stats(),
             'budget': self.budget_manager.stats(),

@@ -13,10 +13,9 @@
 #   P3: 路径可行性 (守卫强度压制 / 不可达路径降权).
 #   P4: 安全见证 (导入表安全变体/FORTIFY 压制置信度).
 #
-# 本文件为 PSVR-HLM 独立实现, 合并 modules/info/analysis/ 的
-# heap_overflow_v2.py + v2_safety_filter.py + value_range_analyzer.py +
-# heap_layout_model.py + path_feasibility_check.py + flow_pair_generator.py
-# + pointer_tracker.py (仅保留管线调用图所需函数), 仅标准库.
+#   本文件实现 PSVR-HLM v3.0 核心管线: 指针流追踪 → 流相关配对 → 区间分析
+#   → 路径可行性 → 分配器模型 → 安全见证.
+
 
 from __future__ import annotations
 
@@ -25,7 +24,7 @@ import re
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ================= 指针流追踪 (原 pointer_tracker) =================
+# 指针流追踪
 
 _CALL_RE = re.compile(
     r"\b(\w+)\s*\(((?:[^()]|\([^()]*\))*)\)")
@@ -255,7 +254,7 @@ def _base_var(expr: str) -> str:
     return expr
 
 
-# ================= 流相关配对 (原 flow_pair_generator) =================
+# 流相关配对
 
 def _sanitize_expr(expr: str) -> str:
     """去掉空白与多余括号, 作为后续等价比较的前置归一化."""
@@ -380,7 +379,7 @@ def correlate_to_v2_pairs(code: str, raw_pairs: List[Dict]) -> List[Dict]:
     return converted
 
 
-# ================= 区间分析 (原 value_range_analyzer, 调用图所需部分) =================
+# 区间分析
 
 class ValueRange:
     """仿射区间抽象域 [lo, hi]; ±inf 表示无界; bottom 表示空集."""
@@ -593,7 +592,7 @@ def check_heap_overflow_by_range(
             f"范围重叠方向不明: alloc={alloc_range} write={write_range}")
 
 
-# ================= 路径可行性 (原 path_feasibility_check, 调用图所需部分) =================
+# 路径可行性
 
 def extract_conditions(code: str) -> List[Dict]:
     """从代码中提取条件约束 (if/while/for)."""
@@ -715,7 +714,7 @@ def check_write_reachability(
     return result
 
 
-# ================= 分配器模型 (原 heap_layout_model) =================
+# 分配器模型
 
 class AllocatorModel:
     """抽象分配器模型: 给定请求大小, 返回有效用户可用空间的范围.
@@ -795,7 +794,7 @@ def get_allocator_model(arch: str = "x86_64") -> AllocatorModel:
     return _MODEL_CACHE[arch]
 
 
-# ================= 安全见证 (原 v2_safety_filter) =================
+# 安全见证
 
 _SAFE = {"snprintf", "memcpy_s", "strcpy_s", "strncpy", "strncat",
          "__memcpy_chk", "__sprintf_chk", "__fread_chk", "__recv_chk"}
@@ -826,7 +825,7 @@ def safety_filter(findings: List[Dict], checksec: Dict,
     return [f for f in findings if f["confidence"] >= 0.10]
 
 
-# ================= PSVR-HLM v3.0 管线 (原 heap_overflow_v2) =================
+# PSVR-HLM v3.0 管线
 
 _ALLOC = {"malloc", "calloc", "realloc", "alloca", "__imp_malloc",
           "__imp_calloc", "__imp_realloc",

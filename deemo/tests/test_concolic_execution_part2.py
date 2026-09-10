@@ -368,7 +368,7 @@ class TestConcolicExecutor:
 
 
 class TestConcolicConvenienceFunctions:
-    """便捷函数 —— 懒人专用"""
+    """便捷函数"""
 
     @patch.object(ConcolicExecutor, 'is_available')
     def test_create_concolic_executor_default(self, mock_is_available):
@@ -385,7 +385,7 @@ class TestConcolicConvenienceFunctions:
         assert executor.mode == ConcolicMode.DYNAMIC_FIRST
 
     def test_create_concolic_executor_invalid_mode(self):
-        """无效的mode参数返回None，别崩"""
+        """无效的mode参数返回None，不崩溃"""
         # 2026-06-28 参数校验：mode拼写错误导致崩溃
         executor = create_concolic_executor('/tmp/test_binary', mode='invalid')
         assert executor is None

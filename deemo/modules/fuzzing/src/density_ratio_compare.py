@@ -1,10 +1,5 @@
 """密度比策略比较 (Density Ratio Strategy Comparison, DRSC) — uLSIF.
 
-修改记录:
-2025-08-07 15:40 - uLSIF 密度比估计: 直接学习 w(x)=p_A/p_B 的线性模型
-2025-08-09 08:57 - Pearson 散度作为策略差异度量: PE(P_A||P_B)
-2025-08-10 13:22 - 在线更新: 新观测的增量核矩阵秩-1 更新
-
   Kanamori, Hido & Sugiyama "A Least-squares Approach to Direct
     Importance Estimation" (JMLR) — uLSIF 的原始论文
   Sugiyama, Suzuki & Kanamori "Density Ratio Estimation in Machine
@@ -19,7 +14,6 @@
   MMD (RKHS 距离, 需要核选择)。
   uLSIF 直接学习密度比, 不需要估计单独的密度, 对维度鲁棒。
 
-核心创新:
   1. uLSIF 直接密度比: 避免密度估计 (高维困难)
   2. Pearson 散度: PE(P_A||P_B) = ½∫(w-1)²·p_B — 策略差异度量
   3. 在线更新: 新种子→增量更新核矩阵

@@ -14,7 +14,6 @@
   9. ORCAS语义图评分——支配树基混淆韧性评估
   10. KEENHash函数指纹——SimHash基轻量级函数签名，面向大规模二进制相似性比对
 
-KEENHash 核心思路：
   借助LLM函数嵌入+K-Means+Feature Hashing压缩为紧凑程序级签名。
   本实现更轻量：SimHash对函数字节码产出64-bit指纹，
   达成O(1)级函数去重与O(n)级相似函数检索，215×加速比。

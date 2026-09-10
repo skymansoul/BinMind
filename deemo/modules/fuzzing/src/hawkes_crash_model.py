@@ -1,10 +1,5 @@
 """自激崩溃发现模型 (Self-Exciting Crash Discovery, SECD) — Hawkes 过程.
 
-修改记录:
-2025-08-04 13:11 - Hawkes 过程强度建模 + 在线 MLE 参数估计
-2025-08-06 08:45 - 分支比临界性评估: n<1 subcritical, n≥1 supercritical
-2025-08-07 16:22 - 崩溃簇预测: λ(t) 峰值→追加资源→更快发现关联崩溃
-
   Hawkes "Spectra of Some Self-Exciting and Mutually Exciting Point
     Processes" (Biometrika) — 原始 Hawkes 过程定义
   Ogata "Statistical Models for Earthquake Occurrences and Residual
@@ -21,7 +16,6 @@
     α: 激励强度 (一个崩溃多大程度上提升短期发现率)
     β: 衰减速率 (激励效应多快消退)
 
-核心创新:
   1. 自激强度建模: λ(t) = λ₀ + Σα·exp(-β(t-tᵢ))
   2. 分支比: n = α/β — n<1 过程衰退, n≈1 临界, n>1 爆发
   3. 碰撞聚类预测: λ(t)峰值→未来ΔT内崩溃概率→动态资源分配

@@ -8,9 +8,8 @@
 #   输出目标加权: stdout 0.4 / file 0.5 / buffer 0.7 / snprintf 0.3.
 #   阈值判定: overall_score ≥ 3.0 → KEEP, 否则 FILTER.
 #
-# 本文件为 FSCS 独立实现, 合并 analysis/format_spec_scorer.py 与
-# analysis/format_impact_calculator.py (消除原两文件的相互懒加载),
-# 并内联回归层的阈值过滤, 仅标准库.
+#   本文件实现 FSCS 核心管线: 评分函数 (格式说明符) → 分析器, 内联阈值过滤.
+
 
 import re
 from dataclasses import dataclass, field
@@ -100,7 +99,7 @@ class FormatExploitAssessment:
     exploitation_advice: str = ""
 
 
-# ---- 评分函数 (原 format_impact_calculator, 内联) ----
+# 评分函数
 
 def compute_exploitability(
     max_risk: SpecifierRisk,
@@ -249,7 +248,7 @@ def generate_assessment(
     return desc, advice
 
 
-# ---- 分析器 (原 FormatSpecAnalyzer, 直接调用内联评分) ----
+# 分析器
 
 class FormatSpecAnalyzer:
     """格式字符串说明符解析与分析引擎。

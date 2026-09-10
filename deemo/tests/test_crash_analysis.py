@@ -87,7 +87,6 @@ class TestRegisterParsing(unittest.TestCase):
         self.assertEqual(result, {})
 
     def test_parse_register_32bit(self):
-        # 前版本保留——作为实现参考
         """32bit的寄存器也要能解析：eax/ebx/ecx/eip"""
         text = """
         eax = 0x00000000

@@ -4,7 +4,7 @@
 # 对 heap_fp_benchmark 全部样本运行三类内部检测器 (源码级):
 #   AC3_source   — 导入表配对基线 (naive, 笛卡尔积)
 #   PSVR_HLM_v2  — 值域+对齐+路径可行性基线
-#   FC_VRA_v3    — 本项目核心创新 (流相关值域分析)
+#   FC_VRA_v3    — 流相关值域分析
 # 统一输出原始 JSON: {sample: {tool: {detected, findings, elapsed_ms,
 #                                       fp_reduction_pct, ablation}}}
 # 用法: python scan_scheduler.py [--threshold 0.25] [--out 结果JSON]

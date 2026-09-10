@@ -1,10 +1,5 @@
 """在线突变策略集成 (Ensemble) — 指数梯度(EG)自适应加权融合多种突变算子.
 
-修改记录:
-2025-07-29 15:22 - 增加策略间协同效应追踪, 捕获 operator_a→operator_b 的增益链
-2025-08-01 08:37 - 修复 EG 权重在零奖励序列上的退化 (强制最小权重≥0.01)
-2025-08-03 13:10 - 集成到 Scheduler, 与 ISRG/PathCluster/Pareto 协同
-
   Kivinen & Warmuth "Exponentiated Gradient Versus Gradient Descent
     for Linear Predictors" — EG 算法的 regret bound: R_T ≤ sqrt(2T ln N)
   PAMSSAFL   — 分层 MAB 用于突变位置+算子选择 (离散臂)
@@ -12,7 +7,6 @@
   Cesa-Bianchi & Lugosi "Prediction, Learning, and Games"
     — 连续专家集成中的 Hedge 算法族, 本项目使用其 EG 变体
 
-核心创新 (与 PAMSSAFL 的区分):
   PAMSSAFL 在两个离散层级上做 arm selection → 每次只使用一种算子。
   本模块维护所有策略的连续权重分布, 每次变异时从分布中采样算子,
   并根据覆盖反馈用 EG 更新权重。这等价于将"算子选择"从离散的组合优化

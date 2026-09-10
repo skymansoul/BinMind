@@ -1,5 +1,5 @@
 # core/symexec.py - angr 符号执行接口
-# FIX: 2026-08-15 结果回填 — 返回 dict 恒含 paths_found/constraints 键;
+# 结果回填 — 返回 dict 恒含 paths_found/constraints 键;
 # 各阶段细粒度日志; 约束提取失败记 debug 而非静默吞掉。
 
 import logging

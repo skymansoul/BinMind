@@ -22,18 +22,14 @@
 #   漂移检测联动: HighRiskShift时, 共形α临时收紧 (如从0.1→0.05),
 #   以更宽的预测区间覆盖模型不确定性.
 #
-# 非显而易见性:
-#   1. 首个将TTA应用于CVE评分系统的实现.
-#      RaL-TTA面向IIoT信任评估, SCALA-NIDS面向网络入侵检测,
-#      零工作面向漏洞评分.
-#   2. 双层级适应: 轻量BN更新 (LowRisk) vs 锚点回退 (HighRisk).
-#   3. 与共形预测的深度集成: TTA调整点估计, 共形提供区间保证.
+# 设计说明:
+#   1. 双层级适应: 轻量BN更新 (LowRisk) vs 锚点回退 (HighRisk).
+#   2. 与共形预测的深度集成: TTA调整点估计, 共形提供区间保证.
 #
 #
 # RaL-TTA: Risk-Aware Lightweight TTA for IIoT (F1=0.954)
 # TENT: Test-Time Entropy Minimization (ICLR)
 # 确认EPSS模型的滞后偏问题
-#   [检索确认] 2025-2026年零论文将TTA应用于CVE评分
 
 import math
 from collections import deque

@@ -18,8 +18,6 @@
 动态调整执行优先级, 而非使用固定的全局排序。
 """
 
-# File: info_gain_cascade.py  |  2026-07-27 create MSIGC; 2026-08-04 audit: sentinel removal
-
 from __future__ import annotations
 
 import math

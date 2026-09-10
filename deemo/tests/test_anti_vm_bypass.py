@@ -147,7 +147,6 @@ class TestAntiVMBypassAnalyzer(unittest.TestCase):
         self.assertEqual(self.analyzer.config.output_dir, self.m_tmp)
 
     def test_load_binary(self):
-        # 历史实现保留——用于回溯参考
         """
         测试加载二进制文件
         """

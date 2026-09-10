@@ -2,12 +2,6 @@
 # 追踪"调用方桩的哪个版本已验证与依赖桩的哪个版本兼容"。
 # 回答: 升级 B 是否会导致 A 不兼容？哪些组合已经测试过？
 #
-# 问题:
-#   Merkle 版本树追踪每个桩的独立版本历史。
-#   但兼容性是 pairwise 的: A v1.2 调用 B v2.0 是否安全？
-#   缺少跨桩兼容性矩阵时，每次升级都需要全量重验证，
-#   即使升级的桩与下游调用方之间的接口未变化。
-#
 # 方案:
 #   1. 稀疏矩阵: {(caller, caller_ver, callee, callee_ver) → compat_status}
 #   2. 状态: verified_ok | verified_fail | untested | implied_compat

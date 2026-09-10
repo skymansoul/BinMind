@@ -2,11 +2,8 @@
 配置加载器: YAML/JSON文件合并与环境变量覆写。
 优先级: 环境变量 > 配置文件 > 内置默认值。
 
-2026-07: 新增_validate_config做最小schema校验, 在畸形配置传播到检测器前拦截。
-对未识别的顶层key及类型约束交叉引用给出警告。
-
-2025-02-06: 为新模块扩展默认值 — secret_auditor, kdf, rng_tester,
-crypto_lib_fingerprint阈值。
+_validate_config 执行最小schema校验, 在畸形配置传播到检测器前拦截,
+并对未识别的顶层key及类型约束交叉引用给出警告。
 """
 
 import os

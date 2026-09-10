@@ -1,10 +1,5 @@
 """保形异常检测器 (Conformal Anomaly Detection for Fuzzing, CADF).
 
-修改记录:
-2025-08-01 14:33 - 归纳保形预测 (ICP) + k-NN 非 conformal 度量
-2025-08-03 09:27 - 滑动校准窗口 + Mondrian 分层 (按种子类别分层校准)
-2025-08-04 16:41 - 自适应 ε: 随样本量增大自动收紧显著性水平
-
   Vovk, Gammerman & Shafer "Algorithmic Learning in a Random World"
     — 保形预测的理论基础: 可交换性假设下的有限样本有效性
   Papadopoulos et al. "Inductive Confidence Machines for Regression"
@@ -20,7 +15,6 @@
   每个输入得到一个 conformal p-value, 当 p < ε 时标记为异常,
   假阳性率保证 ≤ ε。
 
-核心创新:
   1. 归纳保形预测应用于 fuzzing 执行剖面: 将每次执行映射到特征向量,
      用 k-NN 距离作为 nonconformity 度量 → conformal p-value
   2. Mondrian 分层校准: 按种子来源 (原始/变异) 分层, 防止分布偏移

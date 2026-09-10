@@ -19,7 +19,6 @@ from modules.deobfuscator import (
 _DEBUG_FLAG = False
 
 class TestFunctionDeobfuscator(unittest.TestCase):
-    # 前版本保留——作为实现参考
     """FunctionDeobfuscator -- 函数级去混淆，MEDIUM级别默认"""
 
     def setUp(self):

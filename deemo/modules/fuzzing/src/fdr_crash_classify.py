@@ -1,9 +1,5 @@
 """FDR 控制崩溃分类 — Benjamini-Hochberg + Storey q-value.
 
-修改记录:
-2025-08-14 15:28 - BH 过程 + Storey q-value + π₀ 估计
-2025-08-16 09:41 - 在线 BH: 新 p-value 到达时的增量 FDR 控制
-
 参考: Benjamini & Hochberg JRSS-B; Storey JRSS-B.
 在 fuzzing 中零先例。同时检验多个突变策略的有效性时,
 BH 过程控制错误发现率 (FDR), 比 Bonferroni 更强大。"""

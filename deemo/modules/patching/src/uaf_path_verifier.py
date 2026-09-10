@@ -1,7 +1,7 @@
 # UAF路径可行性验证 — guard条件区间交 → 消除不可达路径UAF误报
 """UAF路径可行性验证器。
 
-核心思路: free路径的守卫条件(如 ptr!=NULL)与use路径守卫条件
+free路径的守卫条件(如 ptr!=NULL)与use路径守卫条件
 (如 ptr==NULL)若矛盾(交集为空), 则free和use不可能在同一执行路径共存
 → 过滤此UAF。基于cmp+jcc→区间约束→交集检查, 与heap_path_sensitivity.py
 共用GuardKind/区间交运算。

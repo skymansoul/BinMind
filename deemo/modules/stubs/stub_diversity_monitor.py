@@ -1,21 +1,14 @@
 # stub_diversity_monitor.py — 生态系统多样性监控（含Bootstrap+稀疏化）
-# 创建于 2026-07-31
-# 修改于 2026-08-05: 增加Bootstrap置信区间、Simpson指数、稀疏化曲线
+# 度量桩生态中策略/验证/模式的多样性。低多样性 = 过度依赖单一方法。
 #
-# 度量桩生态中策略/验证/模式的多样性。
-# 低多样性 = 过度依赖单一方法 = 系统性风险。
-#
-# 三重度量:
+# 度量:
 #   1. Shannon熵 H' = -Σ p_i ln(p_i)       — 对稀有类别敏感
 #   2. Simpson指数 D = 1 - Σ p_i²           — 对优势类别敏感
 #   3. Bootstrap 95%CI                       — 变化是否统计显著
 #   4. 稀疏化曲线                            — 校正样本量偏差
 #
-# Bootstrap的必要性:
-#   小样本下Shannon熵的估计偏差不可忽略。
-#   例如3次template+1次llm的H'=0.56，但95%CI=[0.0, 0.69] —
-#   若下次观测变为2次template+2次llm，H'=0.69在CI内，
-#   不能判定为"多样性显著提升"。
+# Bootstrap 的必要性: 小样本下 Shannon 熵的估计偏差不可忽略；
+# 若观测值落在 CI 内则不能判定为"多样性显著提升"。
 import math as _math
 import random as _random
 from collections import Counter as _Ctr

@@ -149,7 +149,7 @@ class UEFIModuleInfo:
         self.metadata = metadata if metadata is not None else {}
 
 class FirmwareVolumeInfo:
-    # Note: instances referenced across methods; thread safety not guaranteed
+    # 实例在多方法间被引用; 不保证线程安全
     __slots__ = ('name', 'guid', 'size', 'offset', 'file_count', 'modules', 'fv_type',)
 
     def __init__(self, name='', guid='', size=0, offset=0, file_count=0, modules=None, fv_type=''):

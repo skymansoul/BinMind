@@ -375,7 +375,7 @@ class VulnerabilityDatabaseStats:
         min_score: int = 10,
         min_similarity: float = 0.7
     ) -> Dict[str, Any]:
-        """增强版相似漏洞搜索：结合哈希、危险函数评分和语义向量。
+        """相似漏洞搜索：结合哈希、危险函数评分和语义向量。
 
         参数: pseudocode 伪代码, dangerous_functions 危险函数
         列表, binary_format 文件格式, architecture 架构,

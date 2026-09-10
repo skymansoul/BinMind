@@ -5,8 +5,6 @@
   - 发现所有堆溢出样本目录
   - 编译每个样本的 vuln.c → vuln.exe
   - 编译状态收集和报告
-
-创建: 2026-07-13
 """
 from __future__ import annotations
 

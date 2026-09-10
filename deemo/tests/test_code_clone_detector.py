@@ -291,7 +291,7 @@ class TestCodeCloneDetectorEdgeCases(unittest.TestCase):
         self.assertEqual(report.total_clones_found, 0)
 
     def test_very_large_functions(self):
-        """百万级size的函数也别崩"""
+        """百万级size的函数不应崩溃"""
         source_funcs = {
             'large_func': FunctionInfo(
                 name='large_func',

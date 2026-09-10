@@ -1,9 +1,9 @@
 """Incremental symbolic re-execution via function-level hashing.
 
 When a binary is rebuilt, most functions are byte-identical to the prior
-version. Re-executing them wastes solver time. This module hashes each
-function (via r2 disassembly), diffs old vs. new, and only re-runs
-modified/added functions plus their transitive callers.
+version. Re-executing them wastes solver time, so each function is
+hashed (via r2 disassembly) to diff old vs. new; only
+modified/added functions plus their transitive callers are re-run.
 """
 
 import logging

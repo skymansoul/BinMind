@@ -1,4 +1,3 @@
-# ~ 2026-10-04
 # OSV.dev集成——Google开源漏洞数据库。
 # OSV汇聚20+生态（PyPI、npm、Maven、Go、crates.io、RubyGems、NuGet等）的安全通告，
 # 精度达到包级别。区别于NVD（CPE级匹配，对OSS包精度较低）和GHSA（仅限GitHub）。

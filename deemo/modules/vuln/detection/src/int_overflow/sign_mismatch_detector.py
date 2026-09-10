@@ -24,15 +24,15 @@ class SignMismatch:
 
 
 class SignMismatchDetector:
-"""符号混淆检测器 — 二进制指令级别的符号语义分析.
+    """符号混淆检测器 — 二进制指令级别的符号语义分析.
 
-检测三类模式:
-  1. movzx 后 movsx: 零扩展后再符号扩展 → 值解释翻转
-  2. cmp+jg/jl mismatch: 无符号比较后用有符号跳转 → 边界检查失效
-  3. neg_arg: 可能为负的值传给 malloc(size_t) → 隐式转为巨大无符号值
+    检测三类模式:
+      1. movzx 后 movsx: 零扩展后再符号扩展 → 值解释翻转
+      2. cmp+jg/jl mismatch: 无符号比较后用有符号跳转 → 边界检查失效
+      3. neg_arg: 可能为负的值传给 malloc(size_t) → 隐式转为巨大无符号值
 
-用法: add_instruction 添加指令, detect 取结果。
-"""
+    用法: add_instruction 添加指令, detect 取结果。
+    """
 
     def __init__(self):
         # 指令序列

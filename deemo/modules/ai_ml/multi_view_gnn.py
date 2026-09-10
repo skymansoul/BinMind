@@ -905,7 +905,7 @@ class MultiViewGNNEmbedderAnalyzer:
         return self.embedder.search_graph_database(query, self.m_database, top_k)
 
 
-# 图构建工具 -- 增强版，自动计算图结构全局特征
+# 图构建工具 -- 自动计算图结构全局特征
 
 def build_function_graph_from_blocks(function_name: str, function_address: int,
                                      blocks: List[Dict[str, Any]],

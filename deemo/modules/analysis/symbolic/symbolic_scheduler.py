@@ -2,37 +2,11 @@
 
 函数按复杂度评分（圈复杂度、调用深度、历史运行时间、危险函数可达性），
 分配与分数成正比的资源预算，通过两级优先堆（active vs background）调度。
-执行器支持可中断运行、超时抢占与检查点持久化
+执行器支持可中断运行、超时抢占与检查点持久化。
 
-增强 — 死锁预测与依赖提升：active heap 中的任务若依赖 background heap 中
-尚未完成的任务，自动将后者提升至 active heap 以避免调度死锁
-
-增强 — Critical Profile：confirmed 漏洞路径自动获得 EXTREME
-以上的 CRITICAL 资源分配（timeout=3600s, memory=8192MB, states=16384）
-
-增强 — log2 查找表：ComplexityScorer 预计算 log2(1+n) 值，避免频繁 math.log2 调用
-
-增强 — 资源监控与自适应降载：ResourceMonitor 实时追踪 CPU 和内存负载
-高负载时自动缩减并发度、暂停后台堆，防止调度器压垮宿主机
-
-增强 — 公平共享调度：FairShareScheduler 按二进制文件平均分配执行时间预算
-超预算任务降优先级，避免单个大文件独占执行器
-
-增强 — 甘特图导出：export_gantt_chart() 输出任务调度时序 JSON
-用于可视化调度效率与负载分布
-
-四轮增强 — PredictiveScheduler：使用 ComplexityScorer 的 historical_seconds
-预测任务运行时间。采用最短作业优先启发式（shortest-job-first）
-优先调度短任务以最小化平均完成时间。同时预留一个 "长任务槽"
-防止大型任务被无限期推迟（饥饿防护）
-
-四轮增强 — ResourceOvercommitDetector：监控所有运行中任务的已分配内存总量
-与系统可用内存的比值。若 total_allocated > available，暂停新任务分发
-直至运行中任务完成并释放内存 — 防止 OOM killer 终止 worker 进程
-
-四轮增强 — ScheduleReplay：将所有调度决策（task_id, worker_id, start_ts
-end_ts, reason）记录到 SQLite 数据库。提供 replay_schedule() 重建
-甘特图并识别调度低效（队列非空时存在空闲 worker 的窗口）
+集成能力：SJF 预测调度与长任务槽防饥饿、依赖提升防调度死锁、公平共享、
+CPU/内存负载监控与自适应降载、OOM 过分配检测、SQLite 调度回放与甘特图导出。
+confirmed 漏洞路径自动获得 CRITICAL 级资源分配（timeout=3600s, memory=8192MB, states=16384）。
 """
 
 import heapq
@@ -133,11 +107,8 @@ class ScheduleRecord:
     predicted_seconds: float = 0.0
 
 
-# ---------------------------------------------------------------------------
-# log2 预计算查找表：避免 ComplexityScorer.score() 中频繁调用 math.log2
-# 索引范围 [0, 1024]，超出范围使用 math.log2 实时计算
-# 设计意图 — 符号执行调度路径是热路径，减少超越函数调用
-# ---------------------------------------------------------------------------
+# log2 预计算查找表：索引范围 [0, 1024]，超出范围用 math.log2 实时计算，
+# 避免符号执行调度热路径上频繁调用超越函数
 _LOG2_LUT_SIZE = 1024
 _log2_lut = [0.0] + [_math.log2(1 + n) for n in range(1, _LOG2_LUT_SIZE)]
 
@@ -250,16 +221,9 @@ class ResourceAllocator:
         return self.PROFILES[profile]
 
 
-# ---------------------------------------------------------------------------
-# 资源监控器：实时采集 CPU 与内存负载，触发自适应降载策略
-#
-# 降载两级：
-#   1. sys_load_pct > 80% → 活跃并发度减半，跳过非 CRITICAL 任务分发
-# 2. 内存使用率 > 90% → 暂停 background heap 的全部调度
-#      仅允许 CRITICAL 任务通过，防止 OOM
-#
-# psutil 为可选依赖；缺失时降级为无操作模式，不影响核心调度逻辑
-# ---------------------------------------------------------------------------
+# 资源监控器：实时采集 CPU/内存负载以触发自适应降载 — sys_load_pct>80% 时
+# 活跃并发度减半并跳过非 CRITICAL 分发；内存>90% 时暂停 background heap 调度、
+# 仅放行 CRITICAL 防 OOM；psutil 为可选依赖，缺失时降级为无操作模式
 
 
 class ResourceMonitor:
@@ -349,16 +313,8 @@ class ResourceMonitor:
         }
 
 
-# ---------------------------------------------------------------------------
-# 公平共享调度器：每个 binary_path 获得等量的执行时间预算
-#
-# 核心思路：
-# 每个二进制文件的 fair_share_budget = 总分配时间 / 活跃二进制文件数
-# 调度时按 per_binary_consumed 字典累加每个二进制文件的已消耗时间
-# 超预算的任务优先级下调 (priority -= 100)，使其排到同预算任务之后
-#
-# 意图 — 避免单个大型二进制文件独占所有执行槽位，保证多目标分析的公平性
-# ---------------------------------------------------------------------------
+# 公平共享调度器：每个 binary_path 分得 fair_share_budget = 总分配时间/活跃二进制数，
+# 已消耗超预算的任务 priority -= 100 以降级排队，避免单个大二进制独占执行槽位
 
 
 class FairShareScheduler:
@@ -414,37 +370,22 @@ class FairShareScheduler:
         }
 
 
-# =============================================================================
-# 四轮增强 — PredictiveScheduler：最短作业优先 + 长任务槽预留
-#
-# 原理：在符号执行调度中，任务运行时间差异极大（几秒到几分钟）
-# SJF 启发式显著降低平均完成时间。但纯 SJF 会导致长任务饥饿 ——
-# 长任务槽（LongSlot）机制保证至少一个 slot 始终可用于长任务
-#
-# 实现：
-# - 每次调度前对所有就绪任务按 predicted_runtime 排序
-# - 优先弹出最短预测时间的任务
-# - 保留 1 个长任务槽给预测时间 > median * 2 的任务
-# - 长任务槽耗尽后，长任务进入常规 FIFO 等待（而非无限制推迟）
-# =============================================================================
+# PredictiveScheduler：就绪任务按 predicted_runtime 升序调度（SJF 显著降低平均完成时间）；
+# 保留 1 个长任务槽给预测时间 > median*2 的任务，槽耗尽后长任务进入常规 FIFO，
+# 避免纯 SJF 导致的长任务饥饿
 
 
 class PredictiveScheduler:
-    """最短作业优先调度器，通过长任务槽防止饥饿
+    """最短作业优先（SJF）调度器，通过长任务槽防止饥饿
 
-    四轮增强 — 利用 ComplexityScorer.predict_runtime() 预测每个任务的执行时间
-    在每次调度决策中，从就绪队列中选择预测执行时间最短的任务
-    显著降低平均任务完成时间（Average Completion Time）
+    用 ComplexityScorer.predict_runtime() 预测每个任务的执行时间，
+    每次调度选择预测执行时间最短的任务，以降低平均任务完成时间。
 
     LongSlot 机制：
-    - 维护一个长任务计数槽（默认 1），仅允许长任务使用
-    - 长任务定义：predicted_runtime > 所有就绪任务预测时间中位数的 2 倍
+    - 维护长任务计数槽（long_slot_count，默认 1），仅允许长任务使用
+    - 长任务定义：predicted_runtime > 就绪任务预测时间中位数的 2 倍
+      （long_ratio_threshold 默认 2.0）
     - 长任务槽被占用后，后续长任务按常规优先级排队
-
-    Attributes:
-    scorer: ComplexityScorer 实例，提供 predict_runtime()
-    long_slot_count: 预留的长任务槽数量（默认 1）
-    long_ratio_threshold: 预测时间 > median * ratio 视为长任务
     """
 
     def __init__(self,
@@ -561,35 +502,20 @@ class PredictiveScheduler:
             }
 
 
-# =============================================================================
-# 四轮增强 — ResourceOvercommitDetector：防止 OOM
-#
-# 符号执行是内存密集型任务。当多个 worker 进程同时运行大状态空间的任务时
-# 累计分配的内存可能超过系统可用物理内存，触发 Linux OOM killer 随机
-# kill 进程，导致整个分析任务失败且难以调试
-#
-# ResourceOvercommitDetector 在每次调度前检查：
-#   total_allocated_mb (所有运行中任务的 budget 总和)
-#   vs system_available_mb (psutil.virtual_memory().available)
-#
-# 若 total_allocated_mb > system_available_mb * safety_ratio
-# 阻塞新任务分发直至运行中任务完成并释放资源
-# =============================================================================
+# ResourceOvercommitDetector：符号执行内存密集，多个 worker 同时运行时累计分配可能
+# 超过系统可用物理内存而触发 OOM killer。每次调度前比较 total_allocated_mb 与
+# system_available_mb*safety_ratio，超过即阻塞新分发直至运行中任务完成释放内存
 
 
 class ResourceOvercommitDetector:
     """监控内存过度分配，暂停分发以防止 OOM
 
-    四轮增强 — 跟踪所有已分发但尚未完成的任务的内存预算
-    当累计分配超过系统可用内存的安全比例时，阻止新任务分发
+    跟踪所有已分发但尚未完成的任务的内存预算总和（total_allocated_mb），
+    当累计分配超过系统可用内存（system_available_mb）的安全比例时阻止新任务分发，
+    直至运行中任务完成并释放内存。
 
-    触发条件：total_allocated_mb > system_available_mb * safety_ratio
-    默认 safety_ratio = 0.85，即保留 15% 余量给系统和其他进程
-
-    Attributes:
-    safety_ratio: 安全比例，超过此值即视为过度分配
-    total_allocated_mb: 当前所有运行中任务的 budget 内存总和
-    running_tasks: {task_id: allocated_mb} 运行中任务跟踪
+    触发条件：total_allocated_mb > system_available_mb * safety_ratio；
+    默认 safety_ratio = 0.85，即保留 15% 余量给系统和其他进程。
     """
 
     # 默认安全比例 —— 保留 15% 内存余量
@@ -667,42 +593,19 @@ class ResourceOvercommitDetector:
             }
 
 
-# =============================================================================
-# 四轮增强 — ScheduleReplay：调度决策审计与回放分析
-#
-# 将每次调度决策持久化到 SQLite 数据库，支持离线分析：
-# - replay_schedule() 重建甘特图时间线
-# - 自动检测调度低效窗口（队列非空且有 worker 空闲）
-# - 统计 worker 利用率和任务等待时间
-# =============================================================================
+# ScheduleReplay：调度决策持久化到 SQLite，支持离线分析 —
+# replay_schedule() 重建甘特图时间线并识别调度低效窗口（队列非空而有 worker 空闲），
+# 统计 worker 利用率与任务等待时间
 
 
 class ScheduleReplay:
     """记录并回放调度决策，用于审计和低效检测
 
-    四轮增强 — 将每次调度操作记录到 SQLite 中（task dispatch、task complete、
-    task requeue）。支持离线重建调度时间线，自动识别调度低效
-
-    数据库 schema::
-
-    CREATE TABLE schedule_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        task_id TEXT NOT NULL,
-        worker_id TEXT NOT NULL,
-        event_type TEXT NOT NULL,  -- 'dispatch', 'complete', 'requeue'
-        timestamp_ts REAL NOT NULL,
-        reason TEXT DEFAULT '',
-        predicted_seconds REAL DEFAULT 0.0
-    );
-
-    Usage::
-
-    recorder = ScheduleReplay(":memory:")
-    recorder.record_dispatch("func_a", "bin1", reason="shortest_job_first")
-    # tasks 执行
-    recorder.record_complete("func_a", "bin1")
-    inefficiencies = recorder.replay_schedule()
-    # → [{'type': 'idle_while_queued', 'window_start': ...}]
+    将每次调度操作（dispatch / complete / requeue）写入 SQLite 的
+    schedule_events 表（task_id, worker_id, event_type, timestamp_ts, reason,
+    predicted_seconds；建表语句见 _init_schema()，含 timestamp_ts 与
+    (worker_id, event_type) 索引）。replay_schedule() 重建甘特图时间线、
+    识别调度低效窗口（队列非空而 worker 空闲）并计算 worker 利用率。
     """
 
     def __init__(self, db_path: str = ":memory:"):
@@ -960,7 +863,7 @@ class PriorityScheduler:
     其余在 background 堆。next_task() 先排空 active 堆再排 background 堆，
     回退到 active 堆
 
-    增强 — 依赖提升：当 active heap 任务引用的依赖函数在 background heap 中时
+    依赖提升：当 active heap 任务引用的依赖函数在 background heap 中时
     将后者提升至 active heap，避免调度死锁"""
 
     def __init__(self,
@@ -1086,9 +989,8 @@ class PriorityScheduler:
 class InterruptibleExecutor:
     """运行调度任务，支持逐任务超时抢占
 
-    增强 — 使用 time.monotonic() 替代 time.time()，免疫系统时钟调整
-
-    四轮增强 — 集成 PredictiveScheduler、ResourceOvercommitDetector、ScheduleReplay
+    使用 time.monotonic() 计时，免疫系统时钟调整；
+    集成 PredictiveScheduler、ResourceOvercommitDetector、ScheduleReplay。
     """
 
     def __init__(self, scheduler: PriorityScheduler):
@@ -1103,13 +1005,13 @@ class InterruptibleExecutor:
         self.resource_monitor = ResourceMonitor.instance()
         self.fair_share = FairShareScheduler(scheduler)
 
-        # 四轮增强 — 预测调度器
+        # 预测调度器
         self.predictive = PredictiveScheduler(scorer=scheduler.scorer)
 
-        # 四轮增强 — 过分配检测器
+        # 过分配检测器
         self.overcommit_detector = ResourceOvercommitDetector()
 
-        # 四轮增强 — 调度回放记录器
+        # 调度回放记录器
         self.schedule_replay = ScheduleReplay(
             db_path=os.path.join(self._checkpoint_dir, 'schedule_replay.db')
         )
@@ -1168,11 +1070,11 @@ class InterruptibleExecutor:
                 self.scheduler.scorer.record(task.func_name, elapsed * 0.5)
             # 计入公平共享消费
             self.fair_share.record_consumed(task.binary_path, elapsed)
-            # 四轮增强 — 释放过分配追踪
+            # 释放过分配追踪
             self.overcommit_detector.release_allocation(task)
-            # 四轮增强 — 释放长任务槽（若适用）
+            # 释放长任务槽（若适用）
             self.predictive.release_long_slot()
-            # 四轮增强 — 记录任务完成
+            # 记录任务完成
             self.schedule_replay.record_complete(
                 task.func_name, task.binary_path
             )
@@ -1210,7 +1112,7 @@ class InterruptibleExecutor:
             # 每轮调度前采样系统负载，决定是否降载
             self.resource_monitor.refresh()
 
-            # 四轮增强 — 检查内存过度分配
+            # 检查内存过度分配
             if self.overcommit_detector.is_overcommitted():
                 overcommit_pauses += 1
                 _log.warning(
@@ -1220,7 +1122,7 @@ class InterruptibleExecutor:
                 time.sleep(0.5)  # 短暂等待后重试
                 continue
 
-            # 四轮增强 — PredictiveScheduler: 收集所有待处理任务，预测选择
+            # PredictiveScheduler：收集所有待处理任务并按预测时间选择
             pending_tasks = self.scheduler.get_pending_tasks()
             selected_task, selection_reason = self.predictive.select_next_task(
                 pending_tasks
@@ -1268,10 +1170,10 @@ class InterruptibleExecutor:
             # 公平共享优先级调整
             adjusted = self.fair_share.adjust_priority(task)
 
-            # 四轮增强 — 注册内存分配追踪
+            # 注册内存分配追踪
             self.overcommit_detector.register_allocation(task, self.scheduler.allocator)
 
-            # 四轮增强 — 记录调度决策
+            # 记录调度决策
             predicted = self.predictive.predict(task)
             self.schedule_replay.record_dispatch(
                 task.func_name, task.binary_path,
@@ -1302,13 +1204,8 @@ class InterruptibleExecutor:
         return results
 
 
-# ---------------------------------------------------------------------------
-# 甘特图导出：将任务调度时序序列化为 JSON，用于可视化调度效率
-#
-# 每条记录包含 task_id、worker_id、start_ts、end_ts
-# gantt_json 可直接渲染为甘特图（Plotly / D3 / matplotlib）
-# 帮助分析任务并行度、空闲窗口和长尾延迟
-# ---------------------------------------------------------------------------
+# 甘特图导出：将任务调度时序（task_id、worker_id、start_ts、end_ts）序列化为 JSON，
+# 可渲染为 Plotly/D3/matplotlib 甘特图，用于分析并行度、空闲窗口与长尾延迟
 
 # 全局甘特图记录缓冲区（线程安全）
 _gantt_records: List[Dict[str, Any]] = []
@@ -1393,7 +1290,7 @@ def schedule_symbolic_analysis(
                 end_ts=time.time(),
             )
 
-    # 四轮增强 — 回放分析结果
+    # 回放分析结果
     replay_report = executor.schedule_replay.replay_schedule()
 
     return {

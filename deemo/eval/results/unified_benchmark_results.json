@@ -4,35 +4,35 @@
     "type_stats": {
       "format_string": {
         "total": 34,
-        "heap": 5,
+        "heap": 3,
         "fmt": 34,
         "int_ovf": 2,
         "uaf": 0,
-        "heap_after_fp_reducer": 5
+        "heap_after_fp_reducer": 3
       },
       "uaf": {
         "total": 55,
-        "heap": 33,
+        "heap": 34,
         "fmt": 0,
         "int_ovf": 38,
-        "uaf": 35,
-        "heap_after_fp_reducer": 32
+        "uaf": 37,
+        "heap_after_fp_reducer": 33
       },
       "unknown": {
         "total": 89,
-        "heap": 34,
+        "heap": 42,
         "fmt": 20,
         "int_ovf": 50,
-        "uaf": 18,
-        "heap_after_fp_reducer": 34
+        "uaf": 29,
+        "heap_after_fp_reducer": 42
       },
       "integer_overflow": {
         "total": 31,
-        "heap": 26,
+        "heap": 28,
         "fmt": 0,
         "int_ovf": 31,
         "uaf": 0,
-        "heap_after_fp_reducer": 25
+        "heap_after_fp_reducer": 27
       },
       "heap_overflow": {
         "total": 24,
@@ -47,11 +47,11 @@
         "heap": 9,
         "fmt": 1,
         "int_ovf": 5,
-        "uaf": 0,
-        "heap_after_fp_reducer": 8
+        "uaf": 4,
+        "heap_after_fp_reducer": 7
       }
     },
-    "timestamp": "2026-09-04 03:46:20"
+    "timestamp": "2026-09-10 23:45:49"
   },
   "results": [
     {
@@ -92,7 +92,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 21.3
+      "duration_ms": 16.0
     },
     {
       "sample": "CVE-2008-5077_openssl_uaf",
@@ -132,7 +132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.0
+      "duration_ms": 3.8
     },
     {
       "sample": "CVE-2010-2959_kernel_uaf",
@@ -172,7 +172,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.2
     },
     {
       "sample": "CVE-2010-4221_libc_fmtstr",
@@ -212,7 +212,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.4
     },
     {
       "sample": "CVE-2012-0809_format_string",
@@ -252,7 +252,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 3.3
     },
     {
       "sample": "CVE-2012-2133_kernel_uaf",
@@ -292,7 +292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.4
     },
     {
       "sample": "CVE-2012-3569_vmware_fmtstr",
@@ -332,7 +332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.2
     },
     {
       "sample": "CVE-2013-0156_rails_cmdinj",
@@ -372,7 +372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.6
     },
     {
       "sample": "CVE-2013-4312_mq_notify_alias_uaf",
@@ -403,16 +403,16 @@
           "detected": false
         },
         "uaf": {
-          "total": 3,
-          "confirmed": 3,
+          "total": 4,
+          "confirmed": 4,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.4
     },
     {
       "sample": "CVE-2013-6376_kvm_uaf",
@@ -452,7 +452,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.0
     },
     {
       "sample": "CVE-2014-0130_rails_cmdinj",
@@ -492,21 +492,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.2
+      "duration_ms": 1.5
     },
     {
       "sample": "CVE-2014-0160_heartbleed",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 0,
           "definite": 0,
-          "possible": 2,
-          "filtered": 0,
-          "detected": true,
+          "possible": 0,
+          "filtered": 1,
+          "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "0/1_filtered",
-          "detected_after_fp_reducer": true
+          "detected_after_fp_reducer": false
         },
         "format_string": {
           "total_calls": 0,
@@ -532,7 +532,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 3.6
     },
     {
       "sample": "CVE-2014-6271_shellshock_cmdinj",
@@ -572,16 +572,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.1
     },
     {
       "sample": "CVE-2014-9914_kernel_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -612,7 +612,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.7
     },
     {
       "sample": "CVE-2015-1840_rails_cmdinj",
@@ -652,7 +652,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.5
     },
     {
       "sample": "CVE-2015-7547_getaddrinfo_cmdinj",
@@ -692,7 +692,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.8
     },
     {
       "sample": "CVE-2015-8612_blueman_fmtstr",
@@ -739,9 +739,9 @@
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -812,7 +812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.1
     },
     {
       "sample": "CVE-2016-10033_phpmailer_cmdinj",
@@ -852,7 +852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.8
+      "duration_ms": 2.4
     },
     {
       "sample": "CVE-2016-2098_rails_cmdinj",
@@ -892,7 +892,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.6
     },
     {
       "sample": "CVE-2016-4971_wget",
@@ -972,16 +972,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.4
     },
     {
       "sample": "CVE-2016-6301_heap_overflow",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1012,16 +1012,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.8
+      "duration_ms": 4.7
     },
     {
       "sample": "CVE-2016-6301_ntp_heap",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1052,16 +1052,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 15.9
+      "duration_ms": 16.6
     },
     {
       "sample": "CVE-2016-9802_bind_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1092,16 +1092,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.0
+      "duration_ms": 3.3
     },
     {
       "sample": "CVE-2017-1000112_udp_overflow",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 5,
+          "total": 6,
           "definite": 0,
-          "possible": 5,
+          "possible": 6,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1132,7 +1132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 21.3
+      "duration_ms": 24.8
     },
     {
       "sample": "CVE-2017-1000371_linux_fmtstr",
@@ -1172,16 +1172,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 3.1
     },
     {
       "sample": "CVE-2017-1000407_kernel_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1212,7 +1212,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 4.2
+      "duration_ms": 6.4
     },
     {
       "sample": "CVE-2017-15129_kernel_uaf",
@@ -1252,16 +1252,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.6
     },
     {
       "sample": "CVE-2017-16995_kernel_ebpf_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1292,7 +1292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.9
     },
     {
       "sample": "CVE-2017-5638_struts_cmdinj",
@@ -1332,7 +1332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 1.8
     },
     {
       "sample": "CVE-2017_stkovf",
@@ -1372,17 +1372,17 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.1
     },
     {
       "sample": "CVE-2018-1000802_curl_ftp",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 5,
+          "total": 6,
           "definite": 0,
-          "possible": 5,
-          "filtered": 5,
+          "possible": 6,
+          "filtered": 4,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "3/11_filtered",
@@ -1412,7 +1412,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 12.6
+      "duration_ms": 12.2
     },
     {
       "sample": "CVE-2018-1002105_k8s_cmdinj",
@@ -1452,16 +1452,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.5
+      "duration_ms": 2.9
     },
     {
       "sample": "CVE-2018-10940_cdrom_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1492,7 +1492,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 3.1
     },
     {
       "sample": "CVE-2018-14665_xorg_fmtstr",
@@ -1532,16 +1532,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.0
     },
     {
       "sample": "CVE-2018-6923_freebsd_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1572,7 +1572,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.8
+      "duration_ms": 3.0
     },
     {
       "sample": "CVE-2018-7600_drupal_cmdinj",
@@ -1612,7 +1612,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.0
     },
     {
       "sample": "CVE-2018_heapovf",
@@ -1652,7 +1652,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.7
     },
     {
       "sample": "CVE-2019-0708_uaf",
@@ -1692,16 +1692,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 4.5
+      "duration_ms": 3.9
     },
     {
       "sample": "CVE-2019-15768_nftables_fmtstr",
       "type": "format_string",
       "detections": {
         "heap": {
-          "total": 3,
+          "total": 2,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -1732,7 +1732,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.5
     },
     {
       "sample": "CVE-2019-19332_kernel_uaf",
@@ -1772,21 +1772,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.5
     },
     {
       "sample": "CVE-2019-2181_adreno_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -1812,7 +1812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 4.1
+      "duration_ms": 4.4
     },
     {
       "sample": "CVE-2019-3396_confluence_cmdinj",
@@ -1852,7 +1852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.2
     },
     {
       "sample": "CVE-2019-5418_rails_cmdinj",
@@ -1892,21 +1892,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.7
     },
     {
       "sample": "CVE-2019-9213_kernel_nullptr_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -1932,7 +1932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.8
     },
     {
       "sample": "CVE-2019_uaf",
@@ -1972,7 +1972,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.0
     },
     {
       "sample": "CVE-2020-10204_nexus_cmdinj",
@@ -2012,16 +2012,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.3
     },
     {
       "sample": "CVE-2020-10757_mremap_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -2052,7 +2052,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.2
     },
     {
       "sample": "CVE-2020-14386_ebpf_fmtstr",
@@ -2092,7 +2092,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 1.9
     },
     {
       "sample": "CVE-2020-7460_uaf",
@@ -2132,7 +2132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 4.0
+      "duration_ms": 4.2
     },
     {
       "sample": "CVE-2020-8163_rails_cmdinj",
@@ -2172,21 +2172,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 1.6
     },
     {
       "sample": "CVE-2020-8644_printf_intovf",
       "type": "format_string",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 0,
           "definite": 0,
-          "possible": 2,
-          "filtered": 0,
-          "detected": true,
+          "possible": 0,
+          "filtered": 1,
+          "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": true
+          "detected_after_fp_reducer": false
         },
         "format_string": {
           "total_calls": 1,
@@ -2212,7 +2212,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.9
+      "duration_ms": 2.6
     },
     {
       "sample": "CVE-2020_doublefree",
@@ -2252,7 +2252,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 1.7
     },
     {
       "sample": "CVE-2021-20226_kernel_uaf_alias",
@@ -2283,16 +2283,16 @@
           "detected": false
         },
         "uaf": {
-          "total": 5,
-          "confirmed": 5,
+          "total": 6,
+          "confirmed": 6,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 2.9
     },
     {
       "sample": "CVE-2021-22555_netfilter_fmtstr",
@@ -2332,7 +2332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.7
     },
     {
       "sample": "CVE-2021-22880_rails_cmdinj",
@@ -2372,16 +2372,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.4
     },
     {
       "sample": "CVE-2021-3489_ebpf_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 3,
+          "total": 1,
           "definite": 0,
-          "possible": 3,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -2452,7 +2452,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.7
     },
     {
       "sample": "CVE-2021-44228_log4j_cmdinj",
@@ -2492,7 +2492,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.3
     },
     {
       "sample": "CVE-2021_fmtstr",
@@ -2532,7 +2532,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.5
+      "duration_ms": 1.3
     },
     {
       "sample": "CVE-2022-1015_nft_fmtstr",
@@ -2572,17 +2572,17 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 1.9
     },
     {
       "sample": "CVE-2022-22623_ios_heap_overflow",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
-          "filtered": 1,
+          "possible": 1,
+          "filtered": 15,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "1/3_filtered",
@@ -2612,7 +2612,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 23.2
+      "duration_ms": 24.1
     },
     {
       "sample": "CVE-2022-22965_spring4shell_cmdinj",
@@ -2652,7 +2652,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.0
+      "duration_ms": 2.5
     },
     {
       "sample": "CVE-2022-2588_double_free",
@@ -2692,7 +2692,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.8
+      "duration_ms": 3.0
     },
     {
       "sample": "CVE-2022-29582_io_uring_intovf",
@@ -2732,7 +2732,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.0
+      "duration_ms": 4.0
     },
     {
       "sample": "CVE-2022-32224_rails_cmdinj",
@@ -2772,16 +2772,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 1.5
     },
     {
       "sample": "CVE-2022-36946_netfilter_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -2812,7 +2812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.5
     },
     {
       "sample": "CVE-2022_intovf",
@@ -2852,7 +2852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.9
     },
     {
       "sample": "CVE-2023-0179_stack_overflow",
@@ -2892,7 +2892,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 3.0
     },
     {
       "sample": "CVE-2023-20198_iosxe_cmdinj",
@@ -2932,7 +2932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.5
     },
     {
       "sample": "CVE-2023-2166_kernel_fmtstr",
@@ -2972,7 +2972,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.9
     },
     {
       "sample": "CVE-2023-28120_rails_cmdinj",
@@ -3012,7 +3012,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.7
     },
     {
       "sample": "CVE-2023-44487_use_after_scope",
@@ -3052,21 +3052,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.3
+      "duration_ms": 4.2
     },
     {
       "sample": "CVE-2023-4863_libwebp",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
-          "filtered": 0,
-          "detected": false,
+          "possible": 1,
+          "filtered": 11,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 5,
@@ -3092,7 +3092,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 11.2
+      "duration_ms": 13.1
     },
     {
       "sample": "CVE-2023-52707_kallsyms_intovf",
@@ -3132,7 +3132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 4.6
+      "duration_ms": 4.9
     },
     {
       "sample": "CVE-2023_uaf2",
@@ -3172,7 +3172,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.2
     },
     {
       "sample": "CVE-2024-21762_fortinet_cmdinj",
@@ -3212,16 +3212,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.2
     },
     {
       "sample": "CVE-2024-21762_off_by_one",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -3252,16 +3252,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.9
+      "duration_ms": 3.1
     },
     {
       "sample": "CVE-2024-26590_erofs_intovf",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -3292,7 +3292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.8
     },
     {
       "sample": "CVE-2024-26602_linux_fmtstr",
@@ -3332,7 +3332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.9
     },
     {
       "sample": "CVE-2024-27198_jetbrains_cmdinj",
@@ -3372,7 +3372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.5
     },
     {
       "sample": "CVE-2024-3094_xz_cmdinj",
@@ -3412,7 +3412,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 2.0
     },
     {
       "sample": "CVE-2024_nullptr",
@@ -3452,21 +3452,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.6
     },
     {
       "sample": "cve_01",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -3492,21 +3492,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.7
     },
     {
       "sample": "cve_02",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -3532,21 +3532,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 3.2
     },
     {
       "sample": "cve_03",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -3572,21 +3572,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 3.7
     },
     {
       "sample": "cve_04",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -3612,21 +3612,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 3.0
     },
     {
       "sample": "cve_05",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -3652,21 +3652,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.5
     },
     {
       "sample": "cve_06",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -3692,7 +3692,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.5
     },
     {
       "sample": "cve_07",
@@ -3732,7 +3732,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.0
     },
     {
       "sample": "cve_08",
@@ -3772,7 +3772,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.2
     },
     {
       "sample": "cve_09",
@@ -3812,7 +3812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 2.1
     },
     {
       "sample": "cve_10",
@@ -3852,7 +3852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 2.1
     },
     {
       "sample": "cve_11",
@@ -3892,7 +3892,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 2.2
     },
     {
       "sample": "cve_12",
@@ -3932,7 +3932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.9
     },
     {
       "sample": "cve_13",
@@ -3942,7 +3942,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -3963,16 +3963,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.1
     },
     {
       "sample": "cve_14",
@@ -3982,7 +3982,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4003,16 +4003,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.2
     },
     {
       "sample": "cve_15",
@@ -4022,7 +4022,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4043,16 +4043,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 2.1
     },
     {
       "sample": "cve_16",
@@ -4062,7 +4062,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4083,12 +4083,12 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
@@ -4102,7 +4102,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4123,16 +4123,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.2
     },
     {
       "sample": "cve_18",
@@ -4142,7 +4142,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4163,16 +4163,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.6
     },
     {
       "sample": "cve_19",
@@ -4203,16 +4203,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 2,
-          "confirmed": 2,
+          "total": 3,
+          "confirmed": 3,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.3
     },
     {
       "sample": "cve_20",
@@ -4243,25 +4243,25 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 2.0
     },
     {
       "sample": "cve_2004_0077-linux-do_brk",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -4292,7 +4292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 3.0
     },
     {
       "sample": "cve_2010_0230_linux_stack",
@@ -4332,16 +4332,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.5
     },
     {
       "sample": "cve_2011_1473-openssl-dtls",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -4372,7 +4372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.2
+      "duration_ms": 3.7
     },
     {
       "sample": "cve_2012_0809_format",
@@ -4412,16 +4412,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.0
     },
     {
       "sample": "cve_2013_2094-perf",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -4452,16 +4452,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.9
+      "duration_ms": 3.2
     },
     {
       "sample": "cve_2014_0160-heartbleed",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -4492,7 +4492,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.3
+      "duration_ms": 3.7
     },
     {
       "sample": "cve_2014_0160_heartbleed",
@@ -4523,16 +4523,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 3,
           "realloc": 0
         }
       },
-      "duration_ms": 3.1
+      "duration_ms": 3.3
     },
     {
       "sample": "cve_2014_0160_stack_overflow",
@@ -4542,7 +4542,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4563,16 +4563,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.5
     },
     {
       "sample": "cve_2014_3153_futex_uaf",
@@ -4612,16 +4612,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.7
     },
     {
       "sample": "cve_2014_6271-shellshock",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -4652,7 +4652,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.9
     },
     {
       "sample": "cve_2015_0235-ghost",
@@ -4662,7 +4662,7 @@
           "total": 1,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4683,25 +4683,25 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.2
     },
     {
       "sample": "cve_2015_0235_ghost_heap",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -4732,7 +4732,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.8
+      "duration_ms": 3.4
     },
     {
       "sample": "cve_2015_3628_ld_uaf",
@@ -4763,16 +4763,16 @@
           "detected": false
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.6
     },
     {
       "sample": "cve_2015_7547_getaddrinfo_stack",
@@ -4782,7 +4782,7 @@
           "total": 3,
           "definite": 0,
           "possible": 0,
-          "filtered": 4,
+          "filtered": 3,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -4803,16 +4803,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.7
     },
     {
       "sample": "cve_2015_8612_bluetooth_fmt",
@@ -4852,7 +4852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.9
     },
     {
       "sample": "cve_2016_0728_keyring_stack",
@@ -4892,16 +4892,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.6
     },
     {
       "sample": "cve_2016_10190-libevent",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -4932,7 +4932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.7
     },
     {
       "sample": "cve_2016_7411_php_fmt",
@@ -4972,7 +4972,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 2.0
     },
     {
       "sample": "cve_2017_1000112-ipv6",
@@ -5012,18 +5012,18 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.9
     },
     {
       "sample": "cve_2017_1000364_kernel_stack",
       "type": "stack_overflow",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 1,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": true,
           "fp_reducer_reason": "all_pairs_filtered",
           "detected_after_fp_reducer": false
@@ -5052,7 +5052,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 3.1
     },
     {
       "sample": "cve_2017_11176_mq_notify_uaf",
@@ -5083,25 +5083,25 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 4.3
+      "duration_ms": 3.3
     },
     {
       "sample": "cve_2018_14634-tmpfs",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -5132,7 +5132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 2.9
     },
     {
       "sample": "cve_2018_14634_mutagen_stack",
@@ -5142,51 +5142,11 @@
           "total": 3,
           "definite": 0,
           "possible": 0,
-          "filtered": 5,
+          "filtered": 4,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
           "detected_after_fp_reducer": true
-        },
-        "format_string": {
-          "total_calls": 0,
-          "risky_calls": 0,
-          "max_risk": 0,
-          "max_score": 0,
-          "detected": false
-        },
-        "integer_overflow": {
-          "total": 1,
-          "definite": 1,
-          "possible": 0,
-          "underflow": 0,
-          "detected": true
-        },
-        "uaf": {
-          "total": 0,
-          "confirmed": 0,
-          "likely": 0,
-          "filtered": 0,
-          "detected": false,
-          "interproc": 0,
-          "realloc": 0
-        }
-      },
-      "duration_ms": 2.4
-    },
-    {
-      "sample": "cve_2018_6789_exim_uaf",
-      "type": "uaf",
-      "detections": {
-        "heap": {
-          "total": 3,
-          "definite": 0,
-          "possible": 2,
-          "filtered": 1,
-          "detected": true,
-          "fp_reducer_applied": true,
-          "fp_reducer_reason": "all_pairs_filtered",
-          "detected_after_fp_reducer": false
         },
         "format_string": {
           "total_calls": 0,
@@ -5208,20 +5168,60 @@
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 3.0
+    },
+    {
+      "sample": "cve_2018_6789_exim_uaf",
+      "type": "uaf",
+      "detections": {
+        "heap": {
+          "total": 4,
+          "definite": 0,
+          "possible": 3,
+          "filtered": 1,
+          "detected": true,
+          "fp_reducer_applied": true,
+          "fp_reducer_reason": "all_pairs_filtered",
+          "detected_after_fp_reducer": false
+        },
+        "format_string": {
+          "total_calls": 0,
+          "risky_calls": 0,
+          "max_risk": 0,
+          "max_score": 0,
+          "detected": false
+        },
+        "integer_overflow": {
+          "total": 1,
+          "definite": 1,
+          "possible": 0,
+          "underflow": 0,
+          "detected": true
+        },
+        "uaf": {
+          "total": 2,
+          "confirmed": 2,
+          "likely": 0,
+          "filtered": 0,
+          "detected": true,
+          "interproc": 1,
+          "realloc": 0
+        }
+      },
+      "duration_ms": 2.9
     },
     {
       "sample": "cve_2019_11477-tcp-sack",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -5252,16 +5252,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.1
+      "duration_ms": 3.5
     },
     {
       "sample": "cve_2019_13134_imagemagick_heap",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -5299,14 +5299,14 @@
       "type": "uaf",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -5332,7 +5332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 3.4
     },
     {
       "sample": "cve_2019_15947_bitcoin_fmt",
@@ -5372,7 +5372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.2
     },
     {
       "sample": "cve_2019_6974_kvm_uaf",
@@ -5412,7 +5412,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 2.8
     },
     {
       "sample": "cve_2019_9213_kernel_stack",
@@ -5452,17 +5452,17 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.9
     },
     {
       "sample": "cve_2020_10713-boothole",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 2,
           "definite": 0,
-          "possible": 4,
-          "filtered": 4,
+          "possible": 2,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -5492,16 +5492,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.0
+      "duration_ms": 3.8
     },
     {
       "sample": "cve_2020_10757_kernel_heap",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 2,
           "definite": 0,
-          "possible": 4,
+          "possible": 2,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -5532,7 +5532,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 4.0
+      "duration_ms": 5.0
     },
     {
       "sample": "cve_2020_14386_afpacket_stack",
@@ -5572,7 +5572,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 3.2
     },
     {
       "sample": "cve_2020_27821_qemu_fmt",
@@ -5612,7 +5612,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 2.2
     },
     {
       "sample": "cve_2021_22555_netfilter_stack",
@@ -5622,7 +5622,7 @@
           "total": 3,
           "definite": 0,
           "possible": 0,
-          "filtered": 3,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -5643,25 +5643,25 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 3.2
     },
     {
       "sample": "cve_2021_3156-baron",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -5692,7 +5692,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.4
+      "duration_ms": 3.1
     },
     {
       "sample": "cve_2021_34866_linux_uaf",
@@ -5732,7 +5732,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.4
+      "duration_ms": 4.7
     },
     {
       "sample": "cve_2021_4034-polkit",
@@ -5772,16 +5772,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 3.5
     },
     {
       "sample": "cve_2022_0185-fscontext",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -5812,7 +5812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.8
+      "duration_ms": 4.6
     },
     {
       "sample": "cve_2022_1015_nftables_stack",
@@ -5852,16 +5852,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 4.4
     },
     {
       "sample": "cve_2022_2639_pipe_uaf",
       "type": "uaf",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 2,
           "definite": 0,
-          "possible": 4,
+          "possible": 2,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -5892,7 +5892,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.2
+      "duration_ms": 4.9
     },
     {
       "sample": "cve_2023_0179_stack_overflow",
@@ -5932,7 +5932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.2
+      "duration_ms": 3.0
     },
     {
       "sample": "cve_2023_2002_bluetooth_uaf",
@@ -5972,16 +5972,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.6
+      "duration_ms": 3.8
     },
     {
       "sample": "cve_2023_44487-http2-rapid",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -6012,16 +6012,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 3.2
     },
     {
       "sample": "cve_2023_45871_libwebp_heap",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -6052,16 +6052,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.5
+      "duration_ms": 4.2
     },
     {
       "sample": "cve_21",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -6092,7 +6092,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.7
+      "duration_ms": 3.0
     },
     {
       "sample": "cve_22",
@@ -6132,7 +6132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 1.8
     },
     {
       "sample": "cve_23",
@@ -6172,7 +6172,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.8
+      "duration_ms": 2.3
     },
     {
       "sample": "cve_24",
@@ -6203,16 +6203,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 2.4
     },
     {
       "sample": "df_adv_16",
@@ -6252,7 +6252,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.1
     },
     {
       "sample": "df_adv_17",
@@ -6332,7 +6332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.4
     },
     {
       "sample": "df_adv_19",
@@ -6372,7 +6372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.3
     },
     {
       "sample": "df_adv_20",
@@ -6412,7 +6412,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.4
     },
     {
       "sample": "df_adv_21",
@@ -6452,7 +6452,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.2
     },
     {
       "sample": "df_adv_22",
@@ -6483,16 +6483,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.5
     },
     {
       "sample": "df_adv_23",
@@ -6532,7 +6532,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 1.9
     },
     {
       "sample": "df_adv_24",
@@ -6572,7 +6572,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.0
     },
     {
       "sample": "df_adv_25",
@@ -6612,21 +6612,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.6
     },
     {
       "sample": "df_adv_26",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 1,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -6643,16 +6643,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 2,
-          "confirmed": 2,
+          "total": 4,
+          "confirmed": 4,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.2
     },
     {
       "sample": "df_adv_27",
@@ -6683,30 +6683,30 @@
           "detected": true
         },
         "uaf": {
-          "total": 2,
-          "confirmed": 2,
+          "total": 3,
+          "confirmed": 3,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 2,
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 2.5
     },
     {
       "sample": "df_adv_28",
       "type": "unknown",
       "detections": {
         "heap": {
-          "total": 0,
+          "total": 2,
           "definite": 0,
-          "possible": 0,
+          "possible": 2,
           "filtered": 0,
-          "detected": false,
+          "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": false
+          "detected_after_fp_reducer": true
         },
         "format_string": {
           "total_calls": 0,
@@ -6723,16 +6723,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.2
     },
     {
       "sample": "df_adv_29",
@@ -6772,7 +6772,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.7
     },
     {
       "sample": "df_adv_30",
@@ -6812,7 +6812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 2.9
     },
     {
       "sample": "df_adv_31",
@@ -6852,7 +6852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 3.4
+      "duration_ms": 3.6
     },
     {
       "sample": "double_free_01",
@@ -6892,7 +6892,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 2.2
     },
     {
       "sample": "double_free_02",
@@ -6932,7 +6932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.2
     },
     {
       "sample": "double_free_03",
@@ -6972,7 +6972,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 3.1
     },
     {
       "sample": "double_free_04",
@@ -7012,7 +7012,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 1.9
     },
     {
       "sample": "double_free_05",
@@ -7052,7 +7052,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.3
     },
     {
       "sample": "double_free_06",
@@ -7092,7 +7092,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.2
     },
     {
       "sample": "double_free_07",
@@ -7123,16 +7123,16 @@
           "detected": true
         },
         "uaf": {
-          "total": 0,
-          "confirmed": 0,
+          "total": 1,
+          "confirmed": 1,
           "likely": 0,
           "filtered": 0,
-          "detected": false,
-          "interproc": 0,
+          "detected": true,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.2
     },
     {
       "sample": "double_free_08",
@@ -7163,16 +7163,16 @@
           "detected": false
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.3
     },
     {
       "sample": "double_free_09",
@@ -7212,7 +7212,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.7
     },
     {
       "sample": "double_free_10",
@@ -7252,7 +7252,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.5
+      "duration_ms": 1.7
     },
     {
       "sample": "double_free_11",
@@ -7292,7 +7292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.6
     },
     {
       "sample": "double_free_12",
@@ -7332,7 +7332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.5
+      "duration_ms": 1.7
     },
     {
       "sample": "double_free_13",
@@ -7372,7 +7372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 1.9
     },
     {
       "sample": "double_free_14",
@@ -7412,7 +7412,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 1.8
     },
     {
       "sample": "double_free_15",
@@ -7452,7 +7452,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 2.1
     },
     {
       "sample": "format_string_01",
@@ -7532,7 +7532,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 3.4
     },
     {
       "sample": "format_string_03",
@@ -7572,21 +7572,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 2.0
     },
     {
       "sample": "format_string_04",
       "type": "format_string",
       "detections": {
         "heap": {
-          "total": 1,
+          "total": 0,
           "definite": 0,
-          "possible": 1,
+          "possible": 0,
           "filtered": 1,
-          "detected": true,
+          "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
-          "detected_after_fp_reducer": true
+          "detected_after_fp_reducer": false
         },
         "format_string": {
           "total_calls": 2,
@@ -7612,7 +7612,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.6
     },
     {
       "sample": "format_string_05",
@@ -7692,7 +7692,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.5
     },
     {
       "sample": "format_string_07",
@@ -7732,7 +7732,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.7
     },
     {
       "sample": "format_string_08",
@@ -7772,7 +7772,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.3
     },
     {
       "sample": "format_string_09",
@@ -7812,7 +7812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.5
     },
     {
       "sample": "format_string_10",
@@ -7852,7 +7852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.0
+      "duration_ms": 2.4
     },
     {
       "sample": "format_string_11",
@@ -7892,7 +7892,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.6
     },
     {
       "sample": "format_string_12",
@@ -7932,7 +7932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.2
+      "duration_ms": 1.4
     },
     {
       "sample": "format_string_13",
@@ -7972,7 +7972,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.5
     },
     {
       "sample": "format_string_14",
@@ -8012,7 +8012,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.5
+      "duration_ms": 1.6
     },
     {
       "sample": "format_string_15",
@@ -8052,7 +8052,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.3
     },
     {
       "sample": "heap_overflow_01",
@@ -8092,7 +8092,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 3.6
     },
     {
       "sample": "heap_overflow_02",
@@ -8102,7 +8102,7 @@
           "total": 1,
           "definite": 0,
           "possible": 1,
-          "filtered": 0,
+          "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -8132,7 +8132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 3.6
     },
     {
       "sample": "heap_overflow_03",
@@ -8140,9 +8140,9 @@
       "detections": {
         "heap": {
           "total": 1,
-          "definite": 0,
-          "possible": 1,
-          "filtered": 3,
+          "definite": 1,
+          "possible": 0,
+          "filtered": 2,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "1/2_filtered",
@@ -8172,7 +8172,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.4
     },
     {
       "sample": "heap_overflow_04",
@@ -8182,7 +8182,7 @@
           "total": 1,
           "definite": 1,
           "possible": 0,
-          "filtered": 0,
+          "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -8212,7 +8212,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.0
     },
     {
       "sample": "heap_overflow_05",
@@ -8252,7 +8252,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.3
+      "duration_ms": 2.6
     },
     {
       "sample": "heap_overflow_06",
@@ -8262,7 +8262,7 @@
           "total": 1,
           "definite": 1,
           "possible": 0,
-          "filtered": 2,
+          "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "1/2_filtered",
@@ -8292,7 +8292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 2.5
     },
     {
       "sample": "heap_overflow_07",
@@ -8300,8 +8300,8 @@
       "detections": {
         "heap": {
           "total": 1,
-          "definite": 0,
-          "possible": 1,
+          "definite": 1,
+          "possible": 0,
           "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
@@ -8332,7 +8332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.9
+      "duration_ms": 3.6
     },
     {
       "sample": "heap_overflow_08",
@@ -8372,7 +8372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.5
+      "duration_ms": 1.7
     },
     {
       "sample": "heap_overflow_09",
@@ -8412,17 +8412,17 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 3.4
     },
     {
       "sample": "heap_overflow_10",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
-          "filtered": 0,
+          "possible": 1,
+          "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -8452,16 +8452,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.3
     },
     {
       "sample": "heap_overflow_11",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -8492,16 +8492,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.7
     },
     {
       "sample": "heap_overflow_12",
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 3,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -8532,7 +8532,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 1.9
     },
     {
       "sample": "heap_overflow_13",
@@ -8572,7 +8572,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.8
     },
     {
       "sample": "heap_overflow_14",
@@ -8582,7 +8582,7 @@
           "total": 3,
           "definite": 0,
           "possible": 1,
-          "filtered": 1,
+          "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -8619,10 +8619,10 @@
       "type": "heap_overflow",
       "detections": {
         "heap": {
-          "total": 4,
-          "definite": 2,
+          "total": 2,
+          "definite": 0,
           "possible": 0,
-          "filtered": 0,
+          "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -8652,7 +8652,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 1.9
     },
     {
       "sample": "integer_overflow_01",
@@ -8692,7 +8692,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 26.1
+      "duration_ms": 29.3
     },
     {
       "sample": "integer_overflow_02",
@@ -8702,7 +8702,7 @@
           "total": 0,
           "definite": 0,
           "possible": 0,
-          "filtered": 0,
+          "filtered": 1,
           "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -8732,16 +8732,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 6.5
+      "duration_ms": 3.0
     },
     {
       "sample": "integer_overflow_03",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 2,
+          "total": 1,
           "definite": 0,
-          "possible": 2,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -8772,17 +8772,17 @@
           "realloc": 0
         }
       },
-      "duration_ms": 15.3
+      "duration_ms": 4.8
     },
     {
       "sample": "integer_overflow_04",
       "type": "integer_overflow",
       "detections": {
         "heap": {
-          "total": 3,
+          "total": 2,
           "definite": 0,
-          "possible": 1,
-          "filtered": 0,
+          "possible": 0,
+          "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -8812,7 +8812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 1.7
     },
     {
       "sample": "integer_overflow_05",
@@ -8852,7 +8852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 2.4
     },
     {
       "sample": "integer_overflow_06",
@@ -8892,7 +8892,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.4
+      "duration_ms": 1.8
     },
     {
       "sample": "integer_overflow_07",
@@ -8932,7 +8932,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.0
     },
     {
       "sample": "integer_overflow_08",
@@ -8972,7 +8972,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.5
+      "duration_ms": 1.6
     },
     {
       "sample": "integer_overflow_09",
@@ -9012,7 +9012,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.7
+      "duration_ms": 1.8
     },
     {
       "sample": "integer_overflow_10",
@@ -9052,7 +9052,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.6
     },
     {
       "sample": "integer_overflow_11",
@@ -9092,7 +9092,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.7
     },
     {
       "sample": "integer_overflow_12",
@@ -9132,7 +9132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.6
     },
     {
       "sample": "integer_overflow_13",
@@ -9172,7 +9172,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.6
     },
     {
       "sample": "integer_overflow_14",
@@ -9212,7 +9212,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.5
     },
     {
       "sample": "integer_overflow_15",
@@ -9252,7 +9252,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.5
     },
     {
       "sample": "stack_overflow_01",
@@ -9292,7 +9292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.9
+      "duration_ms": 2.1
     },
     {
       "sample": "stack_overflow_02",
@@ -9332,21 +9332,21 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.8
+      "duration_ms": 2.4
     },
     {
       "sample": "stack_overflow_03",
       "type": "stack_overflow",
       "detections": {
         "heap": {
-          "total": 1,
+          "total": 0,
           "definite": 0,
-          "possible": 1,
+          "possible": 0,
           "filtered": 1,
-          "detected": true,
+          "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "1/2_filtered",
-          "detected_after_fp_reducer": true
+          "detected_after_fp_reducer": false
         },
         "format_string": {
           "total_calls": 2,
@@ -9372,7 +9372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.7
+      "duration_ms": 2.8
     },
     {
       "sample": "stack_overflow_04",
@@ -9412,7 +9412,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.8
+      "duration_ms": 2.3
     },
     {
       "sample": "stack_overflow_05",
@@ -9452,7 +9452,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.5
     },
     {
       "sample": "stack_overflow_06",
@@ -9492,7 +9492,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.2
+      "duration_ms": 1.6
     },
     {
       "sample": "stack_overflow_07",
@@ -9532,7 +9532,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.8
     },
     {
       "sample": "stack_overflow_08",
@@ -9652,7 +9652,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.8
     },
     {
       "sample": "stack_overflow_11",
@@ -9662,7 +9662,7 @@
           "total": 0,
           "definite": 0,
           "possible": 0,
-          "filtered": 0,
+          "filtered": 1,
           "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -9692,7 +9692,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 1.4
     },
     {
       "sample": "stack_overflow_12",
@@ -9732,7 +9732,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.5
+      "duration_ms": 1.9
     },
     {
       "sample": "stack_overflow_13",
@@ -9772,7 +9772,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.9
     },
     {
       "sample": "stack_overflow_14",
@@ -9782,7 +9782,7 @@
           "total": 0,
           "definite": 0,
           "possible": 0,
-          "filtered": 0,
+          "filtered": 1,
           "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -9812,7 +9812,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.1
+      "duration_ms": 1.5
     },
     {
       "sample": "stack_overflow_15",
@@ -9822,7 +9822,7 @@
           "total": 0,
           "definite": 0,
           "possible": 0,
-          "filtered": 0,
+          "filtered": 1,
           "detected": false,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -9852,7 +9852,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 2.0
     },
     {
       "sample": "uaf_01",
@@ -9892,16 +9892,16 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.6
+      "duration_ms": 3.3
     },
     {
       "sample": "uaf_02",
       "type": "uaf",
       "detections": {
         "heap": {
-          "total": 1,
+          "total": 2,
           "definite": 0,
-          "possible": 0,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -9923,25 +9923,25 @@
           "detected": true
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.7
     },
     {
       "sample": "uaf_03",
       "type": "uaf",
       "detections": {
         "heap": {
-          "total": 4,
+          "total": 1,
           "definite": 0,
-          "possible": 4,
+          "possible": 1,
           "filtered": 0,
           "detected": true,
           "fp_reducer_applied": false,
@@ -9972,7 +9972,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 2.2
     },
     {
       "sample": "uaf_04",
@@ -10003,12 +10003,12 @@
           "detected": false
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
@@ -10043,16 +10043,16 @@
           "detected": false
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.5
+      "duration_ms": 3.9
     },
     {
       "sample": "uaf_06",
@@ -10092,7 +10092,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 3.3
     },
     {
       "sample": "uaf_07",
@@ -10132,7 +10132,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 4.1
     },
     {
       "sample": "uaf_08",
@@ -10163,16 +10163,16 @@
           "detected": false
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 7.7
     },
     {
       "sample": "uaf_09",
@@ -10212,7 +10212,7 @@
           "realloc": 1
         }
       },
-      "duration_ms": 2.1
+      "duration_ms": 4.6
     },
     {
       "sample": "uaf_10",
@@ -10243,16 +10243,16 @@
           "detected": false
         },
         "uaf": {
-          "total": 1,
-          "confirmed": 1,
+          "total": 2,
+          "confirmed": 2,
           "likely": 0,
           "filtered": 0,
           "detected": true,
-          "interproc": 0,
+          "interproc": 1,
           "realloc": 0
         }
       },
-      "duration_ms": 2.2
+      "duration_ms": 4.9
     },
     {
       "sample": "uaf_11",
@@ -10292,7 +10292,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 3.3
     },
     {
       "sample": "uaf_12",
@@ -10302,7 +10302,7 @@
           "total": 2,
           "definite": 0,
           "possible": 0,
-          "filtered": 0,
+          "filtered": 1,
           "detected": true,
           "fp_reducer_applied": false,
           "fp_reducer_reason": "",
@@ -10332,7 +10332,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.2
+      "duration_ms": 2.2
     },
     {
       "sample": "uaf_13",
@@ -10372,7 +10372,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.3
+      "duration_ms": 1.8
     },
     {
       "sample": "uaf_14",
@@ -10412,7 +10412,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.4
+      "duration_ms": 1.6
     },
     {
       "sample": "uaf_15",
@@ -10452,7 +10452,7 @@
           "realloc": 0
         }
       },
-      "duration_ms": 1.6
+      "duration_ms": 2.1
     }
   ]
 }

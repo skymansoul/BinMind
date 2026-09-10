@@ -6,7 +6,7 @@ from analysis.strided_interval import (
     si_unbounded, si_from_mul,
 )
 
-# 核心创新模块
+# 路径约束与堆布局模块
 from analysis.path_constraint_collector import (
     BranchConstraint, PathConstraints, PathConstraintCollector,
 )

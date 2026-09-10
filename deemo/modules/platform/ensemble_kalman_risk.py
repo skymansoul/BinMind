@@ -25,7 +25,7 @@
 与已有工作的区分：
   标准Kalman滤波用于电力系统/工业控制的状态估计，不涉及漏洞传播图。
   多传感器融合(EKF/UKF)用于机器人定位，从未应用于安全风险状态估计。
-  本模块首次将EnKF应用于传播图的多源风险评分融合。
+  EnKF应用于传播图的多源风险评分融合。
 
 ref: Evensen "Data Assimilation: The Ensemble Kalman Filter".
 ref: EnKF for power systems - 最接近的工程应用，但不涉及安全风险。

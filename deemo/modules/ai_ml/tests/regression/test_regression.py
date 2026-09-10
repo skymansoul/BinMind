@@ -1,7 +1,6 @@
 # 回归测试——pytest参数化: 每个编译样本一个测试用例
 # 直接使用BinaryScanner+DualPipeline, 无subprocess开销
 # 运行: python -m pytest tests/regression/test_regression.py -v
-# created: 2026-08-06
 
 import sys, pytest
 from pathlib import Path

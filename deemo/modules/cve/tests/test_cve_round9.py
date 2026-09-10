@@ -1,5 +1,5 @@
 # Round 9 测试——攻击图、风险评分、ATT&CK映射
-# ~22项测试，覆盖2026年9月下旬新增特性
+# ~22项测试，覆盖新增特性
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase

@@ -14,8 +14,6 @@ Boundary Point Jailbreaking 用课程学习识别决策边界。
 5. 边界一致性评分作为分类器鲁棒性指标
 """
 
-# File: boundary_harden.py  |  2026-07-31 create SBH
-
 from __future__ import annotations
 
 import itertools

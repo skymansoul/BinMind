@@ -22,7 +22,7 @@
 与已有工作的区分:
   Smart Cuts: 主动学习用于代码漏洞检测(CodeBERT+Big-Vul数据集)，
     非传播图边选择。将dataset map引入样本选择，不涉及图边查询。
-  本模块: 首次将不确定性采样+委员会查询+预期模型变化三种策略
+  不确定性采样+委员会查询+预期模型变化三种策略
           应用于漏洞传播图的边调查优先级排序。
 
 ref: Settles "Active Learning Literature Survey".

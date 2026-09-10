@@ -1,6 +1,6 @@
 """堆漏洞静态检测模块 — 五维路径敏感分析 + 分配器感知过滤.
 
-核心创新: DP-TVRA (Demand-driven Path-sensitive Taint-Value-Range Analysis)
+DP-TVRA (Demand-driven Path-sensitive Taint-Value-Range Analysis)
   三阶段管线: 污点追溯 → 路径约束窄化 → 分配器模型验证
 
 新增:

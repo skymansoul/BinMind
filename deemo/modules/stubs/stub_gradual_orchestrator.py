@@ -1,16 +1,11 @@
 # stub_gradual_orchestrator.py : StubGradual 编排层 + 健康回路 + 自检闭环
 # 将契约抽取(stub_contract) → 优先级排序(stub_prioritizer) →
 # 渐进实现(stub_gradual_engine) → 健康监控(stub_health_monitor) 串联为单入口，
-# 并补齐此前缺失的两处接缝：
+# 并补齐两处接缝:
 #   1. 双向健康回路：排序阶段读取监控中的调用观测，实现落盘后回写监控，
 #      使"已实现"与"健康"两路信号在后续轮次自洽。
 #   2. 验证-回溯自检：verify_chain() 对引擎族执行六类断言检查，
-#      将 Agentic Repair 的"验证-回溯"原则应用于引擎自身 — 出错即回退并报告细节。
-# 支撑论文:
-#   Agentic Program Repair from Test Failures at Scale
-#     验证-回溯闭环依赖"可判定的验证信号"，自检对引擎族应用同一准则。
-#   SynthFix
-#     符号层与神经层的协同由编排层统一调度与降级。
+#      出错即回退并报告细节。
 import ast as _ast
 import os as _os
 import sys as _sys

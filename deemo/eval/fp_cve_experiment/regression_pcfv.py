@@ -1,6 +1,5 @@
 """PCFV 语料库回归 — 对 corpus 下全部样本运行 PCFV 并与 truth 比对.
 
-创建: 2023-06-22
 用法: python eval/fp_cve_experiment/regression_pcfv.py [--json out.json]
 输出: 每样本 检出/漏报/误报 状态 + 汇总指标 + 判定明细
 """

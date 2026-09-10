@@ -1,6 +1,5 @@
 """FMT 对比绘图与表格 — FMT-SAC vs 基线 (O0/O2).
 
-创建: 2024-11-03
 用法: python eval/fp_cve_experiment/plot_fmt_comparison.py
 输出: results/fmt_comparison.png, fmt_result_table_O0.tex, fmt_result_table_O2.tex
 """

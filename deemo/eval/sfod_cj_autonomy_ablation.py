@@ -1,7 +1,7 @@
 """
 SFOD CJ自主率消融 — 量化SFOD桥接对CJ管线(不含HOSV)自主率的提升.
 
-核心思路: 只用CJ管线判定, 不调用HOSV源级验证器.
+只用CJ管线判定, 不调用HOSV源级验证器.
 对比:
   A: CJ-only (无SFOD) — CJ管线无法处理struct field → INCONCLUSIVE
   B: CJ+SFOD (有SFOD) — CJ管线自主处理struct field → SAFE/OVERFLOW

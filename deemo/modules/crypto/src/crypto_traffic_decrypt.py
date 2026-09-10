@@ -2,9 +2,9 @@
 网络流量密码学分析: TLS/DTLS/SSH/QUIC/WireGuard检测、密钥提取、解密。
 三级解密回退: cryptography → PyCryptodome → 纯Python XOR。
 
-2026-07: 新增WireGuard Noise握手检测、SSHv2 KEX算法枚举、
-JA4 TLS客户端指纹、QUIC v2 (RFC 9369)版本协商、DTLS 1.3记录层检测、
-Encrypted ClientHello (ECH)识别、GREASE密码套件过滤以抑制误报。
+检测项: WireGuard Noise握手、SSHv2 KEX算法枚举、JA4 TLS客户端指纹、
+QUIC v2 (RFC 9369)版本协商、DTLS 1.3记录层检测、Encrypted ClientHello (ECH)、
+GREASE密码套件过滤以抑制误报。
 """
 
 import re

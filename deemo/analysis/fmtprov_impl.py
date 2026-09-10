@@ -9,9 +9,8 @@
 #     其它/未知                                   → UNKNOWN → SUSPICIOUS
 #   终止: 跳数上限 12, 槽/寄存器 visited 集合防环.
 #
-# 本文件为 FMTPROV 独立实现, 合并 modules/vuln/detection/fmtprov/ 的
-# fmt_abi.py + taint.py + pipeline.py, 并内联依赖的 objdump 解析器
-# (heapver/insn.py 与 memop._plain_reg_token), 仅标准库.
+#   本文件实现 FMTPROV 核心管线: 内联 objdump 解析器 → 格式函数签名 → 溯源器 → 管线.
+
 
 import re
 import subprocess
@@ -20,7 +19,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ================= 内联 objdump 解析器 (原 heapver/insn.py) =================
+# 内联 objdump 解析器
 
 _FUNC_HEADER = re.compile(r"^([0-9a-fA-F]{8,16}) <(.*)>:$")
 _INSN_LINE = re.compile(r"^\s+([0-9a-fA-F]{8,16}):\t")
@@ -157,7 +156,7 @@ def _plain_reg_token(op: str) -> str:
     return ""
 
 
-# ================= 格式函数签名 (原 fmt_abi) =================
+# 格式函数签名
 
 FORMAT_FUNCS: Dict[str, Dict] = {
     "printf": {"idx": 0, "win64": ["rcx", "ecx"], "sysv": ["rdi", "edi"]},
@@ -194,7 +193,7 @@ def find_format(callee: str):
     return (best_key, best) if best else (None, None)
 
 
-# ================= 溯源器 (原 taint) =================
+# 溯源器
 
 CONST = "CONST"
 TAINT = "TAINT"
@@ -323,7 +322,7 @@ class FmtTaintWalker:
         return dict(self._stats)
 
 
-# ================= 管线 (原 pipeline) =================
+# 管线
 
 SAFE = "SAFE"
 VULN = "VULN"

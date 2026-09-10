@@ -1,4 +1,3 @@
-# created: 2026-07-12
 # 回归测试编译调度——遍历sample目录，调用各compile.sh生成目标ELF
 # 输出: build/目录下的编译产物 + compile_log.json
 

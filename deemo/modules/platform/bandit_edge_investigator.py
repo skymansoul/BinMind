@@ -21,7 +21,7 @@
     alpha参数控制探索权重
 
 创新点：
-  首次将上下文赌博机应用于漏洞传播图的边验证优先级排序。
+  上下文赌博机应用于漏洞传播图的边验证优先级排序。
   上下文特征编码传播特有的语义（层跨度、跨层标记、规则名哈希）。
 
 ref: Li et al. "A Contextual-Bandit Approach to Personalized News Article Recommendation".

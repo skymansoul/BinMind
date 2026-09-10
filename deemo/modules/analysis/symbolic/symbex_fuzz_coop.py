@@ -589,8 +589,9 @@ class SymbExFuzzCoop:
 
     tick() 运行两侧各一次迭代, 排空消息队列, 更新共享覆盖率视图。
 
-    四轮增强: 集成 SeedGenealogyTree、CoverageFrontierTracker、
-    MutualInformationScoring 三大组件。
+    集成 SeedGenealogyTree、CoverageFrontierTracker、
+    MutualInformationScoring 三大组件, 追踪种子亲缘、覆盖率前沿与
+    互信息评分来引导两侧协作。
     """
 
     # 种子年龄衰减因子：每 tick 乘 0.95
@@ -611,7 +612,7 @@ class SymbExFuzzCoop:
         self._tick_counter = 0
         self.symbex_runner = symbex_runner
         self.fuzzer_runner = fuzzer_runner
-        # 四轮增强组件
+        # 协同组件
         self.genealogy = SeedGenealogyTree()
         self.frontier = CoverageFrontierTracker()
         self.mi_scoring = MutualInformationScoring()

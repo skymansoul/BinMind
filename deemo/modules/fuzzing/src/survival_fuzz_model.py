@@ -1,10 +1,5 @@
 """生存分析制导的 Bug 发现建模器 — Kaplan-Meier / Nelson-Aalen / Cox PH.
 
-修改记录:
-2025-08-01 08:42 - 在线 Kaplan-Meier + Nelson-Aalen 累积危险率估计
-2025-08-03 11:19 - 时变协变量: 覆盖增长率 + 种子池大小作为危险预测因子
-2025-08-05 15:33 - log-rank 检验: 两种 fuzzing 策略的统计显著性比较
-
   Kaplan & Meier "Nonparametric Estimation from Incomplete Observations"
     (JASA) — 经典 KM 估计器, 处理右删失数据
   Cox "Regression Models and Life-Tables" (JRSS-B)
@@ -17,7 +12,6 @@
 KM 估计器给出 bug 发现概率随时间变化的无偏估计,
 Nelson-Aalen 给出瞬时危险率, 两者都正确处理删失。
 
-核心创新:
   1. 在线 KM 估计: 随 fuzzing 进行实时更新生存曲线
   2. 时变危险率: 覆盖增长放缓 → 危险率下降; 新种子注入 → 危险率跳升
   3. 终止预测: 当预测中位发现时间超过预算时, 建议停止

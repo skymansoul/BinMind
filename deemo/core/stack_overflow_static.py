@@ -23,7 +23,7 @@ def static_overflow_analysis(
     binfo: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
     """
-    静态回退分析(增强版)-反向污点追踪 + 缓冲区大小估算。
+    静态回退分析-反向污点追踪 + 缓冲区大小估算。
 
     与旧版区别: 不再仅靠函数名正则匹配判断危险调用。
     对每个危险调用做反向def-use链追踪, 验证参数是否来自用户输入源。

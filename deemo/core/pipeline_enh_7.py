@@ -98,7 +98,7 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
     # 回答"还有多少 bug 没找到"——差分 fuzzing 的统计收敛判定。
     # ASE 2025 "Risk Estimation in Differential Fuzzing via EVT";
     # 参考: Coles (2001); Pickands (1975)
-    # FIX: 2026-08-15 原引用行缺 # 前缀, 挂载后执行期 NameError, 转为注释
+    # 原引用行缺 # 前缀会致挂载后执行期 NameError, 已转为注释
     try:
         from modules.fuzzing.src.evt_risk_estimator import (
             EVTRiskEstimator, fit_gpd, score_diff_severity,
@@ -133,7 +133,7 @@ def apply_enhancements_7(result, binary_path, binfo, kwargs, binary_hash=None):
 
     # (bf) 行为级可利用性评分器
     # 五维运行时评分 (寄存器可控性+内存布局+保护状态+崩溃类型+输入可控性)
-    # FIX: 2026-08-15 原引用行缺 # 前缀, 挂载后执行期 NameError, 转为注释
+    # 原引用行缺 # 前缀会致挂载后执行期 NameError, 已转为注释
     # → 0-100 连续评分替代 CVSS 静态三档分类。
     # 与现有 crash_analysis/exploit_gen 互补: 后者做可利用性判定,
     # 本模块做连续量化评分 + 保护缺失枚举。

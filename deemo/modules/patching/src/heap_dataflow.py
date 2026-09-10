@@ -16,7 +16,7 @@
   这一mov-store-load链即使在跨函数场景也足够稳定,
   因为编译器在-O0/-O1不轻易重排malloc结果的使用。
 
-参考: Value-Flow Analysis for Heap Overflow
+思路参照针对堆溢出的 Value-Flow Analysis (值流分析)。
 """
 
 import re

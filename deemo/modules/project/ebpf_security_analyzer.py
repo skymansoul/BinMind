@@ -17,8 +17,6 @@
 #
 #   CVE-2020-8835/2021-3490/2022-23222 — verifier bypass历史 (已验证)
 #   CISA eBPF Security Advisory — eBPF安全最佳实践
-#   oss-security: DEF CON 33 eBPF演讲宣称的11个漏洞被
-#     kernel maintainers确认为AI生成, 非实际安全问题
 from __future__ import annotations
 import logging
 import re

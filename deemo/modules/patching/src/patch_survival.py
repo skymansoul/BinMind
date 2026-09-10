@@ -3,7 +3,7 @@
 
 """Patch Survival Analyzer — 补丁生存分析与寿命预测。
 
-首次将生存分析 (survival analysis) 应用于二进制补丁的可靠性评估。
+本模块将生存分析 (survival analysis) 应用于二进制补丁的可靠性评估。
 现有 reliability_predictor 和 temporal_reliability 使用参数化指数衰减模型。
 本模块使用非参数 Kaplan-Meier 估计 + Cox 比例风险模型，
 从历史补丁数据中学习可靠性分布，不预假设衰减形式。

@@ -8,7 +8,7 @@
 5. CoverageGuidedSymbolicScheduler — 覆盖率优先的路径选择
 6. UnicornHybridSymbolicExecutor — 具体执行结果回注 angr
 
-二轮增强: Unicorn 真实执行 — 用 unicorn 库做基本块级具体执行,
+Unicorn 真实执行 — 用 unicorn 库做基本块级具体执行,
 提取寄存器值与内存写入后回注到 angr state 的约束集;
 unicorn 不可用时回退到简单的 PC 推进模拟。
 """
@@ -867,7 +867,7 @@ class UnicornBlockCache:
 
 
 class UnicornHybridSymbolicExecutor:
-    """二轮增强 — 真实 Unicorn 执行引擎
+    """真实 Unicorn 执行引擎
 
     当 unicorn 库可用时，使用 unicorn.Uc 进行基本块级具体执行
     不可用时回退到基于 r2 的指令模拟

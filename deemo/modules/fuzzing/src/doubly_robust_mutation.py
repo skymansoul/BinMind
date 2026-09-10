@@ -1,7 +1,4 @@
 """双重鲁棒突变评估 — AIPW + 倾向得分 + 结果回归.
-
-修改记录:
-2025-08-17 14:31 - AIPW 双重鲁棒估计 + logistic 倾向得分 + 线性结果模型
 参考: Robins, Rotnitzky & Zhao JASA; Bang & Robins Biometrics.
 在 fuzzing 中零先例。即使倾向得分模型或结果模型之一错误,
 ATE 估计仍一致 (双重鲁棒性)。评估突变策略的因果效应。"""

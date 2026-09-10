@@ -1,27 +1,18 @@
 # stub_sibling_inferrer.py — 姐妹函数合约推断
 # 当模块中有部分函数已实现、部分仍为占位时，
 # 从已实现函数的模式推断未实现函数的合约细节。
-#
-# 问题:
-#   许多桩模块处于 MIXED 状态: 部分函数已手动实现，部分仍为占位。
-#   已实现函数包含丰富的模式信息（命名约定、错误处理风格、类型使用习惯、
-#   导入依赖），这些信息对推断同模块未实现函数的合约有参考价值。
-#   当前合约构建仅基于 AST 解析 + 文档，忽略了姐妹函数的实现模式。
+# 已实现函数包含命名约定、错误处理风格、类型使用习惯、导入依赖等
+# 模式信息，对推断同模块未实现函数的合约有参考价值。
 #
 # 方法:
 #   1. 解析模块源码 → 分离已实现函数与占位函数
 #   2. 从已实现函数提取模式:
 #      a) 命名前缀 (detect_*, extract_*, is_*, parse_*)
-#      b) 返回类型偏好 (该模块倾向于返回 dict 还是自定义类？)
-#      c) 错误处理模式 (raise XxxError vs return None vs assert)
-#      d) 参数命名约定 (data vs input vs payload)
+#      b) 返回类型偏好
+#      c) 错误处理模式 (raise vs return None vs assert)
+#      d) 参数命名约定
 #      e) 导入依赖 (已 import 的模块暗示未实现函数可能也需要)
 #   3. 将推断结果合并到占位函数的 FuncContract 中
-#
-# 区别于 specification mining:
-#   该论文用 trace slicing 为智能合约挖掘规约。
-#   本模块用同模块已实现代码的模式推断未实现部分的合约，
-#   不需要执行 trace，基于静态 AST 模式匹配。
 import ast as _ast
 import os as _os
 import re as _re

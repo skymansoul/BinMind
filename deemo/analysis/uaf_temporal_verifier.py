@@ -1,7 +1,7 @@
 """
 UAF时序验证引擎 —— 时间维度上的 use-after-free 精确判定。
 
-核心创新: 不仅检查"是否存在 free 和 use", 而是证明两者的时序关系:
+不仅检查"是否存在 free 和 use", 而是证明两者的时序关系:
   - free→use 路径是否必然经过 (dominates)
   - 是否存在 guard (NULL check) 阻止 use
   - 别名传播: q=p; free(p); use(q) — q 作为 p 的别名被追踪

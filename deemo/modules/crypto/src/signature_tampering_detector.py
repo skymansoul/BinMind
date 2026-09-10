@@ -1,7 +1,7 @@
 """PE签名篡改检测: 解析安全目录并校验签名者信誉。
 
-2025-02-06: PE checksum校验(头vs计算值), 双签名(SHA-1+SHA-256)检测,
-Authenticode时间戳副署解析, 40+已知CA和软件厂商信誉库。
+检测项: PE checksum校验(头vs计算值)、双签名(SHA-1+SHA-256)、
+Authenticode时间戳副署解析、40+已知CA与软件厂商信誉库。
 """
 
 import struct
@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
-# SELF_SIGNED去重修复 2026-08-02 — 曾同时作为Enum成员和SignatureInfo实例属性冲突
+# SELF_SIGNED 已去重: 避免Enum成员与SignatureInfo实例属性同名冲突
 import hashlib
 
 logger = logging.getLogger(__name__)

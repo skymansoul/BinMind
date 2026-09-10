@@ -2,22 +2,12 @@
 # 在隔离子进程中执行桩实现，喂入安全相关载荷，
 # 捕获崩溃/超时/内存异常/非预期异常。
 #
-# 问题:
-#   现有验证管线全部在宿进程中运行:
-# ContractVerifier 直接 exec() 源码
-# AdversarialFuzzer 直接调用函数
-#   这种"信任执行"无法检测:
-#     a) 无限循环/递归导致进程卡死
-#     b) 内存泄漏（大输入下分配失控）
-#     c) 段错误/访问违规（原生扩展或 ctypes）
-#     d) 恶意代码注入（若 LLM 生成含 eval/exec 的代码）
-#
-# 方案 — 三层沙箱:
+# 三层沙箱:
 #   1. 进程隔离: subprocess 执行，独立 Python 解释器
 #   2. 资源限制: timeout(CPU时间), max_memory
 #   3. 代码审查: AST 扫描检测危险调用 (eval, exec, __import__, compile)
-#   输出: SandboxResult(exit_code, stdout, stderr, duration, peak_memory,
-#          crashed, timed_out, dangerous_calls)
+# 输出: SandboxResult(exit_code, stdout, stderr, duration, peak_memory,
+#        crashed, timed_out, dangerous_calls)
 import ast as _ast
 import os as _os
 import re as _re

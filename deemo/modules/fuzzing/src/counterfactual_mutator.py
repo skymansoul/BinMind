@@ -1,11 +1,5 @@
 """因果变异优化器 (Causal Mutation Optimizer, CMO) — 线性因果效应估计 + 反事实推断.
 
-修改记录:
-2025-07-28 15:37 - 线性因果效应估计 + counterfactual ranking 框架
-2025-07-30 10:44 - 历史变异 what-if 重估, 无需重新执行
-2025-08-01 14:08 - bootstrap 置信区间过滤低信度推断
-2025-08-20 09:13 - 修正: 标注线性近似假设, 区分于 Pearl formal counterfactual
-
   Pearl "Causality" §7 — 反事实的形式化基础
   Peters, Janzing & Schölkopf "Elements of Causal Inference" §6
 

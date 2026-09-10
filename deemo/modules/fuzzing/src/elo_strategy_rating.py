@@ -1,7 +1,4 @@
 """Elo 动态策略评级 — Glicko 变体 + K 因子自适应.
-
-修改记录:
-2025-08-17 09:22 - Elo 评级 + K 因子自适应 + Glicko RD (评级偏差)
 参考: Elo "The Rating of Chessplayers"; Glickman Glicko.
 在 fuzzing 中零先例。将突变策略两两比较建模为竞赛,
 Elo 评级动态更新, RD 量化不确定性, 自适应 K 因子加速收敛。"""

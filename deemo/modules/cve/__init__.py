@@ -112,7 +112,6 @@ def __getattr__(name: str):
       "batch_ds_fusion": ".src.cve_ds_fusion",
       "HGATAttentionLayer": ".src.cve_hgat_attention",
       "HGATEnhancedAnalyzer": ".src.cve_hgat_attention",
-# 2026-08 新增: 专利级创新模块
       "MarkedHawkesEngine": ".src.cve_hawkes",
       "HawkesEvent": ".src.cve_hawkes",
       "HawkesFitResult": ".src.cve_hawkes",
@@ -133,7 +132,7 @@ def __getattr__(name: str):
       "PatchTask": ".src.cve_pareto_remediation",
       "PatchSchedule": ".src.cve_pareto_remediation",
       "optimize_remediation": ".src.cve_pareto_remediation",
-# 2026-08 第二轮: 生存分析+变点检测+信息论
+# 生存分析 + 变点检测 + 信息论
       "BayesianChangepointDetector": ".src.cve_changepoint",
       "MultiStreamChangepointMonitor": ".src.cve_changepoint",
       "build_monitor_from_kb": ".src.cve_changepoint",
@@ -143,72 +142,72 @@ def __getattr__(name: str):
       "build_survival_records": ".src.cve_survival",
       "InfoTheoryAnalyzer": ".src.cve_info_theory",
       "analyze_cve_features": ".src.cve_info_theory",
-# 2026-08 第三轮: 反事实解释 + 上下文Bandit
+# 反事实解释 + 上下文 Bandit
       "CounterfactualExplainer": ".src.cve_counterfactual",
       "explain_cve_risk": ".src.cve_counterfactual",
       "BanditRemediationEngine": ".src.cve_bandit_remediation",
       "ContextualThompsonSampler": ".src.cve_bandit_remediation",
       "build_context_from_cve": ".src.cve_bandit_remediation",
-# 2026-08 第四轮: 图对比学习 + TTA
+# 图对比学习 + TTA
       "GraphContrastiveEncoder": ".src.cve_graph_contrastive",
       "pretrain_on_cve_graph": ".src.cve_graph_contrastive",
       "TestTimeAdapter": ".src.cve_tta",
       "EntropyDriftDetector": ".src.cve_tta",
       "build_tta_scorer": ".src.cve_tta",
       "adaptive_score_cve": ".src.cve_tta",
-# 2026-08 第五轮: 元学习 + 交互指数
+# 元学习 + 交互指数
       "MAMLCVEModel": ".src.cve_meta_learning",  # 向下兼容别名
       "ReptileCVEModel": ".src.cve_meta_learning",
       "meta_train_from_kb": ".src.cve_meta_learning",
       "InteractionIndex": ".src.cve_interaction_index",
       "analyze_source_interactions": ".src.cve_interaction_index",
-# 2026-08 第六轮: 子模分诊 + 神经过程
+# 子模分诊 + 神经过程
       "SubmodularTriageSelector": ".src.cve_submodular_triage",
       "triage_cves": ".src.cve_submodular_triage",
       "compare_with_topk": ".src.cve_submodular_triage",
       "ConditionalNeuralProcess": ".src.cve_neural_process",
       "build_cnp_from_kb": ".src.cve_neural_process",
-# 2026-08 第七轮: 超网络 + 图扩散
+# 超网络 + 图扩散
       "HypernetworkCVEScorer": ".src.cve_hypernetwork",
       "build_hypernetwork_from_kb": ".src.cve_hypernetwork",
       "GraphDiffusionPropagator": ".src.cve_graph_diffusion",
       "build_diffusion_from_graph": ".src.cve_graph_diffusion",
       "compute_risk_propagation": ".src.cve_graph_diffusion",
-# 2026-08 第八轮: 最优传输 + 贝叶斯评分
+# 最优传输 + 贝叶斯评分
       "GromovWassersteinAligner": ".src.cve_optimal_transport",
       "align_vendor_profiles": ".src.cve_optimal_transport",
       "detect_distribution_anomaly": ".src.cve_optimal_transport",
       "MCDropoutScorer": ".src.cve_bayesian_scorer",
       "build_bayesian_scorer_from_kb": ".src.cve_bayesian_scorer",
       "uncertainty_triage": ".src.cve_bayesian_scorer",
-# 2026-08 第九轮: 高斯过程 + 拓扑分析
+# 高斯过程 + 拓扑分析
       "SparseGaussianProcess": ".src.cve_gaussian_process",
       "build_gp_from_kb": ".src.cve_gaussian_process",
       "VietorisRipsFiltration": ".src.cve_topological",
       "analyze_cve_topology": ".src.cve_topological",
       "compare_cve_landscapes": ".src.cve_topological",
-# 2026-08 第十轮: CQR + 随机平滑
+# CQR + 随机平滑
       "CQRScorer": ".src.cve_cqr",
       "build_cqr_from_data": ".src.cve_cqr",
       "RandomizedSmoothingCertifier": ".src.cve_randomized_smoothing",
       "certify_scorer": ".src.cve_randomized_smoothing",
       "find_manipulable_cves": ".src.cve_randomized_smoothing",
-# 2026-08 第十一轮: 深度核学习 + 多任务学习
+# 深度核学习 + 多任务学习
       "DeepKernelGP": ".src.cve_deep_kernel",
       "build_dkl_from_kb": ".src.cve_deep_kernel",
       "MultiTaskCVEPredictor": ".src.cve_multitask",
       "build_multitask_from_kb": ".src.cve_multitask",
-# 2026-08 第十二轮: HMM + 孪生网络
+# HMM + 孪生网络
       "CVELifecycleHMM": ".src.cve_hmm",
       "build_hmm_from_kb": ".src.cve_hmm",
       "SiameseCVEEmbedder": ".src.cve_siamese",
       "build_siamese_from_kb": ".src.cve_siamese",
-# 2026-08 第十三轮: 时序GAT + 集成元评分
+# 时序GAT + 集成元评分
       "TemporalGATScorer": ".src.cve_temporal_gat",
       "build_temporal_gat_from_graph": ".src.cve_temporal_gat",
       "HeterogeneousMetaScorer": ".src.cve_ensemble",
       "build_ensemble_from_functions": ".src.cve_ensemble",
-# 2026-08 第十四轮: EBM + 分数校准
+# EBM + 分数校准
       "ExplainableBoostingMachine": ".src.cve_ebm",
       "build_ebm_from_kb": ".src.cve_ebm",
       "IsotonicCalibrator": ".src.cve_calibration",

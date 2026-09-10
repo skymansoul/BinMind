@@ -1,4 +1,4 @@
-﻿"""ACFPC 引擎冒烟测试 — 覆盖三证据链与压制/确认路径."""
+"""ACFPC 引擎冒烟测试 — 覆盖三证据链与压制/确认路径."""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

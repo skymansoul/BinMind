@@ -13,8 +13,8 @@ malloc(10)实际可用空间可能是32字节（受MINSIZE和MALLOC_ALIGNMENT约
 
 这能消除"malloc(10)+memcpy(20)"类的误报 — glibc实际给的可不止10字节。
 
-参考: glibc malloc.c source (ptmalloc2/3), MallocInternals [Phrack],
-      HeapHopper 的堆模型。
+模型对照 glibc malloc.c 源码 (ptmalloc2/3)、MallocInternals [Phrack]
+以及 HeapHopper 的堆模型。
 """
 
 import logging

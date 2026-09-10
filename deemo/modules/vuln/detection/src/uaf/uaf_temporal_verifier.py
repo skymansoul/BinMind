@@ -1,6 +1,5 @@
 """UAF 时序路径验证器 — free→use 路径的形式化安全证明.
 
-创建: 2025-04-17
 目的: 在 UAFUseChainTracker 找到 free→use 路径后, 做第二阶段的时序安全分析.
       类似于 AVHO-G 的 heap_safety_prover 对堆溢出的 tri-state 判定,
       本模块对 UAF 做四态判定:
@@ -99,7 +98,6 @@ class UAFTemporalVerifier:
                escape_path: List[str] = None) -> SafetyProof:
         """验证一条 free→use 路径的安全性.
 
-        核心思路:
           1. free 和 use 的时序关系: free < use? (地址顺序)
           2. free 后是否有 p=NULL 赋值?
           3. use 前是否有 if(p) 守卫?

@@ -31,9 +31,8 @@
 # 补丁的"保护效应" (补丁发布后利用风险下降比例)
 # 时变风险曲线 (利用风险如何随时间变化)
 #
-# 非显而易见性:
-#   1. 竞争风险框架在医学统计中成熟, 但从未用于CVE利用预测.
-#      CVSS和EPSS忽略"补丁竞争的治愈效应".
+# 设计说明:
+#   1. CVSS和EPSS忽略"补丁竞争的治愈效应".
 #   2. 时变协变量处理: EPSS每月更新, KEV随时收录 → 需分段指数模型.
 #   3. Fine-Gray模型替代了LEV的独立窗口乘积, 正确处理了时间依赖性.
 #
@@ -41,7 +40,6 @@
 # Regression Models and Life-Tables (JRSS-B)
 # A Proportional Hazards Model for the Subdistribution
 # LEV metric — 离散时间, 忽略竞争风险
-#   [搜素结果] 未发现Cox模型或竞争风险在CVE利用预测中的现有应用
 
 import math
 from collections import defaultdict

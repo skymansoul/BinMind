@@ -1,6 +1,5 @@
 """LaTeX 对比表格生成 — 从基准CSV输出 result_table.tex.
 
-创建: 2023-10-21
 用法: python eval/fp_cve_experiment/gen_latex_table.py [--exe vuln.exe]
 输出: eval/fp_cve_experiment/results/result_table_O0.tex 等
 """

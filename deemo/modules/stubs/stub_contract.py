@@ -5,11 +5,6 @@
 #   2. 渐进实现的目标规格与校验基准（见 stub_gradual_engine.py）
 # 设计意图：将桩模块的可判定性从"能否 import"升级为"签名/约束/异常"三层规格，
 # 使未实现占位可被程序化识别并增量补齐。
-# 支撑论文:
-#   Agentic Program Repair from Test Failures at Scale
-#     验证-回溯闭环以"可判定的正确性规约"为前提，接口契约即该规约的轻量形态。
-#   SynthFix
-#     符号层(signature/constraints)与神经层(body)分离，契约定义符号层边界。
 import ast as _ast
 import os as _os
 import re as _re

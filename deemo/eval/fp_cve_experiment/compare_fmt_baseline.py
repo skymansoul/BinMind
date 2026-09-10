@@ -1,6 +1,5 @@
 """FMT 基线 vs FMT-SAC 对比 — 在 corpus_fmt 上的误报/召回对比.
 
-创建: 2023-06-02
 用法: python eval/fp_cve_experiment/compare_fmt_baseline.py [--json out.json]
 """
 import argparse

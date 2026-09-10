@@ -2,7 +2,7 @@
 # Vovk et al. Algorithmic Learning in a Random World. 2005.
 #       Angelopoulos & Bates. Conformal Prediction: A Gentle Introduction. 2021.
 #       Barber et al. Predictive Inference with the Jackknife+. AOS 2021.
-# 核心机制：不依赖任何分布假设，仅通过校准集分数分布构造预测区间
+# 不依赖任何分布假设，仅通过校准集分数分布构造预测区间
 
 import math
 from typing import Dict, List, Optional, Tuple, Any

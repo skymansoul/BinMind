@@ -2,10 +2,6 @@
 """
 对比实验结果绘图 — 从comparison JSON生成论文级柱状图。
 
-创建: 2026-06-11 16:45
-修改:
-  2025-10-07 16:45 — 初始实现: 检出率/误报率/耗时/内存柱状图
-
 用法:
   python scripts/plot_results.py \
     --input results/comparison/comparison_20251007.json \

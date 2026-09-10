@@ -11,8 +11,9 @@ _reg_flows_to也仅做mov链, 无别名归一化。
   - 指针来源分类: ALLOC / STACK_SLOT / GLOBAL / PARAM / REALLOC
   - 堆对象身份: 区分malloc(ptr1)和malloc(ptr2) → 避免误匹配
 
-参考: heap_expr_tracker._norm_reg / heap_expr_tracker._trace_stack_slot_store
-       Undangle demand-driven pointer provenance
+寄存器归一化与栈槽存储/加载链复用 heap_expr_tracker._norm_reg 和
+heap_expr_tracker._trace_stack_slot_store，整体对应 Undangle 的
+demand-driven pointer provenance。
 """
 
 import re

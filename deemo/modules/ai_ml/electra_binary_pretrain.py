@@ -16,7 +16,7 @@
 #      特征提取器-判别器对每个token的"是否被替换"判断蕴含了
 #      对指令语义的深层理解
 #
-# 新颖性: 首次将ELECTRA的replaced token detection应用于二进制代码预训练
+# 技术要点: 采用ELECTRA的replaced token detection进行二进制代码预训练
 
 from __future__ import annotations
 

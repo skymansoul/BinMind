@@ -18,7 +18,7 @@ class HeapProvenance:
 class HeapProvenanceTracker:
     """追踪堆指针的来源, 确定每个写操作的目标是哪个 malloc 分配的缓冲区
 
-    核心思路: 静态检测的误报主因是堆对象混淆
+    静态检测的误报主因是堆对象混淆
     malloc(64) 和 memcpy(128) 若操作不同的缓冲区→不是漏洞
     只有 memcpy 的目标确实来自那个 64 字节的 malloc→才是堆溢出
 

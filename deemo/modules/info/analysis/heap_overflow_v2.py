@@ -38,7 +38,7 @@ def safety_filter(findings: List[Dict], checksec: Dict, imports: Dict) -> List[D
             f["confidence"] = round(max(0.05, f["confidence"] - 0.15), 2)
     return [f for f in findings if f["confidence"] >= 0.10]
 
-# 源码安全模式检测 (P0.5增强版)
+# 源码安全模式检测 (P0.5)
 def _source_safety(code: str, af: str, wf: str, alloc_expr: str, write_expr: str,
                    ranges: Dict) -> Tuple[float, str]:
     penalty, reasons = 0.0, []

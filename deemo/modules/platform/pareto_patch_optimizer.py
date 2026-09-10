@@ -2,7 +2,7 @@
  帕累托最优补丁选择 - NSGA-II多目标优化在传播图补丁策略中的应用.
 
 三目标:最大化风险降幅,最小化补丁成本,最小化运维影响.
-首次将NSGA-II非支配排序+counterfactual适应度+层特定成本模型联合应用.
+NSGA-II非支配排序+counterfactual适应度+层特定成本模型联合应用.
 
 ref: Deb et al. "A Fast and Elitist Multiobjective Genetic Algorithm: NSGA-II".
 ref: CyGATE - 博弈论补丁优化,最接近的已有工作.

@@ -12,8 +12,8 @@
 #   - 三阶段: 释放点提取, 别名闭包, 使用点判定
 #   - 保守原则: 只能确认 (VULN/SAFE 有证据), 否则 UNCERTAIN
 #
-# 本文件为 UAFL 独立实现, 合并 modules/exploit/src/analysis/uaf_lite/
-# 的 uaf_lifecycle.py + uaf_cross.py, 仅标准库.
+# 本文件实现 UAFL 生命周期验证器 (HOIG 漏检补足): 释放点提取, 别名闭包, 使用点判定.
+
 
 import re
 from dataclasses import dataclass, field
@@ -277,7 +277,7 @@ class UafLifecycleVerifier:
         return out
 
 
-# - 跨函数层 (原 uaf_cross) -
+# 跨函数层
 
 @dataclass
 class FuncInfo:

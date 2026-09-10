@@ -1,4 +1,4 @@
-# analysis/uaf_detector_v2 — UAF检测升级版: 指针逃逸分析
+# analysis/uaf_detector_v2 — UAF 检测 (v2): 指针逃逸分析
 # 超越 v1 的简单 free-var + use-of-var 正则匹配,
 # 增加了三个维度来压低误报和增强检测能力:
 #
@@ -102,7 +102,7 @@ def _check_reallocation(code: str, var: str, free_end: int) -> bool:
                          after))
 
 def detect_uaf_v2(code: str, func_name: str = "") -> List[Dict]:
-    """UAF 升级版检测主入口。
+    """UAF 检测主入口 (v2)。
 
     返回每个发现的详细信息, 包括逃逸分析结果和分支信息,
     供误报过滤器进行深度置信度调整。

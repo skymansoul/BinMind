@@ -7,7 +7,6 @@ Cross-Layer Memory-Mapped Taint Bridge — 跨平台层 MMIO 污点传播追踪�
 subreg_taint 的字节级污点引擎连接起来，追踪数据从硬件寄存器到用户空间
 的完整传播路径。
 
-核心思路：
   固件配置的 MMIO 区间定义物理地址 → 内核驱动通过 ioremap 映射 →
   eBPF 钩子拦截 readl/writel → 侧信道 (cache timing/PMC) 泄漏 →
   用户空间恶意进程读取。

@@ -6,8 +6,6 @@
   "修复过程中引入了新的攻击面吗?"
   每次二进制更新都是一把双刃剑 — 新代码路径可能引入新漏洞。
 
-  全网检索 "delta update risk assessment binary patch regression"
-  零结果。现有差分工具仅展示代码变化，不做风险评估。
 
   三类引入风险:
     1. 导入表增长 — 新依赖引入新攻击面
@@ -17,7 +15,6 @@
   评分 = max(import_risk, codepath_risk, hardening_regression_risk)
   取 max 而非 product — 单类风险即可构成新的攻击面。
 
-  无现有工作.
   PLocator: 跨优化补丁定位，但只检测存在性非风险.
   patch_impact.py: 评估修复完整性, 本模块评估引入风险.
 

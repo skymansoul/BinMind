@@ -1,10 +1,5 @@
 """鞅制导模糊测试评估器 — 随时有效统计推断在 fuzzing 中的应用.
 
-修改记录:
-2025-08-02 10:15 - 测试鞅 + e-value 框架用于覆盖停滞检测
-2025-08-03 13:42 - SPRT 策略比较: 两种突变策略的随时有效对比
-2025-08-05 09:08 - 覆盖平台早期预警: 鞅增长速率映射为终止建议
-
   Shafer & Vovk "Game-Theoretic Foundations for Probability and Finance"
   Ramdas et al. "Anytime-Valid Inference" (Statistical Science)
 
@@ -13,7 +8,6 @@
 测试鞅解决了这个问题 — 可在任何时刻 peeking/停止, 统计推断有效。
 这使 fuzzing 基准测试从固定时长转向证据驱动。
 
-核心创新:
   1. 覆盖平台检测: 鞅持续监测新覆盖速率, 自动判定何时已穷尽探索
   2. SPRT 策略对比: 不预设执行次数, 证据充分时自动终止并给出结论
   3. 终止建议: 鞅 log₁₀ 映射为可操作的停止/继续决策

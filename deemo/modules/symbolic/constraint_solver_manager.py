@@ -1,9 +1,9 @@
 """Multi-backend SMT solver manager with automatic fallback chains.
 
 Different SMT solvers excel on different constraint categories (bitvectors,
-integer arithmetic, strings, arrays). This module maintains a registry of
-solver backends, classifies constraints by category, selects the best
-solver, and falls back through the priority chain on failure or timeout.
+integer arithmetic, strings, arrays). A registry of solver backends is
+maintained, constraints are classified by category, and the best
+solver is selected with fallback through the priority chain on failure or timeout.
 
 Also supports cross-solver validation: solve the same constraint with
 multiple backends and flag inconsistencies.

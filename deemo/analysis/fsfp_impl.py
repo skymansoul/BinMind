@@ -8,9 +8,7 @@
 #   4. 格式参数经守卫约束 (if(len<=N) printf(buf)) → SAFE.
 #   5. 非 printf 族 (puts 系) → 排除.
 #
-# 本文件为 FSFP 独立实现, 算法与 modules/exploit/src/analysis/fmt_fs/
-# fmt_verify.py 一致, 仅标准库, 可直接 `from analysis.fsfp_impl import
-# verify_fmt_string` 使用.
+#   实现 FSFP 判定逻辑; 入口: `from analysis.fsfp_impl import verify_fmt_string`.
 
 import re
 from dataclasses import dataclass

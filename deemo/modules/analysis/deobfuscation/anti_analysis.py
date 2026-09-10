@@ -18,9 +18,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # 系统调用 / libc 绑定
-# ---------------------------------------------------------------------------
 
 _libc = None
 _prctl = None
@@ -61,7 +59,6 @@ def _check_seccomp_filter() -> bool:
         return False
 
 
-# ---------------------------------------------------------------------------
 # /proc/self/auxv 扫描 - ELF 辅助向量 (Auxiliary Vector)
 # 调试器/沙箱可能注入异常的 AT_* 条目。正常 auxv 中:
 #   AT_PHDR (3), AT_PHENT (4), AT_PHNUM (5), AT_ENTRY (9),
@@ -69,7 +66,6 @@ def _check_seccomp_filter() -> bool:
 #   AT_SECURE (23), AT_RANDOM (25), AT_EXECFN (31)
 # 异常值（如 AT_UID=0 但 AT_SECURE=1，或缺失 AT_RANDOM）指示
 # 正在被 ptrace 或被沙箱修改
-# ---------------------------------------------------------------------------
 
 _AT_NAMES = {3: "PHDR", 4: "PHENT", 5: "PHNUM", 6: "PAGESZ",
              7: "BASE", 8: "FLAGS", 9: "ENTRY", 11: "UID",

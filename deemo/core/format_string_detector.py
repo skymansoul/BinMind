@@ -73,6 +73,11 @@ def detect_format_string_vulns(
         decompiled = _decompile_function(binary_path, fname)
         if not decompiled:
             continue
+        # r2 对 PE 文件可能反编译 CRT 启动代码而非真正 main, 尝试 angr 回退
+        if '__tmainCRTStartup' in decompiled or 'entry0' in decompiled:
+            angr_code = _angr_decompile_main(binary_path)
+            if angr_code:
+                decompiled = angr_code
 
         static_findings = _static_format_detect(fname, decompiled)
         # Level 1.5: 污点追踪
@@ -173,6 +178,37 @@ def detect_format_string_vulns(
 
     findings.sort(key=lambda f: (-f['confidence'], f['function']))
     return findings
+
+
+def _angr_decompile_main(binary_path: str) -> str:
+    """angr 反编译 main 函数, 用于 r2 对 PE 文件反编译失败时的回退。
+
+    使用模块级缓存避免重复构建 Project+CFG, 同一二进制只反编译一次。
+    """
+    try:
+        import angr
+        # 模块级缓存: 同二进制复用 Project + CFG
+        if not hasattr(_angr_decompile_main, '_cache'):
+            _angr_decompile_main._cache = {}
+        cache = _angr_decompile_main._cache
+        if binary_path in cache:
+            proj, cfg = cache[binary_path]
+        else:
+            proj = angr.Project(binary_path, auto_load_libs=False)
+            cfg = proj.analyses.CFGFast(normalize=True)
+            cache[binary_path] = (proj, cfg)
+            # 缓存上限 4 个二进制, 防止内存溢出
+            if len(cache) > 4:
+                cache.pop(next(iter(cache)))
+        main_func = cfg.functions.get('main')
+        if not main_func:
+            return ''
+        decomp = proj.analyses.Decompiler(main_func)
+        if decomp and decomp.codegen:
+            return decomp.codegen.text
+        return ''
+    except Exception:
+        return ''
 
 
 def detect_with_taint_prefilter(

@@ -1,4 +1,4 @@
-# analysis/format_string_v2 — 格式串漏洞检测升级版: 污点来源推断
+# analysis/format_string_v2 — 格式串漏洞检测 (v2): 污点来源推断
 # 超越 v1 的 printf(var) 简单匹配,
 # 增加了两个分析维度来区分真实漏洞和误报:
 #
@@ -89,7 +89,7 @@ def _check_safe_variant_usage(code: str, func_name: str) -> float:
     return 0.0
 
 def detect_format_string_v2(code: str, func_name: str = "") -> List[Dict]:
-    """格式串漏洞升级版检测主入口。"""
+    """格式串漏洞检测主入口 (v2)。"""
     findings = []
     fn_list = list(_PRINTF_FNS)
 

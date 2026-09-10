@@ -14,7 +14,7 @@
 #
 # SplineSketch:
 #   流式分位数 sketch，替代 TDigest。O(k) 空间下有界最坏误差
-#   （TDigest 误差可无界）。核心机制: 动态细分值域为 bucket，
+#   （TDigest 误差可无界）。动态细分值域为 bucket，
 #   单调三次样条插值拟合 CDF。合成/真实数据上误差比 TDigest 低 2-20x。
 #
 #   SplineSketch 参数:

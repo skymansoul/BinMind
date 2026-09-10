@@ -1,9 +1,5 @@
 """执行开销预测器 (Execution Cost Forecaster, ECF) — 在线分位数回归预估种子执行时间.
 
-修改记录:
-2025-08-07 16:28 - 增加双分位数 (P50/P95) 预测, 支持乐观/悲观调度模式
-2025-08-09 08:56 - 集成特征预计算缓存, 减少重复特征提取开销
-
   Koenker & Bassett "Regression Quantiles" — 分位数回归理论基础
   Cramér "Mathematical Methods of Statistics"
     — 渐近理论: 分位数估计的 Bahadur 表示

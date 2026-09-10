@@ -19,7 +19,7 @@ class HoFpFilter:
     Layer 2 (heap_disjoint): 精筛-仅同allocation site的pair保留
     Layer 3 (constraint_filter): 终筛-不可行路径滤除
 
-    核心创新-Layer 2堆不相交分析:
+    Layer 2 堆不相交分析:
       两次malloc返回不重叠区域, 若memcpy的dst指向alloc#2而size来自alloc#1,
       则size比较无意义-这是静态分析中堆溢出误报的主要来源。
       通过追踪malloc返回寄存器到memcpy参数的数据流关联, 仅保留

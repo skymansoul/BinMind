@@ -3,22 +3,15 @@
 合并把语义相似的状态坍缩为同一程序计数器状态, 以精度换内存;
 相似度比较约束集、寄存器、内存与局部变量。
 
-增强:
-- 动态阈值调整: merge_all() 在 1 轮内收敛则阈值上调 0.05 (更激进),
-  超过 5 轮才收敛则下调 0.05
-- 调用栈感知合并: PC 相同但调用栈不同则不合并, 不同调用路径的行为
-  语义可能完全不同
-- 合并代价估算 (MergeCostEstimator): precision_loss_ratio 超过 0.3
-  时跳过合并, 防止丢失关键约束导致误报/漏报
-- 增量合并 (IncrementalMerge): 距离矩阵缓存相似度, 合并后仅重算
-  受影响的行/列, 避免全量 O(n^2) 重算
-- 合并回退: undo_last_merge() 通过 deep copy 的 pre_merge_snapshot
-  恢复最近一次 merge_states() 调用前的状态列表
-- MergePolicyEngine: 可配置策略决定何时尝试合并 (EAGER/LAZY/ADAPTIVE)
-- MergeQualityScore: 合并后重执行 1-2 步检查分支结果是否与原始状态
-  一致, 低质量合并可回退
-- StateHydration: 惰性反序列化, 延迟 pickle.load 直到状态实际被
-  需要, 避免合并池空转时的不必要 IO
+merge_all() 在 1 轮内收敛则阈值上调 0.05, 超过 5 轮才收敛则下调
+0.05; PC 相同但调用栈不同则不合并; MergeCostEstimator 在
+precision_loss_ratio > 0.3 时跳过合并; IncrementalMerge 把相似度缓存
+于距离矩阵, 合并后仅重算受影响的行/列, 避免全量 O(n^2) 重算;
+undo_last_merge() 用 deep copy 的 pre_merge_snapshot 回退最近一次合并;
+MergePolicyEngine 以 EAGER/LAZY/ADAPTIVE 策略决定合并时机;
+MergeQualityScore 合并后重执行 1-2 步检查分支结果与原始状态是否一致,
+低质量合并可回退; StateHydration 延迟 pickle.load 到状态首次被需要,
+避免合并池空转期的不必要 IO。
 """
 
 import copy
@@ -226,7 +219,7 @@ class MergeHeuristic(metaclass=_MergeHeuristicMeta):
     """按选定维度计算加权相似度。
 
     PC 不同的状态永不合并; 超过阈值的候选对标记为可合并;
-    增强: 调用栈检查 + 动态阈值。
+    合并前比较调用栈, 阈值按收敛情况动态调整。
     """
 
     def __init__(self, strategy: MergeStrategy = MergeStrategy.COMBINED):
@@ -320,9 +313,9 @@ class PathMerger:
         self._heuristic = MergeHeuristic(strategy)
         self._states: List[SymbolicState] = []
         self._merged_count = 0
-        # 三轮增强 — 合并前快照，用于 undo_last_merge
+        # 合并前快照，用于 undo_last_merge
         self.pre_merge_snapshot: Optional[List[SymbolicState]] = None
-        # 四轮增强 — 策略引擎与质量评分
+        # 策略引擎与质量评分
         self.policy_engine = MergePolicyEngine(policy=MergePolicy.EAGER)
         self.quality_scorer = MergeQualityScore()
         self._growth_history: deque = deque(maxlen=20)
@@ -422,7 +415,7 @@ class PathMerger:
         self._merged_count = 0
         self.pre_merge_snapshot = None
 
-    # 四轮增强 — 策略驱动合并
+    # 策略驱动合并
 
     def should_attempt_merge(self, step_count: int, new_coverage_addrs: int = 0) -> bool:
         """委托 MergePolicyEngine 决定当前步骤是否应触发合并。"""
@@ -516,11 +509,9 @@ def merge_states(states: List[SymbolicState], strategy: str = "combined") -> Lis
     return merger.get_states()
 
 
-# 三轮增强 — 合并代价估算 (MergeCostEstimator)
-# 合并前评估精度损失，避免因过度合并导致漏报
-# 权衡：precision_loss_ratio > 0.3 时跳过合并 — 此阈值基于对 OWASP
-# benchmark 符号执行路径的实证分析：丢失超过 30% 的约束时，误报率上升
-# 约 2.5 倍，而合并带来的内存节省仅 ~15%
+# 合并代价估算 (MergeCostEstimator): 合并前评估精度损失, 避免过度合并导致漏报
+# 阈值 0.3 基于 OWASP benchmark 符号执行路径的实证: 丢失超过 30% 的约束时
+# 误报率上升约 2.5 倍, 而合并带来的内存节省仅约 15%
 
 class MergeCostEstimator:
     """合并前评估精度损失, 超过阈值则跳过合并。
@@ -573,10 +564,8 @@ class MergeCostEstimator:
         return should_skip, precision_loss_ratio
 
 
-# 三轮增强 — 增量合并 (IncrementalMerge)
-# 维护距离矩阵避免全量 O(n^2) 重算
-# 策略：合并 state_j 到 state_i 后，仅重新计算 dist_mtx 中涉及
-# 被合并状态的行/列，其余相似度值不变
+# 增量合并 (IncrementalMerge): 距离矩阵缓存相似度, 合并 state_j 到 state_i 后
+# 仅重算 dist_mtx 中涉及被合并状态的行/列, 其余相似度不变, 避免全量 O(n^2) 重算
 
 class IncrementalMerge:
     """增量状态合并, 相似度缓存于距离矩阵。
@@ -632,7 +621,7 @@ class IncrementalMerge:
                 self._states[idx_i], self._states[idx_j]
             )
             if candidate.mergeable:
-                # 三轮增强 — 合并前检查精度损失
+                # 合并前检查精度损失
                 should_skip, precision_loss_ratio = self._cost_estimator.should_skip_merge(
                     self._states[idx_i], self._states[idx_j]
                 )
@@ -748,14 +737,10 @@ class IncrementalMerge:
         self._merged_count = 0
 
 
-# 四轮增强 — MergePolicyEngine：可配置策略决定何时合并
-#
-# EAGER: 每次执行步后立即合并 → 最大限度节省内存，但合并计算开销累积
-# LAZY: 仅当 state_count > threshold 时触发 → 避免对小状态池做无用比较
-# ADAPTIVE: 跟踪 state_growth_rate vs coverage_growth_rate：
-# 当状态膨胀速度 > 新覆盖产生速度时，说明路径爆炸正在发生，触发合并
-#
-# 使用滑动窗口（默认 10 步）计算增长率以避免瞬时尖峰误触发
+# MergePolicyEngine: EAGER/LAZY/ADAPTIVE 策略决定合并时机
+# EAGER 每执行步后立即合并, LAZY 仅当 state_count > threshold 时触发;
+# ADAPTIVE 在状态膨胀速率超过新覆盖产生速率 (路径爆炸) 时触发合并,
+# 增长率以滑动窗口 (默认 10 步) 计算以避免瞬时尖峰误触发
 
 
 class MergePolicyEngine:
@@ -859,16 +844,9 @@ class MergePolicyEngine:
         return self.stats()
 
 
-# 四轮增强 — MergeQualityScore：合并后质量评估
-#
-# 思路：合并状态 M = merge(S1, S2) 后，用 S1 和 S2 各自的下一步分支
-# （branch_fn 返回可达 PC 列表）作为 ground truth，检查 M 的下一步分支
-# 是否覆盖了原始状态的所有分支目标
-#
-# branch_match_ratio = |M_branches ∩ (S1_branches ∪ S2_branches)| /
-#                      |S1_branches ∪ S2_branches|
-# quality_score = branch_match_ratio * (1 - precision_loss_ratio)
-# 其中 precision_loss_ratio 由 MergeCostEstimator 提供
+# MergeQualityScore: 合并后质量评估
+# 以原始状态各自的下一步可达分支 (branch_fn 返回) 为 ground truth,
+# 检查合并状态 M 是否覆盖原始状态的所有分支目标, 评分公式见类 docstring
 
 
 class MergeQualityScore:
@@ -987,18 +965,11 @@ class MergeQualityScore:
         }
 
 
-# 四轮增强 — StateHydration：惰性反序列化
-#
-# 符号执行常将 checkpoint 后的状态序列化到磁盘（pickle），在需要重新
-# 加载时再反序列化。StateHydration 包装一个指向磁盘路径的引用
-# 在首次访问.pc、.constraints 等属性时才执行 pickle.load，避免：
-# 1. 合并池中存在大量暂不需要比较的状态时的不必要 IO
-# 2. 反序列化大对象导致的内存尖峰
-#
-# 行为：
-# __init__ 仅保存路径，不加载
-# 属性访问时自动触发 _hydrate() → pickle.load
-# 加载后直接修改 __class__ 绕过代理（__class__ 赋值模式）
+# StateHydration: 惰性反序列化
+# 包装指向磁盘 checkpoint 路径的引用, __init__ 仅保存路径不加载;
+# 首次访问 .pc/.constraints 等属性时才经 _hydrate() 执行 pickle.load,
+# 避免大量暂不需要比较的状态产生不必要 IO 与反序列化内存尖峰,
+# 加载后修改 __class__ 绕过代理
 
 
 class StateHydration:

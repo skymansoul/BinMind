@@ -1,4 +1,3 @@
-# ~ 2026-08-15
 # FTS5 CJK 分词器，用于 CVE 描述文本。
 # Sqlite 内置分词器 (unicode61/ascii) 将每个 CJK 字符视为独立 token，
 # 搜索"远程代码执行"变成 6 个单字 term，无法匹配。

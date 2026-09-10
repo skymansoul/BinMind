@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 裸机固件模拟单元测试，主要测memory mapping + entry detection, 外设模拟太蛋疼先skip
+# 裸机固件模拟单元测试，主要测memory mapping + entry detection, 外设模拟先skip
 
 import struct
 import os

@@ -1,6 +1,5 @@
 """SysV ABI 变体生成器 — 为堆溢出语料库编译 SysV 调用约定变体.
 
-创建: 2024-12-10
 设计决策:
   - MinGW 的 -mabi=sysv 在 PE 目标上生成 SysV 调用约定代码
     (参数走 rdi/rsi/rdx/rcx), 用于验证双 ABI 支持.

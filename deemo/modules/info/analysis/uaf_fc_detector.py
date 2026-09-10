@@ -1,5 +1,5 @@
 # analysis/uaf_fc_detector — UAF-FC 流相关 UAF 检测 (FC-VRA 方法论向 UAF 迁移)
-# 核心创新扩展: 将堆溢出主打点的"流相关 + 状态追踪"迁移到 UAF 检测。
+# 将堆溢出主打点的"流相关 + 状态追踪"迁移到 UAF 检测。
 # 现有 uaf_detector_v2 的误报来源:
 #   (a) free(p) 后"标识符再次出现"即视为使用 — 把 p=NULL 空态、
 #       p=malloc() 重赋值、p 仅作值传递等安全模式误报为 UAF;

@@ -8,8 +8,6 @@
 
 使用方式:
   python -m eval.regression.run_regression --samples-dir tests/samples/heap_overflow
-
-创建: 2026-07-06
 """
 from __future__ import annotations
 

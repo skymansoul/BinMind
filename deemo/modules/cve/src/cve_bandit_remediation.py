@@ -31,18 +31,15 @@
 #   3. 不确定性量化 - 后验方差自然给出探索-利用权衡.
 #   4. 可解释 - 每个arm的参数可被检查 (β系数=特征影响).
 #
-# 非显而易见性:
-#   1. Contextual Bandit从未被应用于漏洞修复调度.
-#      2025-2026年检索确认: 零相关论文/项目.
-#   2. 在线学习的自适应性: 当利用加速 (CVE→Exploit时间缩短) 时,
+# 设计说明:
+#   1. 在线学习的自适应性: 当利用加速 (CVE→Exploit时间缩短) 时,
 #      bandit自动调整arm偏好, 无需人工重配置SLA.
-#   3. 与ParetoRemediationScheduler互补: bandit做流式在线决策,
+#   2. 与ParetoRemediationScheduler互补: bandit做流式在线决策,
 #      NSGA-II做批量离线优化. 两者可级联.
 #
 #
 # Thompson Sampling for Contextual Bandits (ICML)
 # An Empirical Evaluation of Thompson Sampling (NIPS)
-# 零结果 - 确认该方向在漏洞修复领域未被探索
 
 import math
 import random

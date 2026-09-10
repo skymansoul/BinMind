@@ -6,7 +6,7 @@
 各 Agent 顺序执行，无对抗性审查。VulTrial 引入了法庭式辩论但发现关键缺陷：
 无证据锚定的辩论在第一轮后即退化-Agent 通过"相互让步"而非"事实推理"收敛。
 
-本模块的核心机制-证据锚定的对抗辩论 (Evidence-Anchored Adversarial Debate, EAAD)：
+证据锚定的对抗辩论 (Evidence-Anchored Adversarial Debate, EAAD)：
 1. 辩论启动前，FactExtractor Agent 从二进制中提取"证据基底"-
    CFG 片段、数据流路径、危险函数调用链等不可辩驳的结构化事实。
 2. Prosecutor Agent（主张漏洞存在）和 Defender Agent（反驳）的所有论点

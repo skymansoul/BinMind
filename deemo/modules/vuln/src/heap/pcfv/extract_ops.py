@@ -1,6 +1,4 @@
 """堆访问记录操作 — store/copy 的提取与偏移解析.
-
-创建: 2026-05-15
 """
 import re
 from typing import Optional

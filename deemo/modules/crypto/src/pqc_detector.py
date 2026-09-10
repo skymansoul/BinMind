@@ -11,10 +11,9 @@ NIST 标准 (2024年8月):
 NIST 第4轮 KEM:
   BIKE, Classic McEliece, HQC
 
-2026-07: 新增 BIKE (QC-MDPC) 参数检测, HQC tensor code 常量,
-Classic McEliece Goppa 多项式 OID/n/t 参数, NTRU Prime sntrup761
-检测 (Streamlined NTRU Prime 字符串标记), Falcon fft/fftg tree
-检测, 优化 3329 (Kyber) vs 7681 (FrodoKEM) 歧义消除 -- 使用上下文证据。
+检测项: BIKE (QC-MDPC) 参数、HQC tensor code 常量、Classic McEliece Goppa
+多项式 OID/n/t 参数、NTRU Prime sntrup761 (Streamlined NTRU Prime 字符串标记)、
+Falcon fft/fftg tree 参数; 以上下文证据消解 3329 (Kyber) 与 7681 (FrodoKEM) 歧义。
 
 已知局限: SPHINCS+ 检测高度依赖字符串匹配; 误报率偏高。
 """

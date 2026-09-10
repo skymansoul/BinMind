@@ -19,7 +19,7 @@
   这组数字需要在实际 CVE 样本集上验证 (see tests/).
 
 与现有过滤器的关系:
-  · heap_false_positive_filter.py: Phase 0 的增强版 — 保留其 value-flow 追踪逻辑
+  · heap_false_positive_filter.py: 覆盖 Phase 0 并保留其 value-flow 追踪逻辑
   · heap_fp_filter_stages.py: Phase 0 的轻量版 — 保留对齐/结构体字段过滤
   · 本模块 = Phases 0-4 的统一入口 + 统计报告
 """

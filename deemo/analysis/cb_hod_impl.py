@@ -1,7 +1,7 @@
 # CB-HOD — Constraint-Based Heap Overflow Detection (约束基堆溢出检测).
 #
 # 决策逻辑:
-#   四件套管线:
+#   管线:
 #     1. 指针追踪绑定 (Steensgaard 式并查集): malloc → 指针变量 →
 #        memcpy 目标的数据流, 替换粗粒度的导入表笛卡尔积配对.
 #     2. 区间约束求解: 对每个 (alloc, write) 绑定生成
@@ -15,11 +15,10 @@
 #        守卫携带信息, 不需要先验的变量范围.
 #     4. HLM + slack: 区间化分配器松弛 (usable 下界/上界).
 #
-# 本文件为 CB-HOD 独立实现, 合并 modules/info/analysis/ 的
-# pointer_tracker.py + constraint_solver.py + guard_extractor.py +
-# allocator_slack.py + size_expr_evaluator.py + heap_layout_model.py +
-# value_range_analyzer.py (调用图所需部分), 并补全原库中未接线的
-# solve_and_filter 端到端入口, 仅标准库.
+#   本文件实现 CB-HOD 核心管线: 指针追踪绑定 → 约束求解 → 守卫提取
+#   → 分配器松弛 → 尺寸表达式求值 → 分配器模型 (HLM), 并补全
+#   solve_and_filter 端到端入口.
+
 
 from __future__ import annotations
 
@@ -28,7 +27,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ================= 区间域 (原 value_range_analyzer, 调用图部分) =================
+# 区间域
 
 class ValueRange:
     """仿射区间抽象域 [lo, hi]; ±inf 表示无界; bottom 表示空集."""
@@ -188,7 +187,7 @@ def _parse_arg(arg: str, ranges: Dict[str, ValueRange]) -> ValueRange:
     return ValueRange.top()
 
 
-# ================= 指针流追踪 (原 pointer_tracker) =================
+# 指针流追踪
 
 _CALL_RE = re.compile(r"\b(\w+)\s*\(((?:[^()]|\([^()]*\))*)\)")
 
@@ -414,7 +413,7 @@ def _base_var(expr: str) -> str:
     return expr
 
 
-# ================= 分配器模型 (原 heap_layout_model, 调用图部分) =================
+# 分配器模型
 
 class AllocatorModel:
     """抽象分配器模型: 给定请求大小, 返回有效用户可用空间的范围."""
@@ -481,7 +480,7 @@ def get_allocator_model(arch: str = "x86_64") -> AllocatorModel:
     return _MODEL_CACHE[arch]
 
 
-# ================= 尺寸表达式求值 (原 size_expr_evaluator) =================
+# 尺寸表达式求值
 
 _SIZEOF_MAP = {
     "char": 1, "short": 2, "int": 4, "long": 4, "long long": 8,
@@ -617,7 +616,7 @@ def is_size_var(var: str, size_expr: str) -> bool:
     return var in size_expr.split('*') and var.strip() in size_expr
 
 
-# ================= 守卫提取 (原 guard_extractor) =================
+# 守卫提取
 
 def extract_relevant_guards(
     code: str,
@@ -740,7 +739,7 @@ def apply_guard(
     return r.meet(bounded)
 
 
-# ================= 分配器松弛 (原 allocator_slack) =================
+# 分配器松弛
 
 def usable_range_for_alloc(alloc_lo: float, alloc_hi: float,
                            arch: str = "x86_64") -> Tuple[float, float]:
@@ -808,7 +807,7 @@ def verdict_with_slack(
             f"区间交叠方向不明: alloc={alloc_range} write={write_range}")
 
 
-# ================= 约束求解 (原 constraint_solver) =================
+# 约束求解
 
 class HeapConstraint:
     """单个堆安全约束: alloc_size ≥ write_size 在什么条件下成立."""
@@ -1015,7 +1014,7 @@ def solve_and_filter(
     return findings, stats
 
 
-# ================= CB-HOD 端到端入口 (补全原库断开的接线) =================
+# CB-HOD 端到端入口 (补全原库断开的接线)
 
 def analyze_cb_hod(code: str, arch: str = "x86_64"
                    ) -> Tuple[List[Dict], Dict]:

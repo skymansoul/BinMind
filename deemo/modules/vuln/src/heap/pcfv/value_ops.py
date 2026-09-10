@@ -1,6 +1,4 @@
 """值流操作解释器 — mov/lea/算术指令的 ValueInfo 语义.
-
-创建: 2026-07-31
 """
 import re
 from typing import Optional, Tuple

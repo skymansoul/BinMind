@@ -3,18 +3,12 @@
 #   两条独立策略分别生成实现 → 同输入执行 → 比较输出。
 #   输出不一致 ⇒ 至少一侧有误（可证明的下界）。
 #
-# 理论基础:
-#   Valentin et al., "Estimating Correctness Without Oracles in
-#   LLM-Based Code Generation":
-#   非相干性 I(d) = P(实现₁(X) ≠ 实现₂(X)) ≥ 0
-#   且 I(d) ≤ 2 × 错误率(d)，即非相干性是错误率的下界。
-#   → 零假阳性：不一致一定意味着至少一侧错误。
+# 理论基础: 非相干性 I(d) = P(实现₁(X) ≠ 实现₂(X)) ≥ 0，
+# 且 I(d) ≤ 2 × 错误率(d)，即非相干性是错误率的下界 —
+# 零假阳性：不一致一定意味着至少一侧错误。
 #
-# 本模块的增量:
-#   原论文针对通用 HumanEval/MBPP 的 LLM 代码生成，
-#   本模块将其适配到合约驱动桩实现的两条异质策略
-#   (TemplateGenerator 规则引擎 vs LLMGenerator 神经引擎)，
-#   利用策略独立性增强不一致信号的检测效力。
+# 适配: 原结果面向通用 LLM 代码生成，此处应用于合约驱动桩实现的
+# 两条异质策略 (TemplateGenerator 规则引擎 vs LLMGenerator 神经引擎)。
 import ast as _ast
 import math as _math
 import re as _re

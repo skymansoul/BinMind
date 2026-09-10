@@ -14,7 +14,7 @@
   - 经过cmp约束: [0, bound]
   - 算术结果: [a.low+b.low, a.high+b.high] (加法)
 
-参考: IntTracer 的区间域建模方法。
+区间域建模方法参照 IntTracer。
 """
 
 import re

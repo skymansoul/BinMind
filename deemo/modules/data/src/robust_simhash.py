@@ -185,7 +185,7 @@ class RobustSimHash:
                 continue  # 低熵填充段: 跳过, 不参与计算
 
             # 受控噪声: 以概率 noise_prob 跳过当前 shingle
-            # (随机平滑的核心机制 —— 模拟输入数据的微小变化)
+            # (随机平滑 —— 模拟输入数据的微小变化)
             noise_prob = 0.02  # 2% 独立跳过概率
             if noise_rng.random() < noise_prob:
                 continue

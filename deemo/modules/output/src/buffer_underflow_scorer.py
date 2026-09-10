@@ -12,12 +12,10 @@
     - 可以修改 prev_size → 后向合并控制
     - 可以破坏 fastbin/tcache 链表指针 (如果恰好在链表上)
 
-  本模块是第一个缓冲区下溢利用性量化模型。
 
   CWE-124: Buffer Underwrite ('Buffer Underflow')
   CWE-786: Access of Memory Location Before Start of Buffer
   glibc向后合并: unlink_chunk → prev_size 检查
-  无现有量化工具.
 
 修改记录:
   2024-11-05 14:22 - 初始版本，位置×元数据×大小的三维矩阵

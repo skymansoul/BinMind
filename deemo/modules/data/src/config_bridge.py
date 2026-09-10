@@ -1,7 +1,7 @@
 # 统一配置桥接 (Unified Configuration Bridge)
 #
 # DataConfig 仅管理原始 9 个子配置 (db, pipeline, dedup, index, lifecycle,
-#   streaming, compression, cache, export). 经 13 轮创新后新增的 31 个模块
+#   streaming, compression, cache, export). 后续扩展新增的 31 个模块
 #   各自维护独立的参数默认值, 缺乏统一的配置入口、校验和热加载.
 #
 # 本模块提供:
@@ -13,7 +13,6 @@
 #      不应同时设为极低值, 会导致内存爆炸).
 #   4. 热加载: 运行时重载配置而不重启进程 (SIGHUP 模式).
 #
-# 这不是专利级创新, 而是工程基础设施.
 # 目的是让所有专利模块可在统一配置下协同运行.
 
 import os

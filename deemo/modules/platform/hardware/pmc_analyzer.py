@@ -9,7 +9,7 @@ from typing import Dict, List, Tuple, Optional
 # 性能监控计数器分析器
 # 基于软件模拟 + 缓存探测定时，实现跨平台PMC估算
 #
-# 核心思路：在没有硬件 perf_event_open 的环境下（Windows / 受限容器），
+# 在没有硬件 perf_event_open 的环境下（Windows / 受限容器），
 # 通过指针追逐 + 步长实验 + 自旋校准来反推缓存层级参数，
 # 再利用这些参数估算标准 PMC 事件的期望值。
 #

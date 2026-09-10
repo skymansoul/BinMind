@@ -1,7 +1,7 @@
-# 原始代码库保留的 LLM 提示词模板，供残留代码路径引用
+# LLM 提示词模板，供兼容引用
 from typing import Dict, Optional
 
-# core analysis prompts (active)
+# core analysis prompts (在用)
 
 VULN_ANALYSIS_SYSTEM = """You are a binary reverse-engineering expert.
 Analyze the provided decompiled C code for security vulnerabilities.
@@ -45,7 +45,7 @@ PATCH_DIFF_ANALYSIS = """
 }}
 """
 
-# cross-architecture exploit transpile (preserved)
+# cross-architecture exploit transpile (归档)
 
 EXPLOIT_TRANSPILE = """
 你是一名漏洞利用开发专家，请将以下源架构的利用代码转换为目标架构。
@@ -93,7 +93,7 @@ SHELLCODE_TRANSPILE = """
 提供目标架构的shellcode（十六进制）和对应汇编代码。
 """
 
-# exploit chain analysis (preserved)
+# exploit chain analysis (归档)
 
 EXPLOIT_CHAIN = """
 你是一名漏洞利用开发专家，请分析以下漏洞集合，评估它们能否组合成攻击链。

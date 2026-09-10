@@ -21,7 +21,7 @@
 
   CWE-190: Integer Overflow or Wraparound
   CWE-680: Integer Overflow to Buffer Overflow
-  无现有分类工具 — 现有扫描器仅报告溢出存在性.
+  现有扫描器仅报告溢出存在性.
 
 修改记录:
   2025-02-06 10:27 - 初始版本，五级下游影响分类

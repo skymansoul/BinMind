@@ -12,7 +12,6 @@ from typing import List, Optional, Tuple
 import struct
 import math
 from .utils import shannon_entropy
-# HiddenDataType导入顺序修复 2026-08-02 — 提升到模块顶部
 
 
 @dataclass

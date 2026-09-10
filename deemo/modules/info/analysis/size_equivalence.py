@@ -1,5 +1,5 @@
 # analysis/size_equivalence — FC-VRA 阶段C1: 分配/写入大小表达式结构等价
-# 核心创新点2: 若 alloc size 与 write size 在代数结构上等价, 则写入量≤分配量,
+# 若 alloc size 与 write size 在代数结构上等价, 则写入量≤分配量,
 # 该候选对必然不构成溢出 (除非整型溢出, 由 C2 整型校验另行把关)。
 # 与 heap_overflow_v2._source_safety 的字符串相等相比:
 #   字符串相等只能捕获 malloc(n) 与 memcpy(dst,src,n) 的字面一致,

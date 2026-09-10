@@ -27,18 +27,14 @@
 #   拼接各尺度的节点表示, 捕获从局部到全局的多尺度信息.
 #   小t捕获局部邻域, 大t捕获全局社区结构.
 #
-# 非显而易见性:
-#   1. 首次将连续时间图扩散应用于CVE漏洞传播建模.
-#      GNN文献中扩散常用于节点分类 (GDC, GRAND),
-#      但零论文应用于CVE异构图.
-#   2. 多尺度表示: 同时利用小t和大t的特征,
+# 设计说明:
+#   1. 多尺度表示: 同时利用小t和大t的特征,
 #      捕获CVE在其直接邻域 (同产品) 和全局社区 (同厂商家族) 的角色.
-#   3. 与CVEExploitGraph互补: GCN做监督预测, 扩散做无监督表示增强.
+#   2. 与CVEExploitGraph互补: GCN做监督预测, 扩散做无监督表示增强.
 #
 #
 # Diffusion Improves Graph Learning (NeurIPS)
 # GRAND: Graph Neural Diffusion (ICML)
-#   [检索确认] 2025-2026年零论文将图扩散应用于CVE异构图
 
 import math
 from typing import Dict, List, Optional, Set, Tuple

@@ -10,15 +10,13 @@
 #   padding-safe 仅对精确立即数分配根启用 (符号根值未知 → 视为风险).
 #   32 位立即数按寄存器宽度符号扩展 (0xffffff80 → -128).
 #
-# 本文件为 AWSC 独立实现, 合并 modules/analysis/static/ 的
-# co_source_core.py + co_source_operands.py + co_source_engine.py +
-# co_source_filter.py, 内联 norm_reg, 仅标准库.
+#   本文件实现 AWSC 核心管线: 根来源类型与 Root → 操作数反推 → 同源引擎 → 过滤器.
 
 import re
 from typing import Dict, List, Optional, Tuple
 
 
-# ---- 根来源类型与 Root (原 co_source_core) ----
+# 根来源类型与 Root
 
 ROOT_IMM = "imm"          # 立即数
 ROOT_STACK = "stack"      # 栈槽 [rbp-0x20]
@@ -58,7 +56,7 @@ class Root:
         return base
 
 
-# ---- 内联 norm_reg (原 disasm_util) ----
+# 内联 norm_reg
 
 _W32_TO_W64_NORM = {"eax": "rax", "ebx": "rbx", "ecx": "rcx",
                     "edx": "rdx", "esi": "rsi", "edi": "rdi",
@@ -77,7 +75,7 @@ def norm_reg(reg: str) -> str:
     return _W32_TO_W64_NORM.get(r, r)
 
 
-# ---- 操作数反推 (原 co_source_operands) ----
+# 操作数反推
 
 class CoSourceOperandMixin:
     """操作数反推与解析方法, 由 AWSCEngine 继承."""
@@ -329,7 +327,7 @@ class CoSourceOperandMixin:
         return t.split("@")[0].split("(")[0].split(".")[-1]
 
 
-# ---- 同源引擎 (原 co_source_engine) ----
+# 同源引擎
 
 class AWSCEngine(CoSourceOperandMixin):
     """分配-写入同源关联引擎.
@@ -526,7 +524,7 @@ class AWSCEngine(CoSourceOperandMixin):
         return 0
 
 
-# ---- 过滤器 (原 co_source_filter, alloc_tracker 参数保留为空引用) ----
+# 过滤器 (alloc_tracker 参数保留为空引用)
 
 class AWSCFPFilter:
     """AWSC 同源关联过滤器."""

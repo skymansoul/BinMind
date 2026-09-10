@@ -2,10 +2,10 @@
 # 从 stub_metamorphic_oracle 加载合成的关系，
 # 对已实现函数执行蜕变测试并报告语义异常。
 #
-# 与 MetamorphicSynthesizer 的关系:
-#   Synthesizer 负责推导（从签名到关系），本模块负责执行（从关系到判定）。
-#   分离原因: 合成是纯符号计算（无副作用），执行涉及函数调用与异常处理，
-#   两者的错误模型和资源边界不同。
+# 与 MetamorphicSynthesizer 的分工: Synthesizer 负责推导
+# （从签名到关系），本模块负责执行（从关系到判定）。
+# 分离原因: 合成是纯符号计算（无副作用），执行涉及函数调用与
+# 异常处理，两者的错误模型和资源边界不同。
 import itertools as _it
 from typing import Optional as _Opt, Callable
 

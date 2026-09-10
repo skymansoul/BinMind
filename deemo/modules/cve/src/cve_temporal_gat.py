@@ -21,12 +21,9 @@
 # 历史CVE的信息不会淹没当前威胁.
 # 时间差分编码使模型学习"CVE间典型时间间隔".
 #
-# 非显而易见性:
-#   1. 首次将时序图注意力应用于CVE依赖图.
-#      2026年TGAT论文 (DYNAMO, Prov-Trust, PEGraphSec-Net)
-#      全部面向provenance图/网络流量, 零CVE图.
-#   2. 双时间信号: 绝对时间 (节点年龄) + 相对时间 (边时间差).
-#   3. 与现有CVEExploitGraph兼容: 使用相同的节点/边结构.
+# 设计说明:
+#   1. 双时间信号: 绝对时间 (节点年龄) + 相对时间 (边时间差).
+#   2. 与现有CVEExploitGraph兼容: 使用相同的节点/边结构.
 #
 #
 # TGAT: Inductive Temporal Graph Attention (ICLR)

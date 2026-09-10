@@ -3,13 +3,6 @@
 # 不依赖深度学习，使用轻量特征工程 + 加权评分，
 # 适合"冷数据"场景（历史记录少，无需 GPU）。
 #
-# 问题:
-#   GradualEngine 用固定顺序尝试策略: template → llm。
-#   该顺序对所有模块一致，不考虑模块特征差异。
-#   某些模块 template 更可能成功（简单签名/纯转发），
-#   某些模块 LLM 更可能成功（复杂语义/多分支逻辑）。
-#   错误的顺序浪费计算资源，且可能因验证失败而整体放弃。
-#
 # 方法:
 #   1. 从 ProvenanceChain 提取历史 (特征, 策略, 成功/失败) 三元组
 #   2. 特征: func_count, has_high_complexity, type_annotation_coverage,
@@ -18,11 +11,6 @@
 #      score(s, f) = Σ w_i × similarity(f, success_cases_of_s)
 #      其中 similarity 用归一化欧氏距离
 #   4. 输出按得分排序的策略列表 + 最高分策略的预估成功率
-#
-# 区别于通用推荐系统 (L-PPR, PfoTGNRec):
-#   不涉及金融时间序列或图神经网络，而是针对代码生成策略选择的
-#   特征工程 + KNN 风格评分。此设计在 ≤100 条历史记录时
-#   比 DL 方案更可解释且无过拟合风险。
 import math as _math
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt

@@ -3,7 +3,7 @@
 # 读取 eval/results/multi_tool_comparison.csv (run_benchmark.py 输出),
 # 生成:
 #   1. comparison_recall.png - 检出率(召回)柱状图
-#   2. comparison_fpr.png    - 误报率柱状图 (核心创新锚点)
+#   2. comparison_fpr.png    - 误报率柱状图
 #   3. comparison_bar.png    - 召回+误报双指标组合图
 #
 # 决策: 只用实测数据, 不用文献估计 (避免注水).
@@ -89,7 +89,7 @@ def plot(rows):
         _fig_bytes(fig))
     plt.close(fig)
 
-    # 图2: 误报率 (核心创新锚点)
+    # 图2: 误报率
     fig, ax = plt.subplots(figsize=(7, 5))
     bars = ax.bar(x, fprs, width, color="#c62828", edgecolor="black")
     for i, (b, v) in enumerate(zip(bars, fprs)):

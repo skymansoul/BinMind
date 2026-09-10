@@ -1,7 +1,4 @@
 """ETS 覆盖预测 — 指数平滑状态空间模型 + 预测区间.
-
-修改记录:
-2025-08-19 08:44 - ETS(A,N,N) + α MLE + 预测区间 + 信息准则
 参考: Hyndman et al. "Forecasting with Exponential Smoothing" (Springer).
 在 fuzzing 中零先验。状态空间指数平滑比移动平均更优,
 自动估计平滑参数 α, 提供概率预测区间。"""

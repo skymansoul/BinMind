@@ -1,10 +1,5 @@
 """MinHash LSH 执行路径聚类 — 基于路径签名的种子相似性快速检索.
 
-修改记录:
-2025-07-28 11:35 - 增加 LSH 分桶查询, 近似 O(1) 近邻搜索
-2025-07-30 09:47 - 修复 MinHash 签名在空 trace 上的除零
-2025-08-02 14:03 - 路径多样性指标集成到调度器偏置
-
   Broder "On the resemblance and containment of documents"
     — MinHash 用于估计 Jaccard 相似度的理论基础
   Gionis et al. "Similarity Search in High Dimensions via Hashing"

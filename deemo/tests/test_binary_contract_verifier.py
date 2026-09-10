@@ -10,15 +10,15 @@ _DEBUG_FLAG = False
 
 
 class TestBinaryContractVerifier:
-    """BinaryContractVerifier 的回归测试，保证analyze不会崩"""
+    """BinaryContractVerifier 的回归测试，保证 analyze 不会崩溃"""
 
     @classmethod
     def setup_class(cls):
-        """搞一个全局verifier实例，省得每次new，反正stateless"""
+        """全局复用一个 verifier 实例（stateless）"""
         cls.verifier = BinaryContractVerifier()
 
     def test_verify_simple_contract(self):
-        """safe_add: x>=0, y>=0 => result >= x, 这个z3秒出"""
+        """safe_add: x>=0, y>=0 => result >= x, z3 可快速验证"""
         contract_spec = {
             "function_name": "safe_add",
             "preconditions": [
@@ -41,7 +41,7 @@ class TestBinaryContractVerifier:
         assert summary["verified"] >= 0
 
     def test_verify_violated_contract(self):
-        """构造一个必然违反的contract: x=5 => x应该变0, 显然不对"""
+        """构造前置条件满足、后置条件被违反的 contract，验证分析流程可完成并返回结果"""
         contract_spec = {
             "function_name": "buggy_function",
             "preconditions": [
@@ -83,7 +83,7 @@ class TestBinaryContractVerifier:
         assert "error" in result
 
     def test_get_metadata(self):
-        """metadata里的name/type/version咱不能随意修改，外面依赖"""
+        """metadata里的name/type/version不能随意修改，外部有依赖"""
         metadata = BinaryContractVerifier.get_metadata()
         # 旧逻辑: metadata.type.value -- 换成直接读_name_校验
         assert metadata.name == "BinaryContractVerifier"

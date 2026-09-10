@@ -24,7 +24,7 @@ def _static_overflow_analysis(
     func_name: str,
     binfo: Optional[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """静态回退分析(增强版)-反向污点追踪 + 缓冲区大小估算.
+    """静态回退分析-反向污点追踪 + 缓冲区大小估算.
 
     对每个危险调用做反向def-use链追踪, 验证参数是否来自用户输入源.
     若参数来自安全源(常量字符串/snprintf格式化), 不标记为危险.

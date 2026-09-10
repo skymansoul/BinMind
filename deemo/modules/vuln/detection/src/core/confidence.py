@@ -17,7 +17,6 @@ class ConfidenceResult:
 class BayesianConfidenceScorer:
     """朴素贝叶斯置信度评分器。
 
-    核心思路:
     - 各证据源视为独立特征（string_match/symbol_match/disasm_match）
     - 先验概率P(Vuln)=base_rate（默认0.1）
     - Laplace平滑处理零频问题

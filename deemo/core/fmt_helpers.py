@@ -31,13 +31,20 @@ def list_user_functions(binary_path: str) -> List[str]:
             parts = line.strip().split()
             if len(parts) >= 3:
                 name = parts[-1]
+                # PE 文件 r2 把 main 标为 sym.main, 不能误过滤
+                if name in ('main', 'sym.main', 'sym._main', 'entry0'):
+                    funcs.append(name if not name.startswith('sym.') else name[4:])
+                    continue
                 if not name.startswith(('_', 'sym.', 'fcn.', 'sub.')):
                     if not any(name.startswith(p) for p in
                                ('__libc', '__cxa', 'register', 'deregister')):
                         funcs.append(name)
+        # 过滤后为空时回退到 main, 避免漏检 PE 格式
+        if not funcs:
+            return ['main']
         return funcs
     except Exception:
-        return []
+        return ['main']
 
 
 def decompile_function(binary_path: str, func_name: str) -> str:

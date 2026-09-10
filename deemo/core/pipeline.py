@@ -643,6 +643,16 @@ def run_pipeline(
                         _add_rule(f)
                 except Exception:
                     pass
+                # 直接模式格式串检测: 补全主检测器覆盖 printf(buf) 直接模式
+                # 主检测器签名为 (binary_path, func_name) 而非伪代码, 直接对二进制取偏移
+                try:
+                    from core.format_string_detector import detect_format_string_vulns
+                    for f in detect_format_string_vulns(binary_path, func_name):
+                        f.setdefault('type', 'format-string')
+                        f.setdefault('cwe', 'CWE-134')
+                        _add_rule(f)
+                except Exception:
+                    pass
                 # 整数溢出
                 try:
                     from core.int_overflow_unified_pipeline import detect_integer_overflow
@@ -694,6 +704,35 @@ def run_pipeline(
         except Exception as err:
             logger.warning("Rule detectors failed: %s", err)
         finally:
+            # 创新模块管线 — 在基础检测器产出rule_findings后,
+            # 调用HOFPR/HFP/ACFPC/DDSSC/AWSC/CJ-BVF/CJ-PCBVF七大创新模块
+            # 做增量检测与误报抑制. 各模块独立try/except, 互不影响.
+            if rule_findings and _is_enabled('ENABLE_INNOVATION_PIPELINE',
+                                             default='true'):
+                try:
+                    from core.innovation_bridge import run_innovation_pipeline
+                    # 对每个函数的伪代码执行创新模块管线
+                    _innov_findings = []
+                    for r in decomp_results:
+                        analysis = r.get('analysis', r)
+                        if not isinstance(analysis, dict):
+                            continue
+                        pc = analysis.get('pseudocode', '')
+                        if not pc:
+                            continue
+                        fn = r.get('function_name', r.get('function', '?'))
+                        # 收集该函数已有的rule_findings
+                        fn_findings = [f for f in rule_findings
+                                       if f.get('function_name', f.get(
+                                           'function', '')) == fn]
+                        if fn_findings:
+                            enhanced = run_innovation_pipeline(
+                                pc, fn, binary_path, fn_findings)
+                            _innov_findings.extend(enhanced)
+                    if _innov_findings:
+                        rule_findings = _innov_findings
+                except Exception as err:
+                    logger.warning("Innovation pipeline failed: %s", err)
             _step_end(_sid_rule, 'success',
                       output_summary=f"{len(rule_findings)} findings")
             _project_state.current_step = 'rule_detection'

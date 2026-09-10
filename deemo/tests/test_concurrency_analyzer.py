@@ -1,4 +1,3 @@
-# 并发bug是最难复现的，写完这个测试已经很晚了
 # test_concurrency_analyzer: 数据竞争(Race Condition)和原子性违例检测
 
 import os

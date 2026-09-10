@@ -1,10 +1,6 @@
 """
 子寄存器级污点追踪 — 补全constant_time_verifier中全寄存器追踪的精度损失。
 
-修改记录:
-  2025-08-03 16:47 — 修正AH/AX别名传播, 增加零扩展/符号扩展处理
-  2025-08-05 11:19 — 拆分为独立模块, 增加TaintByteMap位级查询
-
 设计意图:
   constant_time_verifier的_tainted_regs追踪全寄存器(rax/rcx/...),
   显式声明"al污染 vs ah未污染无法区分"。这在以下场景产生假阳性:

@@ -1,56 +1,35 @@
-# 条件神经过程CVE评分
 # 条件神经过程 — CVE评分函数分布的学习与推理
+# CVE 评分具有随机性：同一特征向量的 CVE 可能因未观测因素
+# （攻击者动机、工具链可用性、地缘政治）而有不同的利用结果。
+# 单一函数 f: X→[0,1] 无法表达该不确定性，也难以用少量已知 CVE
+# 快速适应新上下文。
 #
-# 问题: 现有CVE评分模型 (EPSS/GNN/Hawkes) 学习单一函数 f: X→[0,1].
-# 但CVE评分本质上是随机的 — 同一特征向量的CVE可能因未观测因素
-# (攻击者动机、工具链可用性、地缘政治) 而有不同的利用结果.
-# 单一函数无法表达这种不确定性, 且无法利用少量已知CVE快速适应新上下文.
-#
-# 解决方案: 条件神经过程 (Conditional Neural Process, CNP).
-# CNP学习的是函数的分布 P(f|D_context), 而非单一函数.
-# 给定上下文集 {(x_i, y_i)} (已知的CVE特征+利用标签),
-# CNP输出对查询点x*的预测分布 N(μ*, σ*²).
+# 方案: 条件神经过程 (Conditional Neural Process, CNP)。
+# CNP 学习函数的分布 P(f|D_context) 而非单一函数：
+# 给定上下文集 {(x_i, y_i)}，输出查询点 x* 的预测分布 N(μ*, σ*²)。
 #
 # 架构:
 #   编码器 h_i = MLP_enc(x_i, y_i)  →  聚合 r = mean(h_i)
 #   解码器 (μ*, σ*) = MLP_dec(r, x*)
 # 训练: 最大化 log P(y_query | X_query, D_context).
 #
-# CNP的关键特性:
-#   1. 不确定性校准: σ* 反映给定上下文后预测的不确定性.
-#      少上下文 → 高σ (模型知道自己不知道).
-#   2. 快速适应: 给定新CWE类型的几个已知CVE作为上下文,
-#      即可对该类型的其他CVE做出校准预测.
-#   3. 计算效率: O(|C|+|Q|) 单次前向, 无需MAML的梯度循环.
+# 特性:
+#   1. σ* 反映给定上下文后预测的不确定性（少上下文 → 高 σ）。
+#   2. 给定新 CWE 类型的几个已知 CVE 作上下文，即可对该类型
+#      其他 CVE 做预测。
+#   3. 单次前向 O(|C|+|Q|)，无 MAML 的梯度内循环。
 #
-# 与现有模块的差异:
-#   - MAMLCVEModel (cve_meta_learning): 基于梯度的元学习, 需要内循环.
-# CNP: 基于前向的元学习, 上下文通过编码器直接调制预测.
-#   - ConformalExploitScorer: 频率学派区间, CNP提供贝叶斯风格的后验方差.
+# 与相邻模块的差异:
+#   MAMLCVEModel (cve_meta_learning): 基于梯度的元学习（内循环）。
+#   CNP: 基于前向的元学习，上下文经编码器直接调制预测。
+#   ConformalExploitScorer: 频率学派区间；CNP 提供贝叶斯风格的后验方差。
 #
-# 非显而易见性:
-#   1. 首次将神经过程应用于CVE评分.
-#      2025-2026年检索: BayesMAML用于恶意软件检测,
-#      但零论文使用Neural Processes于漏洞评分.
-#   2. 上下文设计: 编码器融合了特征+标签的联合表示,
-#      而非仅特征 (标准CNP for regression).
-#      这使上下文信息更丰富地调制解码器.
-#   3. 与ConformalExploitScorer形成双不确定性体系:
-#      CNP提供认知不确定性 (模型知识不足),
-#      共形提供偶然不确定性 (个体预测波动).
-#
-#
-# Conditional Neural Processes (ICML)
-# Neural Processes (ICML Workshop)
-# BayesMAML for zero-day malware (related but different)
-
+# 说明: 训练用数值梯度近似（复杂度 O(n_params × n_samples)），
+# >1000 样本时建议替换为解析梯度或 autograd；当前实现适用于
+# 原型验证和小规模实验。
 import math
 import random
 from typing import Dict, List, Optional, Tuple
-
-# 训练循环使用数值梯度近似, 复杂度O(n_params × n_samples).
-# 在>1000样本时建议替换为解析梯度 (手动反向传播) 或 autograd.
-# 当前实现适用于原型验证和小规模实验.
 
 class ConditionalNeuralProcess:
     """条件神经过程 — CVE评分函数分布的学习.

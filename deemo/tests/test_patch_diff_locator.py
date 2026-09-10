@@ -35,7 +35,6 @@ class TestDiffType(unittest.TestCase):
         self.assertEqual(DiffType.BINARY.value, 'binary')
 
     def test_diff_type_from_string(self):
-        # 历史版本保留——便于理解代码演进
         """测试字符串转换"""
 
         self.assertEqual(DiffType('assembly'), DiffType.ASSEMBLY)
@@ -236,7 +235,6 @@ class TestVulnerabilityTypeMap(unittest.TestCase):
 
 
 class TestConvenienceFunction(unittest.TestCase):
-    # 历史版本保留——便于理解代码演进
     """测试便捷函数"""
 
     def test_locate_patch_diff_function(self):

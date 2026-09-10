@@ -2,13 +2,8 @@
 # 替代线性加权组合，用非支配排序（Non-Dominated Sorting）对桩模块
 # 在多个独立维度上同时优化，无需人工调权。
 #
-# 问题:
-#   ImplementationPrioritizer 使用固定线性权重 (health=0.20, gap=0.40, ...)
-#   将多维信号压缩为单一标量分数。这种压缩存在两个根本缺陷:
-#     1. 权重选择是主观的 — 不同场景（安全审计 vs 性能优化 vs 日常维护）
-#        需要不同权重，但当前仅支持硬编码切换。
-#     2. 线性压缩丢失 Pareto 最优信息 — 一个 gap=1.0 + call=0.1 的模块
-#        与一个 gap=0.5 + call=0.9 的模块可能得分相同，但实现价值完全不同。
+# 说明: 固定线性权重将多维信号压缩为单一标量会丢失 Pareto 最优信息
+# （两个模块可能得分相同但实现价值完全不同），权重选择也依赖场景。
 #
 # 方案:
 #   NSGA-II 风格非支配排序:
@@ -16,13 +11,7 @@
 #        （A 在所有目标 ≥ B 且至少一个目标严格 > B）
 #     2. 前沿分层: Front₀ = 非支配集，Front₁ = 仅被 Front₀ 支配的集，...
 #     3. 同层内以拥挤距离（Crowding Distance）排序，保证前沿多样性
-#     4. 输出: 按 (Front, -crowding_distance) 排序，天然区分"优先实现"与"延后"
-#
-# 区别于已有工作:
-#   Pareto 排序广泛用于演化算法（NSGA-II, SPEA2）的适应度赋值，
-#   但在桩模块实现优先级排序中的应用未见文献报告。
-#   本模块将"多目标优化"范式引入桩系统管理，使实现排序从
-#   "调权艺术"变为"可证明的非支配选择"。
+#     4. 输出: 按 (Front, -crowding_distance) 排序
 import time as _time
 from dataclasses import dataclass as _dc, field as _field
 

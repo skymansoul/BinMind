@@ -14,8 +14,6 @@ API 时序模式匹配的杀伤链阶段推断。
 本模块从已识别的 API 序列中推断阶段归属, 属于下游任务。
 """
 
-# File: phase_sequence.py  |  2026-08-02 create PSM; 2026-08-04 audit: LCS backtracking
-
 from __future__ import annotations
 
 from collections import defaultdict

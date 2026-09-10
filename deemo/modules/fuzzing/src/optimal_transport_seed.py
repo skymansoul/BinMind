@@ -1,10 +1,5 @@
 """熵正则化最优传输种子分发 — Sinkhorn/Wasserstein 种子分布匹配.
 
-修改记录:
-2025-08-02 11:23 - Sinkhorn 算法 + 覆盖空间 Wasserstein 距离
-2025-08-03 16:08 - Wasserstein 重心: 多实例种子池几何中位数
-2025-08-05 13:42 - 稀疏正则化截断低概率传输边
-
 参考: Cuturi Sinkhorn distances, Peyré & Cuturi Computational OT
 
 在 fuzzing 中无先例。将种子分发建模为分布匹配: 最小化覆盖空间

@@ -1,27 +1,13 @@
 # stub_adaptive_gate.py — 分级验证门控
-# 创建于 2026-07-29
-# 修改于 2026-08-04: 重命名，消除"自适应"的误导性表述
+# 按模块关键性将验证严格度分为三级，替代 GradualConfig 的全局二值 safety_mode。
 #
-# 按模块关键性将验证严格度分为三级，
-# 替代 GradualConfig 中的全局二值 safety_mode。
+# 关键性评分 (0~1):
+#   crit = 0.35*norm(depth) + 0.30*norm(closure) + 0.25*norm(calls) + 0.10*(1-fail_rate)
+#   crit ≥ 0.7 → STRICT (签名/IO 100%、MR 零异常、incoherence<0.05)
+#   0.4 ≤ crit < 0.7 → STANDARD
+#   crit < 0.4 → RELAXED
 #
-# 问题:
-#   GradualConfig.safety_mode 是全局二值开关 (strict | permissive)。
-#   但 60+ 模块的关键性差异大:
-# 被 10 个模块依赖的核心桩 → 需要最严格的验证
-# 仅 1 个调用方、历史100%通过率的桩 → 可适当放宽
-#
-# 方法: 三级门控
-#   1. 计算关键性评分 (0~1):
-#      crit = 0.35*norm(depth) + 0.30*norm(closure) + 0.25*norm(calls) + 0.10*(1-fail_rate)
-#   2. crit ≥ 0.7 → STRICT  (签名100%, IO100%, MR零异常, incoherence<0.05)
-#      0.4 ≤ crit < 0.7 → STANDARD
-#      crit < 0.4 → RELAXED
-#   3. 三级阈值硬编码 — 非自适应，但覆盖了从核心到边缘的典型场景。
-#
-# 设计依据: 分级门控在安全关键系统中是成熟实践 (IEC 61508 SIL levels,
-#   DO-178C DAL levels)。关键性评分公式参考了 software criticality
-#   analysis 的通用框架 (故障影响 × 暴露概率)。
+# 阈值硬编码于 compute()，对应从核心到边缘的典型使用场景。
 from dataclasses import dataclass as _dc
 
 

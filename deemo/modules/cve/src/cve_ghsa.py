@@ -1,4 +1,3 @@
-# ~ 2026-08-25
 # GitHub Security Advisory (GHSA) 集成。
 # GHSA 条目补充 NVD 数据 — 部分公告在 GitHub 上比 NVD 发布早数天到数周。
 # 合并逻辑选取最佳描述（最长非空）并合并两源的参考链接。

@@ -2,12 +2,6 @@
 # 将依赖图中的桩模块按功能语义聚类为"能力簇"，
 # 评估每个簇的实现完备度，指导"先实现哪个能力"的决策。
 #
-# 问题:
-#   ImplementationPrioritizer 按模块粒度排序 — 回答"下一个实现谁"。
-#   但用户关心的是"实现这些模块后能做什么"。
-#   实现一个孤立的桩不能提供端到端能力；
-#   实现一组协同的桩才能解锁完整的安全分析工作流。
-#
 # 方法:
 #   1. 标签推断: 从模块名/函数名/文档中提取能力标签
 #      (fuzzing, exploit, network, crypto, binary, decompile, analysis, ...)
@@ -17,11 +11,6 @@
 #   4. 评分: 簇就绪度 = 已实现成员数 / 总成员数
 #      簇重要性 = Σ 成员调用量 × 成员依赖深度
 #      优先实现 = 重要性 × (1 - 就绪度)
-#
-# 新颖性:
-#   传统软件聚类按目录结构或共变模式分组。
-#   本模块按"能力语义"聚类 — 簇的边界由功能标签+依赖拓扑共同决定，
-#   且评分函数同时考虑就绪度缺口与业务重要性。
 import os as _os
 from collections import defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field

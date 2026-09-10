@@ -1,4 +1,3 @@
-# ~ 2026-10-16
 # NVD增量同步引擎——利用NVD API 2.0的lastModStartDate/lastModEndDate做高效增量更新。
 # 每次仅拉取自上次同步以来修改的CVE，而非全量重取。
 #

@@ -1,5 +1,5 @@
 # Round 7 测试——GHSA分页、EPSS批量导入、CWE富化
-# ~28项测试，覆盖2026年8月下旬新增特性
+# ~28项测试，覆盖新增特性
 
 import pytest
 import json

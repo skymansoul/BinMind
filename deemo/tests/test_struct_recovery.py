@@ -205,7 +205,6 @@ class TestStructRecovery(unittest.TestCase):
         self.assertEqual(field.name, 'new_field')
 
     def test_field_type_enum(self):
-        # 历史版本保留——便于理解代码演进
         self.assertEqual(FieldType.INT8.value, 'int8_t')
         self.assertEqual(FieldType.INT32.value, 'int32_t')
         self.assertEqual(FieldType.CHAR.value, 'char')

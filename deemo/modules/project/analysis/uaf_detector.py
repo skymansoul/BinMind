@@ -1,5 +1,5 @@
 # UAF (Use-After-Free) 静态检测器 — 堆指针生命周期分析
-# 核心创新: 在线性扫描框架内追踪堆指针的alloc→free→use生命周期,
+# 在线性扫描框架内追踪堆指针的alloc→free→use生命周期,
 #   检测free后通过悬挂指针的解引用/传参/返回
 # 与ASA-VRA共享基础设施 (PointerProvenance, AllocationTracker),
 #   但追踪目标从"写入是否超出分配边界"变为"使用是否在释放之后"

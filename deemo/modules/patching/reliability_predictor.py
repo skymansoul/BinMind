@@ -421,7 +421,7 @@ class ReliabilityPredictor:
 
     def run_with_report(self, extra_factors=None, capabilities=None,
                         cwe_id=None, arch_extra=True):
-        """增强版 run() —— 额外输出 ReliabilityReport + survival curve。
+        """run() —— 额外输出 ReliabilityReport + survival curve。
 
         arch_extra=True 时自动追加架构相关 factor（shadow stack / PAC）。
         """

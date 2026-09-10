@@ -1,13 +1,11 @@
 """DRIFT 路径敏感分析 — 基本块划分 + CFG可达性 + 路径感知free-use配对.
 
-核心创新: 消除"free和use在不同分支上"的误报.
+消除"free和use在不同分支上"的误报.
 方法: 将指令序列划分为基本块, 构建CFG边, 对每个free-use对检查free所在块
       能否到达use所在块。若不可达 → 过滤。
 
 与heap_path_sensitivity.py的区别:
   那边做cmp+jcc约束区间交 (值域), 这边做CFG可达性 (控制流).
-
-创建: 2024-08-14
 """
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

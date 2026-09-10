@@ -15,7 +15,7 @@
 #   4. 递归深度控制: 限制语法树的递归展开深度——
 #      避免生成过于深层嵌套的输入（可能触发栈溢出而非逻辑bug）
 #
-# 新颖性: 首次将PCFG学习+语法树突变应用于二进制fuzzing的输入生成
+# 与ai_mutator.py/rl_mutate.py的字节级突变不同, 本模块在语法树层面执行突变
 
 from __future__ import annotations
 

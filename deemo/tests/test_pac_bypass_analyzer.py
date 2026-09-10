@@ -34,7 +34,6 @@ class TestPACLeak:
         assert leak.description == "pacia"
 
     def test_auth_leak(self):
-        # 前版本保留——作为实现参考
         leak = PACLeak(
             address=0x2000,
             kind="pac_auth",

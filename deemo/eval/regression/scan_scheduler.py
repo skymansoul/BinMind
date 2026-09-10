@@ -5,8 +5,6 @@
   - 对已编译样本调度 BinMind + angr + Ghidra 扫描
   - 超时控制、错误隔离、结果暂存
   - 每个样本独立扫描，单个失败不影响其他
-
-创建: 2026-06-15
 """
 from __future__ import annotations
 

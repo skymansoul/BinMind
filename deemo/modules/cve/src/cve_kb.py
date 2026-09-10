@@ -1,4 +1,3 @@
-# ~ 2026-09-15
 # CVE 知识库 — 基于 SQLite 的 CVE 条目持久化存储。
 # 随时间累积了 5 次 ALTER TABLE 迁移 (epss, exploit maturity, ranges,
 # cisa kev, fix_version)。模式相同，每次 copy-paste 相同的 try/except pass
@@ -327,7 +326,7 @@ class CVEKnowledgeBase:
         entries = [self._row_to_entry(r) for r in rows]
         return entries, total
 
-# CJK 搜索 (基于 fts5, 2026年8月)
+# CJK 搜索 (基于 fts5)
     def search_cjk(
         self,
         query: str,

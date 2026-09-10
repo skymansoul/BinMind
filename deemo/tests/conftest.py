@@ -40,7 +40,7 @@ def pytest_sessionstart(session):
 
 
 def _bootstrap_config_attrs():
-    """config模块的属性补全 -- 2026-07重构版
+    """config模块的属性补全
 
     按功能分组，每组独立注释
     """
@@ -231,7 +231,7 @@ def _safe_import(module_name):
     try:
         return importlib.import_module(module_name)
     except (ImportError, ModuleNotFoundError, SystemError):
-        # SystemError: 有些.so模块在Windows上报这个，很离谱
+        # SystemError: 有些.so模块在Windows上报这个错
         return None
     except Exception:
         # 兜底 -- 原则上不该进这里，但生产环境什么鬼都有

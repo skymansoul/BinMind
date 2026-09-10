@@ -17,7 +17,7 @@ from core.uaf_alias_helpers import (
 
 
 def detect_uaf_with_aliases(code: str, func_name: str = '') -> List[dict]:
-    """别名感知的UAF检测 — 增强版 detect_uaf.
+    """别名感知的UAF检测 — detect_uaf.
 
     层级:
       L0: 基础 free→use 检测 (同 detect_uaf, 保留100%原有逻辑)

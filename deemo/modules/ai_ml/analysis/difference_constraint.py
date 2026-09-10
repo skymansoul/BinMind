@@ -1,5 +1,5 @@
 # 差分约束图(DCG): 寄存器/栈槽间的差值约束传递闭包
-# 核心创新: 从指令序列提取 x-y≤c 约束, Floyd-Warshall O(n³) 传递闭包
+# 从指令序列提取 x-y≤c 约束, Floyd-Warshall O(n³) 传递闭包
 # 揭示alloc_size与copy_size间的隐藏关系, 即使它们通过不同寄存器链传递
 # 与值流引擎互补: 值流追踪绝对值区间, DCG追踪变量间相对关系
 # 典型场景: mov %rax,%rbx; add $16,%rbx; cmp %rbx,%rcx → 发现 rcx ≤ rax+16

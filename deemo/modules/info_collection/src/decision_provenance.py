@@ -10,8 +10,6 @@ PROVEX 为 IDS 告警提供因果溯源, LAMP
 通过重放链上的中间状态可验证任意历史决策的正确性。
 """
 
-# File: decision_provenance.py  |  2026-07-31 create DPG; 2026-08-04 audit: timestamp fix
-
 from __future__ import annotations
 
 import hashlib

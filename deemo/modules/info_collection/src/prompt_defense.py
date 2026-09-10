@@ -19,8 +19,6 @@
 这种 "稳定性即安全性" 的非对称性构成了检测的理论基础。
 """
 
-# File: prompt_defense.py  |  2026-07-29 create APID; 2026-08-04 audit: remove BAGEL/NofT
-
 from __future__ import annotations
 
 import re

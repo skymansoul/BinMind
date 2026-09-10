@@ -20,7 +20,7 @@ from .streaming import StreamProcessor, ChunkPool, MmapReader, FileBatchIngest
 from .lifecycle import LifecycleManager
 from .async_pipeline import AsyncPipeline, AsyncParallelPipeline
 
-# 2025 扩展: delta diff | 来源追踪 | 冷存储分层 | 向量搜索 | 训练型过滤器 | 零熵优化 | GNN 评分 | 签名挖掘 | 数据集构建
+# 扩展: delta diff | 来源追踪 | 冷存储分层 | 向量搜索 | 训练型过滤器 | 零熵优化 | GNN 评分 | 签名挖掘 | 数据集构建
 from .delta import delta_encode, delta_decode, delta_stats
 from .provenance import ProvenanceGraph, ProvenanceTracker, ProvNode, ProvEdge
 from .cold_storage import StoragePolicy, TierManager, TierSpec

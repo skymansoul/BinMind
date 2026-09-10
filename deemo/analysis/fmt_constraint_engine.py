@@ -1,7 +1,7 @@
 """
 格式串约束引擎 — 将FSCS从正则分类提升到约束传播+抽象解释.
 
-核心创新 (vs fmt_constraint_solver.py 的纯正则方法):
+与 fmt_constraint_solver.py 的纯正则方法对照:
   1. CallingConventionModel: 基于Microsoft x64 ABI计算%n$→实际参数栈槽
   2. DefUseChainTracker: Worklist算法沿DU链做fixpoint污点传播 (AbsInt lattice)
   3. AttackSurfaceComputer: 三层评分分解 (格式串可控×写入原语×地址可控)
@@ -173,7 +173,7 @@ class AttackSurface:
 class AttackSurfaceComputer:
     """三层评分解耦: 格式串可控性(0-5) × 写入原语(0-3) × 地址可控(0-2).
 
-    Reference: CVSS v3.1 exploitability metrics, adapted for format strings.
+    Scoring adapted from CVSS v3.1 exploitability metrics, applied to format strings.
     """
 
     def __init__(self, du: Optional[DefUseChainTracker] = None):

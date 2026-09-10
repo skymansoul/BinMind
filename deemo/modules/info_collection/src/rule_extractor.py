@@ -14,8 +14,6 @@ QRS 用多智能体验证和修剪规则。
 4. 对候选规则做冲突检测, 避免同一关键词对应多类别
 """
 
-# File: rule_extractor.py  |  2026-07-29 create NSRE
-
 from __future__ import annotations
 
 import math

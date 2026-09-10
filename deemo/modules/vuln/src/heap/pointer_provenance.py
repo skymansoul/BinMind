@@ -4,7 +4,6 @@
 与现有 heap_bound_infer 的关系: 它做边界检查, 我们做"同一缓冲区"判定,
 两者互补 — 当两个访问指向同一 malloc 的不同偏移时, 可以精确判定越界.
 
-核心创新 (区别于 SVF/DSA):
   - 非源码级: 直接在 objdump 上工作, 不需要 LLVM IR
   - 非全程序: 函数内 per-instruction 前向扫描, O(n) 单 pass
   - 保守但实用: 不追求精确 aliasing, 只追踪"来自 rax=malloc()" 的指针派生链
@@ -12,8 +11,6 @@
 方法参考:
   - MECA: 多维证据组合 — 借鉴其指针置信度评分
   - Cod: 堆不相交性 — 但我们是二进制级等价实现
-
-创建: 2025-06-09
 """
 from __future__ import annotations
 

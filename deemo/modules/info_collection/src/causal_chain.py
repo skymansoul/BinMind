@@ -13,8 +13,6 @@ MDP-MCTS 从 CTI 非结构化文本中推断攻击链, 属于 NLP 语义解析�
 使用转移概率矩阵 + 意图→阶段混淆矩阵联合优化。
 """
 
-# File: causal_chain.py  |  2026-07-30 create TCICR; 2026-08-04 audit: compress tables
-
 from __future__ import annotations
 
 import math

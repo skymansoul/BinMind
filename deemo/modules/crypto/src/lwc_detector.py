@@ -1,10 +1,6 @@
 """
 NIST轻量密码学检测 — 识别IoT固件中的LWC标准化算法和竞赛最终入围算法。
 
-修改记录:
-  2025-08-04 15:37 — 初始实现: ASCON全家族/GIFT/Photon/Grain/Sparkle/Xoodyak检测
-  2025-08-05 10:18 — 增加ISAP/Elephant/TinyJambu/Romulus检测; 按NIST LWC竞赛阶段分类
-
 设计意图:
   既有crypto_detector覆盖AES/SHA/SM4等传统密码学, 但NIST SP 800-232标准化了
   ASCON作为轻量密码学(LWC)算法, 面向资源受限IoT设备。LWC算法的二进制特征与传统

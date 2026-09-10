@@ -1,6 +1,5 @@
 """UAF 语料库生成器 — 从 uaf_corpus_specs 生成样本目录并编译.
 
-创建: 2024-06-11
 用法: python eval/fp_cve_experiment/gen_uaf_corpus.py [--skip-compile]
 输出: corpus_uaf/<id>/{vuln.c, Makefile, README.md, truth.json, vuln.exe}
 """

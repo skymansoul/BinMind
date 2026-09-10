@@ -1,5 +1,5 @@
 # Round 11 测试——NVD同步、跨部署关联、修复跟踪
-# ~21项测试，2026年10月
+# ~21项测试
 
 import pytest
 from modules.cve.src.cve_kb import CVEKnowledgeBase

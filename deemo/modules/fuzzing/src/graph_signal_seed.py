@@ -1,10 +1,5 @@
 """图信号种子分析 (Graph Signal Processing on Seeds, GSPS).
 
-修改记录:
-2025-08-14 11:33 - Laplacian 图傅里叶变换 + 覆盖信号频谱分解
-2025-08-15 09:17 - 平滑度评分: 信号与低频本征模的对齐程度
-2025-08-16 14:08 - 高通滤波: 移除低频分量→残差信号→检测异常种子
-
   Shuman et al. "The Emerging Field of Signal Processing on Graphs"
     (IEEE SPM) — GSP 的综述: 图傅里叶变换、滤波、采样
   Ortega et al. "Graph Signal Processing: Overview, Challenges,
@@ -18,7 +13,6 @@
   图傅里叶变换: x̂ = Uᵀ·x, 其中 U 是 L 的特征向量
   平滑度: xᵀLx = Σ λ_k·|x̂_k|² — 信号在低频分量上的能量
 
-核心创新:
   1. 覆盖信号频谱: 分解为低频 (平滑区域) + 高频 (突变区域)
   2. 平滑度诊断: 信号与最低频本征模对齐 → 覆盖结构良好
   3. 高通滤波残差: 去除低频 → 残差 → 检测覆盖异常的种子

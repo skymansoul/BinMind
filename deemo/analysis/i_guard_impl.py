@@ -13,10 +13,9 @@
 #     累积器 sum+=val 的溢出风险 sum ∈ [init, init+iters*per_iter].
 #   保守: 不能证明安全→保留.
 #
-# 本文件为 I-GUARD 独立实现, 合并 analysis/ 的
-# int_overflow_symbolic.py + int_product_chain.py + int_overflow_helpers.py
-# (调用图所需部分) + int_overflow_verifier.py + int_loop_types.py +
-# int_loop_extract.py + int_loop_induction.py (消除原三处环形依赖), 仅标准库.
+#   本文件实现 I-GUARD 核心管线: 符号化辅助 → 符号化阈值 → 乘积链图
+#   → 值域传播验证 → 循环归纳.
+
 
 from __future__ import annotations
 
@@ -27,7 +26,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ================= 符号化辅助 (原 int_overflow_helpers, 调用图部分) =================
+# 符号化辅助
 
 _SIZEOF_MAP = {
     'int': 4, 'unsigned': 4, 'unsigned int': 4, 'uint32_t': 4,
@@ -145,7 +144,7 @@ def is_in_alloc_context(source: str, var: str, line_no: int) -> bool:
     return False
 
 
-# ================= 符号化阈值 (原 int_overflow_symbolic) =================
+# 符号化阈值
 
 @dataclass
 class SymbolicProduct:
@@ -254,7 +253,7 @@ def analyze_int_overflow_symbolic(
     return analyzer.analyze_mul_overflow(source_code)
 
 
-# ================= 乘积链图 (原 int_product_chain) =================
+# 乘积链图
 
 @dataclass
 class ProductEdge:
@@ -475,7 +474,7 @@ def combine_with_value_range(
     return refined, stats
 
 
-# ================= 值域传播验证器 (原 int_overflow_verifier) =================
+# 值域传播验证器
 
 _ABORT_GUARD_RE = re.compile(
     r'if\s*\(\s*(\w+)\s*\*\s*(\w+)\s*<\s*\1\s*\)\s*(?:abort|assert|exit)\s*\(',
@@ -734,7 +733,7 @@ def verify_int_overflow_candidates(findings: List[dict], code: str = ""
     return IntOverflowVerifier().verify_candidates(findings, code)
 
 
-# ================= 循环归纳 (原 int_loop_types + extract + induction) =================
+# 循环归纳
 
 class InductionKind(Enum):
     """归纳变量类型."""

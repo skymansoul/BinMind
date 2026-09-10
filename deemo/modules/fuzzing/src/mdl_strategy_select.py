@@ -1,9 +1,5 @@
 """MDL 策略选择 (Minimum Description Length Strategy Selection, MDL-SS).
 
-修改记录:
-2025-08-13 08:44 - Rissanen MDL + NML 通用编码 + 随机复杂度
-2025-08-14 13:21 - 在线更新: 新观测后 O(1) 增量编码长度
-
   Rissanen "Modeling by Shortest Data Description" (Automatica)
   Rissanen "Fisher Information and Stochastic Complexity" (IEEE IT)
   Grünwald "The Minimum Description Length Principle" (MIT Press)

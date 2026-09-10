@@ -12,8 +12,7 @@
     - xchg esp, eax; ret — 需要控制 eax+已知的 eax 值
     - ENTER-based   — Linux 内核特化 (0x100ff 字节位移)
 
-  本模块提供第一个栈迁移难度评估模型: 基于可用小工具类型、
-  寄存器控制程度、缓冲区和 CFI 惩罚的综合评分。
+  迁移难度按可用小工具类型、寄存器控制程度、缓冲区位置和 CFI 惩罚综合评估。
 
   Linux kernel ENTER pivot: 0x100ff byte max displacement
   ebpf-stack-pivot-detection: 运行时检测

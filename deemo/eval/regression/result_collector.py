@@ -5,8 +5,6 @@
   - 汇总所有工具的扫描结果
   - 与 ground truth 对比计算 TP/FP/TN/FN
   - 输出统一 CSV + 统计摘要
-
-创建: 2026-04-27
 """
 from __future__ import annotations
 

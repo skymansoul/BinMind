@@ -18,7 +18,7 @@
    [PtrInput → TestZero → Branch → Error]   → "添加了空指针检查"
    而非依赖关键词匹配。
 
-为什么不用模板：
+本模块不采用模板匹配，原因：
   模板 "cmp + jcc = bounds_check" 无法区分 cmp rdi, 256 (大小检查) 和
   cmp [rbp-8], 0x7f454c46 (ELF magic 检查)。
   约束链保留操作数和数据流 → 可精确分类。

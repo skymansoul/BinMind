@@ -1,8 +1,6 @@
 # stub_registry.py — 桩模块中心注册表
 # 维护 stubs/ 下全部重导出桩与其 compat 目标的映射关系，
 # 提供导入前的存在性检查、版本差异检测和批量重载。
-# Implicit Patterns in Model-Based Binary Analysis
-#   "knowledge-guided prioritization" 策略 — 注册表优先级排序借鉴该思路。
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt

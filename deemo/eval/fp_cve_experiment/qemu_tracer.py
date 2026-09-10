@@ -1,6 +1,5 @@
 """运行时追踪器 — QEMU user-mode 插桩 / ASAN ground truth 双模式.
 
-创建: 2024-07-16
 方法:
   1. QEMU 模式: qemu-x86_64 -d in_asm 捕获指令流, 解析 malloc/memcpy
      调用与地址, 推算写入越界 (需要 qemu-user, Linux).

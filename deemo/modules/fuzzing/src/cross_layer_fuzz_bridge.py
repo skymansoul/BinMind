@@ -320,7 +320,7 @@ class CrossLayerFuzzBridge:
             'syncs': self._stats['syncs'],
         }
 
-# 一站式入口
+# 统一入口
 
 def launch_distributed_campaign(
     seeds: List, n_nodes: int = 4,

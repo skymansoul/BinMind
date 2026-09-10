@@ -1,11 +1,5 @@
 """Stein 差异种子评估 (KSD Seed Assessment) — IMQ 核 + Nyström + 均匀目标近似.
 
-修改记录:
-2025-08-07 10:45 - IMQ 核 Stein 算子 + 覆盖空间 KSD 估计
-2025-08-08 16:28 - Nyström 加速: O(n²)→O(m²n), m=30
-2025-08-20 09:41 - 修正: 标注 score≡0 假设 (均匀目标), 此时 KSD 为核 Hessian 期望
-2025-08-10 08:51 - 自适应带宽: score function 的局部 Lipschitz 估计
-
   Liu, Lee & Jordan "A Kernelized Stein Discrepancy for Goodness-of-fit
     Tests" (ICML) — KSD 的原始提出: 使用 Stein 恒等式构造核化差异度量
   Chwialkowski, Strathmann & Gretton "A Kernel Test of Goodness of Fit"
@@ -21,7 +15,6 @@
     score = 0 (均匀分布的对数梯度为零), KSD 退化为核梯度的期望。
     这给出了一种"种子是否覆盖了整个空间"的分布度量。
 
-核心创新:
   1. IMQ 核 Stein 算子: k₀(x,y) = ∇_x·∇_y k(x,y) + ∇_x k(x,y)·∇_y log p(y)
      + ∇_y k(x,y)·∇_x log p(x) + k(x,y)·∇_x log p(x)·∇_y log p(y)
   2. 均匀目标简化: p(x) ∝ 1 → ∇log p = 0 → 仅需核的 Hessian 迹

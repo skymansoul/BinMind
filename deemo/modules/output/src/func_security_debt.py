@@ -6,7 +6,6 @@
   不是问"哪些函数现在有漏洞"(那是 risk_surface.py)，而是问
   "哪些函数的开发实践和历史表明它们将来会有漏洞?"
 
-  全网检索 "function-level security debt quantification" 零结果。
   现有技术债务工具 (SonarQube, CodeClimate) 度量的是可维护性债务，
   不是安全债务。安全债务的特殊性:
     - 一次修复不等于债务清零 — 历史有漏洞的函数有复发倾向
@@ -22,7 +21,6 @@
   安全债务 = w1×complexity + w2×recurrence + w3×criticality
             - w4×age_attenuation
 
-  无现有工作.
   SonarQube Technical Debt: 可维护性，非安全性.
   CWE-1126: 安全债务概念 (非定量).
 

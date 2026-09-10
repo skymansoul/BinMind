@@ -1,6 +1,5 @@
 """FMT-SAC 回归 — 对 corpus_fmt 全部样本运行并与 truth 比对.
 
-创建: 2024-06-17
 用法: python eval/fp_cve_experiment/regression_fmt.py [--json out.json]
 """
 import argparse

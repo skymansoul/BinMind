@@ -1,10 +1,5 @@
 """保序覆盖增长建模 (Isotonic Coverage Growth Modeling, ICGM).
 
-修改记录:
-2025-08-10 13:44 - PAVA 保序回归 + 单调覆盖曲线估计
-2025-08-11 09:52 - 置信带: 保序回归的自助法 (bootstrap) 置信区间
-2025-08-12 15:17 - 预测: 线性外推 + 单调约束 → 未来覆盖下界
-
   Ayer, Brunk, Ewing, Reid & Silverman "An Empirical Distribution
     Function for Sampling with Incomplete Information" (Annals of Math
     Statistics) — PAVA 的起源
@@ -24,7 +19,6 @@
   PAVA 利用此先验知识, 给出噪声在单调约束下的最优估计。
   这使覆盖停滞/突破的判定有了统计严格的基础。
 
-核心创新:
   1. PAVA 在线更新: O(1) 平摊 per new point
   2. 单调置信带: bootstrap 保序回归 → 覆盖曲线的置信区间
   3. 单调预测: 线性外推 + 保序约束 → 覆盖下界

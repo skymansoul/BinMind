@@ -1,4 +1,4 @@
-# analysis/fc_vra_detector — FC-VRA 流相关值域分析检测器 (本项目核心创新)
+# analysis/fc_vra_detector — FC-VRA 流相关值域分析检测器
 # 管线: C0 值流配对 → C1 大小等价 → C2 区间+分配器松弛 → C3 支配守卫 → C4 可控性确认
 #
 # 误报压制机理 (相对 PSVR-HLM v2):

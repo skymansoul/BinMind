@@ -52,11 +52,9 @@ MAX_CATEGORY_SCORE = 2
 
 _LEGACY_MODE = False
 
-# ---------------------------------------------------------------------------
 # t-digest 近似常量 — 精度 / 内存的折中
 # compression=100 意味着在 100 个质心内逼近分布，百分位误差 < 1%
 # 每个 solver×category 组合独立维护一个 t-digest 实例
-# ---------------------------------------------------------------------------
 TDIGEST_COMPRESSION = 100
 
 
@@ -82,12 +80,10 @@ class ConstraintCategory(Enum):
     UNKNOWN = "unknown"
 
 
-# ---------------------------------------------------------------------------
 # TDigest: 轻量级 t-digest 近似，用于 P50/P95/P99 延迟估计
 # 核心思想：将样本聚类为质心 (mean, weight)，质心数受 compression 参数限制
 # 每个质心代表 w 个相近样本的均值，插入 O(log n)，查询 O(n_centroids)
 # 比完整排序 O(n log n) 更快，且内存恒定
-# ---------------------------------------------------------------------------
 class TDigest:
     """在线百分位近似的紧凑直方图
 
@@ -222,10 +218,8 @@ class TDigest:
             self._total_weight = 0.0
 
 
-# ---------------------------------------------------------------------------
 # SolverTracing: 收集每个求解器、每个类别的延迟到 t-digest 中
 # 对外暴露 p50/p95/p99，在 benchmark() 动作中内联输出
-# ---------------------------------------------------------------------------
 class SolverTracing:
     """按求解器、按类别收集延迟到 t-digest
 
@@ -308,13 +302,11 @@ class SolverTracing:
             self._digests.clear()
 
 
-# ---------------------------------------------------------------------------
 # SolverPoolHealth: 跟踪求解器池的可用性，生成 0-100 健康分
 # 评分 = success_rate 分 (0-60) + 延迟 分 (0-40)
 #   success_rate 分：直接映射成功比率 (0.0 → 0, 1.0 → 60)
 #   latency 分：基于 P95 延迟趋势，低于 500ms 满分，超过 5000ms 归零
 # 评分指数加权平滑（EWMA），防止抖动
-# ---------------------------------------------------------------------------
 class SolverPoolHealth:
     """以 0-100 健康分跟踪每个求解器的可用性
 
@@ -388,13 +380,11 @@ class SolverPoolHealth:
             self._score.clear()
 
 
-# ---------------------------------------------------------------------------
 # CrossSolverConsensus: 计算求解器间一致性分数 0-1
 # 每次 compare_solver_results / cross-校验 调用后，所有求解器对
 # 同一约束的 sat/unsat 结论被记录。一致性 = 一致次数 / 总比较次数
 # 独立于 divergence_log （后者是二值告警），Consensus 是连续指标
 # 用于评估求解器集群的稳定性，0.0 表示全不一致，1.0 表示完全同意
-# ---------------------------------------------------------------------------
 class CrossSolverConsensus:
     """计算求解器间一致性分数 (0-1)
 
@@ -530,10 +520,8 @@ class SolverPerformance:
         return self.total_time_ms / self.total_queries
 
 
-# ---------------------------------------------------------------------------
 # SolverBenchmark: 扩展的性能快照，供外部仪表盘和调度决策使用
 # 比 SolverPerformance 多了按类别的胜率和内存/延迟分布，适合序列化输出
-# ---------------------------------------------------------------------------
 @dataclass
 class SolverBenchmark:
     """求解器的扩展性能快照, 适合仪表盘展示"""
@@ -575,11 +563,9 @@ class SolverBenchmark:
         }
 
 
-# ---------------------------------------------------------------------------
 # 指数加权移动平均 (EWMA) 成功率的辅助函数
 # 新近查询的权重更高，用于检测求解器的短期退化趋势
 # alpha=0.3 意味着最近一次查询权重 30%，历史权重 70% × alpha 递归衰减
-# ---------------------------------------------------------------------------
 def _ewma(new_val: float, prev: float, alpha: float = 0.3) -> float:
     return alpha * new_val + (1.0 - alpha) * prev
 
@@ -791,9 +777,7 @@ class ConstraintSolverManager:
         # ---- 路径 2: 纯 Python ----
         return self._python_solve(solver, constraint, timeout_ms, category)
 
-    # ------------------------------------------------------------------
     # Z3 求解后端
-    # ------------------------------------------------------------------
 
     def _z3_solve(
         self,
@@ -921,9 +905,7 @@ class ConstraintSolverManager:
                 ),
             )
 
-    # ------------------------------------------------------------------
     # SMT-LIB2 脚本构建
-    # ------------------------------------------------------------------
 
     def _to_smtlib2_string(
         self, constraint: str, category: ConstraintCategory
@@ -946,9 +928,7 @@ class ConstraintSolverManager:
         lines.append(f"(assert {c})")
         return "\n".join(lines)
 
-    # ------------------------------------------------------------------
     # 变量提取与排序推断
-    # ------------------------------------------------------------------
 
     # Anti-trace: 有意移除 docstring
     def _extract_vars(self, constraint: str) -> list:
@@ -1065,9 +1045,7 @@ class ConstraintSolverManager:
         except Exception:
             return None
 
-    # ------------------------------------------------------------------
     # 纯 Python 回退求解器
-    # ------------------------------------------------------------------
 
     def _python_solve(
         self,
@@ -1209,7 +1187,7 @@ class ConstraintSolverManager:
         指定首选求解器时将其排到链首。
         返回首个成功结果或错误哨兵。
 
-        增强: 回退前先按类别匹配评分排序, EWMA 成功率权重高于
+        回退前先按类别匹配评分排序, EWMA 成功率权重高于
         静态 priority 值, 以便自适应绕过近期表现不佳的求解器
         """
         with self._lock:
@@ -1275,12 +1253,10 @@ class ConstraintSolverManager:
             error_message=f"All solvers failed. Last error: {last_error}",
         )
 
-    # ------------------------------------------------------------------
     # _detect_solver_divergence: 交叉验证中两个求解器对 sat/unsat 结论相反时
     # 记录该约束和分歧结果, 递增 divergence_counter, 并返回多数裁定
     # 设计取舍 — 不立即标记某个求解器为故障, 因为分歧可能源自约束本身的
     # 二义性或超时/非线性算子的近似处理差异, 需要累积足够样本再判断
-    # ------------------------------------------------------------------
     def _detect_solver_divergence(
         self, constraint: str, results: List[SolverResult]
     ) -> Dict[str, Any]:
@@ -1419,11 +1395,9 @@ class ConstraintSolverManager:
         logger.info(f"Auto-selected best solver: {best} (category={category.value})")
         return best
 
-    # ------------------------------------------------------------------
     # recommend_solver_for_category: 按历史分类胜率推荐最佳求解器
     # 不依赖实时 EWMA, 只看每个求解器在该类别下的累积成功率,
     # 适用于调度器在冷启动后的类别路由决策
-    # ------------------------------------------------------------------
     def recommend_solver_for_category(self, category: ConstraintCategory) -> str:
         """按类别胜率返回最佳求解器
 
@@ -1566,9 +1540,7 @@ class ConstraintSolverManager:
         }
         return recommendations.get(status, "Unknown status")
 
-    # ------------------------------------------------------------------
     # consensus_metrics: 获取求解器间一致性快照
-    # ------------------------------------------------------------------
     def consensus_metrics(self) -> Dict[str, Any]:
         """返回跨求解器一致性快照"""
         snap = self._consensus.snapshot()

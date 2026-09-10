@@ -1,10 +1,5 @@
 """距离相关突变分析 (Distance Correlation Mutation Analysis, DCMA).
 
-修改记录:
-2025-08-08 10:33 - Székely 距离相关 + 无偏 U-centering 估计 + 置换检验
-2025-08-09 15:07 - 在线增量: 新观测 O(1) 更新双中心距离矩阵
-2025-08-11 08:41 - 多变量 dCor: 突变类型×字节位置×覆盖结果的联合依赖
-
   Székely, Rizzo & Bakirov "Measuring and Testing Dependence by
     Correlation of Distances" (Annals of Statistics) — dCor 的原始提出
   Székely & Rizzo "Partial Distance Correlation with Methods for
@@ -18,7 +13,6 @@
   dCor 捕获任意形式的依赖 (线性、周期、单调、非单调)。
   这使得它成为分析"哪种突变参数影响覆盖结果"的理想工具。
 
-核心创新:
   1. dCor 非线性依赖检测: 比 Pearson/Spearman 更强大
   2. 在线增量 U-centering: 新观测后 O(n) 更新 (非 O(n²) 重建)
   3. 置换检验显著性: 零假设 H₀:"突变参数与覆盖独立"

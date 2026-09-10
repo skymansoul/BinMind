@@ -26,7 +26,13 @@ binmind -help
 
 ## 配置 AI 服务
 
-AI 服务不通过环境变量配置。安装完成后，请直接编辑项目根目录下的 `config.py`，在 `Config` 类里填写服务信息。
+AI 服务支持通过环境变量配置（读取逻辑见 `deemo/core/ai_backends.py` 与 `deemo/config.py`），环境变量优先于 `config.py`；也可直接编辑项目根目录下 `config.py` 中的默认值。常用环境变量：
+
+- `LLM_PROVIDER`：模型服务商（`openai`/`anthropic`/`ollama`，缺省回退 `config.AI_PROVIDER`）
+- `OPENAI_API_KEY` / `OPENAI_BASE_URL`：OpenAI 兼容服务的密钥与接口地址
+- `ANTHROPIC_API_KEY`：Anthropic 服务密钥
+- `OLLAMA_BASE_URL`：Ollama 服务地址
+- `AI_MODEL`：默认模型名
 
 OpenAI 示例：
 

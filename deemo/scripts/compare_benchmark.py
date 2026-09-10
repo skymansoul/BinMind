@@ -2,10 +2,6 @@
 """
 横向对比实验启动器 — 同一批样本喂给 BinMind / Angr / QEMU+插桩 / Ghidra 脚本。
 
-创建: 2026-06-27 14:20
-修改:
-  2025-10-07 14:20 — 初始实现: 多工具调度/计时/内存/结果归一化/LaTeX表格生成
-
 用法:
   python scripts/compare_benchmark.py \
     --samples tests/cve_samples/ \

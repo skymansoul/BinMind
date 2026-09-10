@@ -1,6 +1,5 @@
 """PCFV 可扩展性基准 — 四工具在合成大二进制上的耗时/峰值内存.
 
-创建: 2023-07-13
 用法: python eval/fp_cve_experiment/run_scalability.py [--out results/scalability.csv]
 输出: CSV (tool, scale, insns, time_ms, peak_mem_mb)
 """

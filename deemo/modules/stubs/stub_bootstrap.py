@@ -1,11 +1,6 @@
 # stub_bootstrap.py — 生态系统引导与统一健康检查
 # 单一入口: 初始化全部子系统 → 运行全量扫描 → 输出统一状态报告。
-# CI/CD 集成点: exit_code=0 表示系统健康，非0 表示需关注。
-#
-# 问题:
-#   39 个分析模块各自有独立入口。CI 管道需要逐一调用并聚合结果。
-#   Bootstrap 提供统一的 --check 入口，适合作为 pre-commit hook
-#   或 CI 管道的第一个 stage。
+# 适合作为 pre-commit hook 或 CI 管道的第一个 stage。
 #
 # 执行阶段:
 #   PHASE 1 SCAN     — 契约扫描 + 幽灵检测 + 冲突检测

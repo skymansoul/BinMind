@@ -86,7 +86,6 @@ class TestBypassStrategyDataclass(unittest.TestCase):
 class TestBypassAnalysisResultDataclass(unittest.TestCase):
 
     def test_bypass_analysis_result_creation(self):
-        # 历史实现保留——用于回溯参考
         """linux/x86_64/EASY/0.9 confidence"""
         result = BypassAnalysisResult(
             target_os="linux",

@@ -1,10 +1,5 @@
 """函数型主成分覆盖分析 (Functional PCA Coverage Analysis, FPCA).
 
-修改记录:
-2025-08-11 10:22 - 离散 FPCA + 覆盖曲线 + 前 k 个 FPC 得分
-2025-08-12 16:08 - 曲线对齐: DTW (动态时间规整) 消除时间缩放差异
-2025-08-13 08:37 - FPC 得分聚类: 按覆盖增长模式对 fuzzing 活动分组
-
   Ramsay & Silverman "Functional Data Analysis" 2nd ed.
     — 第8章: FPCA, 第9章: 函数型线性模型
   Yao, Müller & Wang "Functional Data Analysis for Sparse
@@ -20,7 +15,6 @@
   其中 φ_k 是第 k 个特征函数 (覆盖增长模式),
   ξ_{ik} 是第 i 条曲线在该模式上的得分。
 
-核心创新:
   1. FPCA 覆盖模式分解: 提取主导覆盖增长模式
   2. FPC 得分: 每条曲线的低维表示 → 活动比较/聚类
   3. 方差解释: φ_1 通常解释 80%+ 方差 → 活动的核心特征

@@ -1,49 +1,33 @@
-"""
-路径敏感的值域流分析器 — CFG 上 branch-sensitive 区间传播 (fork-not-join)。
+"""路径敏感的值域流分析器 — CFG 上 branch-sensitive 区间传播 (fork-not-join)。
 BasicBlock CFG + AffineInterval + PathCondition → malloc/memcpy 不等式检查，
-处理仿射表达式(malloc(n*4+8))、嵌套malloc、别名指针循环写；复杂度O(B·V)。
-"""
-
+处理仿射表达式(malloc(n*4+8))、嵌套malloc、别名指针循环写；复杂度O(B·V)。"""
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
-
 from .symbolic_range import AffineInterval, PathCondition
 from .cfg_parser import split_into_blocks, BasicBlock
 from .heap_expr_parser import parse_size_expr, split_args, judge_overflow
+from .array_write_detector import detect_array_writes
 
 
 @dataclass
 class AllocSite:
     """malloc 调用点记录, 含路径上下文。"""
-    var_name: str
-    size_expr: str
-    size_range: AffineInterval
-    path_cond: PathCondition
-    block_id: int
-    lineno: int
-    func_name: str = ""
+    var_name: str; size_expr: str; size_range: AffineInterval
+    path_cond: PathCondition; block_id: int; lineno: int; func_name: str = ""
 
 @dataclass
 class WriteSite:
     """堆写入点记录, 含路径上下文。"""
-    var_name: str
-    write_size: AffineInterval
-    write_call: str
-    path_cond: PathCondition
-    block_id: int
-    lineno: int
+    var_name: str; write_size: AffineInterval; write_call: str
+    path_cond: PathCondition; block_id: int; lineno: int
 
 @dataclass
 class VerifiedFinding:
     """路径敏感验证后的最终发现。"""
-    alloc_site: AllocSite
-    write_site: WriteSite
-    verdict: str  # DEFINITE | POSSIBLE | SAFE
-    overflow_bytes: int
-    confidence: float
-    description: str
+    alloc_site: AllocSite; write_site: WriteSite; verdict: str
+    overflow_bytes: int; confidence: float; description: str
 
 
 _RE_MALLOC = re.compile(
@@ -55,6 +39,13 @@ _RE_MEMCPY = re.compile(
     r'read|fread|recv|scanf|fscanf|sscanf|gets|fgets|bcopy)\s*\(')
 _RE_ASSIGN = re.compile(r'(\w[\w.\->]*)\s*=\s*(.+?)\s*;')
 _RE_PTR_BASE = re.compile(r'^(\w[\w.\->]*)')
+_RE_CONST_ASSIGN = re.compile(r'\b(\w+)\s*=\s*(\d+)\s*;')  # 整数常量赋值传播
+_RE_COMMENTS = re.compile(r'//[^\n]*|/\*.*?\*/', re.DOTALL)
+
+
+def _strip_comments(code: str) -> str:
+    """剥离 C 风格注释, 避免注释中的 malloc/memcpy 文字被误解析为分配点。"""
+    return _RE_COMMENTS.sub('', code)
 
 
 def _extract_paren_args(text: str, start: int) -> str:
@@ -74,6 +65,7 @@ def path_sensitive_heap_analysis(
 
     返回: VerifiedFinding 列表。
     """
+    code = _strip_comments(code)
     blocks = split_into_blocks(code)
     if not blocks:
         return []
@@ -92,22 +84,25 @@ def path_sensitive_heap_analysis(
     detect_loop_writes(code, alloc_sites, write_sites)
 
     findings: List[VerifiedFinding] = []
+
+    # realloc 去重: 同变量多 AllocSite 只保留最后一个, 旧分配过小致误报
+    last_real = {a.var_name: id(a) for a in alloc_sites
+                 if a.size_expr != "__synthetic__"}
+
     for alloc in alloc_sites:
+        if (alloc.var_name in last_real
+                and last_real[alloc.var_name] != id(alloc)):
+            continue
         for write in write_sites:
             if write.var_name != alloc.var_name:
                 continue
             ra = alloc.path_cond.refine_interval(alloc.size_expr, alloc.size_range)
             rw = write.path_cond.refine_interval("", write.write_size)
             verdict, overflow, conf = judge_overflow(ra, rw)
-            findings.append(VerifiedFinding(
-                alloc_site=alloc, write_site=write,
-                verdict=verdict, overflow_bytes=overflow, confidence=conf,
-                description=(
-                    f"{write.write_call}({write.var_name}, size={write.write_size}) "
+            desc = (f"{write.write_call}({write.var_name}, size={write.write_size}) "
                     f"into {alloc.var_name} (size={alloc.size_range}) "
-                    f"[{verdict}@L{alloc.lineno}/{write.lineno}]"
-                ),
-            ))
+                    f"[{verdict}@L{alloc.lineno}/{write.lineno}]")
+            findings.append(VerifiedFinding(alloc, write, verdict, overflow, conf, desc))
     return findings
 
 
@@ -181,6 +176,13 @@ def _process_block(
     """处理基本块中的赋值/malloc/memcpy — 嵌套malloc、指针基变量提取、合成AllocSite。"""
     block = blocks[bid]
     for line in block.lines:
+        # 普通整数常量赋值传播 (size_t sz = 64; n = 1024;)
+        # 使 parse_size_expr 能查到具体值, 抑制符号路径误报
+        for cm in _RE_CONST_ASSIGN.finditer(line):
+            cv = cm.group(1)
+            cval = int(cm.group(2))
+            env[cv] = AffineInterval.constant(cval)
+
         # 直接 malloc / calloc / realloc (var = malloc(...))
         for m in _RE_MALLOC.finditer(line):
             var = m.group(1)
@@ -203,6 +205,11 @@ def _process_block(
                 else:
                     ai = parse_size_expr(size_expr, env)
             else:
+                # realloc(ptr, new_size) → 只取第二个参数作为大小
+                if alloc_func == 'realloc':
+                    r_args = split_args(size_expr)
+                    if len(r_args) >= 2:
+                        size_expr = r_args[1].strip()
                 ai = parse_size_expr(size_expr, env)
             env[var] = ai
             alloc_sites.append(AllocSite(
@@ -279,15 +286,15 @@ def _process_block(
                 block_id=bid, lineno=block.start_lineno,
             ))
 
+    # 数组下标写入 buf[expr] = val
+    detect_array_writes(block, bid, pc, env, write_sites)
+
     # 合成 AllocSite: 写入目标无已知分配的, 保守创建 ⊤ 分配
     known_alloc_vars = {a.var_name for a in alloc_sites}
     for ws in write_sites:
         if ws.var_name not in known_alloc_vars:
-            ai = AffineInterval.top()
             alloc_sites.append(AllocSite(
                 var_name=ws.var_name, size_expr="__synthetic__",
-                size_range=ai, path_cond=pc.clone(),
-                block_id=bid, lineno=block.start_lineno,
-                func_name=func_name,
-            ))
-            known_alloc_vars.add(ws.var_name)
+                size_range=AffineInterval.top(), path_cond=pc.clone(),
+                block_id=bid, lineno=block.start_lineno, func_name=func_name,
+            )); known_alloc_vars.add(ws.var_name)

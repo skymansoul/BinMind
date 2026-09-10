@@ -1,6 +1,6 @@
 """
 覆盖率平台期突破器 (Coverage Plateau Breaker, CPB)
-----------------------------------------------------
+
 当覆盖率进入平台期时, 通过简化 CMA-ES 优化种子字节序列,
 直接瞄准当前覆盖边界邻近的未覆盖边.
 
@@ -224,7 +224,6 @@ class FullCMAES:
       - 适用于 ≤ 512 字节的种子 (O(d²) 内存可接受)
 
     参考: Hansen "The CMA Evolution Strategy: A Tutorial"
- — 实现 (μ/μ_w, λ)-CMA-ES 的核心机制.
     """
 
     def __init__(self, initial_mean: bytes, sigma0: float = 2.0,

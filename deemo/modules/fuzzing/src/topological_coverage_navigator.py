@@ -1,11 +1,5 @@
 """拓扑覆盖导航器 (Topological Coverage Navigator, TCN) — 连通分量 + 边界检测.
 
-修改记录:
-2025-08-03 10:27 - Vietoris-Rips 1-骨架 + 连通分量追踪 (β₀)
-2025-08-04 14:55 - landmark 稀疏近似 + 覆盖流形边界检测
-2025-08-06 08:39 - 谱嵌入多样性评分
-2025-08-20 09:34 - 修正: 标注仅计算 β₀ 连通分量, 非完整持久同调 (无 β₁ 环检测)
-
 参考: Edelsbrunner & Harer, Carlsson.
 Maggs ANU thesis 提供了 TDA+fuzzing 的理论框架。
 当前实现仅计算 β₀ (连通分量数), 尚未实现完整的持久图 (barcode) 和 β₁ (环) 检测。

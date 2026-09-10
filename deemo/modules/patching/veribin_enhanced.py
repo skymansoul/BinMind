@@ -329,7 +329,7 @@ def generate_regression_tests(
 
 class EnhancedVeriBinChecker:
     """
-    VeriBin 三级验证器 (增强版)。
+    VeriBin 三级验证器。
 
     相比 patch_safety_verifier.py:
       1. B 级 Z3 不可用时自动降级为区间分析

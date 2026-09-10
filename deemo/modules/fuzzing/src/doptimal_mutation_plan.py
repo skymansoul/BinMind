@@ -1,9 +1,4 @@
 """信息制导突变规划 (D-Optimal Mutation Planning, DOMP).
-
-修改记录:
-2025-08-13 15:22 - 对角 Fisher 交换 + 信息增益排序
-2025-08-14 09:45 - 在线 Fisher 信息更新
-2025-08-20 09:49 - 修正: Fedorov 交换简化 (3次迭代), 非严格 D-最优收敛;
              对角假设下 D-效率仅近似而非精确最优设计"""
 # Fedorov, Atkinson et al., Pukelsheim.
 # 将突变位置选择建模为最优实验设计: 选择 max det(Fisher) 的位置子集。

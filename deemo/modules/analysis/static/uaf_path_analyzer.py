@@ -1,6 +1,6 @@
 # 分支范围路径条件分析器 (Branch-Scoped Path Condition Analyzer)
 #
-# 核心创新: 在线性指令流中识别条件分支的语义范围 (branch scope),
+# 在线性指令流中识别条件分支的语义范围 (branch scope),
 # 精确判定 free 和 use 是否落在同一分支路径上.
 #
 # 传统路径敏感分析在二进制层面面临两个困难:

@@ -1,4 +1,3 @@
-# ~ 2026-08-27
 # EPSS (Exploit Prediction Scoring System) 集成。
 # 使用 FIRST.org 公开 API 获取利用概率分数。
 # EPSS 分数 (0.0–1.0) 预测 30 天内被利用的概率。

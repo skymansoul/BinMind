@@ -1,6 +1,5 @@
 """Ghidra 无头分析器 — 模拟自动化静态审计 (capstone 回退).
 
-创建: 2023-09-25
 方法:
   1. Ghidra 模式: analyzeHeadless + Java 脚本, 枚举所有 store 指令,
      统计指向 malloc 返回值的写入及其偏移 (需要 Ghidra 安装).

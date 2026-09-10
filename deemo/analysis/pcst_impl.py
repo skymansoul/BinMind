@@ -13,17 +13,15 @@
 #   CodeQL 的 ExternalFlowSources/SummaryModels 同样依赖按函数签名
 #   建模参数语义; 静态分析精度首先取决于调用点参数角色的正确性.
 #
-# 本文件为 PCST 独立实现: 语义表数据 (源自
-# modules/analysis/static/heap_write_semantics.py) + 调用点解析器
-# (重表达 HeapPrecisionStagesMixin._handle_write_call 的表消费逻辑
-# 为 C 源码级独立函数), 仅标准库.
+#   本文件实现 PCST 核心管线: 语义表数据 → 语义表查询 → 调用点解析 (C 源码级).
+
 
 from __future__ import annotations
 
 import re
 from typing import Dict, List, Optional, Tuple
 
-# ================= 语义表 =================
+# 语义表
 
 # 写入size实参位置. 值为int(单个实参)或tuple(多个实参相乘, 如fread).
 _WRITE_SIZE_ARG: Dict[str, object] = {
@@ -70,7 +68,7 @@ LEGACY_DST_INDEX = 0
 LEGACY_SIZE_INDEX = 2
 
 
-# ================= 语义表查询 =================
+# 语义表查询
 
 def write_size_index(func: str) -> Optional[object]:
     """写入函数的size实参位置; 无界写入或无写入返回None."""
@@ -110,7 +108,7 @@ def is_free_func(func: str) -> bool:
     return func in _FREE_FUNCS
 
 
-# ================= 调用点解析 (C 源码级) =================
+# 调用点解析 (C 源码级)
 
 _CALL_RE = re.compile(r"\b(\w+)\s*\(((?:[^()]|\([^()]*\))*)\)")
 _ASSIGN_RE = re.compile(
@@ -217,7 +215,7 @@ def pcst_corrections(func: str, args: List[str]) -> Optional[Dict]:
     return {"pcst": pcst, "legacy": legacy}
 
 
-# ================= 尺寸求值 (轻量) =================
+# 尺寸求值 (轻量)
 
 _SIZEOF_MAP = {
     "char": 1, "short": 2, "int": 4, "long": 4, "long long": 8,
@@ -278,7 +276,7 @@ def eval_size_bounds(
     return (total_lo, total_hi)
 
 
-# ================= 分配器模型 (ptmalloc2 最小) =================
+# 分配器模型 (ptmalloc2 最小)
 
 def _usable_size(request: int) -> int:
     """ptmalloc2 用户可用空间: chunk=align(req+8,16), usable=chunk-8,
@@ -289,7 +287,7 @@ def _usable_size(request: int) -> int:
     return chunk - 8
 
 
-# ================= 端到端扫描 =================
+# 端到端扫描
 
 def extract_allocs(code: str) -> List[Dict]:
     """提取分配点: 按 _ALLOC_SIZE_ARG 取size实参."""

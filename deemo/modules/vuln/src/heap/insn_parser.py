@@ -1,11 +1,10 @@
 """指令解析器 — objdump反汇编文本 → 结构化指令列表.
 
-创建: 2024-11-05
 用途: 将 objdump -d -M intel 输出解析为按函数分组的 Instruction 列表,
       同时提供通用解析工具函数 (寄存器提取、常量提取、call目标匹配)。
 
 设计决策:
-  - 为什么不用 capstone 直接反汇编: capstone 对 PE/COFF (MinGW) 和 ELF
+  - capstone 对 PE/COFF (MinGW) 和 ELF
     都能线性扫描, 但 objdump 提供了符号信息和函数边界,
     这些对堆分析中区分 user code 和 libc wrapper 是必要的。
   - 用户函数过滤: 白名单之外的符号视为CRT/linker生成代码,

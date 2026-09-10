@@ -1,9 +1,5 @@
 """覆盖感知种子拼接 (Coverage-Aware Seed Splicing, CASS) — 基于覆盖转移边界的智能拼接.
 
-修改记录:
-2025-08-06 09:14 - 增加 splice 有效性验证, 过滤产生退化覆盖的后代
-2025-08-08 11:52 - 集成到 ISRG, 利用关系图做互补种子对预筛选
-
   AFL 的 splice 阶段 (random crossover at midpoint)
     — 纯随机拼接, 不考虑覆盖语义, 约 5% 概率产生有意义的子代
   SEAFuzz  的结构稀有度建模

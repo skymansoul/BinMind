@@ -1,4 +1,4 @@
-"""整数溢出检测器 — 改进版: 支持间接乘法分配模式."""
+"""整数溢出检测器: 支持间接乘法分配模式."""
 from __future__ import annotations
 import re
 from typing import Dict, List, Tuple

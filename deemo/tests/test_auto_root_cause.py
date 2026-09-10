@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 上了LLM之后能到90%+，但是要花钱，先heuristic顶着
+# 当前为 heuristic 基线实现，LLM 增强路径尚未接入。
 
 import pytest
 import os as _os

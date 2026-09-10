@@ -1,7 +1,7 @@
 """
 HOIG Propagator — 跨函数堆对象身份传播.
 
-核心创新: 对象身份 (ObjectID) 而非指针名称 跨函数传播.
+对象身份 (ObjectID) 而非指针名称 跨函数传播.
 
 与现有 InterProcLifetimeAnalyzer 的关键区别:
   现有: KILL/GEN 摘要 — 粗粒度, 无法追踪 realloc 对象延续

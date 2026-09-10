@@ -5,7 +5,7 @@
 #
 # TCE: Temporal Causal Exploitability — 时滞因果发现用于漏洞利用预测
 #
-# 核心参考文献:
+# 相关文献:
 #
 #     PCMCI: 结合 PC1 条件选择与 MCI 瞬时条件独立性检验, 在高维时间序列中
 #     控制误报率. 本文将其简化适配到 CVE 特征空间 (特征维度 ~10, 时间点 ~100).
@@ -396,7 +396,7 @@ class TemporalC3EPipeline:
       3. ContrastiveCVEEncoder 在因果加权特征上学习嵌入.
       4. CausalPropagator (继承自 cve_causal_contrastive) 执行因果传播.
 
-    与 C3EPipeline 的关系: 此为增强版本, 在 fit() 时额外执行阶段 1.
+    与 C3EPipeline 的关系: 变体在 fit() 时额外执行阶段 1.
     若时间窗口数据不足 (CVE 数量 < 50), 自动降级为原始 C3E 行为.
     """
 

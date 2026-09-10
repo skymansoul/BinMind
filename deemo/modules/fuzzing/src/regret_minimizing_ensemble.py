@@ -1,18 +1,14 @@
 # FTRL+Entropy 在线凸优化 + surprise bonus
 """在线遗憾最小化变异集成 (Regret-Minimizing Ensemble, ARME).
 
-修改记录:
-2025-08-02 09:33 - FTRL+Entropy 正则化在线学习框架
-2025-08-03 15:19 - surprise bonus: 检测逆预期高收益事件
-2025-08-05 11:07 - regret monitor: 追踪 best-in-hindsight 遗憾
-2025-08-20 09:28 - 修正: 遗憾界为理论参照, 非平稳环境中实际遗憾可能更高
-
 参考: Shalev-Shwartz, Hazan, Cesa-Bianchi & Lugosi
 
 与 mutation_ensemble.py (EG/Hedge) 的区分:
   EG 隐式假设平稳奖励。实测 fuzzing 中程序行为随探索推进而变化,
   本模块使用 FTRL 更新权重, 在非平稳环境中比 EG 更稳健。
-  Surprise bonus 和 regret-triggered reset 是针对 fuzzing 场景的适配。"""
+  Surprise bonus 和 regret-triggered reset 是针对 fuzzing 场景的适配。
+
+  注: 遗憾界为理论参照, 非平稳环境中实际遗憾可能更高。"""
 
 import math
 import random

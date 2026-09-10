@@ -1,5 +1,5 @@
 # 格式化字符串漏洞静态检测器 — 基于格式参数来源分析
-# 核心创新: 在二进制级检测printf/sprintf族调用的格式参数来源
+# 在二进制级检测printf/sprintf族调用的格式参数来源
 # 方法学:
 #   1. 识别所有printf族调用点 (__mingw_printf, printf, sprintf, etc.)
 #   2. 追踪格式参数寄存器 (rcx/rdi) 的赋值来源

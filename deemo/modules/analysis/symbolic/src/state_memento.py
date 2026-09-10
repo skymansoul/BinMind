@@ -14,7 +14,6 @@
 # 冗余。类比：git 的 object store 不存储每个版本的完整快照，而是存储
 # 与前一个版本的 diff
 #
-# 核心机制：
 # (a) 每条路径状态 = base_st + delta（增量约束集）
 # base_st 被多条路径共享-类似 copy-on-write
 # (b) Memento 模式：Originator（符号执行引擎）创建 Memento 快照

@@ -1,9 +1,9 @@
 """Path diversity tracking for anti-explosion in symbolic execution.
 
 Path explosion is constrained by selecting maximally dissimilar paths.
-This module computes pairwise similarity across structural, semantic,
-constraint, and coverage feature dimensions, clusters paths by a
-similarity threshold, and selects representatives from each cluster
+Pairwise similarity is computed across structural, semantic,
+constraint, and coverage feature dimensions. Paths are clustered by a
+similarity threshold, and representatives are selected from each cluster
 to maximize exploration diversity.
 """
 

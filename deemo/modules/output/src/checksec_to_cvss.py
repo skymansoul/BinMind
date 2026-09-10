@@ -4,7 +4,7 @@ checksec → CVSS 环境度量推断规则。
 将二进制加固检测结果 (NX/PIE/Canary/RELRO/FORTIFY)
 映射为 CVSS 3.1 的 Modified Base Metrics 和 Security Requirements。
 
-这是本项目独有的创新: 现有 CVSS 工具均需人工输入环境度量，
+现有 CVSS 工具均需人工输入环境度量，
 本项目利用 checksec 加固状态自动推断。
 
 映射规则:

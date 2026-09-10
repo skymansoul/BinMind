@@ -1,11 +1,5 @@
 """Beta 过程覆盖特征模型 (Coverage Feature Model, BPCF) — IBP-inspired 启发式.
 
-修改记录:
-2025-08-07 14:08 - Beta-Bernoulli 因子模型: 覆盖→潜在特征矩阵
-2025-08-09 08:33 - 新特征预测: P(new)≈α/(N+1) (IBP 渐近性质)
-2025-08-20 09:45 - 修正: 标注为启发式分配 (非 MCMC), 区分于完整 Bayesian inference
-2025-08-10 11:17 - 在线 Gibbs 更新: 每次新观测后增量更新特征分配
-
   Griffiths & Ghahramani "The Indian Buffet Process: An Introduction
     and Review" (JMLR) — IBP 的基础教程, Beta 过程的 de Finetti 表示
   Thibaux & Jordan "Hierarchical Beta Processes and the Indian Buffet
@@ -19,7 +13,6 @@
   Beta 过程作为非参数先验: 特征数随观测增长而自适应增加。
   这给出了一种原则性的方法预测"还有多少未发现的特征"。
 
-核心创新:
   1. Beta-Bernoulli 覆盖因子模型: 覆盖边→潜在特征的二元分配
   2. 新特征预测: P(new feature | observed) 基于 IBP 的预期特征数
      E[K_N] ≈ α·log(N)  → 随种子数对数增长

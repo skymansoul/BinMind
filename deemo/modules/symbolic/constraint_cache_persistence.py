@@ -1,8 +1,8 @@
 """Constraint-solving result cache with LRU eviction and SQLite persistence.
 
-Constraint solving dominates symbolic execution cost. This module caches
-solutions keyed by SHA-256 of a normalized constraint form, serving hits
-from memory (LRU dict) and promoting disk entries on access. Normalization
+Constraint solving dominates symbolic execution cost. Solutions are
+cached by SHA-256 of a normalized constraint form; hits are served from
+an in-memory LRU dict and disk entries are promoted on access. Normalization
 canonicalizes SMT-LIB operators so semantically identical constraints
 share a cache key.
 """

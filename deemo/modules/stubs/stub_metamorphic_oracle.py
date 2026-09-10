@@ -1,23 +1,15 @@
 # stub_metamorphic_oracle.py — 蜕变关系合约 Oracle
 # 从函数签名与类型注解推导蜕变关系（Metamorphic Relations），
 # 作为合约验证阶段的语义级测试预言。
+# 蜕变测试通过定义"输入变换后输出应满足的跨调用约束"，
+# 提供无真值 oracle 的语义校验。
 #
-# 背景:
-#   传统合约验证止步于"导入冒烟 + 签名核对 + 边界值类型检查"，
-#   对函数语义正确性无判断力。蜕变测试通过定义"输入变换后输出应满足
-#   的跨调用约束"提供无真值 oracle 的语义校验。
-#
-# 新颖性:
-#   1. 不从文档/需求文本生成 MR，
-#      而是从类型结构与参数模式直接推导代数性质类 MR。
+# 设计要点:
+#   1. 不从文档/需求文本生成 MR，而是从类型结构与参数模式
+#      直接推导代数性质类 MR。
 #   2. MR 合成不依赖 LLM，纯规则驱动，保证确定性、可审计。
 #   3. 蜕变关系按类型代数结构分层：等式类（idempotence/involution）、
 #      单调类（order preservation）、结构类（list/dict 容器性质）。
-#
-# 支撑:
-# 蜕变测试理论
-#   - Shin et al. 2024 (LLM-based MR generation) — 本模块为其确定性替代路径
-# 非 LLM 路径在合规场景（不允许外传代码到远端模型）中具有实用优势
 import ast as _ast
 import itertools as _it
 from collections import defaultdict as _dd

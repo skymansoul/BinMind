@@ -3,17 +3,12 @@
 把二进制按函数拆分, 每个函数的符号分析作为一个独立子问题 (map),
 随后去重合并各路径集 (reduce); angr 不可用时回退到 r2 反汇编。
 
-增强:
-- MapReduce 级检查点: map 阶段完成后把所有 SubResult 序列化至
-  磁盘, 重启时从检查点恢复, 避免重复计算
-- 约束 DAG 同构比较: 两个路径即使 path_id 不同, 若其约束依赖图
-  同构则视为重复, 使用拓扑排序 + 哈希比较检测同构
-- WorkStealingScheduler: worker 完成自身子问题后从最慢 worker 的
-  队列窃取未处理子问题, 用 mp.Manager dict 追踪各 worker 队列
-- ResultRanker: reduce 后按新颖性、覆盖影响、漏洞密度对合并路径
-  排序, 返回 top-N 路径供下游深度分析
-- MapPhaseTimeout: 每子问题超时强制终止, 挽救已发现的部分路径,
-  标记为 PARTIAL 而非 FAILED
+map 完成后把 SubResult 序列化至磁盘作检查点, 重启时从检查点恢复,
+避免重复计算; 按约束 DAG 同构 (拓扑排序 + 哈希比较) 去重路径 —
+两个路径即使 path_id 不同, 若约束依赖图同构则视为重复;
+WorkStealingScheduler 让空闲 worker 从最慢 worker 的队列窃取未处理
+子问题; ResultRanker 按新颖性、覆盖影响、漏洞密度排序返回 top-N 路径;
+每子问题超时强制终止, 挽救已发现的部分路径, 标记为 PARTIAL 而非 FAILED。
 """
 
 import logging
@@ -516,9 +511,9 @@ class ResultRanker:
 
 
 class PathMerger:
-    """Reduce 阶段: 按约束 DAG 哈希去重路径。
+    """Reduce 阶段: 按约束 DAG 同构哈希去重路径。
 
-    增强: 使用约束 DAG 同构哈希而非 (path_id, constraints) 元组 —
+    使用约束 DAG 同构哈希而非 (path_id, constraints) 元组 —
     两个路径即使 ID 不同, 若约束依赖图同构则视为重复。
     """
 
@@ -548,10 +543,9 @@ class PathMerger:
 class SymbExMapReduce:
     """调度器: partition → map (并行) → reduce (合并)。
 
-    增强: 中间 checkpoint (map 完成后自动保存中间结果, reduce 失败
-    可从 checkpoint 恢复而不重新 map); 集成 WorkStealingScheduler;
-    集成 ResultRanker 返回 top-N 排序路径; MapPhaseTimeout 每子问题
-    超时控制。
+    map 完成即保存中间结果作 checkpoint, reduce 失败时可从 checkpoint
+    恢复而不重新 map; 集成 WorkStealingScheduler; 集成 ResultRanker
+    返回 top-N 排序路径; MapPhaseTimeout 提供每子问题超时控制。
     """
 
     # map 阶段每个子问题的默认超时（秒）
@@ -612,8 +606,8 @@ class SymbExMapReduce:
                   use_work_stealing: bool = False) -> List[SubResult]:
         """执行子问题, 可选经 ProcessPoolExecutor。
 
-        六轮增强: MapPhaseTimeout 每子问题超时后终止并挽救部分结果;
-        四轮增强: WorkStealingScheduler。
+        MapPhaseTimeout 每子问题超时后终止并挽救部分结果;
+        WorkStealingScheduler 用于 worker 间的任务窃取。
         """
         timeout = subproblem_timeout or self.DEFAULT_SUBPROBLEM_TIMEOUT
         results: List[SubResult] = []
@@ -715,7 +709,7 @@ class SymbExMapReduce:
                      top_n: Optional[int] = None) -> List[Dict[str, Any]]:
         """合并并去重各 worker 的结果。
 
-        五轮增强: 指定 top_n 时通过 ResultRanker 返回 top-N 排序路径。
+        指定 top_n 时通过 ResultRanker 返回 top-N 排序路径。
         """
         merged = PathMerger.merge(results)
         if top_n is not None and top_n > 0:
@@ -730,7 +724,7 @@ class SymbExMapReduce:
             use_work_stealing: bool = False) -> MapReduceResult:
         """完整流水线: partition → map → reduce。
 
-        五轮增强: top_n 参数通过 ResultRanker 返回排序路径。
+        top_n 参数经 ResultRanker 返回 top-N 排序路径。
         """
         if not binary_path:
             empty_stats = {

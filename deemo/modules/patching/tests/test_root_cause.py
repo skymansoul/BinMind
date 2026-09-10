@@ -289,7 +289,7 @@ class TestFormatRootCauseReport:
         output = format_root_cause_report(report)
         assert 'STACK_BUFFER_OVERFLOW' in output
         assert 'CWE-121' in output
-        # 2026-08-02: to_dict 路径应输出相同结果
+        # to_dict 路径应输出相同结果
         output2 = format_root_cause_report(dict(report.to_dict()))
         assert 'STACK_BUFFER_OVERFLOW' in output2
 

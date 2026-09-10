@@ -1,7 +1,7 @@
 """
 堆安全证明义务生成与验证 — 双向约束传播 (Bidirectional Proof Obligation).
 
-核心创新 (论文级别):
+判定框架:
   对每个 (alloc, write) 对, 生成命题 P: write_offset + write_size ≤ alloc_effective_size
   若P在收集到的路径约束下恒成立 → SAFE (消除FP); 若存在反例 → 保留为候选溢出.
 

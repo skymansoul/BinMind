@@ -26,8 +26,6 @@ n-gram 签名, 且阈值在类别级别而非条目级别。VectorQ 的条目级
 在缓存条目数 > 1000 时面临冷启动问题, 类别级阈值规避了此问题。
 """
 
-# File: embed_cache.py  |  2026-07-30 create IEC; 2026-08-04 audit: Beta-Binomial threshold + honest grounding
-
 from __future__ import annotations
 
 import math

@@ -10,7 +10,6 @@
 #   阶段3: 综合风险评估-SAFE/SUSPICIOUS/DANGEROUS/CRITICAL
 #
 # 判定规则: DANGEROUS/CRITICAL→CONFIRMED, SUSPICIOUS→LIKELY, SAFE→FILTERED
-# created: 2026-06-08
 
 from __future__ import annotations
 

@@ -2,11 +2,6 @@
 # 在桩模块被调用时观测实参/返回值类型，用 Dirichlet-分类分布模型
 # 更新对各可能类型的信念，置信度足够时向下游契约写入精化后的类型注解。
 #
-# 问题背景:
-#   桩模块普遍以宽松类型标注（Any、无标注、Optional[...]）起步。
-#   运行时观测可提供"实际被怎么用"的地面真相，但单次观测有噪声。
-#   需要一种在观测累积后逐步收窄类型的不确定性量化机制。
-#
 # 方法:
 #   1. 每个参数/返回位置维护一个 Dirichlet(α₁,...,αₖ) 先验，
 #      类别 = {int, str, bytes, float, bool, list, dict, set, tuple, NoneType, other}
@@ -14,14 +9,8 @@
 #   3. 当 max(posterior_mean) > confidence_threshold 时，
 #      输出精化类型注解（单一类型或 Union）。
 #   4. 精化结果以保守合并策略写回 StubContract：
-#      若原注解为 Any → 替换为精化注解；
-#      若原注解为 Optional[X] → 仅在 X 兼容时保留 Optional 包装。
-#
-# 区别于 RunTyper:
-# 不做深度学习推断，纯概率更新。
-# 在线运行（每次调用即更新），无需离线 trace 收集阶段。
-# 与 StubGradual 的渐进实现闭环紧耦合 —— 精化后的合约
-#     直接改善下轮 TemplateGenerator 的代码生成质量。
+#      原注解为 Any → 替换为精化注解；
+#      原注解为 Optional[X] → 仅在 X 兼容时保留 Optional 包装。
 from collections import defaultdict as _dd
 from dataclasses import dataclass as _dc, field as _field
 from typing import Optional as _Opt

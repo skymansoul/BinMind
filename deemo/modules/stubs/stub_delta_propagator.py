@@ -2,11 +2,6 @@
 # 当桩模块的接口契约变更时，沿依赖有向图向下游传递变更影响，
 # 为每个受影响的模块生成合约级适配建议。
 #
-# 问题:
-#   一个模块的契约变更（如新增函数参数、改返回类型）通过
-#   import 链向下游扩散。当前工作流中，下游适配完全依赖
-#   人工追踪—这在 60+ 模块的桩系统中不可规模化。
-#
 # 方案:
 #   1. Merkle 树检测契约变更（对接 stub_contract_merkle）
 #   2. 依赖图查找传递闭包（对接 stub_dependency_graph）
@@ -15,11 +10,6 @@
 #      b) 返回类型变更 → 建议更新类型注解或插入类型适配层
 #      c) 函数删除 → 建议 stub 内创建转发包装或直接适配
 #   4. 建议以结构化 diff 输出，可直接供 GradualEngine 消费
-#
-# 区别于已有工作:
-#   - SEAM: 智能合约升级，非通用 stub 系统
-# CMU API Refactoring: 从文档/PR 学习迁移规则，非图传播
-# 本模块: 图传播 + Merkle 锚定 + 合约级 patch 生成
 import os as _os
 from dataclasses import dataclass as _dc, field as _field
 

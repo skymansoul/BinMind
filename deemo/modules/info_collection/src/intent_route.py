@@ -460,7 +460,7 @@ def create_default_route(config: Optional[Dict[str, str]] = None) -> IntentRoute
     )
 
 
-# 增强版意图路由 (AugustmentedIntentRoute)
+# 增强意图路由 (AugmentedIntentRoute)
 #
 # 将 EGACD / AICV / CC-RCR / MSIGC / SIFT-D 五项创新集成到统一入口。
 # IntentRoute 保留不动, 维持向下兼容。
@@ -474,7 +474,7 @@ def create_default_route(config: Optional[Dict[str, str]] = None) -> IntentRoute
 
 class AugmentedIntentRoute(IntentRoute):
     """
-    增强版意图路由, 集成了五项专利级创新。
+    基于 IntentRoute 的扩展, 集成了五个子模块。
 
     与基类 IntentRoute 的差异:
     - route() 在分类后自动执行置信度校准和风险控制
@@ -843,7 +843,7 @@ class AugmentedIntentRoute(IntentRoute):
 
     def route(self, text: str) -> RoutePlan:
         """
-        增强版路由: 分类 → 校准 → 歧义解析 → 级联调度。
+        扩展路由: 分类 → 校准 → 歧义解析 → 级联调度。
 
         与基类 route() 接口完全兼容, 返回 RoutePlan。
         内部自动执行置信度校准和风险控制。

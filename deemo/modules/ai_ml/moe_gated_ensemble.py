@@ -14,9 +14,9 @@
 #   4. 专家置信度校准: 每个专家的输出概率经Platt scaling校准后
 #      再做门控融合——避免未校准专家的过度自信污染融合结果
 #
-# 新颖性:
-#   - DGS在源码LLM上做MoE，本工作在二进制GNN+Transformer+规则上做MoE
-#   - 负载均衡loss是binary-level MoE特有的——二进制样本的多样性远大于源码
+# 方法对比:
+#   - DGS在源码LLM上做MoE, 本模块在二进制GNN+Transformer+规则上做MoE
+#   - 负载均衡loss在二进制样本上尤为必要——其多样性远大于源码
 # Platt校准后的门控融合在安全关键场景（低FPR要求）中优于直接融合
 #
 # 技术效果:

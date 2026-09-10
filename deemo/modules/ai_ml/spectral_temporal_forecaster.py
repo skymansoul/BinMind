@@ -8,7 +8,7 @@
 #   3. 频域-时域双流LSTM + 门控融合
 #   4. MC Dropout不确定性估计
 #
-# 新颖性: 首次将小波包分解+交叉注意力引入漏洞趋势预测
+# 技术要点: 以小波包分解+交叉注意力进行漏洞趋势预测
 # 技术效果: 长周期(>24月)预测MAE比Holt-Winters降低约18-22%
 
 from __future__ import annotations

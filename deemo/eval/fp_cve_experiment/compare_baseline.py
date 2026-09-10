@@ -1,6 +1,5 @@
 """基线 DP-TVRA 管线 vs PCFV — 在语料库上的误报率/召回率对比.
 
-创建: 2024-06-24
 用法: python eval/fp_cve_experiment/compare_baseline.py [--json out.json]
 输出: 逐样本两管线判定 + 汇总对比 (precision/recall/f1/fp_rate)
 """

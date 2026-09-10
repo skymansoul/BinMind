@@ -16,8 +16,6 @@ PeerJ CS 的 "Function Parameters Encoding for Malware Detection"
 本模块从 "调用目标" 推断, 两者正交且互补。
 """
 
-# File: api_argument_phase.py  |  2026-08-02 create APE; 2026-08-04 audit: escape fix
-
 from __future__ import annotations
 
 import re

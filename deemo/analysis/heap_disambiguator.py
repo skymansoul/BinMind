@@ -18,9 +18,10 @@
 不实现全程序points-to分析 —— 仅做局部(函数内)的轻量区分。
 O(n) 一次扫描。
 
+参考:
   - "Undangle": 早期UAF检测中的指针分析
-  - Ghidra's decompiler: stack vs. heap variable naming conventions
-  - x86_64 ABI: calling convention (System V): rax as return register
+  - Ghidra 反编译器: 栈/堆变量命名约定
+  - x86_64 System V ABI: rax 为返回寄存器
 """
 
 import re

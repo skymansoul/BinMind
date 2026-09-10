@@ -5,7 +5,7 @@
 # KHAos (Cai et al., ACM TACO 2025) — 利用编译器优化混淆对抗二进制 diff,
 #       本项目反向操作: 使用规范化消除编译器 artifacts 以提高跨优化级 diff 精度.
 #       QBinDiff (Quarkslab 2024) — 信念传播做函数匹配, 但不对基本块做归一化.
-#       本模块填补的函数级归一化在信念传播上游作为特征增强.
+#       本模块的函数级归一化置于信念传播上游，作为匹配特征增强.
 #       Haara "Enhancing Function Matching in Binary Code with ML Models"
 #       (Lund Univ. 2025) — 在基本块级别使用 GNN 特征, 本项目取其归一化思想但
 #       放弃 ML 路径 (推理效率), 改用纯规则的确定性变换.

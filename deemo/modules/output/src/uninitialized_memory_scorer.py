@@ -10,12 +10,10 @@
     - 残存值流向指针解引用 → 代码执行
     - 残存值流向大小参数 → 内存破坏
 
-  本模块提供第一个未初始化内存影响的量化评分模型。
 
   CWE-457: Use of Uninitialized Variable
   CWE-908: Use of Uninitialized Resource
   Lu et al.: UniSan — 未初始化内存检测, 不评分影响.
-  无现有量化工具.
 
 修改记录:
   2025-05-12 09:42 - 初始版本，残存类型推断×下游影响

@@ -84,10 +84,10 @@ class StridedInterval:
 
 
 class ValueSetAnalyzer:
-"""值集分析器 — strided interval 域上的堆指针追踪.
+    """值集分析器 — strided interval 域上的堆指针追踪.
 
-用法: set_register/add_constant/merge_registers 维护值集, check_access 做边界检查。
-"""
+    用法: set_register/add_constant/merge_registers 维护值集, check_access 做边界检查。
+    """
 
     def __init__(self):
         # 寄存器/变量的当前值集

@@ -4,9 +4,8 @@
 问题定义:
   漏洞被利用后，攻击者获得代码执行。下一步是逃逸沙箱。
   现有工具 (checksec, seccomp-tools) 只报告沙箱配置，不评估逃逸难度。
-  全网检索 "sandbox escape difficulty scoring" 零形式化结果 — 仅有 CTF 技术描述。
 
-  本模块提供第一个形式化的沙箱逃逸难度评分模型:
+  逃逸难度评分依据以下三维约束:
     1. seccomp 层: 系统调用过滤的严格度 (阻止的关键逃逸 syscall)
     2. capabilities 层: 进程权能集合 (CAP_SYS_ADMIN 等危险权能)
     3. namespace 层: 隔离类型和挂载暴露面 (host /proc, /sys 等)
@@ -14,7 +13,6 @@
   逃逸难度 = 1 - min(seccomp_bypass, cap_abuse, ns_escape)
   取 min 而非 product — 攻击者只需找到最弱的环节。
 
-  No formal scoring system exists.
   CTF techniques documented at book.jorianwoltjer.com.
   Google Project Zero sandbox escape writeups.
 

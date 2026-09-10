@@ -136,7 +136,7 @@ class TestLoadConfig:
         assert c.LOG_LEVEL == 'INFO'
 
     def test_reset_restores_defaults(self):
-        # 2026-08-02: 用模块引用追踪 reset_config() 中的重赋值
+        # 用模块引用追踪 reset_config() 中的重赋值
         import src.config as _cfg
         _cfg.config.TEST_RESET = 'modified'
         _cfg.reset_config()

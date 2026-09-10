@@ -37,7 +37,6 @@ class TestBinarySignature(unittest.TestCase):
 
 
 class TestSecurityMetrics(unittest.TestCase):
-    # 试了好几版才定的
 
     def test_initialization(self):
         metrics = SecurityMetrics(
@@ -210,7 +209,6 @@ class TestBinaryLifecycleManager(unittest.TestCase):
             os.unlink(temp_path)
 
     def test_analyze_trend_direction(self):
-        # 试了好几版才定的
         """up / down / stable三种趋势"""
         direction, pct = self.manager._analyze_trend_direction([10, 20, 30])
         self.assertEqual(direction, "increasing")

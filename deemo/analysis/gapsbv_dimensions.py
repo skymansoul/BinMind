@@ -82,7 +82,7 @@ def _resolve_macros(pseudocode: str) -> str:
 def dim1_affine_relations(pseudocode: str, guard_bounds: dict) -> DimensionResult:
     """维度1: 仿射关系分析 — 追踪 alloc-write 之间的符号等式关系. (权重 0.35)
 
-    核心创新: malloc(n*4+8) vs memcpy(n*8) → diff=4n-8 → 对 n>2 有 OVERFLOW.
+    malloc(n*4+8) vs memcpy(n*8) → diff=4n-8 → 对 n>2 有 OVERFLOW.
     保守约束: 当 alloc 和 write 使用相同的不可信变量 (atoi/argv/getenv) 时,
     降级 SAFE → CONDITIONAL.
     """

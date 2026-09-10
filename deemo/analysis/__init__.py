@@ -16,7 +16,7 @@ from analysis.strided_interval import (
     si_unbounded, si_from_mul,
 )
 
-# 核心创新模块
+# 路径约束与堆布局模块
 from analysis.path_constraint_collector import (
     BranchConstraint, PathConstraints, PathConstraintCollector,
 )
@@ -388,7 +388,7 @@ from analysis.mivr_pipeline import (  # noqa: F401
     run_gapsbv_with_mivr,
 )
 
-# GAPSBV核心创新: 证明义务引擎 + 约束收集 + FP削减积分器
+# GAPSBV: 证明义务引擎 + 约束收集 + FP削减积分器
 try:
     from analysis.heap_proof_types import (
         ProofVerdict, ProofObligation, SizeConstraint,

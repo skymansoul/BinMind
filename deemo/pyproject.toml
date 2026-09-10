@@ -23,7 +23,7 @@ build-backend = "setuptools.build_meta"
 name = "binmind"
 version = "1.4.0"
 description = "LLM-assisted binary vulnerability analysis (ELF/PE/Mach-O)"
-authors = [{name = "BinMind Team", email = "binmind@example.com"}]
+authors = [{name = "hermit1016"}]
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
@@ -66,5 +66,6 @@ full = [
 binmind = "cli.commands:main"
 
 [project.urls]
-"Bug Reports" = "https://github.com/binmind/binmind/issues"
-Source = "https://github.com/binmind/binmind"
+Homepage = "https://github.com/skymansoul/BinMind"
+"Bug Reports" = "https://github.com/skymansoul/BinMind/issues"
+Repository = "https://github.com/skymansoul/BinMind"

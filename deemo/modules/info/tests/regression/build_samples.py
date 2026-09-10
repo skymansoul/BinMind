@@ -1,4 +1,3 @@
-# Created: 2026-06-01 08:45:00
 # build_samples — CVE样本批量编译模块
 # 遍历 samples/ 目录,调用各样本的 build.sh 编译为 ELF
 # 若 gcc/clang 不可用则记录 SKIP, 不中断整体流程

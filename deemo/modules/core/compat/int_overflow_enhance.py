@@ -175,12 +175,21 @@ class AllocImpactTracer:
             visited.add(var)
             if var in self._alloc_sites:
                 alo, ahi = self._alloc_sites[var]
-                # 查找关联写入: write_{var} 或 alloc_→write_ 替换
+                # 检查可利用性: 溢出后分配缩小, 任何写入量 > 最小分配量 → 堆溢出
+                # 优先查找与 alloc_var 关联的 write_site (同名 / write_{var} / var替换)
                 wlo, whi = 0, 0
                 for wv, wr in self._write_sites.items():
-                    if wv in (f'write_{var}', var.replace('alloc_', 'write_')):
+                    if wv in (f'write_{var}', var.replace('alloc_', 'write_'), var):
                         wlo, whi = wr
                         break
+                # 若未找到关联写入, 检查所有 write_site 是否有超过最小分配量的
+                if whi == 0:
+                    for wr in self._write_sites.values():
+                        if wr[1] > alo:
+                            wlo, whi = wr
+                            break
+                # 可利用判定: 写入量上界 > 分配下界 (最小分配量)
+                is_exploitable = whi > alo if whi > 0 else False
                 return AllocImpactTrace(
                     overflow_op=IntOperation('?', overflow_var, '?', IntWidth.I32),
                     overflow_result=OverflowResult(
@@ -188,7 +197,7 @@ class AllocImpactTracer:
                         OverflowType.WRAP_UNSIGNED, (0, 2**32 - 1), (0, 0), True),
                     reaches_alloc=True, alloc_var=var,
                     alloc_size_range=(alo, ahi),
-                    is_exploitable=(whi > ahi) if whi > 0 else False,
+                    is_exploitable=is_exploitable,
                     trace_path=path)
             for u in self._def_use.get(var, []):
                 if u not in visited:
@@ -257,6 +266,9 @@ def enhanced_detect_int_overflow(
     for var, uses in def_use_chains.items():
         ait.add_def_use(var, uses)
 
+    # L6 评估后决定保留范围: 基础层标记 dangerous 的直接保留;
+    # 基础层标记非 dangerous 的 (WRAP_UNSIGNED 等) 由 L6 重新评估——
+    # 若 L6 追踪到分配点且可利用 (写入 > 分配), 升级为 dangerous
     filtered = []
     for c in enhanced:
         parts = c['operation'].split()
@@ -266,6 +278,10 @@ def enhanced_detect_int_overflow(
                                 'is_exploitable': trace.is_exploitable, 'trace_path': trace.trace_path}
             if trace.is_exploitable:
                 stats['L6_alloc_chain'] += 1
+                # L6 重新评估: 无符号回绕到达分配且可利用 → 升级为 dangerous
+                if not c.get('is_dangerous', False):
+                    c['is_dangerous'] = True
+                    c['danger_source'] = 'L6_alloc_chain_exploitable'
         if c.get('is_dangerous', False):
             filtered.append(c)
 

@@ -1,43 +1,24 @@
-# PAVA保序回归分数校准
-# 分数校准 - CVE评分的非参数保序回归校准
+# PAVA保序回归分数校准 — CVE评分的非参数保序回归校准
+# CVE 评分模型输出的原始分数通常未校准：预测"利用概率 0.8"并不意味
+# 实际有 80% 的 CVE 被利用。Platt 缩放假设 logit 空间线性，但在
+# CVE 场景中评分分布常呈 S 形或阶梯状，违反该假设。
 #
-# 问题: CVE评分模型 (GNN/Hawkes/GP/EBM) 输出的原始分数通常
-# 未校准 - 预测"利用概率0.8"并不意味着实际有80%的CVE被利用.
-# Platt缩放 (cve_ensemble.py) 假设logit空间线性,
-# 但在CVE场景中, 评分分布常呈S形或阶梯状, 违反线性假设.
-#
-# 解决方案: 保序回归 (Isotonic Regression).
-# 给定 (raw_score, true_label) 对, 学习单调非递减函数 g,
-# 使 calibrated_score = g(raw_score) 最小化Brier分数.
-# g是阶梯函数 (分箱常数), 无参数假设.
+# 方案: 保序回归 (Isotonic Regression)。给定 (raw_score, true_label) 对，
+# 学习单调非递减函数 g，使 calibrated_score = g(raw_score) 最小化 Brier 分数。
+# g 是阶梯函数（分箱常数），无参数假设。
 #
 # Pool Adjacent Violators Algorithm (PAVA):
-#   1. 将分数排序.
-#   2. 合并违反单调性的相邻分箱.
-#   3. 输出保序校准函数.
-# 复杂度: O(N log N) (排序), O(N) (合并).
+#   1. 将分数排序。
+#   2. 合并违反单调性的相邻分箱。
+#   3. 输出保序校准函数。
+# 复杂度: O(N log N)（排序）, O(N)（合并）。
 #
-# 可靠性图 (Reliability Diagram):
-#   将[0,1]等分为B个区间, 每区间计算:
-# 平均预测分数 (x轴)
-# 实际正例比例 (y轴)
-#   理想: y=x对角线. 偏差 > 阈值 → 需要校准.
+# 可靠性图 (Reliability Diagram): 将 [0,1] 等分为 B 个区间，每区间计算
+# 平均预测分数 (x轴) 与实际正例比例 (y轴)。理想为 y=x 对角线，
+# 偏差 > 阈值 → 需要校准。
 #
-# 多模型校准对比:
-#   同时校准多个评分模型的输出, 输出对比报告.
-#   选择校准后Brier分数最低的模型.
-#
-# 非显而易见性:
-#   1. 首次将保序回归作为CVE评分的专用校准模块.
-#      Platt缩放 是通用方法, 但在CVE数据上的
-#      非单调性使保序回归更合适.
-#   2. 多模型校准竞技: 自动选择最佳校准模型.
-#   3. 可靠性图驱动决策: 量化评分模型的系统性偏.
-#
-#
-# Isotonic Regression
-# Predicting Good Probabilities
-
+# 多模型校准对比: 同时校准多个评分模型的输出并输出对比报告，
+# 选择校准后 Brier 分数最低的模型。
 import math
 from typing import Dict, List, Optional, Tuple
 

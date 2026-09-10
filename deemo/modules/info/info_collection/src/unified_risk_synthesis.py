@@ -1,5 +1,3 @@
-# Created: 2026-06-19 18:52:44
-#
 # unified_risk_synthesis — 层次贝叶斯统一风险合成
 # 将所有异构分析信号融合为统一概率风险评估。三层贝叶斯网络：
 #   L1 信号层: 各模块的独立评分 (posture/exloit/TTP/supply_chain/evasion/reachability/MREM/CTI)

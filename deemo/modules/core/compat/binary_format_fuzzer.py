@@ -217,7 +217,7 @@ def splice_segments(corpus: list[bytes], target: bytearray, splice_point: int) -
 # Def-Use 链引导的变异调度
 # FuzzRDUCC — 从二进制可执行文件重建 def-use 链，
 # 将其作为覆盖率引导之外的第二维反馈信号，优先变异影响未覆盖 def-use 对的数据字节。
-# 核心观察：仅靠控制流覆盖率无法区分"同一 BB 内不同数据流路径"的语义差异。
+# 仅靠控制流覆盖率无法区分"同一 BB 内不同数据流路径"的语义差异。
 
 def extract_def_use_pairs(trace_insns: list[tuple[int, str, str]]) -> set[tuple[int, int]]:
     """从执行 trace 中提取 def-use 对。

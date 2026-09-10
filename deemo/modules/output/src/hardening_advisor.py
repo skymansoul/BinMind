@@ -16,7 +16,6 @@ Pareto 前沿构建:
   option_i 被 option_j 支配: gain_i <= gain_j AND cost_i >= cost_j (至少一个严格不等)
   前沿 = 所有不被任何其他 option 支配的 option 集合。
 
-  无现有工具 — 2026-08 全网检索 "binary hardening ROI calculator" 零结果。
   Cyber ITL Binary Hardening in IoT Firmware 提供加固分布统计但无 ROI 模型。
 
 修改记录:

@@ -29,15 +29,15 @@ class UAFCrossFnResult:
 
 
 class CrossFunctionUAFScorer:
-"""跨函数 UAF 评分增强器.
+    """跨函数 UAF 评分增强器.
 
-处理三种跨函数 UAF 模式:
-  1. A 中 malloc(p) → 传参给 B → B 中 free(p) → A 继续用 p
-  2. 指针存全局 → 多函数经全局使用 → 某处 free
-  3. 指针作返回值 → 调用方 free → 被调用方仍持副本
+    处理三种跨函数 UAF 模式:
+      1. A 中 malloc(p) → 传参给 B → B 中 free(p) → A 继续用 p
+      2. 指针存全局 → 多函数经全局使用 → 某处 free
+      3. 指针作返回值 → 调用方 free → 被调用方仍持副本
 
-用法: set_intra_fn_score/set_alias_tracker/record_param_passing 注册, analyze_all 取结果。
-"""
+    用法: set_intra_fn_score/set_alias_tracker/record_param_passing 注册, analyze_all 取结果。
+    """
 
     def __init__(self):
         # 函数内评分: (fn_name, ptr_name) → score

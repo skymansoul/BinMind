@@ -7,10 +7,9 @@
   2. 相邻版本间仅存储键级增量, 降低 O(n) 全量拷贝的空间开销
   3. 版本 ID 由 SHA-256 派生, 天然防篡改, 满足审计链的完整性要求
 
-为何不用 git 的对象模型?
-  git 以文件为粒度, 本模块以 dict 的键为粒度做增量 —
-  二进制分析管道的 context 通常含数十键, 单次执行仅触碰其中 2~5 个,
-  键级增量可将存储开销从 O(N*K) 降至 O(N*d) (d << K).
+不用 git 对象模型: git 以文件为粒度, 本模块以 dict 键为粒度做增量 —
+  context 通常含数十键, 单次执行仅触碰其中 2~5 个, 键级增量把存储开销
+  从 O(N*K) 降至 O(N*d) (d << K).
 
 与 provenance_tracker 的关系:
   ContextVersionStore 是存储层, ProvenanceGraph 是关系层 —

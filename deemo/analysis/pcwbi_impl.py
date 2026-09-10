@@ -12,11 +12,9 @@
 #   守卫别名传播: cmp/test 产生的 GUARDED 经 ProvValue 对象同一性
 #   同步到全部别名寄存器/栈槽; 零值比较不设上界 (仅约束下界).
 #
-# 本文件为 PcWBI 独立实现, 合并 modules/analysis/static/ 的
-# provenance_domain.py + provenance_propagator.py (剔除被覆写的
-# _prov_insn_handlers 冗余 mixin) + write_bound_infer.py +
-# interproc_summary.py + sym_size_correlator.py + heap_alloc_model.py,
-# 内联 norm_reg/extract_func_name/extract_stack_slot, 仅标准库.
+#   本文件实现 PcWBI 核心管线: 来源格 → 来源传播器 → 写界推断器
+#   → 跨函数摘要 → 符号表达式 → 分配器模型.
+
 
 import re
 from dataclasses import dataclass, field
@@ -24,7 +22,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple
 
 
-# ================= 符号表达式 (原 sym_size_correlator) =================
+# 符号表达式
 
 @dataclass
 class SymExpr:
@@ -110,7 +108,7 @@ def correlate_sizes(
     return ("unknown", 0)
 
 
-# ================= 内联工具 (原 disasm_util) =================
+# 内联工具
 
 _W32_TO_W64 = {"eax": "rax", "ebx": "rbx", "ecx": "rcx", "edx": "rdx",
                "esi": "rsi", "edi": "rdi", "r8d": "r8", "r9d": "r9",
@@ -176,7 +174,7 @@ def extract_func_name(target: str) -> str:
     return _MINGW_NORMALIZE.get(name, name)
 
 
-# ================= 来源格 (原 provenance_domain) =================
+# 来源格
 
 class ProvClass(Enum):
     """写入大小操作数的来源类别."""
@@ -269,7 +267,7 @@ class ProvValue:
         return f"{self.cls.name}[{expr_s}]"
 
 
-# ================= 来源传播器 (原 provenance_propagator, 无冗余mixin) =================
+# 来源传播器
 
 _TAINT_FUNCS = {"read", "recv", "recvfrom", "recvmsg", "fread", "fgets",
                 "gets", "scanf", "__isoc99_scanf", "getenv", "getpwuid",
@@ -601,7 +599,7 @@ class ProvenancePropagator:
         return coeffs, offset
 
 
-# ================= 分配器模型 (原 heap_alloc_model) =================
+# 分配器模型
 
 class AllocatorFamily(Enum):
     GLIBC = "glibc"
@@ -723,7 +721,7 @@ class HeapAllocModel:
             family, _ALLOCATOR_MODELS[AllocatorFamily.GENERIC])
 
 
-# ================= 写界推断器 (原 write_bound_infer) =================
+# 写界推断器
 
 class WbVerdict:
     CONFIRMED = "confirmed"
@@ -976,7 +974,7 @@ class WriteBoundInferer:
         return dict(self._stats)
 
 
-# ================= 跨函数摘要 (原 interproc_summary) =================
+# 跨函数摘要
 
 class FunctionProvenanceSummary:
     """单个函数的来源摘要."""

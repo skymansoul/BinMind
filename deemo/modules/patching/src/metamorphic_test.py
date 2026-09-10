@@ -22,7 +22,7 @@ Variegate (GrammaTech) 在源码级生成功能等价的程序变体来做二进
 
 与 metamorphic testing literature 的差异：
   现有研究 关注深度代码模型的蜕变测试。
-  本模块首次将蜕变测试应用于二进制补丁变体验证。
+  本模块将蜕变测试应用于二进制补丁变体验证。
 """
 
 import re

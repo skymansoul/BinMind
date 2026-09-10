@@ -6,11 +6,11 @@
 """
 
 # 深度分析模块
-# CFG构建 (从heap_path_analyzer提取)
+# CFG构建
 from analysis.heap_cfg_builder import (
     HeapCFGBuilder, build_heap_cfg,
 )
-# FP过滤阶段 (从unified_fp_filter提取)
+# FP过滤阶段
 from analysis.fp_filter_phases import (
     phase_allocator_semantics, phase_path_constraints,
 )
@@ -37,12 +37,12 @@ from analysis.uaf_temporal_verifier import (
     TemporalVerdict, TemporalResult, UafTemporalVerifier,
     verify_uaf_temporal, verify_uaf_batch,
 )
-# UAF Dominator 验证器 — 2024-01-18
+# UAF Dominator 验证器
 from analysis.uaf_dominator_verifier import (
     UAFDominatorVerifier, DominatorVerdict, DominatorResult,
     dominator_batch_verify,
 )
-# UAF跨过程生命周期摘要 — 2023-11-02
+# UAF跨过程生命周期摘要
 try:
     from analysis.uaf_interproc_summary import (
         Lifetime, HeapPtrSummary, FuncSummary,
@@ -53,7 +53,7 @@ except ImportError:
     HeapPtrSummary = None  # type: ignore
     FuncSummary = None  # type: ignore
     InterProcLifetimeAnalyzer = None  # type: ignore
-# 格式字符串DFA解析器 — 2023-11-02
+# 格式字符串DFA解析器
 try:
     from analysis.fmt_parser_dfa import (
         FmtDanger, FmtSpec, ParsedFmtString,
@@ -65,7 +65,7 @@ except ImportError:
     ParsedFmtString = None  # type: ignore
     FmtStringParser = None  # type: ignore
     classify_fmt_danger = None  # type: ignore
-# UAF四阶段FP削减级联 (TARP-E) — 2023-11-02
+# UAF四阶段FP削减级联 (TARP-E)
 try:
     from analysis.uaf_fp_cascade import (
         UafVerdict, EscapeLevel, UafCandidate, CascadeReport,
@@ -84,12 +84,12 @@ except ImportError:
     phase1_alias_lifetime = None  # type: ignore
     phase2_path_dominance = None  # type: ignore
     phase3_escape_analysis = None  # type: ignore
-# 格式字符串影响计算 (从format_spec_scorer提取)
+# 格式字符串影响计算
 from analysis.format_impact_calculator import (
     compute_exploitability, compute_impact,
     compute_cia_impact, generate_assessment,
 )
-# UAF CFG构建 (从uaf_path_verifier提取)
+# UAF CFG构建
 from analysis.uaf_cfg_builder import (
     UafBasicBlock, UafCFGBuilder,
 )
@@ -98,24 +98,24 @@ from analysis.bayesian_fusion import (
     BayesianFusionEngine, fuse_scores, risk_classify,
     probability_to_log_odds, log_odds_to_probability,
 )
-# 流水线阶段辅助 (从unified_heap_pipeline提取)
+# 流水线阶段辅助
 from analysis.pipeline_stage_helpers import (
     extract_alloc_write_pairs, apply_interproc_summaries,
     compute_final_verdict,
 )
 
-# 2023-11-02 分配-写入关系提取器 (数组写入 buf[idx]=x 模式)
+# 分配-写入关系提取器 (数组写入 buf[idx]=x 模式)
 from analysis.alloc_write_extractor import (
     AllocSite, WriteSite, AllocWritePair,
     AllocWriteExtractor, extract_alloc_write_pairs,
 )
 
-# 2024-01-18 FSTP (Format Semantic Taint Propagation) 格式说明符语义感知污点传播
+# FSTP (Format Semantic Taint Propagation) 格式说明符语义感知污点传播
 from analysis.fmt_semantic_taint import (
     SemClass, FstpVerdict, FmtSemanticTaintPropagator,
 )
 
-# 2024-01-18 HOIG (Heap Object Identity Graph) 对象身份追踪 UAF检测
+# HOIG (Heap Object Identity Graph) 对象身份追踪 UAF检测
 from analysis.uaf_hoig_types import (
     ObjState, ObjectID, ObjStateAtPoint,
     IdentityEdge, FuncObjSummary, UafHoigVerdict,
@@ -125,7 +125,7 @@ from analysis.uaf_hoig_propagator import HoigPropagator
 from analysis.uaf_hoig_cross_func import HoigCrossFuncVerifier
 from analysis.uaf_hoig_verifier import HoigVerifier, HoigReallocTracker
 
-# 2024-01-18 PTASM (Pointer Temporal Automaton State Machine) UAF检测
+# PTASM (Pointer Temporal Automaton State Machine) UAF检测
 from analysis.ptasm_engine import (
     PTASMEngine, PTASMStats, ptasm_analyze,
     ptasm_verify_candidates, ptasm_detect_uaf, ptasm_pipeline_detect,
@@ -143,20 +143,20 @@ from analysis.ptasm_pipeline import (
 from analysis.ptasm_ctrl_flow import (
     normalize_single_line_ifs, find_branch_bodies, join_ptr_states,
 )
-# 2024-01-18 I-GUARD C源码级整数溢出检测 (8-pattern CWE分类器)
+# I-GUARD C源码级整数溢出检测 (8-pattern CWE分类器)
 from analysis.int_overflow_c_source import (
     IntOverflowFinding,
     detect_int_overflow_c_source,
     detect_int_overflow_quick,
 )
-# 2024-01-18 循环归纳变量追踪
+# 循环归纳变量追踪
 from analysis.int_loop_types import (
     InductionKind, InductionVar, LoopInfo, LoopOverflowRisk,
     integrate_loop_analysis_with_iguard,
 )
 from analysis.int_loop_induction import LoopInductionTracker
 
-# 2024-01-18 GAPSBV端到端检测管道 (仿射关系+守卫+StridedInterval+分配器语义)
+# GAPSBV端到端检测管道 (仿射关系+守卫+StridedInterval+分配器语义)
 from analysis.gapsbv_pipeline import (
     GapsbvVerdict, DimensionResult, GapsbvReport,
     detect_heap_overflow_gapsbv, detect_heap_gapsbv_quick,
@@ -167,13 +167,13 @@ from analysis.gapsbv_dimensions import (
     dim1_affine_relations, dim2_guard_analysis,
     dim3_strided_interval, dim4_allocator_semantics,
 )
-# GAPSBV 后期维度 (dim3+dim4 完整实现, 从 gapsbv_dimensions 中拆分)
+# GAPSBV 后期维度 (dim3+dim4 完整实现)
 from analysis.gapsbv_dimensions_late import (  # noqa: F401
     _extract_size_interval, _estimate_sizeof,
 )
 # GAPSBV 维度5: 完备性检查安全网
 from analysis.gapsbv_dimension5 import dim5_completeness_check  # noqa: F401
-# 2024-01-18 MIVR: 路径敏感约束传播 (GAPSBV维度6)
+# MIVR: 路径敏感约束传播 (GAPSBV维度6)
 from analysis.mivr_constraint_graph import (  # noqa: F401
     VarConstraint, GuardSite, ConstraintEdge, MIVRConstraintGraph,
 )
@@ -192,7 +192,7 @@ from analysis.mivr_pipeline import (  # noqa: F401
     detect_heap_overflow_mivr,
     run_gapsbv_with_mivr,
 )
-# 2023-11-02 GAPSBV核心创新: 证明义务引擎 + 约束收集 + FP削减积分器
+# GAPSBV: 证明义务引擎 + 约束收集 + FP削减积分器
 try:
     from analysis.heap_proof_types import (
         ProofVerdict, ProofObligation, SizeConstraint,

@@ -32,13 +32,12 @@
 # 冗余特征列表: 建议在评分模型中降权或移除的特征
 # 特征交互图: 有向无环图表示特征间的信息流
 #
-# 非显而易见性:
-#   1. 自适应分箱+CMI冗余消除的管线在漏洞评分中无先例.
-#   2. 与现有的CausalFeatureSelector (cve_causal_contrastive) 互补:
+# 设计说明:
+#   1. 与现有的CausalFeatureSelector (cve_causal_contrastive) 互补:
 #      因果发现回答"X是否因果导致Y", 信息论回答"X包含多少Y的信息".
 #      两者联合可区分: "强因果但不含信息" (罕见但重要的特征) vs
 #      "含信息但非因果" (虚假相关特征).
-#   3. 信息归因向量可直接嵌入ConformalExploitScorer的sigma估计中.
+#   2. 信息归因向量可直接嵌入ConformalExploitScorer的sigma估计中.
 #
 #
 # Elements of Information Theory

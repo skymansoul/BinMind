@@ -1,6 +1,6 @@
 """SHIELD 堆不相交性证明器 — 证明两个堆访问指向不同分配或安全区域内.
 
-核心创新: 在二进制级别实现 Cod 的堆不相交性检查,
+在二进制级别实现 Cod 的堆不相交性检查,
 不依赖源码类型信息, 仅使用指针溯源+分配器建模.
 
 证明策略 (三条路径, 任一成功即可证明安全):
@@ -11,8 +11,6 @@
   - Cod: Heap Disjointness — 类型导向的不相交性
   - DDPS: disjoint domain pruning for symbolic execution
   - 本模块: 二进制级等价, 使用 Ptmalloc2 块元数据约束
-
-创建: 2024-09-27
 """
 from __future__ import annotations
 

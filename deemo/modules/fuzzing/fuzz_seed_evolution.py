@@ -29,7 +29,7 @@ class MutationType(str, Enum):
     SPLICE = "splice"
 
 class SelectionStrategy(str, Enum):
-    """2026-08-02: 修正为str,Enum, 与MutationType风格统一。"""
+    """采用 str 值的 Enum, 与 MutationType 风格保持一致。"""
     ROULETTE = "roulette"
     TOURNAMENT = "tournament"
     ELITISM = "elitism"
@@ -483,7 +483,7 @@ class SeedPopulation:
     def _elitism_selection(self) -> List[Seed]:
         """精英选择: 前20%直接保留, 其余均匀随机补齐。
 
-        2025-04-17 fix: 使用实际种群规模n而非self._size, 防k > n的ValueError。
+        使用实际种群规模 n 而非 self._size, 防 k > n 的 ValueError。
         """
         n = len(self._population)
         if n == 0:

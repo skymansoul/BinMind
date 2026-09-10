@@ -1,5 +1,5 @@
 """多模态对齐训练 — SimCLR 式对比学习 + BYOL 动量编码器"""
-# 核心机制：对应模态样本在嵌入空间中聚拢，非对应样本推开
+# 对应模态样本在嵌入空间中聚拢，非对应样本推开
 # NT-Xent 损失的温度参数 τ 调控 softmax 锐度：τ↓→更困难，τ↑→更平滑
 
 import math
@@ -745,7 +745,7 @@ class SimSiamAlign:
 class VICRegLoss:
     """VICReg 损失：variance + invariance + covariance。
 
-    不变性项 (s)：配对 MSE——最小化增强版本间差异。
+    不变性项 (s)：配对 MSE——最小化增强视图间的差异。
     方差项 (v)：嵌入各维标准差与目标的 hinge loss——防止所有样本坍缩至同一点。
     协方差项 (c)：嵌入协方差矩阵非对角元平方和——去相关以最大化信息利用率。
     """
@@ -851,7 +851,7 @@ class OTAlignmentLoss:
     1. 各模态独立投影到 K 个 prototype
     2. Sinkhorn-Knopp 将得分矩阵转为双随机矩阵（软分配）
     3. 交叉熵损失：A 模态软分配 → B 模态软分配标签
-    等效于嵌入空间软聚类对齐——SwAV 核心思路。
+    等效于嵌入空间软聚类对齐（SwAV 风格）。
     """
 
     def __init__(self, n_prototypes: int = 256, temperature: float = 0.1):

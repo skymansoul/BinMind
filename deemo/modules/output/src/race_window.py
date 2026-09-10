@@ -18,7 +18,6 @@
 
   Tsafrir et al.: TORTILLA — TOCTOU 利用框架
   CVE-2023-3269: Linux kernel TOCTOU (check→use: ~50 insns → 可利用)
-  无现有量化工具 — 2026-08 检索确认.
 
 修改记录:
   2025-06-09 13:18 - 初始版本，指令计数+CPU模型窗口估计

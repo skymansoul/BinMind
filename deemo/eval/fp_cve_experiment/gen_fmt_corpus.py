@@ -1,6 +1,5 @@
 """FMT 语料库生成器 — 从 fmt_corpus_specs 生成样本并编译.
 
-创建: 2023-12-05
 用法: python eval/fp_cve_experiment/gen_fmt_corpus.py [--skip-compile]
 输出: corpus_fmt/<id>/{vuln.c, Makefile, README.md, truth.json, vuln.exe}
 """

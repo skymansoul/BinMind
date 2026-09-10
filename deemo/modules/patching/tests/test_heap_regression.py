@@ -4,7 +4,7 @@
 断言:
   - 所有TP样本(有binary)必须被检出
   - 所有FP样本(有binary)不得被检出
-这是核心创新(WIDV)的行为护栏, 防止后续改动引入回归。
+这是WIDV的行为护栏, 防止后续改动引入回归。
 
 用法: python -m pytest tests/test_heap_regression.py -v
 """

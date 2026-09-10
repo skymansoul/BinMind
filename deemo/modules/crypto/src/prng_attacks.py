@@ -105,7 +105,7 @@ def crack_xorshift128_plus(state0_low: int, state0_high: int,
     return [_next() for _ in range(10)]
 
 
-# ---- Dual_EC_DRBG 后门检测 (2026-07-29) ----
+# Dual_EC_DRBG 后门检测
 # NIST SP 800-90A Dual_EC_DRBG 使用 P-256/Q 点。
 # 若 Q = d*P 中 d 已知 (后门), 则攻击者可从32字节输出恢复内部状态。
 # 检测策略: 二进制中存在 Dual_EC_DRBG 字符串 + NIST P-256 基点 -> 标记。

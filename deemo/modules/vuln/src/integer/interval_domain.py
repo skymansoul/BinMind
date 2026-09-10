@@ -1,6 +1,5 @@
 """INT-RANGE 区间抽象域 — 二进制级整数区间算术引擎.
 
-核心创新 (区别于 regex 模式匹配):
   1. 可证明 SAFETY: 区间⊆类型范围 → 不可能溢出 → 绝对安全
   2. 可证明 OVERFLOW: 区间⊃类型范围 → 必然溢出 → 必漏洞
   3. 链式传播: mul→add→shl→malloc 精确计算最终区间
@@ -14,8 +13,6 @@
 
 Widening: 若区间在循环中增长, 上界跳至+inf/下界跳至-inf
   防止无限迭代.
-
-创建: 2024-09-02
 """
 from __future__ import annotations
 

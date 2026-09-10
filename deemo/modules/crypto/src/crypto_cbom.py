@@ -1,9 +1,6 @@
 """
 密码学物料清单(CBOM)生成 — 从二进制分析结果自动生成CycloneDX标准CBOM。
 
-修改记录:
-  2025-09-08 10:33 — 初始实现: CycloneDX 1.5 CBOM/JSON输出/依赖图/组件属性
-
 设计意图:
   SBOM(Software Bill of Materials)已成为供应链安全的强制性要求(US EO 14028),
   CBOM(Cryptographic Bill of Materials)是SBOM在密码学领域的特化 — 记录

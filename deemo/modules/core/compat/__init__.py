@@ -36,7 +36,6 @@
 #   stack_severity          — 栈溢出 canary 感知严重度分级
 #   fp_filter               — 三阶段堆溢出误报过滤 (值区间+约束+距离)
 #   int_overflow_detector   — 整数溢出检测: mul/imul→malloc 链路追踪
-# 2026-08 堆溢出误报专项压制 (核心创新)
 #   value_range             — 稀疏值区间传播, 证明 alloc_size >= write_size 则过滤
 #   alloc_constraints       — glibc/ptmalloc 分配器对齐/最小块约束建模
 #   fp_filter               — 三阶段误报过滤: 值区间 + 约束模型 + 污点距离裁剪

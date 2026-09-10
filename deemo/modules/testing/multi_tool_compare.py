@@ -1,6 +1,5 @@
 """多工具对比 — BinMind absint vs Flawfinder vs cppcheck vs heap_ops baseline.
 
-创建: 2026-08-05
 用途: 在17样本基准上运行三个开源工具, 对比检出能力与误报率.
       为论文/专利提供定量对比数据.
 """

@@ -18,9 +18,7 @@
 #   Level 2 - 分位数共形: 使用多个分位数回归器获取自适应区间宽度.
 #   Level 3 - 自适应共形: 在线更新校准集, 检测分布偏移, 调整区间.
 #
-# 非显而易见性:
-# 将conformal prediction首次引入CVE漏洞评分领域
-# 三层自适应架构: 静态→分位数→在线, 逐级增加复杂度但提升精度
+# 设计说明:
 # 预测区间宽度本身作为元特征: 宽区间 → 高不确定性 → 需要更多情报收集
 #
 # 保证: 在exchangeability假设下, 预测区间具有有限样本覆盖保证.
@@ -31,7 +29,6 @@
 # Algorithmic Learning in a Random World
 # A Gentle Introduction to Conformal Prediction
 # LEV metric - 明确承认误差范围未知
-# 未发现conformal prediction在CVE评分中的现有应用
 
 import math
 from typing import Dict, List, Optional, Set, Tuple, Any

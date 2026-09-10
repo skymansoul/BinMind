@@ -16,8 +16,6 @@
 影响力随时间平滑衰减而非阶跃归零。
 """
 
-# File: semantic_fingerprint.py  |  2026-07-28 create SIFT-D; 2026-08-04 audit: JS method variance
-
 from __future__ import annotations
 
 import math
@@ -71,7 +69,7 @@ class SemanticFingerprintTracker:
     """
     语义指纹追踪器。
 
-    核心机制:
+    机制:
     1. 每条意图结果生成语义指纹
     2. 指纹按时间衰减权重聚合为滑动画像
     3. 相邻时间窗口的画像 JS 散度 → 漂移检测

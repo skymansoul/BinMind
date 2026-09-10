@@ -13,8 +13,6 @@
 本模块检测跨信号不一致。
 """
 
-# File: intent_consistency.py  |  2026-07-26 create AICV; 2026-08-04 audit: stray import fix
-
 from __future__ import annotations
 
 import math

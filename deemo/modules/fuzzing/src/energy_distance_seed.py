@@ -1,10 +1,5 @@
 """能量距离种子分布检验 (Energy Distance Seed Distribution Test, EDSD).
 
-修改记录:
-2025-08-08 14:22 - Székely 能量距离 + 置换检验 + 分布等价性判定
-2025-08-10 09:47 - Jaccard 度量适配: 覆盖指纹空间的能量距离
-2025-08-11 15:08 - 在线更新: 流式 E 统计量 O(1) per new seed
-
   Székely & Rizzo "Energy Statistics: A Class of Statistics Based on
     Distances" (JSPI) — E 统计量的理论基础
   Baringhaus & Franz "On a New Multivariate Two-Sample Test" (JMA)
@@ -17,7 +12,6 @@
     能量距离使用欧氏距离 (或任何度量), 无需核选择。
     两者都是 RKHS 嵌入的推广, 但能量距离更简单、更鲁棒。
 
-核心创新:
   1. 能量距离的双样本检验: E=0 ⟺ P=Q, 无核选择
   2. Jaccard 度量适配: 覆盖指纹空间上的能量距离
   3. 在线更新: 新种子→O(n) 增量, 非 O(n²) 重建

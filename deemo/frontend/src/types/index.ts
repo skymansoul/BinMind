@@ -1,4 +1,4 @@
-// Shared type definitions for API responses and domain models
+// 接口响应与领域模型的共享类型定义
 
 export interface BinaryInfo {
   format: string

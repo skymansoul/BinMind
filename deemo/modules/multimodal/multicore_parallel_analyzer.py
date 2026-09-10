@@ -691,7 +691,7 @@ __all__ = ["MulticoreParallelAnalyzer", "TaskPartitioner", "AnalysisTask",
 #       Ananthanarayanan et al. GRASS: Trimming Stragglers. NSDI 2014.
 # 长尾延迟的本质：一个慢任务阻塞整个 batch。
 # 对策：任务运行超过 p95 耗时阈值时，在另一 worker 启动克隆。
-# 先完成者的结果被采用——推测执行的核心机制。
+# 先完成者的结果被采用——推测执行。
 
 class SpeculativeScheduler:
     """推测执行调度器：检测 straggler 并启动克隆任务。

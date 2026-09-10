@@ -9,7 +9,6 @@
     4. 依赖库已 EOL — 不再接收安全更新
     5. 构建工具链存在已知缺陷 (旧版 GCC/Clang 的代码生成缺陷)
 
-  全网检索 "binary bitrot risk scoring" 零结果。
   Grype/Trivy 检测已知 CVE 但不评分累积技术债务。
 
   评分: bitrot = w1×age_factor + w2×compiler_staleness
@@ -18,7 +17,6 @@
 
   所有因子归一化至 [0, 1]，加权求和 → [0, 10]。
 
-  无现有工作.
   CWE-1104: Use of Unmaintained Third-Party Components.
 
 修改记录:

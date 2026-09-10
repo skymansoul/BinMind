@@ -56,7 +56,7 @@ from analysis.mivr_pipeline import (  # noqa: F401
     run_gapsbv_with_mivr,
 )
 
-# GAPSBV核心创新: 证明义务引擎 + 约束收集 + FP削减积分器
+# GAPSBV: 证明义务引擎 + 约束收集 + FP削减积分器
 try:
     from analysis.heap_proof_types import (
         ProofVerdict, ProofObligation, SizeConstraint,

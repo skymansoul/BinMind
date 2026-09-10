@@ -3,7 +3,7 @@
 #   Pass 1 — 分配建模: 识别heap alloc调用, 推导大小值域
 #   Pass 2 — 指针溯源+约束验证: 追踪指针→验证写入vs分配
 #   Pass 3 — 保守回退: 无溯源信息时的模式匹配补漏
-# 核心创新: 阶段2中, 可证明安全的写入 (w_hi+o ≤ a_lo) 不报告,
+# 阶段2中, 可证明安全的写入 (w_hi+o ≤ a_lo) 不报告,
 #   这是与模式匹配方案的根本差异 — 也是误报率大幅降低的关键
 # 模块拆分 : heap_call_handler/heap_loop_detector/
 #   heap_inline_tracker/loop_aggregate/fp_reduction_mixin 等

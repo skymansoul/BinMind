@@ -1,10 +1,5 @@
 """PELT 覆盖变点检测 (PELT Coverage Change Point Detection, PCCD).
 
-修改记录:
-2025-08-09 11:34 - PELT 算法 + 覆盖时间序列 + 高斯代价函数
-2025-08-10 15:52 - CROPS: 多惩罚值弹性检测, 输出变点数 vs 惩罚曲线
-2025-08-11 09:18 - 变点语义标注: regime shift / strategy improvement / plateau
-
   Killick, Fearnhead & Eckley "Optimal Detection of Changepoints
     With a Linear Computational Cost" (JASA) — PELT 原始论文
   Jackson et al. "An Algorithm for Optimal Partitioning of Data on
@@ -22,7 +17,6 @@
     对整个覆盖时间序列做全局最优分割,
     每个分割点标记 fuzzing 策略性的结构性变化。
 
-核心创新:
   1. PELT 多覆盖变点: O(n) 精确全局最优分割
   2. CROPS 弹性惩罚: 输出变点数 vs 惩罚值的 Pareto 前沿
   3. 变点语义标注: 上升(突破)/下降(退化)/平稳→可操作建议

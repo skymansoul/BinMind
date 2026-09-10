@@ -2,7 +2,6 @@
 # 这些函数出现在每个编译后的二进制中, 但不包含用户代码的漏洞
 # 过滤策略: 函数名前缀/模式匹配, 覆盖主流编译器(MinGW/GCC/MSVC/Clang)
 # 独立模块-不改动任何现有检测逻辑, 仅在管线入口处预过滤
-# created: 2026-07-05
 
 from __future__ import annotations
 

@@ -1,4 +1,3 @@
-# created: 2026-05-31
 # 结果解析——对比检出结果与ground truth, 计算检出率/误报率/漏报率
 # 输出: build/report.json + 终端汇总表
 

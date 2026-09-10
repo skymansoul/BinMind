@@ -26,18 +26,14 @@
 #   2. 新兴威胁检测: 新CVE形成新的持久H1特征 → 新型攻击模式.
 #   3. 景观变化监测: 持久图随时间漂移 → 漏洞格局的结构性转变.
 #
-# 非显而易见性:
-#   1. 首次将持久同调应用于CVE漏洞景观特征化.
-#      TDA用于网络脆弱性 (2026年1月), 拓扑攻击检测 (2026年3月),
-#      但零论文分析CVE特征空间的拓扑结构.
-#   2. 持久熵作为漏洞多样性的单一指标:
+# 设计说明:
+#   1. 持久熵作为漏洞多样性的单一指标:
 #      无需领域知识即可量化CVE景观的"信息丰富度".
-#   3. 拓扑变化检测: 持久图的Wasserstein距离跟踪分布漂移.
+#   2. 拓扑变化检测: 持久图的Wasserstein距离跟踪分布漂移.
 #
 #
 # TDA for Higher-Order Network Vulnerabilities
 # Topological Vulnerability Index (TVI)
-#   [检索确认] 零论文将持久同调应用于CVE特征空间
 
 import math
 import random

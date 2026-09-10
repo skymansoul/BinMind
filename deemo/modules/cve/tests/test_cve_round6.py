@@ -1,5 +1,5 @@
 # Round 6 测试——CVSS 4.0、CJK FTS5、版本比较增强
-# ~30项测试，覆盖2026年8月新增特性
+# ~30项测试，覆盖新增特性
 
 import pytest
 import json

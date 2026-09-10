@@ -15,8 +15,6 @@
 这是与通用对话上下文管理的关键差异。
 """
 
-# File: session_context.py  |  2026-07-28 create session context
-
 from __future__ import annotations
 
 import time

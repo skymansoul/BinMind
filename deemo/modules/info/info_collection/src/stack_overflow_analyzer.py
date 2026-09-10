@@ -5,7 +5,7 @@
 #   L3: canary 交互效应 — 有 canary 时栈溢出利用需要先泄露 canary,
 #       若同时存在格式化串或信息泄露→canary 可被绕过→风险升高
 #
-# 核心创新: L3 的 canary 交互效应建模——传统工具只报告"有 canary=安全",
+# L3 的 canary 交互效应建模——传统工具只报告"有 canary=安全",
 # 但实际在有信息泄露原语的二进制中, canary 可被绕过。本模块量化此风险。
 
 from typing import Dict, List, Set, Tuple, Optional
@@ -102,7 +102,7 @@ def analyze_stack_overflow(
             conf = min(1.0, conf + 0.05)
             detail += " (x86 cdecl无寄存器保护, 返回地址紧邻栈缓冲区)"
 
-        # L3: canary 交互效应 — 核心创新点
+        # L3: canary 交互效应
         if has_canary:
             if has_fmt_leak or has_info_leak:
                 # canary 存在但可能被泄露→保护被削弱

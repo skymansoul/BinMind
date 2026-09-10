@@ -1,6 +1,5 @@
 """UAF 对比绘图与表格 — TOVS vs 基线 (O0/O2).
 
-创建: 2023-11-10
 用法: python eval/fp_cve_experiment/plot_uaf_comparison.py
 输出: results/uaf_comparison.png, results/uaf_result_table_O0.tex,
       results/uaf_result_table_O2.tex

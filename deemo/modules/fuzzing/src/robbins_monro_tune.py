@@ -1,10 +1,5 @@
 """Robbins-Monro 在线模糊测试调参 (Robbins-Monro Online Fuzzer Tuning).
 
-修改记录:
-2025-08-08 11:05 - RM 随机逼近 + Polyak 平均 + 自适应步长
-2025-08-09 16:33 - SPSA 梯度估计 (无需解析梯度) + 多个超参数联合调优
-2025-08-10 08:47 - 收敛诊断: 步长衰减满足 Ση=∞, Ση²<∞ 条件监控
-
   Robbins & Monro "A Stochastic Approximation Method" (Annals of Math
     Statistics) — 经典 RM 算法, 随机逼近的奠基工作
   Spall "Multivariate Stochastic Approximation Using a Simultaneous
@@ -23,7 +18,6 @@
     每次 fuzzing 执行后, 用梯度估计更新参数,
     步长自动衰减满足收敛条件, Polyak 平均给出最终估计。
 
-核心创新:
   1. RM 在线参数调优: O(1) 每步更新, 适合高频 fuzzing 循环
   2. SPSA 梯度估计: 不需要解析梯度, 仅两次扰动评估
   3. 自适应步长: η_t = a/(b+t)^α, 自动满足 Ση=∞, Ση²<∞

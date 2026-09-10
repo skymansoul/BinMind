@@ -3,25 +3,25 @@
 覆盖路径探索、输入恢复、空指针解引用检测、逐参数污点传播、
 系统调用参数追踪、循环感知探索深度封顶。angr 缺失时优雅降级。
 
-二轮增强 — 循环感知探索深度：检测 angr 的 LoopSeer exploration technique
-当路径深度 > detected_loop_bound × 3 时自动切换为 BFS 以避免 DFS 陷入
-无限循环展开。参考 KLEE 的 loop-limit 策略
+循环感知探索深度: 启用 angr 的 LoopSeer exploration technique, 路径深度
+> detected_loop_bound × 3 时切换为 BFS, 避免 DFS 陷入无限循环展开
+(参考 KLEE 的 loop-limit 策略)。
 
-二轮增强 — 条件分支密度评分：当 angr state 的约束集中包含 > 20 个
-嵌套 ITE 表达式时，标记该状态为"过度路径爆炸风险"，降低其子状态
-的探索优先级。源自对 OWASP benchmark 的实证观察
+条件分支密度评分: 当 state 约束集中嵌套 ITE 表达式 > 20 个时, 标记该
+状态为"过度路径爆炸风险", 降低其子状态的探索优先级 (源自对 OWASP
+benchmark 的实证观察)。
 
-三轮增强 — 符号内存模型 (SymbolicMemoryModel)：封装 angr 内存读写
-利用内建 BVS 命名约定（taint_arg{N}_{offset}_{width}）递归解析
-输入字节→内存地址的污点映射，返回受影响的输入索引
+SymbolicMemoryModel (符号内存模型): 封装 angr 内存读写, 利用内建 BVS
+命名约定 (taint_arg{N}_{offset}_{width}) 递归解析输入字节→内存地址的
+污点映射, 返回受影响的输入索引。
 
-三轮增强 — 路径剪枝钩子 (PathPruningHook)：作为 angr SimStatePlugin
-注入，在分支解析后检测 IP 是否落在 abort/__stack_chk_fail/__fortify_fail
-等不安全终止函数上，丢弃无意义路径以节省探索资源
+PathPruningHook (路径剪枝钩子): 作为 angr SimStatePlugin 注入, 在分支
+解析后检测 IP 是否落在 abort/__stack_chk_fail/__fortify_fail 等不安全
+终止函数上, 丢弃无意义路径以节省探索资源。
 
-三轮增强 — SMT-LIB2 序列化：extract_path_constraints_smt2 将约束集
-转为标准 SMT-LIB2 QF_BV 脚本，供 Z3/CVC4/Boolector 等外部求解器直接
-消费，实现跨工具验证与约束持久化
+SMT-LIB2 序列化: extract_path_constraints_smt2 将约束集转为标准 SMT-LIB2
+QF_BV 脚本, 供 Z3/CVC4/Boolector 等外部求解器消费, 实现跨工具验证与
+约束持久化。
 """
 
 import logging
@@ -36,7 +36,7 @@ _log = logging.getLogger(__name__)
 _LOOP_DEPTH_MULTIPLIER = 3
 _ITE_NESTING_THRESHOLD = 20
 
-# 三轮增强 — 不安全终止函数符号集
+# 不安全终止函数符号集
 # PathPruningHook 匹配这些符号后丢弃对应状态，降低路径爆炸
 _UNSAFE_PRUNE_SYMBOLS: frozenset = frozenset({
     'abort', '_abort', '__abort',
@@ -187,9 +187,8 @@ class PathExplorer:
 
     支持 BFS/DFS 策略
 
-    二轮增强 — 循环感知策略切换: 当单路径深度 > 200 时自动从 DFS
-    切换到 BFS, 因为极大可能陷入循环展开。且增加了 Veritesting
-    作为可选的第三个策略
+    循环感知策略切换: 单路径深度 > 200 时自动从 DFS 切换到 BFS,
+    避免陷入循环展开; Veritesting 作为可选的第三个策略
     """
 
     _DFS_DEPTH_LIMIT = 200
@@ -316,7 +315,7 @@ def function_arg_taint_matrix(binary: str, func_addr: int,
     在 200 步后收集所有 sink 约束，构建 arg→sink 的关联矩阵
     M[][j] = True 表示 arg 的约束出现在 sink j 中
 
-    增强 — 爆炸风险评估：在 50 步后检查 ITE 嵌套深度
+    爆炸风险评估：在 50 步后检查 ITE 嵌套深度
     若超过阈值则提前终止并标记 truncated=True"""
     try:
         import angr
@@ -369,22 +368,19 @@ def function_arg_taint_matrix(binary: str, func_addr: int,
     }
 
 
-# 三轮增强 — 符号内存模型
+# 符号内存模型
 # 封装 angr memory.load / memory.store，内建 BVS 依赖追踪解析 taint 来源
 # 命名约定: taint_arg{N}_{offset}_{width} → N 是输入字节/参数索引
 
 class SymbolicMemoryModel:
     """封装 angr 内存，提供高层符号读/写与污点源解析
 
-    三轮增强 — 利用 angr 内建 BVS 命名约定追踪每个内存地址的输入依赖
-    sym_read 返回 claripy AST（BVS/BVV）而非具体整数，sym_write 将具体
-    值转换为固定宽度 BVV 后写入以保持约束系统一致性
-    get_taint_source 递归遍历表达式树，收集影响指定地址的输入字节索引
-
-    Attributes:
-    sym_mem: 对外暴露的 angr SimState.memory 引用，供调用方直接操作
-    taint_sources: Dict[int, List[int]]，地址到输入索引的映射缓存
-    避免重复遍历 AST
+    利用 angr 内建 BVS 命名约定追踪每个内存地址的输入依赖:
+    sym_read 返回 claripy AST（BVS/BVV）而非具体整数; sym_write 将具体值
+    转为固定宽度 BVV 写入以保持约束系统一致性; get_taint_source 递归遍历
+    表达式树, 收集影响指定地址的输入字节索引。sym_mem 暴露 angr
+    SimState.memory 供调用方直接操作; taint_sources 为地址→输入索引的
+    映射缓存, 避免重复遍历 AST。
     """
 
     _TAINT_PREFIX = 'taint_arg'
@@ -493,10 +489,10 @@ class SymbolicMemoryModel:
             pass
 
 
-# 三轮增强 — 路径剪枝钩子
+# 路径剪枝钩子
 # 作为 angr SimStatePlugin 注入，分支解析后丢弃到达不安全终止函数的路径
 # 权衡：可能在少数场景下误剪（合法调用 abort 经由 atexit 处理器）
-# 但收益远大于成本 — 大多数情况下 abort/__fortify_fail 意味着路径结束
+# 大多数情况下 abort/__fortify_fail 意味着路径已结束, 误剪概率较低
 
 # 若 angr 不可用，PathPruningHook 退化为普通 object（丧失 SimStatePlugin
 # 的 copy/merge 接口，但 should_prune 逻辑仍可独立使用）
@@ -511,13 +507,10 @@ except ImportError:
 class PathPruningHook(_PRUNING_BASE):
     """angr SimStatePlugin，丢弃到达不安全库代码的状态
 
-    三轮增强 — 在分支解析后检查 state 的 IP 是否命中不安全终止函数
-    若命中则标记该状态为可丢弃（pruned），避免在不可能产生有用结果
-    （如信息泄露、控制流劫持）的路径上继续探索
-
-    Attributes:
-    pruned_count: 累计剪枝计数
-    pruned_reasons: 剪枝原因列表（匹配到的函数名）
+    分支解析后检查 state 的 IP 是否命中不安全终止函数: 命中则标记该状态
+    为可丢弃 (pruned), 避免在不可能产生有用结果 (如信息泄露、控制流劫持)
+    的路径上继续探索。pruned_count 为累计剪枝计数, pruned_reasons
+    记录匹配到的函数名。
     """
 
     _UNSAFE_SYMS = _UNSAFE_PRUNE_SYMBOLS
@@ -611,7 +604,7 @@ class PathPruningHook(_PRUNING_BASE):
         self.pruned_reasons.append(reason)
 
 
-# 三轮增强 — SMT-LIB2 约束序列化
+# SMT-LIB2 约束序列化
 # 将 angr state 的约束集转为标准 SMT-LIB2 QF_BV 脚本
 # 适用场景：跨工具验证 / 约束持久化 / 结果复现
 

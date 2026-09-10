@@ -6,10 +6,6 @@
 #   2. 优先级信号（调用量、缺口度）在拓扑可行集内以加权排位生效，
 #      而非无视依赖硬排全局序。
 #   3. 增量更新：仅重算受变更影响节点的下游传递闭包。
-# 区别于已有工作:
-#   SYNFlx 的 RelationGraph 面向跨文件协同修复，
-#   本模块的图结构额外编码 stub→compat 的"已转发/待实现"语义，
-#   调度目标非修复完成度而是实现可行集的逐层扩展。
 import ast as _ast
 import os as _os
 from collections import defaultdict as _dd, deque as _dq

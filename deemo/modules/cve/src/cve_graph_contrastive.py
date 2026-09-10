@@ -31,16 +31,14 @@
 # 本模块在图结构空间做对比学习 (graph InfoNCE).
 # 两者互补: 特征级捕获语义相似性, 图级捕获结构相似性.
 #
-# 非显而易见性:
-#   1. 首次将图对比学习应用于CVE元数据异构图 (非源代码图).
-#   2. 类型感知增强策略: 不同关系类型的边/特征使用不同增强强度.
-#   3. 与现有CVEExploitGraph共享图结构, 零额外数据需求.
+# 设计说明:
+#   1. 类型感知增强策略: 不同关系类型的边/特征使用不同增强强度.
+#   2. 与现有CVEExploitGraph共享图结构, 零额外数据需求.
 #
 #
 # GRACE: Graph Contrastive Learning (ICML)
 # GraphCL: Graph Contrastive Learning with Augmentations (NeurIPS)
 # 代码漏洞检测的对比语义学习+图嵌入
-#   [检索确认] 2025-2026年零论文将GCL应用于CVE元数据图
 
 import math
 import random

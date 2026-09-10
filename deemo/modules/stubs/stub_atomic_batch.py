@@ -1,25 +1,12 @@
 # stub_atomic_batch.py — 原子批量实现引擎
-# 对多个相互依赖的桩模块执行"全有或全无"的批量实现。
-# 任一批次成员失败 → 整体回滚已落盘的文件。
-# 基于依赖图的拓扑层级识别最小一致批次。
-#
-# 问题:
-#   GradualEngine.implement_top(n) 逐个实现前 n 个模块。
-#   若第 3 个成功、第 4 个失败，前 3 个已落盘，但第 4 个的失败
-#   可能导致前 3 个的实现基于过时的下游合约。逐模块实现缺乏
-#   跨模块的事务语义。
-#
-# 方案:
-#   1. 从依赖图中提取拓扑层 — 同层内模块互不依赖
-#   2. 每层作为一个原子批次: 层内全部成员成功 → 整体提交；
-#      任一失败 → 删除该层已落盘文件并报告失败原因
-#   3. 提交点记录到 ProvenanceChain
-#   4. 支持 --dry-run 预览而不落盘
+# 对多个相互依赖的桩模块执行"全有或全无"的批量实现；任一批次成员失败，
+# 则回滚该批次已落盘文件。基于依赖图的拓扑层级识别最小一致批次，
+# 为逐模块实现补充跨模块的事务语义。
 #
 # 事务语义:
 #   BEGIN BATCH  →  记录批次起点
 #   IMPLEMENT(i) →  生成并验证，暂存到 _gradual_out/.atomic/
-#   COMMIT       →  原子移动到 _gradual_out/ + 记录溯源
+#   COMMIT       →  原子移动到 _gradual_out/ + 记录溯源 (ProvenanceChain)
 #   ROLLBACK     →  删除 _gradual_out/.atomic/ 下该批次文件
 import os as _os
 import shutil as _shutil

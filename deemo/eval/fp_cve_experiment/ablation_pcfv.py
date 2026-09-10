@@ -1,6 +1,5 @@
 """PCFV 消融实验 — 各证明规则的独立贡献 (FP 过滤 / 召回保持).
 
-创建: 2024-10-17
 用法: python eval/fp_cve_experiment/ablation_pcfv.py [--exe vuln.exe]
 输出: results/ablation_pcfv.csv, ablation_pcfv_table.tex, ablation_pcfv.png
 配置:

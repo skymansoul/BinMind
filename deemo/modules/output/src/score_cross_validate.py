@@ -11,8 +11,6 @@
     - 加固良好的二进制可能有高可利用漏洞 → 单个漏洞的微观风险
     - 分析可靠度低但报告了高密度漏洞 → 可能全是误报
 
-  本模块是第一个二进制分析管线元质量评估工具。
-
   检测规则:
     1. exploitability vs risk_surface 背离 (>4 分差)
     2. vuln_density vs analysis_reliability 负相关检查
@@ -20,9 +18,7 @@
     4. heap_exploitability vs sandbox_escape 冗余利用链检查
     5. 单模块极端值 (任一模块 >9.0 且无其他模块 >6.0)
 
-  无现有工具 — 2026-08 检索确认.
   Meta-analysis in ML: ensemble disagreement as quality signal.
-  本模块首次将元分析应用于二进制漏洞评分管线.
 
 修改记录:
   2024-10-11 15:44 - 初始版本，5条矛盾检测规则

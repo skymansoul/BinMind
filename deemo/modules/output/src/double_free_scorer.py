@@ -6,7 +6,7 @@ Double-Free 利用性评分 — 分配器版本×tcache/fastbin 检测×合并�
   差异巨大。glibc 2.27 的 tcache 无任何检测 (利用 trivial)，
   glibc 2.34+ 有 tcache key (随机 per-chunk) + fastbin 双重释放检测。
 
-  本模块是第一个 double-free 利用性量化模型，考虑了:
+  评分模型考虑以下因素:
     1. 分配器版本和活跃保护
     2. 释放之间是否有分配 (绕过简单的 fastbin 检测)
     3. chunk 大小类别 (tcache vs fastbin vs smallbin)

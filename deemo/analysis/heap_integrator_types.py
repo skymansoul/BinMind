@@ -44,7 +44,7 @@ class IntegratedVerdict:
     effective_alloc: int = 0
 
 
-# 各维度评分函数 (从 HeapOverflowIntegrator 拆出)
+# 各维度评分函数
 
 def score_dimension_affine(affine_tracker, pseudocode: str,
                            alloc_size: int, write_size: int) -> DimensionScore:

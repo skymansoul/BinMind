@@ -82,7 +82,7 @@ class HeapOverflowDetector:
 
     def __init__(self, enable_write_side: bool = True):
         self._components = None
-        # 写侧双向区间交汇(核心创新)开关; 关闭时回退原Filter 4行为
+        # 写侧双向区间交汇开关; 关闭时回退原Filter 4行为
         self.enable_write_side = enable_write_side
 
     def _init_components(self):

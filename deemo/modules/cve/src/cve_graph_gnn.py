@@ -1,7 +1,6 @@
-"""~ 2025-05-12"""
 # 异构图卷积网络用于 CVE 可利用性传播预测
 #
-# 核心参考文献:
+# 相关文献:
 # Relational Vulnerability-Vendor Network with RGCN
 # 异构关系图在可利用性预测上超越 EPSS
 # KEV+EPSS+CVSS 链式决策优化

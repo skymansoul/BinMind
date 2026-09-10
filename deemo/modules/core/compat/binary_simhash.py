@@ -11,7 +11,7 @@ import struct as _struct
 import math as _math
 from typing import Any
 
-# ===== SimHash 核心 =====
+# SimHash 核心
 # 将任意字节序列映射到固定位宽的指纹，满足：
 # - 相似输入的指纹汉明距离小 (局部敏感)
 # - 不同输入的指纹均匀分布 (抗碰撞)
@@ -62,7 +62,7 @@ class SimHash:
         return 1.0 - (self.hamming_distance(fp1, fp2) / self.n)
 
 
-# ===== 函数级 SimHash 特征提取 =====
+# 函数级 SimHash 特征提取
 # 将函数分解为以下特征:
 # - 归一化指令 n-gram (权重 1.0)
 # - 基本块大小分布 (权重 0.5)
@@ -109,7 +109,7 @@ def extract_function_features(insns: list[tuple[str, str]],
     return features
 
 
-# ===== 分块索引 (Block-Based Indexing) =====
+# 分块索引 (Block-Based Indexing)
 # 汉明距离 ≤ k 的搜索 — 将指纹分成 b 块，至少有一块完全匹配
 # 这个性质来自鸽巢原理: 若两指纹距离 ≤ k，则 b > k 时至少一个块完全相同
 # Manku et al. (2007) 的 Web Crawling 去重系统
@@ -176,7 +176,7 @@ class SimHashIndex:
         return len(all_items)
 
 
-# ===== 二进制级 SimHash (文件整体指纹) =====
+# 二进制级 SimHash (文件整体指纹)
 # 适用于: 快速判断两个二进制文件是否来自同一源码 (跨编译器版本/优化级别)
 # 对 .text 节计算全局 SimHash，忽略绝对地址和字符串的微小差异
 
@@ -229,7 +229,7 @@ def binary_level_simhash(pe_data: bytes) -> int | None:
     return hasher.compute(features)
 
 
-# --- 函数搜索管道 ---
+# 函数搜索管道
 # SimHash 初筛 → 精确嵌入匹配 → LLM 验证
 # 三级级联大幅降低搜索延迟 — SimHash 过滤可将候选集缩小 100-1000x
 # SAFE 的级联匹配策略

@@ -117,7 +117,6 @@ class TestCIIntegrator(unittest.TestCase):
         self.assertFalse(result)
 
     def test_should_fail_empty(self):
-        # 前版本保留——作为实现参考
         """空列表永远不fail"""
         self.integrator.fail_on = 'any'
         result = self.integrator._should_fail([])

@@ -1,4 +1,3 @@
-# ~ 2026-09-27
 # CVE -> MITRE ATT&CK 映射 - 通过 CWE->CAPEC->ATT&CK 关系链将 CWE ID 转换为 ATT&CK 技术。
 #
 # MITRE 发布这些分类体系之间的结构化映射。本模块以静态查找表嵌入最常见映射

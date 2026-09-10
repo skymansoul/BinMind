@@ -11,8 +11,6 @@
 空间中的虚假冲突计算。
 """
 
-# File: evidence_fusion.py  |  2026-07-30 create CCEF; 2026-08-04 audit: theta_mass refactor
-
 from __future__ import annotations
 
 import math

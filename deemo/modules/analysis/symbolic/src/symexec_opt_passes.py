@@ -180,7 +180,7 @@ class OptimizationStats:
     pruning_by_strategy: Dict = field(default_factory=dict)
 
 
-# 四轮增强 — ConstraintComplexityEstimator：求解前预测 z3 求解时间
+# ConstraintComplexityEstimator：求解前预测 z3 求解时间
 #
 # 特征工程 — 从约束列表中提取 5 个可计算特征：
 #   constraint_count: 约束总数
@@ -206,10 +206,9 @@ class ConstraintFeatures:
 class ConstraintComplexityEstimator:
     """调用求解器前从约束特征预测 Z3 求解耗时。
 
-    四轮增强: 符号执行中大量约束会触发 Z3 超时 (如并行求解器
-    设置的 30s), 等待超时拿到不可解结果比直接跳过更浪费计算
-    时间; 本预估器在求解前估算耗时, predicted_time > timeout
-    则跳过。
+    符号执行中大量约束会触发 Z3 超时 (如并行求解器设置的 30s),
+    等待超时拿到不可解结果比直接跳过更浪费计算时间; 本预估器在
+    求解前估算耗时, predicted_time > timeout 则跳过。
 
     线性回归权重初始化为启发式值, 每次求解后在线更新;
     weights 为特征→系数映射, history 保存最近 N 次
@@ -393,7 +392,7 @@ class ConstraintComplexityEstimator:
             self._lock.release()
 
 
-# 四轮增强 — OptimizationPipeline：可配置 DAG 的优化通道
+# OptimizationPipeline：可配置 DAG 的优化通道
 #
 # 将 Simplifier → CSE → CacheLookup → Solve 串联为管道
 # 每个 pass 是独立的、可启停的处理阶段
@@ -421,7 +420,7 @@ class PassResult:
 class OptimizationPipeline:
     """可配置的优化 pass DAG: Simplify -> CSE -> CacheLookup -> Solve。
 
-    四轮增强: 传统 SymExecOptimizer 把 simplifier → cache → solver
+    传统 SymExecOptimizer 把 simplifier → cache → solver
     硬编码成固定调用顺序; OptimizationPipeline 把每个优化阶段抽象
     为可配置的管道节点, 支持:
 
@@ -576,7 +575,7 @@ class OptimizationPipeline:
         }
 
 
-# 四轮增强 — SolverBudgetManager：全局求解时间预算
+# SolverBudgetManager：全局求解时间预算
 #
 # 符号执行中并行求解器可能同时被多个任务调用，总和求解时间不受控
 # SolverBudgetManager 为 "一分钟内允许的总求解时间" 设置硬限制
@@ -594,7 +593,7 @@ class OptimizationPipeline:
 class SolverBudgetManager:
     """跨活跃符号任务分配全局求解时间预算。
 
-    四轮增强: 防止符号执行引擎中多个 worker 同时触发大量耗时求解,
+    防止符号执行引擎中多个 worker 同时触发大量耗时求解,
     把 CPU 时间耗在 Z3 求解器上 (影响 UI 响应、fuzzer 协同等)。
 
     预算模型: token bucket
@@ -1421,9 +1420,9 @@ class ParallelSolver:
         cache: Optional[ConstraintSolverCache] = None,
         auto_scale: bool = True,
         solver_profile_window: int = 100,
-        # 四轮增强 — 复杂度预估器
+        # 复杂度预估器
         complexity_estimator: Optional[ConstraintComplexityEstimator] = None,
-        # 四轮增强 — 预算管理器
+        # 预算管理器
         budget_manager: Optional[SolverBudgetManager] = None,
     ):
         self.max_workers = max_workers
@@ -1440,9 +1439,9 @@ class ParallelSolver:
         self._hotspot_profiles: Dict[str, List[float]] = defaultdict(list)
         self._profile_lock = threading.Lock()
 
-        # 四轮增强 — 复杂度预估器
+        # 复杂度预估器
         self.complexity_estimator = complexity_estimator or ConstraintComplexityEstimator()
-        # 四轮增强 — 预算管理器
+        # 预算管理器
         self.budget_manager = budget_manager
 
     def _categorize_constraints(self, constraints: List[Any]) -> str:
@@ -1537,7 +1536,7 @@ class ParallelSolver:
                           is_critical: bool = False) -> Optional[Dict[str, Any]]:
         """带缓存、复杂度预估与预算检查的约束求解。
 
-        四轮增强, 求解前执行: 1) ComplexityEstimator 预测耗时 →
+        求解前依次执行: 1) ComplexityEstimator 预测耗时 →
         超过 timeout 则跳过; 2) BudgetManager 检查预算 → 非关键
         任务预算耗尽则拒绝。
         """
@@ -1551,7 +1550,7 @@ class ParallelSolver:
                 'cached': True
             }
 
-        # 四轮增强 — 复杂度预估：预测过长则跳过
+        # 复杂度预估：预测过长则跳过
         features = self.complexity_estimator.extract_features(constraints)
         should_skip, predicted = self.complexity_estimator.should_skip(
             constraints, self.timeout
@@ -1564,7 +1563,7 @@ class ParallelSolver:
                 'predicted_seconds': round(predicted, 4),
             }
 
-        # 四轮增强 — 预算检查：非关键任务预算耗尽则拒绝
+        # 预算检查：非关键任务预算耗尽则拒绝
         if self.budget_manager is not None and not is_critical:
             if self.budget_manager.is_budget_exhausted():
                 self.stats['skipped_by_budget'] += 1
@@ -1593,7 +1592,7 @@ class ParallelSolver:
             result = {'satisfiable': False, 'error': 'no_solver'}
         solve_time = time.time() - start_time
 
-        # 四轮增强 — 更新复杂度预估器
+        # 更新复杂度预估器
         self.complexity_estimator.update(features, solve_time)
 
         self.cache.put(

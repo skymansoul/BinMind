@@ -11,11 +11,9 @@ Off-by-One 漏洞精度评分 — 边界类型×相邻数据敏感度×页对齐
     - 栈 off-by-one → 可覆写 saved rbp 的 LSB → 栈迁移
     - 页边界 off-by-one → 可能写入未映射页 → crash-only (不可利用)
 
-  本模块是第一个 off-by-one 精度评分模型。
 
   Poisoned NUL byte (glibc): chunk overlapping via PREV_INUSE clear
   CTF off-by-one writeups: LSB overwrite → stack pivot
-  无现有评分工具.
 
 修改记录:
   2024-09-02 09:15 - 初始版本，边界类型×相邻敏感度的二维矩阵

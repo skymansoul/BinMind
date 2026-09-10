@@ -15,8 +15,6 @@
 不是人工预设的静态值, 而是从实际运行数据中持续学习的随机变量。
 """
 
-# File: online_calibrate.py  |  2026-07-29 create OODC; 2026-08-04 audit: extract BetaPrior
-
 from __future__ import annotations
 
 import math

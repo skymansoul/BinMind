@@ -1,6 +1,6 @@
 """硬件加速哈希：xxHash / BLAKE3，透明回退至 hashlib。
 
-2026-07 新增：
+实现特性：
   - Merkle 树哈希构造，支持大型文件集完整性证明
   - 基于 mmap 的并行分块哈希（ProcessPoolExecutor）
   - 内容定义分块（CDC）通过 GEAR 哈希实现差量去重

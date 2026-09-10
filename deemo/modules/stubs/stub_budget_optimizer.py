@@ -1,13 +1,6 @@
 # stub_budget_optimizer.py — Token预算约束下的实现优化分配
 # 当 LLM API 有 token 配额限制时，将有限预算分配到价值最高的函数上。
-# 建模为分数背包问题: 每函数有 token 成本与质量收益，
-# 在预算约束下最大化总收益。
-#
-# 问题:
-#   GradualEngine 对每模块全量调用 LLM（若启用），不感知 token 成本。
-#   实际部署中 API 配额有限（如 100K tokens/day）。
-#   全量 LLM 调用可能在 5 个模块后耗尽配额，导致后续模块只能使用模板。
-#   更好的策略: 对每模块的每函数评估 token 成本，按成本效益比分配。
+# 建模为分数背包问题: 每函数有 token 成本与质量收益，在预算约束下最大化总收益。
 #
 # 方法:
 #   1. 估计每函数的 LLM token 成本（基于参数数、复杂度、docstring 长度）
@@ -15,11 +8,6 @@
 #   3. 分数背包: 按价值/成本比降序选择，直到预算耗尽
 #   4. 未分配到 LLM 预算的函数 → 回退到 TemplateGenerator
 #   5. 输出: 预算分配方案 + 预估总价值
-#
-# 建模细节:
-#   分数背包允许"部分使用" → 本场景中对应 LLM 仅生成部分函数 body，
-#   剩余由模板补齐。这比 0/1 背包更贴合实际:
-#   LLM 可只生成函数的核心逻辑骨架，模板填充类型检查和边界处理。
 from dataclasses import dataclass as _dc, field as _field
 
 from modules.stubs.stub_contract import (

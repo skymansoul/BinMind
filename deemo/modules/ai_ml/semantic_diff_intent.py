@@ -58,7 +58,7 @@ _MNEMONIC_CAT = {
     'ret': AsmOpCategory.BRANCH, 'jz': AsmOpCategory.BRANCH,
     'jnz': AsmOpCategory.BRANCH,
     'mov': None,  # 需要分析操作数确定是mem_read/mem_write/reg_move
-    'lea': AsmOpCategory.ARITH,  # 地址计算本质上是指针算术
+    'lea': AsmOpCategory.ARITH,  # 地址计算等价于指针算术
     'push': AsmOpCategory.STACK, 'pop': AsmOpCategory.STACK,
     'syscall': AsmOpCategory.CONTROL, 'int': AsmOpCategory.CONTROL,
 }

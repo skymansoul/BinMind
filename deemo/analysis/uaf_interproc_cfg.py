@@ -1,7 +1,7 @@
 """
 UAF 跨函数 CFG 构建器 — 为 TARPS 五阶段验证提供跨函数可达性分析.
 
-核心创新:
+动机:
   现有 TARPS 只在单函数内做基本块可达性分析 (Stage R).
   但真实世界的 UAF 通常跨越多个函数:
     func_A: p = malloc(n)     ← alloc
@@ -28,11 +28,10 @@ from __future__ import annotations
 import re
 from collections import deque
 from typing import Dict, List, Set, Tuple
-
 import logging
 _log = logging.getLogger(__name__)
-
 from analysis.uaf_interproc_types import CallGraph, FunctionNode
+
 
 class InterProcCFGBuilder:
     """跨函数调用图构建器.
@@ -54,8 +53,8 @@ class InterProcCFGBuilder:
         r'(?:(\w+(?:->\w+)?(?:\s*\[\s*\w+\s*\])?)\s*=\s*)?'
         r'(malloc|calloc|realloc)\s*\(', re.IGNORECASE)
 
-    # free 调用: free(ptr)
-    _FREE_RE = re.compile(r'free\s*\(\s*(\w+(?:->\w+)?)\s*\)', re.IGNORECASE)
+    # free 调用: free(ptr) / free(arr[idx]) / free(ptr->member)
+    _FREE_RE = re.compile(r'free\s*\(\s*(\w+(?:\s*\[\s*\w+\s*\])?(?:->\w+)?)\s*\)', re.IGNORECASE)
 
     # 指针解引用 (use): *ptr, ptr->field, ptr[index]
     _USE_RE = re.compile(
@@ -64,10 +63,16 @@ class InterProcCFGBuilder:
     # 函数调用: func_name(args)
     _CALL_RE = re.compile(r'\b(\w+)\s*\([^)]*\)', re.IGNORECASE)
 
+    # 指针别名赋值: alias = var->member 或 alias = var
+    _ALIAS_RE = re.compile(r'(\w+)\s*=\s*(\w+(?:->\w+)?)\s*;', re.IGNORECASE)
+
     def __init__(self):
         self._cg = CallGraph()
         self._func_lines: Dict[str, Tuple[int, int]] = {}
         self._ptr_to_func: Dict[str, str] = {}  # 指针 → 分配所在函数
+        self._ptr_alias: Dict[str, str] = {}    # 别名 → 原始指针 (如 ref→o->data)
+        self._param_alias: Dict[str, str] = {}  # 形参 → 实参 (跨函数参数传递)
+        self._source_lines: List[str] = []      # 源码行缓存, 跨函数UAF提取free指针名
 
     @property
     def call_graph(self) -> CallGraph:
@@ -78,6 +83,7 @@ class InterProcCFGBuilder:
         lines = source_code.splitlines()
         self._cg = CallGraph()
         self._func_lines.clear()
+        self._source_lines = lines  # 缓存源码行, 供跨函数UAF分析提取指针名
 
         # Phase 1: 提取函数定义边界
         func_ranges = self._extract_function_ranges(source_code)
@@ -90,19 +96,21 @@ class InterProcCFGBuilder:
             # 扫描 alloc/free/use sites
             for i in range(start, min(end + 1, len(lines))):
                 line = lines[i].strip() if i < len(lines) else ''
-
                 if self._ALLOC_RE.search(line):
                     node.alloc_sites.append(i)
-                    # 提取被赋值的变量
-                    m = re.search(r'(\w+(?:->\w+)?)\s*=\s*(?:malloc|calloc|realloc)', line)
+                    m = re.search(r'(\w+(?:->\w+)?(?:\s*\[\s*\w+\s*\])?)\s*=\s*(?:\([^)]*\)\s*)?(?:malloc|calloc|realloc)', line)
                     if m:
-                        self._ptr_to_func[m.group(1)] = func_name
-
+                        self._ptr_to_func[self._normalize_ptr(m.group(1))] = func_name
                 if self._FREE_RE.search(line):
                     node.free_sites.append(i)
-
                 if self._USE_RE.search(line) and not self._ALLOC_RE.search(line):
                     node.use_sites.append(i)
+                # 别名提取: alias = var->member 或 alias = var
+                for am in self._ALIAS_RE.finditer(line):
+                    alias_name = am.group(1)
+                    target = am.group(2)
+                    if target in self._ptr_to_func or target in self._ptr_alias:
+                        self._ptr_alias[alias_name] = target
 
             # 扫描函数调用
             for call_m in self._CALL_RE.finditer(func_body):
@@ -110,15 +118,24 @@ class InterProcCFGBuilder:
                 if callee != func_name and not self._is_keyword(callee):
                     node.calls.add(callee)
 
+            # 注册器模式补边: atexit(cb)/signal(sig,cb)/pthread_create(..,cb,..)
+            for reg_m in re.finditer(
+                r'\b(?:atexit|signal|pthread_create)\s*\(([^)]*)\)',
+                func_body, re.IGNORECASE):
+                args = reg_m.group(1).split(',')
+                for arg in args:
+                    arg = arg.strip()
+                    if arg and not self._is_keyword(arg) and arg != func_name:
+                        if re.match(r'^\w+$', arg):
+                            node.calls.add(arg)
+
             # 检测包装函数: 只做 malloc+return 或 free+return
             if len(node.alloc_sites) >= 1 and len(node.free_sites) == 0:
-                # 如果函数体很小且主要就是 malloc → 可能是 alloc wrapper
-                if end - start < 10:
+                if end - start < 10:  # 函数体小且仅含malloc → alloc wrapper
                     node.is_alloc_wrapper = True
             if len(node.free_sites) >= 1 and len(node.alloc_sites) == 0:
                 if end - start < 10:
                     node.is_free_wrapper = True
-
             self._cg.nodes[func_name] = node
 
         # Phase 3: 构建逆向边 (called_by)
@@ -128,7 +145,40 @@ class InterProcCFGBuilder:
                     self._cg.nodes[callee].called_by.add(caller_name)
                     self._cg.edges.append((caller_name, callee))
 
+        # Phase 4: 跨函数参数别名提取 (调用点: 实参 → 形参映射)
+        self._extract_param_aliases(source_code)
+
         return self._cg
+
+    def _extract_param_aliases(self, source_code: str) -> None:
+        """提取跨函数参数别名: 调用点实参 → 被调函数形参."""
+        # 形参提取正则: 类型 (*可选) 参数名
+        param_re = re.compile(
+            r'(?:void|int|char|long|short|float|double|size_t|uint\w*|int\w*|'
+            r'struct\s+\w+|\w+)'
+            r'\s*\**\s*(\w+)\s*'
+            r'(?=,|\))', re.IGNORECASE)
+        for caller_name, caller_node in self._cg.nodes.items():
+            for callee in caller_node.calls:
+                callee_node = self._cg.nodes.get(callee)
+                if not callee_node:
+                    continue
+                # 提取形参名列表
+                callee_def_line = self._source_lines[callee_node.start_line] \
+                    if callee_node.start_line < len(self._source_lines) else ''
+                params = [p for p in param_re.findall(callee_def_line)]
+                # 提取调用点实参
+                for i in range(caller_node.start_line, min(caller_node.end_line + 1, len(self._source_lines))):
+                    call_m = re.search(
+                        r'\b' + re.escape(callee) + r'\s*\(([^)]*)\)',
+                        self._source_lines[i], re.IGNORECASE)
+                    if not call_m:
+                        continue
+                    args = [a.strip() for a in call_m.group(1).split(',')]
+                    for idx, arg in enumerate(args):
+                        if idx < len(params) and re.match(r'^\w+$', arg):
+                            # 实参 arg → 形参 params[idx]
+                            self._param_alias[params[idx]] = self._normalize_ptr(arg)
 
     def _extract_function_ranges(self, source_code: str) -> Dict[str, Tuple[int, int]]:
         """通过括号匹配提取函数定义的行范围."""
@@ -174,6 +224,11 @@ class InterProcCFGBuilder:
             'struct', 'union', 'enum', 'typedef', 'goto', 'break', 'continue',
             'do', 'default', 'auto', 'register',
         }
+
+    @staticmethod
+    def _normalize_ptr(name: str) -> str:
+        """数组下标归一化: nodes[1]/nodes[i] → nodes[], 统一数组元素指针."""
+        return re.sub(r'\[\s*\w+\s*\]', '[]', name)
 
     # 跨函数 UAF 可达性判定 ──────────────────────
 
@@ -267,5 +322,60 @@ class InterProcCFGBuilder:
                 for line_no in node.use_sites:
                     uses.append((fname, line_no))
         return uses
+
+    def find_cross_function_uaf(self, node: FunctionNode) -> List[dict]:
+        """检测单个函数节点中的跨函数UAF, 返回 findings 列表.
+
+        关键过滤: use 必须在 free 之后 (use_line > free_line),
+        且 use_site 必须从 free_func 可达 (由 find_reachable_use_sites 限制范围).
+        """
+        findings: List[dict] = []
+        for free_line in node.free_sites:
+            if free_line >= len(self._source_lines):
+                continue
+            m = self._FREE_RE.search(self._source_lines[free_line])
+            if not m:
+                continue
+            ptr_var = m.group(1)
+            norm_ptr = self._normalize_ptr(ptr_var)
+            # 别名链解析: ptr_alias + param_alias, 直到找到分配函数
+            resolved = norm_ptr
+            visited_ptrs: Set[str] = {resolved}
+            while resolved not in self._ptr_to_func:
+                nxt = self._ptr_alias.get(resolved) or self._param_alias.get(resolved)
+                if not nxt or nxt == resolved:
+                    break
+                resolved = self._normalize_ptr(nxt)
+                if resolved in visited_ptrs:
+                    break
+                visited_ptrs.add(resolved)
+            alloc_func_name = self._ptr_to_func.get(resolved, "")
+            if not alloc_func_name:
+                continue
+            # 用 find_reachable_use_sites 限制搜索范围 (前向可达 + 自身)
+            use_sites = self.find_reachable_use_sites(node.name, ptr_var)
+            for use_func, use_line in use_sites:
+                # 同函数: use 必须在 free 之后 (行号序 = 时序)
+                # 跨函数: 行号无时序意义, 只要 CG 可达即可
+                if use_func == node.name and use_line <= free_line:
+                    continue
+                reachable, reason = self.is_cross_func_uaf_reachable(
+                    alloc_func_name, node.name, use_func)
+                if not reachable:
+                    continue
+                findings.append({
+                    "type": "use_after_free",
+                    "cwe": "CWE-416",
+                    "function": f"{alloc_func_name}->{node.name}->{use_func}",
+                    "free_line": free_line,
+                    "use_line": use_line,
+                    "pointer": ptr_var,
+                    "confidence": 0.70,
+                    "description": (
+                        f"跨函数UAF: 指针 '{ptr_var}' 在 {alloc_func_name} 分配, "
+                        f"{node.name}(L{free_line}) 释放, "
+                        f"{use_func}(L{use_line}) 使用; {reason}"),
+                })
+        return findings
 
 __all__ = ['FunctionNode', 'CallGraph', 'InterProcCFGBuilder']

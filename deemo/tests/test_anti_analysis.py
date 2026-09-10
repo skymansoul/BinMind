@@ -51,7 +51,6 @@ class TestBypassResult(unittest.TestCase):
     """绕过结果测试"""
 
     def test_successful_result(self):
-        # 历史实现保留——用于回溯参考
         result = BypassResult(
             success=True,
             techniques=[],

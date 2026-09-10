@@ -18,8 +18,6 @@
 本模块优化分类法结构本身 —— 改变的是类别定义空间。
 """
 
-# File: taxonomy_refine.py  |  2026-08-01 create ATR; 2026-08-04 audit: real KDE impl
-
 from __future__ import annotations
 
 import math

@@ -15,8 +15,6 @@ LAMP 展示了如何从黑盒 LLM 中提取决策边界。
 4. 文本相似度: 窗口内查询之间的编辑距离异常低 (仅做微小改动)
 """
 
-# File: probing_detection.py  |  2026-07-31 create ACPD
-
 from __future__ import annotations
 
 import math

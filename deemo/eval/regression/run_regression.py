@@ -10,8 +10,6 @@
   - results/regression_results.csv
   - results/regression_summary.json
   - stdout 统计摘要
-
-创建: 2026-05-28
 """
 from __future__ import annotations
 

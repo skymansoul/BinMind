@@ -25,7 +25,6 @@
 #
 # Reptile: First-Order Meta-Learning
 # MAML (ICML) — 二阶基线
-#   [检索确认] 2025-2026年零论文将元学习应用于CVE/CWE预测
 
 import math, random
 from collections import defaultdict

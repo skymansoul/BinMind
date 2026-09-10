@@ -10,14 +10,8 @@
 #   oversize malloc 回退: size>0x1000000 或 None → 128 (保守上界).
 #   分类 (BOUND_CHECK): usable = ptmalloc2 model_alloc(alloc).usable_size,
 #     offset+size > usable 才判 vuln (分配器 padding 合法访问不过滤).
-#   本文件实现 AVHO-G 核心链; CAORN proof 与 DP-TVRA 阶段属其他品牌
-#   (offset_proof_filter / heap_fp_filter_v2), 保留在原管线.
-#
-# 本文件为 AVHO 独立实现, 合并 modules/vuln/src/heap/ 的
-# insn_parser.py + func_analyzer.py + allocator_model.py +
-# loop_accum_detector.py + _heap_orch_helpers.py 的 AVHO 核心部分
-# (剔除 HeapBoundInferrer/OffsetProofFilter/HeapFPFilterV2 依赖),
-# 仅标准库.
+#   本文件实现 AVHO-G 核心链: 指令解析 → 函数分析 → ptmalloc2 分配器模型
+#   → 循环累积检测 → 发现收集与分类.
 
 import re
 import subprocess
@@ -27,7 +21,7 @@ from typing import Dict, List, Optional, Tuple
 _DEFAULT_ALLOC = 128
 
 
-# ================= 指令解析 (原 insn_parser) =================
+# 指令解析
 
 _ASM_LINE_RE = re.compile(
     r'^\s*([0-9a-fA-F]+):\s+'
@@ -221,7 +215,7 @@ def extract_malloc_addr(val_str: str) -> Optional[int]:
     return None
 
 
-# ================= 函数分析 (原 func_analyzer) =================
+# 函数分析
 
 @dataclass
 class FunctionAnalysis:
@@ -515,7 +509,7 @@ def analyze_function(name: str,
     return fa
 
 
-# ================= ptmalloc2 模型 (原 allocator_model) =================
+# ptmalloc2 模型
 
 MIN_CHUNK_SIZE = 32
 MALLOC_ALIGNMENT = 16
@@ -617,7 +611,7 @@ class Ptmalloc2Model:
         self._cache.clear()
 
 
-# ================= 循环累积检测 (原 loop_accum_detector) =================
+# 循环累积检测
 
 def detect_loop_accumulated(insns: List[Instruction],
                             memcpys: List[dict],
@@ -839,7 +833,7 @@ def _find_iv(loop_insns: List[Instruction],
     return (None, None, None)
 
 
-# ================= AVHO 发现收集与分类 (核心链) =================
+# AVHO 发现收集与分类
 
 def register_mallocs(mallocs: List[dict],
                      seen: Dict[int, Tuple[str, int]],

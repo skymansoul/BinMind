@@ -1,4 +1,4 @@
-# 懒加载门面，2026-08重构
+# 懒加载门面
 from __future__ import annotations
 __version__ = "1.8.0"
 import sys as _sys, importlib as _il

@@ -1,6 +1,5 @@
 """对比实验绘图 — 检出率/误报率/F1 柱状图 (O0 vs O2 分组).
 
-创建: 2024-05-03
 用法: python eval/fp_cve_experiment/plot_comparison.py
 输出: eval/fp_cve_experiment/results/comparison_precision.png
       eval/fp_cve_experiment/results/comparison_recall.png

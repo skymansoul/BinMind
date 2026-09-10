@@ -16,8 +16,6 @@ SHML 提出诊断驱动的自愈范式:
 诊断后触发定向恢复: 温度重校准 / 规则权重调整 / 提示适配建议。
 """
 
-# File: self_healing.py  |  2026-07-28 create SHCM
-
 from __future__ import annotations
 
 import math

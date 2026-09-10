@@ -1,11 +1,6 @@
 """
 密码学Oracle自动构造 — 从检测到的密码学原语生成差异测试oracle以验证实现正确性。
 
-修改记录:
-  2025-08-01 16:52 — 初始实现: 对称oracle + 哈希oracle + 签名oracle + KDF oracle
-  2025-08-03 11:21 — 增加PRNG oracle; oracle结果加入MetamorphicRelation数据结构
-  2025-08-04 14:44 — 拆分oracle构造/执行/报告独立函数; 加入OracleStrategy枚举
-
 设计意图:
   crypto_detector识别"这是AES", 但无法回答"这个AES实现正确吗?"。
   现有cryptofuzz/MozilaSecurity通过跨库差异测试检测实现缺陷 — 但这需要多个

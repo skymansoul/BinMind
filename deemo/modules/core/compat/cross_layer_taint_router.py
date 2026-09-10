@@ -18,7 +18,7 @@
 #   3. subreg_taint 据此标记对应字节槽: packet[12:16]→RAX[0:3] 的污点传播链
 #   4. 后续符号执行沿此链追踪到 cmp rax, 0x100 → 识别为长度检查（或缺失）
 #
-# 此方法的核心创新: 将网络协议的字段语义与 CPU 寄存器的字节槽关联,
+# 将网络协议的字段语义与 CPU 寄存器的字节槽关联,
 # 使跨层攻击面（如协议解析器中的整数溢出→堆溢出链）成为可追踪对象。
 #
 # Caballero et al. "Binary Code Extraction via Taint Tracking."

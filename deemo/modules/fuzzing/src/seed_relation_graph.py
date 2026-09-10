@@ -1,10 +1,5 @@
 """种子间覆盖关系图 (Inter-Seed Relationship Graph, ISRG) — 基于覆盖模式的种子关系建模.
 
-修改记录:
-2025-07-25 16:42 - 新增覆盖流中心性 (coverage flow centrality) 指标
-2025-07-27 09:15 - 关系图增量更新逻辑，避免每次重建全图
-2025-07-30 11:08 - 集成稀疏覆盖指纹，阈值自适应调节
-
   SEAFuzz                -- 基于稀有度加权的结构相似性, 种子调度
   HF-DGF    -- 值流图(VFG)用于依赖关系建模
   AFLRun "Toward Unbiased Multiple-Target Fuzzing" — 路径多样性度量用于多目标公平性

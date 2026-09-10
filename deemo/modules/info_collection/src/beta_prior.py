@@ -5,8 +5,6 @@ online_calibrate 和 bandit_router 各自维护了 Beta 先验类,
 结构高度重复。本模块提取共性, 两个模块从此处导入。
 """
 
-# File: beta_prior.py  |  2026-08-03 extract shared BetaPrior from OODC+BCR
-
 from __future__ import annotations
 
 import math

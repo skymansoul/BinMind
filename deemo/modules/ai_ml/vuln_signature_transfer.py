@@ -14,7 +14,7 @@
 #   4. 置信度校准: 目标ISA的预测通过x86校准集上估计的类别分布
 #      做prior shift校正
 #
-# 新颖性: 签名提取+ISA无关特征映射实现真正的零样本跨ISA迁移
+# 方案目标: 签名提取+ISA无关特征映射实现零样本跨ISA迁移
 
 from __future__ import annotations
 

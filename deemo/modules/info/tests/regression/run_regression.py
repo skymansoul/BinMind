@@ -1,4 +1,3 @@
-# Created: 2026-06-10 13:00:00
 # run_regression — 回归测试主入口
 # 编排完整流程: 编译 → 扫描 → 解析 → 报告
 # 用法: python run_regression.py [--tier 3]

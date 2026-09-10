@@ -2,13 +2,6 @@
 # 替代 GradualEngine 的模块级顺序策略（template → llm），
 # 在函数粒度独立选择最优策略，组合为混合实现。
 #
-# 问题:
-#   GradualEngine.implement() 对整个模块用同一策略生成全部函数。
-#   一个模块可能包含 3 个简单 getter/setter + 2 个复杂分析器。
-#   TemplateGenerator 能完美处理 getter，但无法处理分析器（回退到
-#   NotImplementedError）；LLM 能处理分析器但浪费 token 在琐碎函数上。
-#   两种策略各自都有"擅长"和"不擅长"的函数子集。
-#
 # 方案:
 #   1. 按函数复杂度 + 类型覆盖 + 参数模式，为每个函数独立打分
 #   2. 低复杂度高覆盖 → template 足够
@@ -16,9 +9,6 @@
 #      高复杂度 → LLM（若可用），否则标记为待人工
 #   3. 合并各函数的 body → 完整模块源码
 #   4. 整体验证（导入冒烟 + 签名核对），单函数失败回退到备选策略
-#
-# 区别于 Ca²P (cache-augmented code policy) 的 generate/edit 模式切换:
-#   Ca²P 在生成与编辑间切换，本模块在模板规则与神经生成间按函数粒度选择。
 import ast as _ast
 import json as _json
 import re as _re

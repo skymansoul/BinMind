@@ -1,6 +1,5 @@
 """TOVS UAF 回归 — 对 corpus_uaf 全部样本运行 TOVS 并与 truth 比对.
 
-创建: 2024-09-21
 用法: python eval/fp_cve_experiment/regression_uaf.py [--json out.json]
 """
 import argparse
