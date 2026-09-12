@@ -22,35 +22,34 @@ def run_freed_alias_epoch(
 ) -> List[dict]:
     """释放别名纪元判定. 返回 findings."""
     findings: List[dict] = []
-    epoch = 0
-    obj_epoch: Dict[str, int] = {}
+    # per-object free 次数计数: 奇数=已释放未重生(UAF), 偶数=reborn
+    _obj_freed_count: Dict[str, int] = {}
     for ln, line in enumerate(pseudocode.splitlines(), 1):
         m_free = re.search(r"\bfree\s*\(\s*(\w+)\s*\)", line)
         if m_free:
             obj = m_free.group(1)
-            epoch += 1
-            obj_epoch[obj] = epoch
+            _obj_freed_count[obj] = _obj_freed_count.get(obj, 0) + 1
             continue
         m_realloc = re.search(r"\b(\w+)\s*=\s*realloc\s*\(\s*(\w+)\s*,", line)
         if m_realloc:
             obj = m_realloc.group(2)
-            epoch += 1
-            obj_epoch[obj] = epoch  # 重生
+            # realloc 视为一次释放+重生, 计数+1 变为偶数 -> reborn
+            _obj_freed_count[obj] = _obj_freed_count.get(obj, 0) + 1
             continue
         # 写点: [obj+off] =
         m_write = re.search(r"\[\s*(\w+)\s*\+\s*\d+\s*\]\s*=", line)
         if m_write:
             obj = m_write.group(1)
-            if obj in obj_epoch:
-                ep = obj_epoch[obj]
+            if obj in _obj_freed_count:
+                cnt = _obj_freed_count[obj]
                 findings.append({
                     "type": "use_after_free",
                     "function": func_name or "unknown",
                     "severity": "medium",
                     "cwe": "CWE-416",
-                    "confidence": 0.9 if ep % 2 == 1 else 0.2,
-                    "description": f"line{ln} write to {obj} epoch={ep}",
-                    "verdict": "use_after_free" if ep % 2 == 1 else "reborn",
+                    "confidence": 0.9 if cnt % 2 == 1 else 0.2,
+                    "description": f"line{ln} write to {obj} freed_count={cnt}",
+                    "verdict": "use_after_free" if cnt % 2 == 1 else "reborn",
                     "source": "freed_alias_epoch",
                 })
     return findings

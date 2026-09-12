@@ -120,9 +120,13 @@ class CrossTypeAliasTracker:
             if not line or line.startswith('//'):
                 continue
 
-            # 分配: p = malloc(n)
+            # 分配: p = malloc(n) / char *p = (char *)malloc(n)
+            # 兼容 C 风格类型声明与强转前缀, 否则 bind_alloc 不执行导致
+            # 后续 memcpy 判定拿到 alloc_chain=0 而误产 cross_chain_alert
             m = re.match(
-                r'(\w+)\s*=\s*(malloc|calloc|realloc|aligned_alloc)\s*\(([^)]*)\)',
+                r'(?:\w+\s*\*+\s*)?(\w+)\s*=\s*'
+                r'(?:\(\s*[\w\s\*]+\s*\)\s*)?'
+                r'(malloc|calloc|realloc|aligned_alloc)\s*\(([^)]*)\)',
                 line, re.IGNORECASE)
             if m:
                 var, func, args = m.groups()
@@ -165,6 +169,9 @@ class CrossTypeAliasTracker:
                         'chain_id': alloc_chain,
                         'reason': 'alloc 和 write 同链, 判安全',
                     })
+                elif not alloc_chain and not dst_chain:
+                    # 分配链与写入链均未知, 证据不足不发告警
+                    pass
                 else:
                     findings.append({
                         'type': 'cross_chain_alert',

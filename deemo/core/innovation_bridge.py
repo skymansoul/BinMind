@@ -1,5 +1,5 @@
 """
-创新模块桥接层 — 将 53 个创新模块统一接入 core/pipeline.py 主链路的 rule 检测段.
+创新模块桥接层 — 将 106 个创新模块统一接入 core/pipeline.py 主链路的 rule 检测段.
 
 各模块原始接口异构 (输入有伪代码/IR/C源码/二进制路径, 输出有dict/dataclass),
 本层做签名归一化: (pseudocode, func_name, binary_path) → List[dict] findings.
@@ -9,7 +9,7 @@
   - 将模块返回值转为 pipeline统一的 dict finding 格式
   - 任何模块异常都被捕获, 不影响主链路运行
 
-调用顺序 (53个创新模块):
+调用顺序 (106个创新模块):
   HOFPR → HFP → ACFPC → DDSSC → AWSC → CJ-BVF → CJ-PCBVF →
   GAPSBV → GASRI → UAF-HOIG → UAF-Enhanced → UAF-Lifecycle →
   Double-Free → UAF-Lifetime-Tracker → Buffer-Underflow → Off-by-One →
@@ -20,13 +20,33 @@
   BIV-CTC → SI-CTA → PG-WBV-LSA → ACPE-VRP → ACFPC-CMS →
   PCFV → TOVS → MIVR → FSTP → INT-SHIFT → SHIELD → INT-RANGE →
   DRIFT → FMT-SPEC → PcWBI原版 → FC-VRA原版 → CACBV-DSS原版 →
-  轻量符号+4-Filter → BWR原版 → PG-WBV原版
+  轻量符号+4-Filter → BWR原版 → PG-WBV原版 →
+  RW-CallCtxSaturation → RW-LivenessRoleTemplate → RW-JccPolarityMap →
+  RW-SpecDangerProfile → RW-CorrelatedWrapCheck → RW-DomFrontierWitness →
+  RW-SevenStageFanout → RW-ScaledIndexLinear → RW-FreedAliasEpoch →
+  RW-RetAddrChainStitch → RW-EvalHarnessReplica → RW-TaintSourceGrading →
+  RW-PtrUnionClosure → RW-RootIdentityKey → RW-SymbolicDiffSign →
+  RW-HeapStackGlobalTri → RW-ChainEquivHash → RW-ContractPreserveFold →
+  RW-DemandTriggerBudget → RW-MinChunkGeometry → RW-RecoverySoundnessGate →
+  RW-RdataConstRegion → RW-GuardAliasTransitive → RW-WalkStrideModel →
+  RW-UseDerefLattice → RW-ImmPropAbsorb → RW-CallConvDuality →
+  RW-WrapperGraphMatch → RW-TwoVarDiffBound → RW-ExitDominanceCheck →
+  RW-CrossTypeEvidencePool → RW-ColorClassQuad → RW-WidenThreshold →
+  RW-FourLevelAdjudicator → RW-ProvenanceOctagon → RW-SevenDimWeighted →
+  RW-AbiAutoDetect → RW-ReductionRateAudit → RW-GuardOpEnum →
+  RW-ThreePathDisjoint → RW-StridedInterval3 → RW-DeadStoreElimTolerant →
+  RW-InlineCopyBind → RW-FourVerdictScale → RW-AffineMeetDomain →
+  RW-DeltaIntervalEval → RW-WriteSideFirst → RW-ChainIdCrossFunc →
+  RW-HeapWriteOperandCap → RW-IrIntervalBacktrack →
+  RW-FiveModalDSTheory → RW-KarrAffineDiff
 
 前7模块聚焦堆溢出; 8-17扩展至UAF/DF/underflow/uninit等全类型; 18-22做误报削减与跨管线聚合;
 23-29为D类深度创新补全, 覆盖有界写恢复/后向值流/容量耦合/双向区间/溯源等价/路径敏感分层/需求驱动污点;
 30-39为差异化创新模块, 将22个重复副本在代码层面实现为不同算法;
 40-53为A类原版模块接入, 14个独立完整模块按真实API接入管线端到端可跑通;
-54为PG-WBV原版(giva)接入, 补齐A类最后一个未接入的独立创新点.
+54为PG-WBV原版(giva)接入, 补齐A类最后一个未接入的独立创新点;
+55-106为RW文献综述代码化模块, 52条Related Work条目逐一转化为
+独立代码创新并接入管线 (告警注入/温和降权/消费替换/纯审计四类策略).
 """
 
 import logging
@@ -2983,12 +3003,19 @@ def run_bwr_pcst_bridge(
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """BWR+PCST 桥接: 对已有堆溢出findings中涉及无界写入函数
-    (strcpy/strcat/sprintf/gets)的告警, 恢复写尺寸上界做安全/溢出判定.
+    """BWR+PCST 桥接: 双引擎协同的有界写验证.
 
+    BWR 半边: 对已有堆溢出findings中涉及无界写入函数
+    (strcpy/strcat/sprintf/gets)的告警, 恢复写尺寸上界做安全/溢出判定.
     将伪代码转为 x86-64 汇编指令序列, 变量映射到 callee-saved 寄存器,
     使 BWR 的 _resolve_src 能正确做反向 def-use 追踪,
     _compare 能通过 alloc_tracker._ptr_to_alloc 找到分配信息.
+
+    PCST 半边: 按调用点参数语义表 (Per-Call Semantics Table) 对
+    sized 写调用 (memcpy/read/snprintf/fread等) 做 (dst,size) 角色修正
+    与分配配对判定 — 修正旧统一规则 dst恒index0/size恒index2 的
+    系统性错位 (read的fd被当缓冲、snprintf的fmt指针被当size、
+    fread乘积因子丢失), 判定结果以 pcst_verdict 三值标注.
     """
     if not _check_module('bwr_pcst', lambda: __import__(
             'modules.analysis.static.bounded_write_recovery',
@@ -3002,6 +3029,9 @@ def run_bwr_pcst_bridge(
             is_unsized_write, is_alloc_func)
         from modules.analysis.static.heap_constraint import (
             HeapConstraintTracker, Interval)
+        from analysis.pcst_impl import (
+            pcst_scan, pcst_legacy_report,
+            is_unsized_write as pcst_is_unsized, is_write_func)
         import re
 
         heap_findings = [f for f in existing_findings
@@ -3221,10 +3251,92 @@ def run_bwr_pcst_bridge(
                     bwr_results[var] = verdict
                     break
 
-        # 对已有 findings 做过滤
+        # ---- PCST 半边: 按调用点参数语义表对 sized 写调用做角色修正与配对判定 ----
+        # 与 BWR 分工: BWR 管无界写 (strcpy等, 写量=源长), PCST 管 sized 写
+        # (memcpy/read/snprintf/fread等, 写量=实参) — 修正旧规则
+        # dst恒index0/size恒index2 的系统性错位.
+        pcst_findings, pcst_stats = pcst_scan(pseudocode or '')
+        pcst_corrections = pcst_legacy_report(pseudocode or '')
+        # dst 原始实参 + 归一化基名双键索引, 提高配对命中率
+        pcst_by_dst: Dict[str, dict] = {}
+        for pf in pcst_findings:
+            dst_key = pf.get('dst', '')
+            pcst_by_dst.setdefault(dst_key, pf)
+            base_key = _norm_var_name(dst_key)
+            if base_key and base_key not in pcst_by_dst:
+                pcst_by_dst[base_key] = pf
+
+        # 语义表修正统计: 供日志审计, 不改变返回值
+        logger.debug(
+            'BWR+PCST stage 23: pcst_scan write_calls=%d, '
+            '语义修正 %d 处, 无界写移交BWR=%d',
+            pcst_stats.get('write_calls', 0), len(pcst_corrections),
+            pcst_stats.get('unsized_writes_delegated_to_bwr', 0))
+
+        # 对已有 findings 做 BWR + PCST 双重判定
         filtered = []
         for f in heap_findings:
             write_func = f.get('write_func', '')
+
+            # PCST 优先处理 sized 写: 用语义表修正后的 (dst,size) 复核告警
+            if write_func and is_write_func(write_func) \
+                    and not pcst_is_unsized(write_func):
+                # 候选键: finding 的缓冲变量及归一化形式
+                pf = None
+                for key in (f.get('write_var', ''), f.get('alloc_var', ''),
+                            f.get('dst', ''), f.get('write_dst', '')):
+                    if not key:
+                        continue
+                    pf = pcst_by_dst.get(key)
+                    if pf is None:
+                        pf = pcst_by_dst.get(_norm_var_name(key))
+                    if pf is not None:
+                        break
+                if pf is None:
+                    # 变量名未直接命中时按 write_func 兜底: 旧规则若错取了
+                    # 参数 (如 read 的 fd), PCST 修正后的 dst 才是真实缓冲;
+                    # 仅当该函数调用点唯一时采用, 避免同函数多点误配
+                    func_matches = [c for c in pcst_findings
+                                    if c.get('write_func') == write_func]
+                    if len(func_matches) == 1:
+                        pf = func_matches[0]
+                if pf is not None:
+                    verdict_kind = pf.get('verdict', '')
+                    if verdict_kind == 'safe':
+                        # 双条件守卫: PCST 对齐判定 safe 且写量上界不超过
+                        # 分配请求量才过滤. usable 含 ptmalloc2 对齐余量,
+                        # 仅凭 usable 过滤会把 "写量超出请求但未溢出 chunk"
+                        # 的真实越界告警误杀, 与基础检测器的请求量基准
+                        # 保持同一尺度.
+                        bounds = pf.get('write_bounds') or [0.0, None]
+                        alloc_req = pf.get('alloc_request')
+                        whi = bounds[1] if len(bounds) > 1 else None
+                        if (alloc_req is not None and whi is not None
+                                and whi != float('inf')
+                                and whi <= alloc_req):
+                            f['pcst_verdict'] = 'safe'
+                            f['pcst_reason'] = pf.get('reason', '')
+                            continue  # 写量未超出请求范围 → 过滤
+                        f['pcst_verdict'] = 'safe_within_chunk'
+                        f['pcst_reason'] = (
+                            '写量未超出对齐后chunk可用空间, 但超出分配'
+                            '请求, 保守保留: ' + pf.get('reason', ''))
+                    else:
+                        f['pcst_verdict'] = verdict_kind
+                        f['pcst_reason'] = pf.get('reason', '')
+                        if verdict_kind == 'overflow':
+                            f['pcst_overflow_bytes'] = pf.get(
+                                'overflow_bytes', 0)
+                        if verdict_kind in ('overflow', 'possible',
+                                            'suspected'):
+                            boost = (0.15 if verdict_kind == 'overflow'
+                                     else 0.05)
+                            f['confidence'] = min(
+                                1.0,
+                                (f.get('confidence', 0.5) or 0.5) + boost)
+                # pf 为 None: PCST 无配对信息, 保留 finding 交由后续阶段
+
+            # BWR 处理无界写
             if not write_func or not is_unsized_write(write_func):
                 filtered.append(f)
                 continue
@@ -6189,6 +6301,1564 @@ class _NullTracker:
     _ptr_to_alloc: Dict[str, int] = {}
 
 
+def _rw_apply_fp_vote(findings: List[dict], evidence: dict) -> None:
+    """RW 安全证据温和降权: 同类型已有 findings conf*0.85 + fp_votes 计数.
+
+    与 SHIELD 硬过滤不同, RW 模块证据多为启发式判定, 采用保守的
+    降权不删除策略, 累积 fp_votes/fp_sources 供下游融合阶段参考.
+    """
+    t = evidence.get('type', '')
+    src = evidence.get('source', '')
+    if not t:
+        return
+    for f in findings:
+        if t in f.get('type', ''):
+            f['confidence'] = round(f.get('confidence', 0.5) * 0.85, 2)
+            f['fp_votes'] = f.get('fp_votes', 0) + 1
+            if src:
+                votes = f.get('fp_sources', [])
+                if src not in votes:
+                    votes.append(src)
+                    f['fp_sources'] = votes
+
+
+def run_rw_call_ctx_saturation_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-CallCtxSaturation 桥接 (stage 55): 调用点饱和度计分.
+
+    消费型模块: 输出 = 分配点审计条目 + 饱和度降权后的原 findings.
+    审计条目 (description 以 alloc@ 开头) 属画像类证据, 不注入
+    主列表, 仅保留降权加工后的原 findings.
+    """
+    if not _check_module('rw_call_ctx_saturation', lambda: __import__(
+            'modules.analysis.static.rw_innovations.call_ctx_saturation',
+            fromlist=['run_call_ctx_saturation'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.call_ctx_saturation import (
+            run_call_ctx_saturation)
+        if not existing_findings:
+            return existing_findings
+        results = run_call_ctx_saturation(pseudocode, func_name,
+                                          existing_findings)
+        return [r for r in results
+                if not (r.get('description') or '').startswith('alloc@')]
+    except Exception as e:
+        logger.debug('RW call_ctx_saturation bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_liveness_role_template_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-LivenessRoleTemplate 桥接 (stage 56): 调用点参数角色模板投票.
+
+    消费型模块: 输出 = call 点角色投票审计条目 + 投票不一致降权后的
+    原 findings. 审计条目 (description 以 call@ 开头) 不注入主列表.
+    """
+    if not _check_module('rw_liveness_role_template', lambda: __import__(
+            'modules.analysis.static.rw_innovations.liveness_role_template',
+            fromlist=['run_liveness_role_template'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.liveness_role_template import (
+            run_liveness_role_template)
+        if not existing_findings:
+            return existing_findings
+        results = run_liveness_role_template(pseudocode, func_name,
+                                             existing_findings)
+        return [r for r in results
+                if not (r.get('description') or '').startswith('call@')]
+    except Exception as e:
+        logger.debug('RW liveness_role_template bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_jcc_polarity_map_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-JccPolarityMap 桥接 (stage 57): 条件跳转极性图.
+
+    写入点仅在反极性路径可达时产出 filtered 证据, 对同类型已有
+    findings 温和降权; reachable/ambiguous 属路径画像不注入.
+    """
+    if not _check_module('rw_jcc_polarity_map', lambda: __import__(
+            'modules.analysis.static.rw_innovations.jcc_polarity_map',
+            fromlist=['run_jcc_polarity_map'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.jcc_polarity_map import (
+            run_jcc_polarity_map)
+        results = run_jcc_polarity_map(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'filtered' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'filtered':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW jcc_polarity_map bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_spec_danger_profile_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-SpecDangerProfile 桥接 (stage 58): 格式串说明符危险画像.
+
+    %n/%s 等逐 token 加权危险分超阈值且非字面量时产出 danger 告警
+    (format_string), 白名单注入; benign 属画像不注入.
+    """
+    if not _check_module('rw_spec_danger_profile', lambda: __import__(
+            'modules.analysis.static.rw_innovations.spec_danger_profile',
+            fromlist=['run_spec_danger_profile'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.spec_danger_profile import (
+            run_spec_danger_profile)
+        results = run_spec_danger_profile(pseudocode, func_name, None)
+        alerts = [r for r in results if r.get('verdict') == 'danger']
+        if not alerts:
+            return existing_findings
+        return list(existing_findings) + alerts
+    except Exception as e:
+        logger.debug('RW spec_danger_profile bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_correlated_wrap_check_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-CorrelatedWrapCheck 桥接 (stage 59): 复合表达式相关回绕检查.
+
+    运算树中子节点回绕被父节点吸收 (mask/加法截断) 时产出
+    missed_wrap 漏报候选 (integer_overflow), 白名单注入.
+    """
+    if not _check_module('rw_correlated_wrap_check', lambda: __import__(
+            'modules.analysis.static.rw_innovations.correlated_wrap_check',
+            fromlist=['run_correlated_wrap_check'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.correlated_wrap_check import (
+            run_correlated_wrap_check)
+        results = run_correlated_wrap_check(pseudocode, func_name, None)
+        alerts = [r for r in results if r.get('verdict') == 'missed_wrap']
+        if not alerts:
+            return existing_findings
+        return list(existing_findings) + alerts
+    except Exception as e:
+        logger.debug('RW correlated_wrap_check bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_dom_frontier_witness_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-DomFrontierWitness 桥接 (stage 60): 支配边界 UAF 误报见证.
+
+    free 块支配边界不含 use 块时产出 false_positive 见证, 对
+    use_after_free 类已有 findings 温和降权.
+    """
+    if not _check_module('rw_dom_frontier_witness', lambda: __import__(
+            'modules.analysis.static.rw_innovations.dom_frontier_witness',
+            fromlist=['run_dom_frontier_witness'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.dom_frontier_witness import (
+            run_dom_frontier_witness)
+        results = run_dom_frontier_witness(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'false_positive' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'false_positive':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW dom_frontier_witness bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_seven_stage_fanout_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-SevenStageFanout 桥接 (stage 61): 七阶段扇出覆盖率审计.
+
+    输出为管线覆盖率画像 (safe/unsafe), 属审计类证据, 真实调用
+    但不注入 findings 主列表, 避免画像类噪声.
+    """
+    if not _check_module('rw_seven_stage_fanout', lambda: __import__(
+            'modules.analysis.static.rw_innovations.seven_stage_fanout',
+            fromlist=['run_seven_stage_fanout'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.seven_stage_fanout import (
+            run_seven_stage_fanout)
+        run_seven_stage_fanout(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW seven_stage_fanout bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_scaled_index_linear_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ScaledIndexLinear 桥接 (stage 62): scaled-index 线性化判定.
+
+    [base+idx*scale+off] 写地址 scale 相容性数学判定: overflow 白名单
+    注入, safe 作为安全证据对同类型已有 findings 温和降权.
+    """
+    if not _check_module('rw_scaled_index_linear', lambda: __import__(
+            'modules.analysis.static.rw_innovations.scaled_index_linear',
+            fromlist=['run_scaled_index_linear'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.scaled_index_linear import (
+            run_scaled_index_linear)
+        results = run_scaled_index_linear(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        injected = False
+        for r in results:
+            v = r.get('verdict')
+            if v == 'overflow':
+                findings.append(r)
+                injected = True
+            elif v == 'safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings if injected else findings
+    except Exception as e:
+        logger.debug('RW scaled_index_linear bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_freed_alias_epoch_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-FreedAliasEpoch 桥接 (stage 63): 释放别名纪元判定.
+
+    写点命中"已释放未重生"纪元产出 use_after_free 告警注入;
+    reborn (realloc 重生) 作为消解证据对 UAF 类 findings 温和降权.
+    """
+    if not _check_module('rw_freed_alias_epoch', lambda: __import__(
+            'modules.analysis.static.rw_innovations.freed_alias_epoch',
+            fromlist=['run_freed_alias_epoch'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.freed_alias_epoch import (
+            run_freed_alias_epoch)
+        results = run_freed_alias_epoch(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'use_after_free':
+                findings.append(r)
+            elif v == 'reborn':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW freed_alias_epoch bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_ret_addr_chain_stitch_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-RetAddrChainStitch 桥接 (stage 64): 返回地址链缝合.
+
+    caller alloc 证据与 callee 写证据在返回点缝合闭合 (stitched_safe)
+    时, 对同类型已有 findings 温和降权; unstitched 属路径画像不注入.
+    """
+    if not _check_module('rw_ret_addr_chain_stitch', lambda: __import__(
+            'modules.analysis.static.rw_innovations.ret_addr_chain_stitch',
+            fromlist=['run_ret_addr_chain_stitch'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.ret_addr_chain_stitch import (
+            run_ret_addr_chain_stitch)
+        results = run_ret_addr_chain_stitch(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'stitched_safe' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'stitched_safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW ret_addr_chain_stitch bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_eval_harness_replica_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-EvalHarnessReplica 桥接 (stage 65): 端到端评估复算.
+
+    消费型模块: 对已有 findings 在迷你评估器上复算 TP/FP 语义一致性,
+    不一致的 conf 减半 (verdict=inconsistent), 输出 1:1 替换输入.
+    必须传真实 findings, 传 None 会自产占位条目.
+    """
+    if not _check_module('rw_eval_harness_replica', lambda: __import__(
+            'modules.analysis.static.rw_innovations.eval_harness_replica',
+            fromlist=['run_eval_harness_replica'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.eval_harness_replica import (
+            run_eval_harness_replica)
+        if not existing_findings:
+            return existing_findings
+        return run_eval_harness_replica(pseudocode, func_name,
+                                        existing_findings)
+    except Exception as e:
+        logger.debug('RW eval_harness_replica bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_taint_source_grading_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-TaintSourceGrading 桥接 (stage 66): 污点源分级.
+
+    scanf(4)/recv(3)/argv(2)/env(1) 分级: 高级污点且无守卫
+    (high_taint) 作为弱告警注入; mid/low/unknown 属画像不注入.
+    """
+    if not _check_module('rw_taint_source_grading', lambda: __import__(
+            'modules.analysis.static.rw_innovations.taint_source_grading',
+            fromlist=['run_taint_source_grading'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.taint_source_grading import (
+            run_taint_source_grading)
+        results = run_taint_source_grading(pseudocode, func_name, None)
+        alerts = [r for r in results if r.get('verdict') == 'high_taint']
+        if not alerts:
+            return existing_findings
+        return list(existing_findings) + alerts
+    except Exception as e:
+        logger.debug('RW taint_source_grading bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_ptr_union_closure_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-PtrUnionClosure 桥接 (stage 67): 指针并查集闭包.
+
+    写入目标与分配点集合根不同 (cross_buffer_fp) 时, 对同类型已有
+    findings 温和降权; same_set 属集合画像不注入.
+    """
+    if not _check_module('rw_ptr_union_closure', lambda: __import__(
+            'modules.analysis.static.rw_innovations.ptr_union_closure',
+            fromlist=['run_ptr_union_closure'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.ptr_union_closure import (
+            run_ptr_union_closure)
+        results = run_ptr_union_closure(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'cross_buffer_fp' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'cross_buffer_fp':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW ptr_union_closure bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_root_identity_key_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-RootIdentityKey 桥接 (stage 68): 根身份键判定.
+
+    alloc 与 write 的 size 表达式归一化四元组键相等 (identity_safe)
+    时, 对同类型已有 findings 温和降权; identity_diff 属画像不注入.
+    """
+    if not _check_module('rw_root_identity_key', lambda: __import__(
+            'modules.analysis.static.rw_innovations.root_identity_key',
+            fromlist=['run_root_identity_key'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.root_identity_key import (
+            run_root_identity_key)
+        results = run_root_identity_key(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'identity_safe' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'identity_safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW root_identity_key bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_symbolic_diff_sign_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-SymbolicDiffSign 桥接 (stage 69): 符号差符号判定.
+
+    写极值与分配大小差 diff_const 判定: 正差 overflow 告警白名单
+    注入; 负差 safe 作为安全证据温和降权同类型已有 findings.
+    """
+    if not _check_module('rw_symbolic_diff_sign', lambda: __import__(
+            'modules.analysis.static.rw_innovations.symbolic_diff_sign',
+            fromlist=['run_symbolic_diff_sign'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.symbolic_diff_sign import (
+            run_symbolic_diff_sign)
+        results = run_symbolic_diff_sign(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'overflow':
+                findings.append(r)
+            elif v == 'safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW symbolic_diff_sign bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_heap_stack_global_tri_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-HeapStackGlobalTri 桥接 (stage 70): 堆/栈/全局三分域分类.
+
+    写操作目标域分类画像 (heap_write/stack_write/global_write),
+    属审计类证据, 真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_heap_stack_global_tri', lambda: __import__(
+            'modules.analysis.static.rw_innovations.heap_stack_global_tri',
+            fromlist=['run_heap_stack_global_tri'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.heap_stack_global_tri import (
+            run_heap_stack_global_tri)
+        run_heap_stack_global_tri(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW heap_stack_global_tri bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_chain_equiv_hash_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ChainEquivHash 桥接 (stage 71): 溯源链等价哈希.
+
+    alloc 链与 write 链滚动哈希相等 (equiv_safe) 时, 对同类型已有
+    findings 温和降权; not_equiv 属链画像不注入.
+    """
+    if not _check_module('rw_chain_equiv_hash', lambda: __import__(
+            'modules.analysis.static.rw_innovations.chain_equiv_hash',
+            fromlist=['run_chain_equiv_hash'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.chain_equiv_hash import (
+            run_chain_equiv_hash)
+        results = run_chain_equiv_hash(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'equiv_safe' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'equiv_safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW chain_equiv_hash bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_contract_preserve_fold_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ContractPreserveFold 桥接 (stage 72): 契约保持折叠.
+
+    消费型模块: 共享同 alloc 契约的 findings 分组, 组内任一
+    overflow/conf>=0.8 一票否决全组保留, 否则折叠为代表性条目.
+    输出 1:1 替换输入, 必须传真实 findings.
+    """
+    if not _check_module('rw_contract_preserve_fold', lambda: __import__(
+            'modules.analysis.static.rw_innovations.contract_preserve_fold',
+            fromlist=['run_contract_preserve_fold'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.contract_preserve_fold import (
+            run_contract_preserve_fold)
+        if not existing_findings:
+            return existing_findings
+        return run_contract_preserve_fold(pseudocode, func_name,
+                                         existing_findings)
+    except Exception as e:
+        logger.debug('RW contract_preserve_fold bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_demand_trigger_budget_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-DemandTriggerBudget 桥接 (stage 73): 按需触发预算管理.
+
+    消费型模块: 全局配额内高级分析, 低置信度先用轻量证据, 配额
+    耗尽走保守路径 (conservative conf 减半). 输出 1:1 替换输入.
+    """
+    if not _check_module('rw_demand_trigger_budget', lambda: __import__(
+            'modules.analysis.static.rw_innovations.demand_trigger_budget',
+            fromlist=['run_demand_trigger_budget'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.demand_trigger_budget import (
+            run_demand_trigger_budget)
+        if not existing_findings:
+            return existing_findings
+        return run_demand_trigger_budget(pseudocode, func_name,
+                                        existing_findings)
+    except Exception as e:
+        logger.debug('RW demand_trigger_budget bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_min_chunk_geometry_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-MinChunkGeometry 桥接 (stage 74): 最小块几何判定.
+
+    写偏移超出 malloc 最小块几何 (beyond_minsize) 作为弱告警注入;
+    safe_minsize 作为安全证据温和降权同类型已有 findings.
+    """
+    if not _check_module('rw_min_chunk_geometry', lambda: __import__(
+            'modules.analysis.static.rw_innovations.min_chunk_geometry',
+            fromlist=['run_min_chunk_geometry'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.min_chunk_geometry import (
+            run_min_chunk_geometry)
+        results = run_min_chunk_geometry(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'beyond_minsize':
+                findings.append(r)
+            elif v == 'safe_minsize':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW min_chunk_geometry bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_recovery_soundness_gate_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-RecoverySoundnessGate 桥接 (stage 75): 恢复可靠性门.
+
+    BWR 恢复值超上界 (unsound) 属恢复过程审计画像, 真实调用但
+    不注入 findings 主列表, 避免恢复中间态噪声.
+    """
+    if not _check_module('rw_recovery_soundness_gate', lambda: __import__(
+            'modules.analysis.static.rw_innovations.recovery_soundness_gate',
+            fromlist=['run_recovery_soundness_gate'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.recovery_soundness_gate import (
+            run_recovery_soundness_gate)
+        run_recovery_soundness_gate(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW recovery_soundness_gate bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_rdata_const_region_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-RdataConstRegion 桥接 (stage 76): .rdata 常量区判定.
+
+    格式串来自 .rdata/.rodata 常量区 (const_safe) 时, 对
+    format_string 类已有 findings 温和降权; mutable 属来源画像不注入.
+    """
+    if not _check_module('rw_rdata_const_region', lambda: __import__(
+            'modules.analysis.static.rw_innovations.rdata_const_region',
+            fromlist=['run_rdata_const_region'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.rdata_const_region import (
+            run_rdata_const_region)
+        results = run_rdata_const_region(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'const_safe' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'const_safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW rdata_const_region bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_guard_alias_transitive_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-GuardAliasTransitive 桥接 (stage 77): 守卫别名传递闭包.
+
+    guarded_safe/guarded_var_off/unguarded 均为守卫覆盖画像
+    (冒烟实测 unguarded 在安全场景也触发, 不可作为告警依据),
+    真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_guard_alias_transitive', lambda: __import__(
+            'modules.analysis.static.rw_innovations.guard_alias_transitive',
+            fromlist=['run_guard_alias_transitive'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.guard_alias_transitive import (
+            run_guard_alias_transitive)
+        run_guard_alias_transitive(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW guard_alias_transitive bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_walk_stride_model_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-WalkStrideModel 桥接 (stage 78): 步长模型覆盖检查.
+
+    base+stride*count 步长覆盖超出分配 (maybe_overflow) 作为弱告警
+    注入; in_bounds 作为安全证据温和降权同类型已有 findings.
+    """
+    if not _check_module('rw_walk_stride_model', lambda: __import__(
+            'modules.analysis.static.rw_innovations.walk_stride_model',
+            fromlist=['run_walk_stride_model'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.walk_stride_model import (
+            run_walk_stride_model)
+        results = run_walk_stride_model(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'maybe_overflow':
+                findings.append(r)
+            elif v == 'in_bounds':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW walk_stride_model bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_use_deref_lattice_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-UseDerefLattice 桥接 (stage 79): 解引用格模型.
+
+    use 点解引用深度判定: confirmed_uaf/weak_uaf 告警注入;
+    not_dangling 作为消解证据温和降权 UAF 类已有 findings.
+    """
+    if not _check_module('rw_use_deref_lattice', lambda: __import__(
+            'modules.analysis.static.rw_innovations.use_deref_lattice',
+            fromlist=['run_use_deref_lattice'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.use_deref_lattice import (
+            run_use_deref_lattice)
+        results = run_use_deref_lattice(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v in ('confirmed_uaf', 'weak_uaf'):
+                findings.append(r)
+            elif v == 'not_dangling':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW use_deref_lattice bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_imm_prop_absorb_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ImmPropAbsorb 桥接 (stage 80): 立即数属性吸收.
+
+    写入值常量被吸收为尺寸证据的画像 (const_exact/unknown_size),
+    属审计类证据, 真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_imm_prop_absorb', lambda: __import__(
+            'modules.analysis.static.rw_innovations.imm_prop_absorb',
+            fromlist=['run_imm_prop_absorb'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.imm_prop_absorb import (
+            run_imm_prop_absorb)
+        run_imm_prop_absorb(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW imm_prop_absorb bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_call_conv_duality_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-CallConvDuality 桥接 (stage 81): 调用约定对偶校验.
+
+    SysV/Win64 双调用约定尺寸解释画像 (dual_agree/dual_conflict/
+    sysv_only/win_only), 属审计类证据, 真实调用但不注入主列表.
+    """
+    if not _check_module('rw_call_conv_duality', lambda: __import__(
+            'modules.analysis.static.rw_innovations.call_conv_duality',
+            fromlist=['run_call_conv_duality'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.call_conv_duality import (
+            run_call_conv_duality)
+        run_call_conv_duality(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW call_conv_duality bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_wrapper_graph_match_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-WrapperGraphMatch 桥接 (stage 82): 包装函数图同构匹配.
+
+    同构匹配画像 (isomorphic), 属审计类证据, 真实调用但
+    不注入 findings 主列表.
+    """
+    if not _check_module('rw_wrapper_graph_match', lambda: __import__(
+            'modules.analysis.static.rw_innovations.wrapper_graph_match',
+            fromlist=['run_wrapper_graph_match'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.wrapper_graph_match import (
+            run_wrapper_graph_match)
+        run_wrapper_graph_match(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW wrapper_graph_match bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_two_var_diff_bound_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-TwoVarDiffBound 桥接 (stage 83): 双变量差界判定.
+
+    alloc 与 write 的双变量差超界 (diff_overflow) 告警白名单注入;
+    diff_safe 作为安全证据温和降权同类型已有 findings.
+    """
+    if not _check_module('rw_two_var_diff_bound', lambda: __import__(
+            'modules.analysis.static.rw_innovations.two_var_diff_bound',
+            fromlist=['run_two_var_diff_bound'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.two_var_diff_bound import (
+            run_two_var_diff_bound)
+        results = run_two_var_diff_bound(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'diff_overflow':
+                findings.append(r)
+            elif v == 'diff_safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW two_var_diff_bound bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_exit_dominance_check_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ExitDominanceCheck 桥接 (stage 84): 出口支配 UAF 误报检查.
+
+    return 块支配 free 块 (free 不可达) 时产出 false_positive 见证,
+    对 use_after_free 类已有 findings 温和降权.
+    """
+    if not _check_module('rw_exit_dominance_check', lambda: __import__(
+            'modules.analysis.static.rw_innovations.exit_dominance_check',
+            fromlist=['run_exit_dominance_check'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.exit_dominance_check import (
+            run_exit_dominance_check)
+        results = run_exit_dominance_check(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'false_positive' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'false_positive':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW exit_dominance_check bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_cross_type_evidence_pool_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-CrossTypeEvidencePool 桥接 (stage 85): 跨类型证据池.
+
+    消费型模块: 同函数 >=2 种类型告警互相印证 (conf+0.1), 输出
+    1:1 加工替换输入. 必须传真实 findings, 传 None 会自产占位条目.
+    """
+    if not _check_module('rw_cross_type_evidence_pool', lambda: __import__(
+            'modules.analysis.static.rw_innovations.cross_type_evidence_pool',
+            fromlist=['run_cross_type_evidence_pool'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.cross_type_evidence_pool import (
+            run_cross_type_evidence_pool)
+        if not existing_findings:
+            return existing_findings
+        return run_cross_type_evidence_pool(pseudocode, func_name,
+                                            existing_findings)
+    except Exception as e:
+        logger.debug('RW cross_type_evidence_pool bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_color_class_quad_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ColorClassQuad 桥接 (stage 86): 四色类域分类.
+
+    写操作四色分类画像 (heap_write/stack_write/global_write/
+    unknown_color), 属审计类证据, 真实调用但不注入主列表.
+    """
+    if not _check_module('rw_color_class_quad', lambda: __import__(
+            'modules.analysis.static.rw_innovations.color_class_quad',
+            fromlist=['run_color_class_quad'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.color_class_quad import (
+            run_color_class_quad)
+        run_color_class_quad(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW color_class_quad bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_widen_threshold_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-WidenThreshold 桥接 (stage 87): 加宽阈值监控.
+
+    区间加宽 topped/stable 状态画像, 属审计类证据,
+    真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_widen_threshold', lambda: __import__(
+            'modules.analysis.static.rw_innovations.widen_threshold',
+            fromlist=['run_widen_threshold'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.widen_threshold import (
+            run_widen_threshold)
+        run_widen_threshold(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW widen_threshold bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_four_level_adjudicator_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-FourLevelAdjudicator 桥接 (stage 88): 四级裁决器.
+
+    L1-L4 四级证据裁决: overflow 告警白名单注入; safe 作为安全
+    证据温和降权同类型已有 findings; inconclusive 不注入.
+    """
+    if not _check_module('rw_four_level_adjudicator', lambda: __import__(
+            'modules.analysis.static.rw_innovations.four_level_adjudicator',
+            fromlist=['run_four_level_adjudicator'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.four_level_adjudicator import (
+            run_four_level_adjudicator)
+        results = run_four_level_adjudicator(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'overflow':
+                findings.append(r)
+            elif v == 'safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW four_level_adjudicator bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_provenance_octagon_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ProvenanceOctagon 桥接 (stage 89): 八角域溯源.
+
+    指针溯源八角域分类画像 (heap_prov/non_heap_prov), 属审计类
+    证据, 真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_provenance_octagon', lambda: __import__(
+            'modules.analysis.static.rw_innovations.provenance_octagon',
+            fromlist=['run_provenance_octagon'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.provenance_octagon import (
+            run_provenance_octagon)
+        run_provenance_octagon(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW provenance_octagon bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_seven_dim_weighted_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-SevenDimWeighted 桥接 (stage 90): 七维加权融合.
+
+    七维独立证据加权投票. 冒烟实测 veto_safe 在溢出场景也触发
+    (16进制值被十进制正则误解析), 一票否决过于激进, 故 veto_safe
+    不作为降权依据; weighted_unsafe 作为弱告警注入, weighted_unknown
+    属不确定画像不注入.
+    """
+    if not _check_module('rw_seven_dim_weighted', lambda: __import__(
+            'modules.analysis.static.rw_innovations.seven_dim_weighted',
+            fromlist=['run_seven_dim_weighted'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.seven_dim_weighted import (
+            run_seven_dim_weighted)
+        results = run_seven_dim_weighted(pseudocode, func_name, None)
+        alerts = [r for r in results
+                  if r.get('verdict') == 'weighted_unsafe']
+        if not alerts:
+            return existing_findings
+        return list(existing_findings) + alerts
+    except Exception as e:
+        logger.debug('RW seven_dim_weighted bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_abi_auto_detect_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-AbiAutoDetect 桥接 (stage 91): ABI 自动探测.
+
+    序言/寄存器用法 ABI 探测画像 (abi_confirmed/abi_partial/
+    abi_unknown), 属审计类证据, 真实调用但不注入主列表.
+    """
+    if not _check_module('rw_abi_auto_detect', lambda: __import__(
+            'modules.analysis.static.rw_innovations.abi_auto_detect',
+            fromlist=['run_abi_auto_detect'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.abi_auto_detect import (
+            run_abi_auto_detect)
+        run_abi_auto_detect(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW abi_auto_detect bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_reduction_rate_audit_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ReductionRateAudit 桥接 (stage 92): 减除率审计.
+
+    管线各级过滤减除率审计画像 (no_data/recheck/ok), 属元审计
+    类证据, 真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_reduction_rate_audit', lambda: __import__(
+            'modules.analysis.static.rw_innovations.reduction_rate_audit',
+            fromlist=['run_reduction_rate_audit'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.reduction_rate_audit import (
+            run_reduction_rate_audit)
+        run_reduction_rate_audit(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW reduction_rate_audit bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_guard_op_enum_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-GuardOpEnum 桥接 (stage 93): 守卫操作枚举.
+
+    边界检查操作枚举画像 (guard_sem), 属审计类证据,
+    真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_guard_op_enum', lambda: __import__(
+            'modules.analysis.static.rw_innovations.guard_op_enum',
+            fromlist=['run_guard_op_enum'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.guard_op_enum import (
+            run_guard_op_enum)
+        run_guard_op_enum(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW guard_op_enum bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_three_path_disjoint_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ThreePathDisjoint 桥接 (stage 94): 三路径不相交判定.
+
+    写范围与分配范围差集: 差集非空 (outside_alloc) 告警注入;
+    within_alloc 作为安全证据温和降权; live_disjoint 属
+    meta_audit 不注入.
+    """
+    if not _check_module('rw_three_path_disjoint', lambda: __import__(
+            'modules.analysis.static.rw_innovations.three_path_disjoint',
+            fromlist=['run_three_path_disjoint'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.three_path_disjoint import (
+            run_three_path_disjoint)
+        results = run_three_path_disjoint(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'outside_alloc':
+                findings.append(r)
+            elif v == 'within_alloc':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW three_path_disjoint bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_strided_interval3_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-StridedInterval3 桥接 (stage 95): 三元组步长区间.
+
+    out_domain/in_domain/unknown 均为区间域画像 (冒烟实测
+    out_domain 在安全场景也触发, 不可作为告警依据), 真实调用
+    但不注入 findings 主列表.
+    """
+    if not _check_module('rw_strided_interval3', lambda: __import__(
+            'modules.analysis.static.rw_innovations.strided_interval3',
+            fromlist=['run_strided_interval3'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.strided_interval3 import (
+            run_strided_interval3)
+        run_strided_interval3(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW strided_interval3 bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_dead_store_elim_tolerant_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-DeadStoreElimTolerant 桥接 (stage 96): 容忍型死存储消除.
+
+    写槽活跃性画像 (live_slot/dead_slot), dead_slot 表示写槽被
+    后续写覆盖, 属审计类证据, 真实调用但不注入主列表.
+    """
+    if not _check_module('rw_dead_store_elim_tolerant', lambda: __import__(
+            'modules.analysis.static.rw_innovations.dead_store_elim_tolerant',
+            fromlist=['run_dead_store_elim_tolerant'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.dead_store_elim_tolerant import (
+            run_dead_store_elim_tolerant)
+        run_dead_store_elim_tolerant(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW dead_store_elim_tolerant bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_inline_copy_bind_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-InlineCopyBind 桥接 (stage 97): 内联复制绑定.
+
+    rep movs 系列计数绑定: count_unbound (计数寄存器不可静态绑定)
+    作为弱告警注入 (memory_copy); bound/count_missing 属绑定画像
+    不注入.
+    """
+    if not _check_module('rw_inline_copy_bind', lambda: __import__(
+            'modules.analysis.static.rw_innovations.inline_copy_bind',
+            fromlist=['run_inline_copy_bind'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.inline_copy_bind import (
+            run_inline_copy_bind)
+        results = run_inline_copy_bind(pseudocode, func_name, None)
+        alerts = [r for r in results if r.get('verdict') == 'count_unbound']
+        if not alerts:
+            return existing_findings
+        return list(existing_findings) + alerts
+    except Exception as e:
+        logger.debug('RW inline_copy_bind bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_four_verdict_scale_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-FourVerdictScale 桥接 (stage 98): 四级判决标尺.
+
+    CONFIRMED/LIKELY/UNCERTAIN/FILTERED 为概率标尺画像 (冒烟实测
+    CONFIRMED 在安全场景也出现, 是置信度标尺而非告警判定),
+    真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_four_verdict_scale', lambda: __import__(
+            'modules.analysis.static.rw_innovations.four_verdict_scale',
+            fromlist=['run_four_verdict_scale'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.four_verdict_scale import (
+            run_four_verdict_scale)
+        run_four_verdict_scale(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW four_verdict_scale bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_affine_meet_domain_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-AffineMeetDomain 桥接 (stage 99): 仿射交汇域.
+
+    仿射关系交汇域画像 (affine_bounded/affine_top), 属审计类
+    证据, 真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_affine_meet_domain', lambda: __import__(
+            'modules.analysis.static.rw_innovations.affine_meet_domain',
+            fromlist=['run_affine_meet_domain'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.affine_meet_domain import (
+            run_affine_meet_domain)
+        run_affine_meet_domain(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW affine_meet_domain bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_delta_interval_eval_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-DeltaIntervalEval 桥接 (stage 100): 差区间极值判定.
+
+    写区间与分配区间差: delta 下界>0 (overflow) 告警白名单注入;
+    上界<0 (safe) 作为安全证据温和降权; bounded 不注入.
+    """
+    if not _check_module('rw_delta_interval_eval', lambda: __import__(
+            'modules.analysis.static.rw_innovations.delta_interval_eval',
+            fromlist=['run_delta_interval_eval'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.delta_interval_eval import (
+            run_delta_interval_eval)
+        results = run_delta_interval_eval(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'overflow':
+                findings.append(r)
+            elif v == 'safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW delta_interval_eval bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_write_side_first_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-WriteSideFirst 桥接 (stage 101): 写侧优先检查.
+
+    写侧上界优先判定画像 (write_bounded/cannot_hold), cannot_hold
+    仅表示无法定界 (非告警), 属审计类证据, 真实调用但
+    不注入 findings 主列表.
+    """
+    if not _check_module('rw_write_side_first', lambda: __import__(
+            'modules.analysis.static.rw_innovations.write_side_first',
+            fromlist=['run_write_side_first'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.write_side_first import (
+            run_write_side_first)
+        run_write_side_first(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW write_side_first bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_chain_id_cross_func_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-ChainIdCrossFunc 桥接 (stage 102): 跨函数链 id.
+
+    跨函数别名链干净度画像 (chain_clean/chain_dirty), 属审计类
+    证据, 真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_chain_id_cross_func', lambda: __import__(
+            'modules.analysis.static.rw_innovations.chain_id_cross_func',
+            fromlist=['run_chain_id_cross_func'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.chain_id_cross_func import (
+            run_chain_id_cross_func)
+        run_chain_id_cross_func(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW chain_id_cross_func bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_heap_write_operand_cap_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-HeapWriteOperandCap 桥接 (stage 103): 写操作数容量上限.
+
+    写操作数超容量上限 (cap_exceed) 告警白名单注入; cap_ok 作为
+    安全证据温和降权同类型已有 findings.
+    """
+    if not _check_module('rw_heap_write_operand_cap', lambda: __import__(
+            'modules.analysis.static.rw_innovations.heap_write_operand_cap',
+            fromlist=['run_heap_write_operand_cap'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.heap_write_operand_cap import (
+            run_heap_write_operand_cap)
+        results = run_heap_write_operand_cap(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'cap_exceed':
+                findings.append(r)
+            elif v == 'cap_ok':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW heap_write_operand_cap bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_ir_interval_backtrack_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-IrIntervalBacktrack 桥接 (stage 104): IR 区间回溯.
+
+    IR 层区间回溯画像 (backtraced/unknown), 属审计类证据,
+    真实调用但不注入 findings 主列表.
+    """
+    if not _check_module('rw_ir_interval_backtrack', lambda: __import__(
+            'modules.analysis.static.rw_innovations.ir_interval_backtrack',
+            fromlist=['run_ir_interval_backtrace'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.ir_interval_backtrack import (
+            run_ir_interval_backtrace)
+        run_ir_interval_backtrace(pseudocode, func_name, None)
+        return existing_findings
+    except Exception as e:
+        logger.debug('RW ir_interval_backtrack bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_five_modal_ds_theory_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-FiveModalDSTheory 桥接 (stage 105): 五模态 D-S 证据组合.
+
+    五模态 mass 函数 + D-S 组合: dominant=OVERFLOW (ds_overflow)
+    时告警白名单注入; dominant=SAFE (ds_safe) 作为安全证据温和
+    降权; ds_unknown/ds_conflict/ds_filtered 不注入.
+    """
+    if not _check_module('rw_five_modal_ds_theory', lambda: __import__(
+            'modules.analysis.static.rw_innovations.five_modal_ds_theory',
+            fromlist=['run_five_modal_ds_theory'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.five_modal_ds_theory import (
+            run_five_modal_ds_theory)
+        results = run_five_modal_ds_theory(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'ds_overflow':
+                findings.append(r)
+            elif v == 'ds_safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW five_modal_ds_theory bridge failed: %s', e)
+        return existing_findings
+
+
+def run_rw_karr_affine_diff_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """RW-KarrAffineDiff 桥接 (stage 106): Karr 仿射差判定.
+
+    Karr 仿射关系求差区间极值: 下界>0 (overflow) 告警白名单注入;
+    上界<0 (safe) 作为安全证据温和降权; bounded 不注入.
+    """
+    if not _check_module('rw_karr_affine_diff', lambda: __import__(
+            'modules.analysis.static.rw_innovations.karr_affine_diff',
+            fromlist=['run_karr_affine_diff'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.rw_innovations.karr_affine_diff import (
+            run_karr_affine_diff)
+        results = run_karr_affine_diff(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'overflow':
+                findings.append(r)
+            elif v == 'safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
+    except Exception as e:
+        logger.debug('RW karr_affine_diff bridge failed: %s', e)
+        return existing_findings
+
+
 def run_innovation_pipeline(
     pseudocode: str,
     func_name: str,
@@ -6197,7 +7867,7 @@ def run_innovation_pipeline(
 ) -> List[dict]:
     """创新模块统一入口 — 按管线顺序执行全部创新模块.
 
-    管线顺序 (54个创新模块):
+    管线顺序 (106个创新模块):
       --- 原有7模块 (堆溢出聚焦) ---
       1. HOFPR: C源码级误报抑制 (产出新findings)
       2. HFP: IR级三态判定 (产出新findings)
@@ -6223,7 +7893,7 @@ def run_innovation_pipeline(
       21. Cross-Domain: 跨域稀疏值流精炼 (对已有findings过滤)
       22. Cross-Pipeline: 跨管线贝叶斯关联 (全局聚合)
       --- D类7模块 (深度创新补全) ---
-      23. BWR+PCST: 有界写恢复+路径条件敏感污点 (对已有findings过滤)
+      23. BWR+PCST: BWR无界写恢复 + PCST按调用点参数语义表修正sized写角色与配对判定 (对已有findings过滤)
       24. DD-BVF: 按需后向值流UAF检测 (对已有findings过滤)
       25. CACBV: 容量感知耦合边界验证 (对已有findings过滤)
       26. 双向区间交汇: 前向别名+后向根来源双向交汇 (对已有findings过滤)
@@ -6357,7 +8027,7 @@ def run_innovation_pipeline(
     findings = run_cross_pipeline_bridge(pseudocode, func_name, binary_path, findings)
 
     # === 阶段23-29: D类深度创新模块 ===
-    # 阶段23: BWR+PCST — 有界写恢复+路径条件敏感污点 (过滤无界写误报)
+    # 阶段23: BWR+PCST — BWR无界写恢复 + PCST语义表sized写配对判定 (过滤误报)
     findings = run_bwr_pcst_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段24: DD-BVF — 按需后向值流 (对 INCONCLUSIVE findings 精确化)
@@ -6455,6 +8125,163 @@ def run_innovation_pipeline(
     # === 阶段54: PG-WBV原版 (giva 抽象解释引擎级) ===
     # 阶段54: PG-WBV原版 — 分配点感知写界验证 (产出新findings + 对已有findings过滤)
     findings = run_pg_wbv_orig_bridge(pseudocode, func_name, binary_path, findings)
+
+    # === 阶段55-106: RW文献综述代码化模块 (52个, Related Work → 代码创新) ===
+    # 阶段55: RW-CallCtxSaturation — 调用点饱和度计分 (对已有findings降权)
+    findings = run_rw_call_ctx_saturation_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段56: RW-LivenessRoleTemplate — 调用点参数角色模板投票 (对已有findings降权)
+    findings = run_rw_liveness_role_template_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段57: RW-JccPolarityMap — 条件跳转极性图 (对已有findings降权)
+    findings = run_rw_jcc_polarity_map_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段58: RW-SpecDangerProfile — 格式串说明符危险画像 (产出新findings)
+    findings = run_rw_spec_danger_profile_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段59: RW-CorrelatedWrapCheck — 复合表达式相关回绕检查 (产出新findings)
+    findings = run_rw_correlated_wrap_check_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段60: RW-DomFrontierWitness — 支配边界UAF误报见证 (对已有findings降权)
+    findings = run_rw_dom_frontier_witness_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段61: RW-SevenStageFanout — 七阶段扇出覆盖率审计 (纯审计调用)
+    findings = run_rw_seven_stage_fanout_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段62: RW-ScaledIndexLinear — scaled-index线性化 (产出+降权)
+    findings = run_rw_scaled_index_linear_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段63: RW-FreedAliasEpoch — 释放别名纪元 (产出+降权)
+    findings = run_rw_freed_alias_epoch_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段64: RW-RetAddrChainStitch — 返回地址链缝合 (对已有findings降权)
+    findings = run_rw_ret_addr_chain_stitch_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段65: RW-EvalHarnessReplica — 端到端评估复算 (对已有findings复算降权)
+    findings = run_rw_eval_harness_replica_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段66: RW-TaintSourceGrading — 污点源分级 (产出弱告警)
+    findings = run_rw_taint_source_grading_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段67: RW-PtrUnionClosure — 指针并查集闭包 (对已有findings降权)
+    findings = run_rw_ptr_union_closure_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段68: RW-RootIdentityKey — 根身份键判定 (对已有findings降权)
+    findings = run_rw_root_identity_key_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段69: RW-SymbolicDiffSign — 符号差符号判定 (产出+降权)
+    findings = run_rw_symbolic_diff_sign_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段70: RW-HeapStackGlobalTri — 堆/栈/全局三分域分类 (纯审计调用)
+    findings = run_rw_heap_stack_global_tri_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段71: RW-ChainEquivHash — 溯源链等价哈希 (对已有findings降权)
+    findings = run_rw_chain_equiv_hash_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段72: RW-ContractPreserveFold — 契约保持折叠 (对已有findings分组折叠)
+    findings = run_rw_contract_preserve_fold_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段73: RW-DemandTriggerBudget — 按需触发预算管理 (对已有findings预算分类)
+    findings = run_rw_demand_trigger_budget_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段74: RW-MinChunkGeometry — 最小块几何判定 (产出弱告警+降权)
+    findings = run_rw_min_chunk_geometry_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段75: RW-RecoverySoundnessGate — 恢复可靠性门 (纯审计调用)
+    findings = run_rw_recovery_soundness_gate_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段76: RW-RdataConstRegion — .rdata常量区判定 (对已有findings降权)
+    findings = run_rw_rdata_const_region_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段77: RW-GuardAliasTransitive — 守卫别名传递闭包 (纯审计调用)
+    findings = run_rw_guard_alias_transitive_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段78: RW-WalkStrideModel — 步长模型覆盖检查 (产出弱告警+降权)
+    findings = run_rw_walk_stride_model_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段79: RW-UseDerefLattice — 解引用格模型 (产出+降权)
+    findings = run_rw_use_deref_lattice_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段80: RW-ImmPropAbsorb — 立即数属性吸收 (纯审计调用)
+    findings = run_rw_imm_prop_absorb_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段81: RW-CallConvDuality — 调用约定对偶校验 (纯审计调用)
+    findings = run_rw_call_conv_duality_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段82: RW-WrapperGraphMatch — 包装函数图同构匹配 (纯审计调用)
+    findings = run_rw_wrapper_graph_match_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段83: RW-TwoVarDiffBound — 双变量差界判定 (产出+降权)
+    findings = run_rw_two_var_diff_bound_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段84: RW-ExitDominanceCheck — 出口支配UAF误报检查 (对已有findings降权)
+    findings = run_rw_exit_dominance_check_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段85: RW-CrossTypeEvidencePool — 跨类型证据池 (对已有findings互证提升)
+    findings = run_rw_cross_type_evidence_pool_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段86: RW-ColorClassQuad — 四色类域分类 (纯审计调用)
+    findings = run_rw_color_class_quad_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段87: RW-WidenThreshold — 加宽阈值监控 (纯审计调用)
+    findings = run_rw_widen_threshold_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段88: RW-FourLevelAdjudicator — 四级裁决器 (产出+降权)
+    findings = run_rw_four_level_adjudicator_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段89: RW-ProvenanceOctagon — 八角域溯源 (纯审计调用)
+    findings = run_rw_provenance_octagon_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段90: RW-SevenDimWeighted — 七维加权融合 (产出弱告警)
+    findings = run_rw_seven_dim_weighted_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段91: RW-AbiAutoDetect — ABI自动探测 (纯审计调用)
+    findings = run_rw_abi_auto_detect_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段92: RW-ReductionRateAudit — 减除率审计 (纯审计调用)
+    findings = run_rw_reduction_rate_audit_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段93: RW-GuardOpEnum — 守卫操作枚举 (纯审计调用)
+    findings = run_rw_guard_op_enum_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段94: RW-ThreePathDisjoint — 三路径不相交判定 (产出+降权)
+    findings = run_rw_three_path_disjoint_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段95: RW-StridedInterval3 — 三元组步长区间 (纯审计调用)
+    findings = run_rw_strided_interval3_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段96: RW-DeadStoreElimTolerant — 容忍型死存储消除 (纯审计调用)
+    findings = run_rw_dead_store_elim_tolerant_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段97: RW-InlineCopyBind — 内联复制绑定 (产出弱告警)
+    findings = run_rw_inline_copy_bind_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段98: RW-FourVerdictScale — 四级判决标尺 (纯审计调用)
+    findings = run_rw_four_verdict_scale_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段99: RW-AffineMeetDomain — 仿射交汇域 (纯审计调用)
+    findings = run_rw_affine_meet_domain_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段100: RW-DeltaIntervalEval — 差区间极值判定 (产出+降权)
+    findings = run_rw_delta_interval_eval_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段101: RW-WriteSideFirst — 写侧优先检查 (纯审计调用)
+    findings = run_rw_write_side_first_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段102: RW-ChainIdCrossFunc — 跨函数链id (纯审计调用)
+    findings = run_rw_chain_id_cross_func_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段103: RW-HeapWriteOperandCap — 写操作数容量上限 (产出+降权)
+    findings = run_rw_heap_write_operand_cap_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段104: RW-IrIntervalBacktrack — IR区间回溯 (纯审计调用)
+    findings = run_rw_ir_interval_backtrack_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段105: RW-FiveModalDSTheory — 五模态D-S证据组合 (产出+降权)
+    findings = run_rw_five_modal_ds_theory_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段106: RW-KarrAffineDiff — Karr仿射差判定 (产出+降权)
+    findings = run_rw_karr_affine_diff_bridge(pseudocode, func_name, binary_path, findings)
 
     return findings
 
@@ -6598,6 +8425,162 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
     ('pg_wbv_orig', lambda: __import__(
         'modules.analysis.static.heap_analysis.giva_detector',
         fromlist=['GivaScanner'])),
+    ('rw_call_ctx_saturation', lambda: __import__(
+        'modules.analysis.static.rw_innovations.call_ctx_saturation',
+        fromlist=['run_call_ctx_saturation'])),
+    ('rw_liveness_role_template', lambda: __import__(
+        'modules.analysis.static.rw_innovations.liveness_role_template',
+        fromlist=['run_liveness_role_template'])),
+    ('rw_jcc_polarity_map', lambda: __import__(
+        'modules.analysis.static.rw_innovations.jcc_polarity_map',
+        fromlist=['run_jcc_polarity_map'])),
+    ('rw_spec_danger_profile', lambda: __import__(
+        'modules.analysis.static.rw_innovations.spec_danger_profile',
+        fromlist=['run_spec_danger_profile'])),
+    ('rw_correlated_wrap_check', lambda: __import__(
+        'modules.analysis.static.rw_innovations.correlated_wrap_check',
+        fromlist=['run_correlated_wrap_check'])),
+    ('rw_dom_frontier_witness', lambda: __import__(
+        'modules.analysis.static.rw_innovations.dom_frontier_witness',
+        fromlist=['run_dom_frontier_witness'])),
+    ('rw_seven_stage_fanout', lambda: __import__(
+        'modules.analysis.static.rw_innovations.seven_stage_fanout',
+        fromlist=['run_seven_stage_fanout'])),
+    ('rw_scaled_index_linear', lambda: __import__(
+        'modules.analysis.static.rw_innovations.scaled_index_linear',
+        fromlist=['run_scaled_index_linear'])),
+    ('rw_freed_alias_epoch', lambda: __import__(
+        'modules.analysis.static.rw_innovations.freed_alias_epoch',
+        fromlist=['run_freed_alias_epoch'])),
+    ('rw_ret_addr_chain_stitch', lambda: __import__(
+        'modules.analysis.static.rw_innovations.ret_addr_chain_stitch',
+        fromlist=['run_ret_addr_chain_stitch'])),
+    ('rw_eval_harness_replica', lambda: __import__(
+        'modules.analysis.static.rw_innovations.eval_harness_replica',
+        fromlist=['run_eval_harness_replica'])),
+    ('rw_taint_source_grading', lambda: __import__(
+        'modules.analysis.static.rw_innovations.taint_source_grading',
+        fromlist=['run_taint_source_grading'])),
+    ('rw_ptr_union_closure', lambda: __import__(
+        'modules.analysis.static.rw_innovations.ptr_union_closure',
+        fromlist=['run_ptr_union_closure'])),
+    ('rw_root_identity_key', lambda: __import__(
+        'modules.analysis.static.rw_innovations.root_identity_key',
+        fromlist=['run_root_identity_key'])),
+    ('rw_symbolic_diff_sign', lambda: __import__(
+        'modules.analysis.static.rw_innovations.symbolic_diff_sign',
+        fromlist=['run_symbolic_diff_sign'])),
+    ('rw_heap_stack_global_tri', lambda: __import__(
+        'modules.analysis.static.rw_innovations.heap_stack_global_tri',
+        fromlist=['run_heap_stack_global_tri'])),
+    ('rw_chain_equiv_hash', lambda: __import__(
+        'modules.analysis.static.rw_innovations.chain_equiv_hash',
+        fromlist=['run_chain_equiv_hash'])),
+    ('rw_contract_preserve_fold', lambda: __import__(
+        'modules.analysis.static.rw_innovations.contract_preserve_fold',
+        fromlist=['run_contract_preserve_fold'])),
+    ('rw_demand_trigger_budget', lambda: __import__(
+        'modules.analysis.static.rw_innovations.demand_trigger_budget',
+        fromlist=['run_demand_trigger_budget'])),
+    ('rw_min_chunk_geometry', lambda: __import__(
+        'modules.analysis.static.rw_innovations.min_chunk_geometry',
+        fromlist=['run_min_chunk_geometry'])),
+    ('rw_recovery_soundness_gate', lambda: __import__(
+        'modules.analysis.static.rw_innovations.recovery_soundness_gate',
+        fromlist=['run_recovery_soundness_gate'])),
+    ('rw_rdata_const_region', lambda: __import__(
+        'modules.analysis.static.rw_innovations.rdata_const_region',
+        fromlist=['run_rdata_const_region'])),
+    ('rw_guard_alias_transitive', lambda: __import__(
+        'modules.analysis.static.rw_innovations.guard_alias_transitive',
+        fromlist=['run_guard_alias_transitive'])),
+    ('rw_walk_stride_model', lambda: __import__(
+        'modules.analysis.static.rw_innovations.walk_stride_model',
+        fromlist=['run_walk_stride_model'])),
+    ('rw_use_deref_lattice', lambda: __import__(
+        'modules.analysis.static.rw_innovations.use_deref_lattice',
+        fromlist=['run_use_deref_lattice'])),
+    ('rw_imm_prop_absorb', lambda: __import__(
+        'modules.analysis.static.rw_innovations.imm_prop_absorb',
+        fromlist=['run_imm_prop_absorb'])),
+    ('rw_call_conv_duality', lambda: __import__(
+        'modules.analysis.static.rw_innovations.call_conv_duality',
+        fromlist=['run_call_conv_duality'])),
+    ('rw_wrapper_graph_match', lambda: __import__(
+        'modules.analysis.static.rw_innovations.wrapper_graph_match',
+        fromlist=['run_wrapper_graph_match'])),
+    ('rw_two_var_diff_bound', lambda: __import__(
+        'modules.analysis.static.rw_innovations.two_var_diff_bound',
+        fromlist=['run_two_var_diff_bound'])),
+    ('rw_exit_dominance_check', lambda: __import__(
+        'modules.analysis.static.rw_innovations.exit_dominance_check',
+        fromlist=['run_exit_dominance_check'])),
+    ('rw_cross_type_evidence_pool', lambda: __import__(
+        'modules.analysis.static.rw_innovations.cross_type_evidence_pool',
+        fromlist=['run_cross_type_evidence_pool'])),
+    ('rw_color_class_quad', lambda: __import__(
+        'modules.analysis.static.rw_innovations.color_class_quad',
+        fromlist=['run_color_class_quad'])),
+    ('rw_widen_threshold', lambda: __import__(
+        'modules.analysis.static.rw_innovations.widen_threshold',
+        fromlist=['run_widen_threshold'])),
+    ('rw_four_level_adjudicator', lambda: __import__(
+        'modules.analysis.static.rw_innovations.four_level_adjudicator',
+        fromlist=['run_four_level_adjudicator'])),
+    ('rw_provenance_octagon', lambda: __import__(
+        'modules.analysis.static.rw_innovations.provenance_octagon',
+        fromlist=['run_provenance_octagon'])),
+    ('rw_seven_dim_weighted', lambda: __import__(
+        'modules.analysis.static.rw_innovations.seven_dim_weighted',
+        fromlist=['run_seven_dim_weighted'])),
+    ('rw_abi_auto_detect', lambda: __import__(
+        'modules.analysis.static.rw_innovations.abi_auto_detect',
+        fromlist=['run_abi_auto_detect'])),
+    ('rw_reduction_rate_audit', lambda: __import__(
+        'modules.analysis.static.rw_innovations.reduction_rate_audit',
+        fromlist=['run_reduction_rate_audit'])),
+    ('rw_guard_op_enum', lambda: __import__(
+        'modules.analysis.static.rw_innovations.guard_op_enum',
+        fromlist=['run_guard_op_enum'])),
+    ('rw_three_path_disjoint', lambda: __import__(
+        'modules.analysis.static.rw_innovations.three_path_disjoint',
+        fromlist=['run_three_path_disjoint'])),
+    ('rw_strided_interval3', lambda: __import__(
+        'modules.analysis.static.rw_innovations.strided_interval3',
+        fromlist=['run_strided_interval3'])),
+    ('rw_dead_store_elim_tolerant', lambda: __import__(
+        'modules.analysis.static.rw_innovations.dead_store_elim_tolerant',
+        fromlist=['run_dead_store_elim_tolerant'])),
+    ('rw_inline_copy_bind', lambda: __import__(
+        'modules.analysis.static.rw_innovations.inline_copy_bind',
+        fromlist=['run_inline_copy_bind'])),
+    ('rw_four_verdict_scale', lambda: __import__(
+        'modules.analysis.static.rw_innovations.four_verdict_scale',
+        fromlist=['run_four_verdict_scale'])),
+    ('rw_affine_meet_domain', lambda: __import__(
+        'modules.analysis.static.rw_innovations.affine_meet_domain',
+        fromlist=['run_affine_meet_domain'])),
+    ('rw_delta_interval_eval', lambda: __import__(
+        'modules.analysis.static.rw_innovations.delta_interval_eval',
+        fromlist=['run_delta_interval_eval'])),
+    ('rw_write_side_first', lambda: __import__(
+        'modules.analysis.static.rw_innovations.write_side_first',
+        fromlist=['run_write_side_first'])),
+    ('rw_chain_id_cross_func', lambda: __import__(
+        'modules.analysis.static.rw_innovations.chain_id_cross_func',
+        fromlist=['run_chain_id_cross_func'])),
+    ('rw_heap_write_operand_cap', lambda: __import__(
+        'modules.analysis.static.rw_innovations.heap_write_operand_cap',
+        fromlist=['run_heap_write_operand_cap'])),
+    ('rw_ir_interval_backtrack', lambda: __import__(
+        'modules.analysis.static.rw_innovations.ir_interval_backtrack',
+        fromlist=['run_ir_interval_backtrace'])),
+    ('rw_five_modal_ds_theory', lambda: __import__(
+        'modules.analysis.static.rw_innovations.five_modal_ds_theory',
+        fromlist=['run_five_modal_ds_theory'])),
+    ('rw_karr_affine_diff', lambda: __import__(
+        'modules.analysis.static.rw_innovations.karr_affine_diff',
+        fromlist=['run_karr_affine_diff'])),
 ]
 
 
@@ -6606,7 +8589,7 @@ def get_innovation_status() -> Dict[str, bool]:
 
     _module_available 为惰性缓存, 仅当某个 bridge 首次被调用后才
     记录探测结果, 直接 import 后调用本函数会拿到不完整数据.
-    这里依据 _INNOVATION_PROBES 注册表主动补全全部 54 个模块
+    这里依据 _INNOVATION_PROBES 注册表主动补全全部 106 个模块
     的探测, 保证任意时刻返回的都是全量状态.
     """
     for _name, _probe in _INNOVATION_PROBES:

@@ -89,11 +89,13 @@ def run_call_ctx_saturation(
                 "verdict": verdict,
                 "source": "call_ctx_saturation",
             })
+    # 统一阈值边界: sat >= 1.0-threshold(0.7) 判 safe, sat < 0.7 判降权
+    _sat_safe = 1.0 - threshold
     if existing_findings:
         for f in existing_findings:
             out = dict(f)
             for var, sat in sat_map.items():
-                if var in out.get("description", "") and sat < threshold:
+                if var in out.get("description", "") and sat < _sat_safe:
                     out["confidence"] = round(out.get("confidence", 0.5) * 0.6, 2)
                     out["verdict"] = "downgraded"
                     out["source"] = "call_ctx_saturation"

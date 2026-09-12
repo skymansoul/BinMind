@@ -33,8 +33,8 @@ def _parse_expr(s: str) -> _Node:
     # 括号
     if s.startswith("(") and s.endswith(")"):
         return _parse_expr(s[1:-1])
-    # 找最低优先级运算符
-    for op in ("<<", "&", "+", "-", "*"):
+    # 按C优先级从低到高分割: & < << < +/- < *
+    for op in ("&", "<<", "+", "-", "*"):
         idx = _find_op(s, op)
         if idx is not None:
             left = _parse_expr(s[:idx])

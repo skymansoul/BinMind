@@ -99,15 +99,6 @@ def run_liveness_role_template(
             findings.append(out)
     return findings
 
-
-def _vote(roles: Dict[str, str], size_reg: Optional[str]) -> float:
-    return _role_vote(roles, size_reg)
-
-
-def _role_vote(roles: Dict[str, str], size_reg: Optional[str]) -> float:
-    return 1.0 if size_reg and roles.get(size_reg) == "size" else 0.0
-
-
 if __name__ == "__main__":
     demo = """\
 push rbp;
