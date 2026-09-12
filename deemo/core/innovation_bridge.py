@@ -1,5 +1,5 @@
 """
-创新模块桥接层 — 将 39 个创新模块统一接入 core/pipeline.py 主链路的 rule 检测段.
+创新模块桥接层 — 将 53 个创新模块统一接入 core/pipeline.py 主链路的 rule 检测段.
 
 各模块原始接口异构 (输入有伪代码/IR/C源码/二进制路径, 输出有dict/dataclass),
 本层做签名归一化: (pseudocode, func_name, binary_path) → List[dict] findings.
@@ -9,7 +9,7 @@
   - 将模块返回值转为 pipeline统一的 dict finding 格式
   - 任何模块异常都被捕获, 不影响主链路运行
 
-调用顺序 (39个创新模块):
+调用顺序 (53个创新模块):
   HOFPR → HFP → ACFPC → DDSSC → AWSC → CJ-BVF → CJ-PCBVF →
   GAPSBV → GASRI → UAF-HOIG → UAF-Enhanced → UAF-Lifecycle →
   Double-Free → UAF-Lifetime-Tracker → Buffer-Underflow → Off-by-One →
@@ -17,11 +17,16 @@
   Cross-Domain → Cross-Pipeline →
   BWR+PCST → DD-BVF → CACBV → 双向区间交汇 → ACPE → PSVR-HLM → DP-TVRA →
   AWSC-ICF → HOFPR-APC → PcWBI-IRL → FC-VRA-PTA → CACBV-DSS →
-  BIV-CTC → SI-CTA → PG-WBV-LSA → ACPE-VRP → ACFPC-CMS
+  BIV-CTC → SI-CTA → PG-WBV-LSA → ACPE-VRP → ACFPC-CMS →
+  PCFV → TOVS → MIVR → FSTP → INT-SHIFT → SHIELD → INT-RANGE →
+  DRIFT → FMT-SPEC → PcWBI原版 → FC-VRA原版 → CACBV-DSS原版 →
+  轻量符号+4-Filter → BWR原版 → PG-WBV原版
 
 前7模块聚焦堆溢出; 8-17扩展至UAF/DF/underflow/uninit等全类型; 18-22做误报削减与跨管线聚合;
 23-29为D类深度创新补全, 覆盖有界写恢复/后向值流/容量耦合/双向区间/溯源等价/路径敏感分层/需求驱动污点;
-30-39为差异化创新模块, 将22个重复副本在代码层面实现为不同算法.
+30-39为差异化创新模块, 将22个重复副本在代码层面实现为不同算法;
+40-53为A类原版模块接入, 14个独立完整模块按真实API接入管线端到端可跑通;
+54为PG-WBV原版(giva)接入, 补齐A类最后一个未接入的独立创新点.
 """
 
 import logging
@@ -4639,6 +4644,1551 @@ def run_acfpc_cms_bridge(
         return existing_findings
 
 
+# -- A-1: PCFV (指针流约束验证完整管线, 反汇编级) --
+def run_pcfv_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """PCFV 桥接: 反汇编→逐函数访问提取→守卫/常量/padding证明→五值判定.
+
+    与已有 AWSC/GASRI (伪代码正则守卫) 的区别:
+      PCFV 在真实汇编上做指令级追踪, Verdict 五值而非三值,
+      SAFE_FILTERED 需"证明安全+过滤依据充分"双条件.
+    有 binary_path 时反汇编真实二进制; 无二进制时从伪代码
+    合成汇编供 AccessExtractor 提取访问点.
+    """
+    if not _check_module('pcfv', lambda: __import__(
+            'modules.vuln.src.heap.pcfv.pipeline',
+            fromlist=['analyze_heap_pcfv'])):
+        return existing_findings
+
+    try:
+        import os
+        report = None
+        # 优先真实二进制
+        if binary_path and os.path.isfile(binary_path):
+            from modules.vuln.src.heap.pcfv.pipeline import analyze_heap_pcfv
+            report = analyze_heap_pcfv(binary_path, timeout_s=10)
+        if report is None or report.error:
+            # 无二进制: 从伪代码合成 objdump 风格汇编文本
+            asm_text = _pseudocode_to_pcfv_asm(pseudocode)
+            report = _run_pcfv_on_asm_text(asm_text, binary_path or 'pseudo')
+        if report is None:
+            return existing_findings
+
+        new_findings = []
+        for fv in report.verdicts:
+            if fv.verdict is None:
+                continue
+            vname = fv.verdict.name
+            if vname == 'CONFIRMED':
+                new_findings.append({
+                    'type': 'heap-overflow', 'function': func_name,
+                    'severity': 'High', 'cwe': 'CWE-122',
+                    'confidence': 0.85,
+                    'description': f'PCFV CONFIRMED: fn={fv.function} '
+                                   f'addr=0x{fv.insn_addr:x} kind={fv.access_kind} '
+                                   f'rule={fv.evidences[0].rule.name if fv.evidences else "NONE"}',
+                    'verdict': 'DEFINITE', 'source': 'pcfv'})
+            elif vname == 'LIKELY':
+                new_findings.append({
+                    'type': 'heap-overflow', 'function': func_name,
+                    'severity': 'Medium', 'cwe': 'CWE-122',
+                    'confidence': 0.55,
+                    'description': f'PCFV LIKELY: fn={fv.function} '
+                                   f'addr=0x{fv.insn_addr:x} kind={fv.access_kind}',
+                    'verdict': 'POSSIBLE', 'source': 'pcfv'})
+        return existing_findings + new_findings
+    except Exception as e:
+        logger.debug('PCFV bridge failed: %s', e)
+        return existing_findings
+
+
+def _pseudocode_to_pcfv_asm(pseudocode: str) -> str:
+    """将伪代码转为 objdump -d -M intel 风格文本, 供 PCFV 函数解析.
+
+    格式: 地址+十六进制字节+指令, 指令必须形如 "  addr:\tbytes\tmnemonic operands".
+    """
+    import re
+    lines = []
+    addr = 0x401000
+    _var_reg = {}
+    _regs = ['rbx', 'r12', 'r13', 'r14', 'r15', 'rbp']
+    reg_seq = [0]
+
+    def get_reg(v: str) -> str:
+        if v not in _var_reg:
+            if reg_seq[0] < len(_regs):
+                _var_reg[v] = _regs[reg_seq[0]]
+            else:
+                _var_reg[v] = f'r{reg_seq[0]}'
+            reg_seq[0] += 1
+        return _var_reg[v]
+
+    def add_ins(raw: str) -> None:
+        nonlocal addr
+        lines.append(f'  {addr:x}:\t48 8b 00    \t{raw}')
+        addr += 4
+
+    for line in (pseudocode or '').split('\n'):
+        line = line.strip()
+        if not line or line.startswith('//') or line.startswith('#'):
+            continue
+        m = re.match(
+            r'(\w+)\s*=\s*malloc\s*\(\s*(\d+|0x[0-9a-fA-F]+)\s*\)', line)
+        if m:
+            var, size = m.group(1), m.group(2)
+            add_ins(f'mov edi, {int(size, 0)}')
+            add_ins('call malloc')
+            add_ins(f'mov {get_reg(var)}, rax')
+            continue
+        m = re.match(r'(memcpy|memmove|memset|strcpy|strcat|sprintf)\s*\((.*)\)\s*;?\s*$',
+                     line)
+        if m:
+            func, argstr = m.group(1), m.group(2)
+            args = [a.strip() for a in argstr.split(',')]
+            if func in ('memcpy', 'memmove'):
+                if len(args) >= 3:
+                    add_ins(f'mov rdi, {get_reg(args[0])}')
+                    add_ins(f'mov rsi, {get_reg(args[1])}')
+                    add_ins(f'mov rdx, {args[2] if args[2].isdigit() or "0x" in args[2] else get_reg(args[2])}')
+                    add_ins(f'call {func}')
+            elif func == 'memset':
+                if len(args) >= 3:
+                    add_ins(f'mov rdi, {get_reg(args[0])}')
+                    add_ins(f'mov rsi, {args[1]}')
+                    add_ins(f'mov rdx, {args[2] if args[2].isdigit() else get_reg(args[2])}')
+                    add_ins('call memset')
+            else:
+                if len(args) >= 2:
+                    add_ins(f'mov rdi, {get_reg(args[0])}')
+                    add_ins(f'mov rsi, {get_reg(args[1])}')
+                    add_ins(f'call {func}')
+            continue
+        m = re.match(r'free\s*\(\s*(\w+)\s*\)', line)
+        if m:
+            add_ins(f'mov rdi, {get_reg(m.group(1))}')
+            add_ins('call free')
+            continue
+        m = re.match(
+            r'\*\s*\(*\s*(\w+)\s*(?:\+\s*(\d+|0x[0-9a-fA-F]+))?\s*\)*\s*=\s*(\w+|\d+|0x[0-9a-fA-F]+)',
+            line)
+        if m:
+            ptr_var, off, val = m.group(1), m.group(2) or '0', m.group(3)
+            add_ins(f'mov {get_reg(ptr_var)}, {get_reg(ptr_var)}')
+            add_ins(
+                f'mov DWORD PTR [{get_reg(ptr_var)}+{int(off, 0)}], '
+                f'{val if val.isdigit() or "0x" in val else get_reg(val)}')
+            continue
+    return '\n'.join(lines)
+
+
+def _run_pcfv_on_asm_text(asm_text: str, sample_id: str):
+    """在合成汇编文本上执行 PCFV 完整管线 (复用管线内部函数解析器)."""
+    if not asm_text:
+        return None
+    try:
+        import sys as _sys
+        import os as _os
+        _pcfv_dir = _os.path.join(
+            _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+            'modules', 'vuln', 'src', 'heap')
+        if _pcfv_dir not in _sys.path:
+            _sys.path.insert(0, _pcfv_dir)
+        from pcfv.pipeline import _parse_functions, PCFVReport, PCFVEngine
+        from pcfv.access_extractor import AccessExtractor
+        from pcfv.loop_bound import LoopBoundExtractor
+        from pcfv.types import Verdict
+        import time
+        t0 = time.time()
+        report = PCFVReport(binary_path=sample_id)
+        functions = _parse_functions(asm_text)
+        report.n_functions = len(functions)
+        engine = PCFVEngine(None)
+        for fn_name, insns in functions:
+            if len(insns) < 3:
+                continue
+            extractor = AccessExtractor(fn_name, insns)
+            loop_bx = LoopBoundExtractor(insns, extractor.tracer)
+            mallocs = extractor.mallocs
+            from pcfv.guard_dominance import GuardExtractor
+            guard_extractor = GuardExtractor(insns)
+            insn_index = {i.addr: i for i in insns}
+            for acc in extractor.accesses:
+                if acc['kind'] == 'store':
+                    loop = loop_bx.is_in_loop(acc['addr'])
+                    if loop is not None:
+                        acc['kind'] = 'loop_store'
+                        acc['loop_iters'] = loop['iters']
+                        acc['loop_stride'] = loop['stride']
+                fv = engine.evaluate_access(
+                    acc, mallocs, insns, guard_extractor, insn_index)
+                fv.sample_id = sample_id
+                report.verdicts.append(fv)
+                if fv.verdict == Verdict.SAFE_FILTERED:
+                    report.filtered_fp += 1
+                elif fv.verdict == Verdict.CONFIRMED:
+                    report.confirmed += 1
+                elif fv.verdict == Verdict.LIKELY:
+                    report.likely += 1
+                else:
+                    report.uncertain += 1
+        report.raw_findings = len(report.verdicts)
+        total = max(1, report.raw_findings)
+        report.fp_reduction_pct = round(report.filtered_fp / total * 100, 1)
+        report.elapsed_sec = round(time.time() - t0, 3)
+        return report
+    except Exception:
+        return None
+
+
+# -- A-2: TOVS (时间序验证UAF, 反汇编级) --
+def run_tovs_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """TOVS 桥接: free-use 候选对提取 + 分支敏感时间序验证.
+
+    与已有 UAF-Lifecycle (正则状态机) 的区别:
+      TOVS 在真实汇编上验证 free-use 支配关系与分支互斥性,
+      三值判定 CONFIRMED/POSSIBLE/SAFE_FILTERED.
+    """
+    if not _check_module('tovs', lambda: __import__(
+            'modules.vuln.src.heap.uaf_tovs.pipeline',
+            fromlist=['analyze_uaf_tovs'])):
+        return existing_findings
+
+    try:
+        import os
+        report = None
+        if binary_path and os.path.isfile(binary_path):
+            from modules.vuln.src.heap.uaf_tovs.pipeline import analyze_uaf_tovs
+            report = analyze_uaf_tovs(binary_path, timeout_s=10)
+        if report is None or report.error:
+            asm_text = _pseudocode_to_pcfv_asm(pseudocode)
+            report = _run_tovs_on_asm_text(asm_text, binary_path or 'pseudo')
+        if report is None:
+            return existing_findings
+
+        new_findings = []
+        for pv in report.verdicts:
+            if pv.verdict is None:
+                continue
+            vname = pv.verdict.name
+            if vname == 'CONFIRMED':
+                new_findings.append({
+                    'type': 'use-after-free', 'function': func_name,
+                    'severity': 'High', 'cwe': 'CWE-416',
+                    'confidence': 0.85,
+                    'description': f'TOVS CONFIRMED: fn={pv.pair.function} '
+                                   f'free@0x{pv.pair.free_addr:x} use@0x{pv.pair.use_addr:x} '
+                                   f'use_type={pv.pair.use_type}',
+                    'verdict': 'DEFINITE', 'source': 'tovs'})
+            elif vname == 'POSSIBLE':
+                new_findings.append({
+                    'type': 'use-after-free', 'function': func_name,
+                    'severity': 'Medium', 'cwe': 'CWE-416',
+                    'confidence': 0.50,
+                    'description': f'TOVS POSSIBLE: fn={pv.pair.function} '
+                                   f'free@0x{pv.pair.free_addr:x} use@0x{pv.pair.use_addr:x}',
+                    'verdict': 'POSSIBLE', 'source': 'tovs'})
+        return existing_findings + new_findings
+    except Exception as e:
+        logger.debug('TOVS bridge failed: %s', e)
+        return existing_findings
+
+
+def _run_tovs_on_asm_text(asm_text: str, sample_id: str):
+    """在合成汇编文本上执行 TOVS (复用管线内部解析与验证引擎)."""
+    if not asm_text:
+        return None
+    try:
+        import sys as _sys
+        import os as _os
+        _tovs_dir = _os.path.join(
+            _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+            'modules', 'vuln', 'src', 'heap')
+        if _tovs_dir not in _sys.path:
+            _sys.path.insert(0, _tovs_dir)
+        from uaf_tovs.pipeline import _parse_functions, TovsReport
+        from uaf_tovs.free_use_pairs import extract_pairs
+        from uaf_tovs.cross_fn_events import extract_cross_fn_pairs
+        from uaf_tovs.engine import TovsEngine
+        from uaf_tovs.types import TovsVerdict
+        import time
+        t0 = time.time()
+        report = TovsReport(binary_path=sample_id)
+        functions = _parse_functions(asm_text)
+        report.n_functions = len(functions)
+        malloc_summary = {}
+        for fn_name, insns in functions:
+            if len(insns) < 3:
+                continue
+            fa = None
+            try:
+                from uaf_tovs.pipeline import _analyze_function
+                fa = _analyze_function(fn_name, insns)
+            except Exception:
+                fa = None
+            if fa is None:
+                continue
+            pairs = extract_pairs(fa, fn_name)
+            pairs.extend(extract_cross_fn_pairs(insns, fn_name, malloc_summary))
+            if not pairs:
+                continue
+            tracer = None
+            try:
+                from uaf_tovs.pipeline import _make_tracer
+                tracer = _make_tracer(insns)
+            except Exception:
+                tracer = None
+            if tracer is None:
+                continue
+            engine = TovsEngine(insns, tracer)
+            for pair in pairs:
+                pv = engine.evaluate(pair, sample_id)
+                report.verdicts.append(pv)
+                report.n_pairs += 1
+                if pv.verdict == TovsVerdict.CONFIRMED:
+                    report.confirmed += 1
+                elif pv.verdict == TovsVerdict.POSSIBLE:
+                    report.possible += 1
+                else:
+                    report.filtered += 1
+        report.elapsed_ms = round((time.time() - t0) * 1000, 1)
+        return report
+    except Exception:
+        return None
+
+
+# -- A-3: MIVR (多变量区间约束传播证明) --
+def run_mivr_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """MIVR 桥接: alloc-write 对的三层路径敏感约束传播证明.
+
+    与已有 GAPSBV (7维仿射) 的区别:
+      MIVR 专注守卫→写入约束传播的传递性解析,
+      L1 守卫硬证明 / L2 仿射传递 / L3 常量偏移语义, 逐级降级.
+    仅当证明 SAFE 时过滤对应 heap findings.
+    """
+    if not _check_module('mivr', lambda: __import__(
+            'analysis.mivr_pipeline',
+            fromlist=['detect_heap_overflow_mivr'])):
+        return existing_findings
+
+    try:
+        from analysis.mivr_pipeline import detect_heap_overflow_mivr
+        verdict, conf, proofs = detect_heap_overflow_mivr(pseudocode)
+        if verdict == 'SAFE' and conf >= 0.70:
+            # MIVR 硬证明安全 → 过滤 heap findings
+            heap = [f for f in existing_findings
+                    if 'heap' in f.get('type', '').lower()]
+            if heap:
+                for f in heap:
+                    f['mivr_safe'] = True
+                    f['mivr_reason'] = proofs[0].proof_detail[:120] if proofs else ''
+                return [f for f in existing_findings
+                        if 'heap' not in f.get('type', '').lower()]
+        elif verdict == 'OVERFLOW' and conf >= 0.60:
+            heap = [f for f in existing_findings
+                    if 'heap' in f.get('type', '').lower()]
+            for f in heap:
+                f['mivr_overflow'] = True
+                f['mivr_conf'] = conf
+        return existing_findings
+    except Exception as e:
+        logger.debug('MIVR bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-4: FSTP (格式说明符语义污点传播) --
+def run_fstp_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """FSTP 桥接: 5级语义分类 (CLEAN→USER_WRITE) + 污点传播验证格式串告警.
+
+    与已有 FMTPROV (常量折叠) 的区别:
+      FSTP 区分语义类别: 用户输入+清理→SAFE, %n→写风险, %s→泄露.
+    """
+    if not _check_module('fstp', lambda: __import__(
+            'analysis.fmt_semantic_taint',
+            fromlist=['FmtSemanticTaintPropagator'])):
+        return existing_findings
+
+    try:
+        from analysis.fmt_semantic_taint import (
+            FmtSemanticTaintPropagator, SemClass)
+        prop = FmtSemanticTaintPropagator()
+        verdicts, stats = prop.analyze(pseudocode)
+        if not verdicts:
+            return existing_findings
+
+        new_findings = []
+        for v in verdicts:
+            if v.sem_class == SemClass.SEM_USER_WRITE:
+                new_findings.append({
+                    'type': 'format-string', 'function': func_name,
+                    'severity': 'High', 'cwe': 'CWE-134',
+                    'confidence': v.confidence,
+                    'description': f'FSTP SEM_USER_WRITE: line={v.call_line} '
+                                   f'func={v.func_name} arg={v.fmt_arg} — {v.reason}',
+                    'verdict': 'DEFINITE' if v.is_cwe134 else 'POSSIBLE',
+                    'source': 'fstp'})
+            elif v.sem_class == SemClass.SEM_USER_READ:
+                new_findings.append({
+                    'type': 'format-string', 'function': func_name,
+                    'severity': 'Medium', 'cwe': 'CWE-134',
+                    'confidence': v.confidence,
+                    'description': f'FSTP SEM_USER_READ: line={v.call_line} '
+                                   f'func={v.func_name} — {v.reason}',
+                    'verdict': 'POSSIBLE', 'source': 'fstp'})
+
+        # 已有 format findings 中被 FSTP 证明清理过的 → 过滤
+        filtered = []
+        for f in existing_findings:
+            ftype = f.get('type', '').lower()
+            if ('format' in ftype or 'fmt' in ftype) and f.get('fstp_clean'):
+                continue
+            filtered.append(f)
+        return filtered + new_findings
+    except Exception as e:
+        logger.debug('FSTP bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-5: INT-SHIFT (整数溢出8模式汇编检测) --
+def run_int_shift_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """INT-SHIFT 桥接: 8模式 x86-64 汇编整数溢出检测.
+
+    与已有 Int-Overflow-Enhance (伪代码 L4-L6) 的区别:
+      INT-SHIFT 在汇编指令级检测 movabs大立即数/截断/移位/16bit回绕等.
+    从伪代码合成汇编后运行真实检测器.
+    """
+    if not _check_module('int_shift', lambda: __import__(
+            'analysis.int_shift_impl',
+            fromlist=['IntOverflowDetector'])):
+        return existing_findings
+
+    try:
+        from analysis.int_shift_impl import IntOverflowDetector
+        asm_lines = _pseudocode_to_intx_asm(pseudocode)
+        if not asm_lines:
+            return existing_findings
+        detector = IntOverflowDetector()
+        findings = detector.analyze(asm_lines, function_name=func_name)
+        new_findings = []
+        for f in findings:
+            new_findings.append({
+                'type': 'integer-overflow', 'function': func_name,
+                'severity': 'High' if f.confidence >= 0.7 else 'Medium',
+                'cwe': 'CWE-190',
+                'confidence': f.confidence,
+                'description': f'INT-SHIFT {f.overflow_type.name}: '
+                               f'{f.description} size_source={f.size_source}',
+                'verdict': 'POSSIBLE', 'source': 'int_shift'})
+        return existing_findings + new_findings
+    except Exception as e:
+        logger.debug('INT-SHIFT bridge failed: %s', e)
+        return existing_findings
+
+
+def _pseudocode_to_intx_asm(pseudocode: str) -> List[str]:
+    """将伪代码转为 INT-SHIFT 检测所需 x86-64 汇编行 (objdump 风格)."""
+    import re
+    lines = []
+    addr = 0x401000
+
+    def add(raw: str) -> None:
+        nonlocal addr
+        lines.append(f'  {addr:x}:\t{raw}')
+        addr += 4
+
+    for line in (pseudocode or '').split('\n'):
+        line = line.strip()
+        if not line or line.startswith('//'):
+            continue
+        # malloc(N) → mov ecx, N; call malloc
+        m = re.match(
+            r'(\w+)\s*=\s*(?:\(?\w+\*?\)?)?\s*malloc\s*\(\s*(\d+|0x[0-9a-fA-F]+)\s*\)',
+            line)
+        if m:
+            add(f'mov ecx, {int(m.group(2), 0)}')
+            add('call malloc')
+            continue
+        # malloc(var) → mov ecx, [rbp-0x8]; call malloc
+        m = re.match(
+            r'(\w+)\s*=\s*(?:\(?\w+\*?\)?)?\s*malloc\s*\(\s*(\w+)\s*\)', line)
+        if m and not m.group(2).isdigit():
+            add('mov eax, dword ptr [rbp-0x8]')
+            add('mov ecx, eax')
+            add('call malloc')
+            continue
+        # n * K → imul
+        m = re.match(r'(\w+)\s*=\s*(\w+)\s*\*\s*(\d+|0x[0-9a-fA-F]+)', line)
+        if m:
+            add(f'mov eax, dword ptr [rbp-0x8]')
+            add(f'imul eax, eax, {int(m.group(3), 0)}')
+            add('mov dword ptr [rbp-0x8], eax')
+            continue
+        # n << K → shl
+        m = re.match(r'(\w+)\s*=\s*(\w+)\s*<<\s*(\d+)', line)
+        if m:
+            add('mov eax, dword ptr [rbp-0x8]')
+            add(f'shl eax, {m.group(3)}')
+            add('mov dword ptr [rbp-0x8], eax')
+            add('cdqe')
+            continue
+        # memcpy(d, s, n*K) → imul + memcpy
+        m = re.match(
+            r'memcpy\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\*\s*(\d+)\s*\)',
+            line)
+        if m:
+            add('mov eax, dword ptr [rbp-0x8]')
+            add(f'imul eax, eax, {m.group(4)}')
+            add('mov rdx, eax')
+            add(f'mov rdi, {m.group(1)}')
+            add(f'mov rsi, {m.group(2)}')
+            add('call memcpy')
+            continue
+        # memcpy(d, s, n)
+        m = re.match(r'memcpy\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)', line)
+        if m:
+            add(f'mov rdi, {m.group(1)}')
+            for call_reg, var in (('rsi', m.group(2)), ('rdx', m.group(3))):
+                if var.isdigit() or var.startswith('0x'):
+                    add(f'mov {call_reg}, {var}')
+                else:
+                    add(f'mov {call_reg}, {var}')
+            add('call memcpy')
+            continue
+        # n += C / n = n + C
+        m = re.match(r'(\w+)\s*(?:\+=|=\s*\1\s*\+)\s*(\d+|0x[0-9a-fA-F]+)', line)
+        if m:
+            add('mov eax, dword ptr [rbp-0x8]')
+            add(f'add eax, {int(m.group(2), 0)}')
+            add('mov dword ptr [rbp-0x8], eax')
+            continue
+    return lines
+
+
+# -- A-6: SHIELD (三引擎堆溢出误报消减) --
+def run_shield_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """SHIELD 桥接: 指针溯源→不相交证明→尺寸约束关联 三引擎串联过滤.
+
+    与已有 BWR+PCST (伪代码合成 BWR 调用) 的区别:
+      SHIELD 的三引擎在指令序列上做全局 provenance 分析,
+      任一引擎证明安全即滤除. findings 需带 insn_addr/access_offset.
+    """
+    if not _check_module('shield', lambda: __import__(
+            'modules.vuln.src.heap.shield_orchestrator',
+            fromlist=['ShieldOrchestrator'])):
+        return existing_findings
+
+    try:
+        from modules.vuln.src.heap.shield_orchestrator import ShieldOrchestrator
+        heap_findings = [f for f in existing_findings
+                         if 'heap' in f.get('type', '').lower()]
+        non_heap = [f for f in existing_findings
+                    if 'heap' not in f.get('type', '').lower()]
+        if not heap_findings:
+            return existing_findings
+
+        # 用 PCFV 同款汇编合成器产指令列表 (SHIELD 期望 List[str])
+        asm_lines = _pseudocode_to_intx_asm(pseudocode)
+        if not asm_lines:
+            return existing_findings
+
+        # findings 需转成 SHIELD 期望的 dict 字段
+        shield_in = []
+        for i, f in enumerate(heap_findings):
+            alloc_size = f.get('alloc_size', 0)
+            if not isinstance(alloc_size, int) or alloc_size <= 0:
+                alloc_size = 64
+            shield_in.append({
+                'insn_addr': f.get('insn_addr', 0x401000 + i * 4),
+                'alloc_site': f.get('alloc_site', 0),
+                'access_offset': f.get('access_offset',
+                                        f.get('overflow_bytes', 0)),
+                'access_size': f.get('access_size', 4),
+                'alloc_size_requested': alloc_size,
+                'description': f.get('description', f'finding_{i}'),
+            })
+
+        orch = ShieldOrchestrator()
+        report = orch.analyze(asm_lines, shield_in)
+        kept = []
+        for f, v in zip(heap_findings, report.verdicts):
+            if v.is_safe:
+                f['shield_filtered'] = True
+                f['shield_engine'] = v.engine
+                f['shield_reason'] = v.reasoning[:120]
+                continue  # 三引擎证明安全 → 过滤
+            f.setdefault('shield_confirmed', True)
+            kept.append(f)
+        return non_heap + kept
+    except Exception as e:
+        logger.debug('SHIELD bridge failed: %s', e)
+        return existing_findings
+
+
+def _probe_int_range() -> None:
+    """INT-RANGE 探测: 注入 BinMind 根到 sys.path 使 deemo namespace package 可解析.
+
+    int_range_analyzer 属 modules.vuln.detection.src 包, 该包 __init__
+    以 deemo.* 绝对路径导入 logger/config 等. deemo 目录无 __init__.py,
+    需 BinMind 根在 sys.path 才能作为 namespace package 被解析.
+    """
+    import os, sys
+    _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _binmind_root = os.path.dirname(_project_root)
+    if _binmind_root not in sys.path:
+        sys.path.insert(0, _binmind_root)
+    __import__(
+        'modules.vuln.detection.src.int_overflow.int_range_analyzer',
+        fromlist=['IntegerRangeAnalyzer'])
+
+
+def _probe_fc_vra_orig() -> None:
+    """FC-VRA 原版探测: 按拓扑序包加载依赖 + 裸名别名注册.
+
+    fc_vra_detector 的依赖链混用相对导入与裸名导入
+    (如 from size_expr_evaluator import ... 和 from .value_range_analyzer import ...),
+    裸名导入在 deemo/ 作为 sys.path[0] 时无法解析. 这里以包形式
+    加载全部依赖并注册裸名别名, 使两种导入风格都能命中.
+    同时用导入版 detect_direct_writes 覆盖 fc_vra_detector 内
+    L206 的本地遮蔽定义 (本地版缺少 get_allocator_model/extract_heap_ptrs
+    等符号导入, 运行时必 NameError).
+    """
+    import importlib, sys
+    _info_pkg = 'modules.info.analysis'
+    _bare_deps = [
+        'value_range_analyzer', 'pointer_tracker', 'heap_layout_model',
+        'path_feasibility_check', 'size_expr_evaluator',
+        'flow_pair_generator', 'size_equivalence',
+        'allocator_slack', 'guard_dominance', 'taint_confirm',
+        'heap_overflow_v2', 'fc_size_proof', 'fc_direct_writes',
+    ]
+    for _n in _bare_deps:
+        _m = importlib.import_module(f'{_info_pkg}.{_n}')
+        sys.modules.setdefault(_n, _m)
+    _fcd = importlib.import_module(f'{_info_pkg}.fc_vra_detector')
+    from modules.info.analysis.fc_direct_writes import (
+        detect_direct_writes as _imported_ddw)
+    _fcd.detect_direct_writes = _imported_ddw
+    __import__('modules.info.analysis.fc_vra_detector',
+               fromlist=['detect_heap_overflow_fcv3'])
+
+
+# -- A-7: INT-RANGE (整数溢出区间分析器) --
+def run_int_range_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """INT-RANGE 桥接: 算术运算位宽约束 + 符号/无符号转换区间分析.
+
+    与 INT-SHIFT (模式匹配) 的区别:
+      INT-RANGE 做四角点区间算术 (lo*lo, lo*hi, hi*lo, hi*hi),
+      检测 mul/shl/add 的 wrap/truncation/sign_mismatch.
+    """
+    if not _check_module('int_range', _probe_int_range):
+        return existing_findings
+
+    try:
+        from modules.vuln.detection.src.int_overflow.int_range_analyzer import (
+            IntegerRangeAnalyzer)
+        import re
+        analyzer = IntegerRangeAnalyzer()
+        addr_seq = [0x401000]
+
+        # 从伪代码提取运算并馈入分析器
+        for line in (pseudocode or '').split('\n'):
+            line = line.strip()
+            # n * K (乘法溢出)
+            m = re.match(
+                r'\w+\s*=\s*(\w+)\s*\*\s*(\d+|0x[0-9a-fA-F]+)\s*$', line)
+            if m:
+                analyzer.add_operation(
+                    insn_addr=addr_seq[0], op='mul', width=32,
+                    left_range=(0, 0xFFFFFFFF), right_range=(0, 0xFFFFFFFF))
+                addr_seq[0] += 4
+                continue
+            # n << K (移位)
+            m = re.match(r'\w+\s*=\s*(\w+)\s*<<\s*(\d+)\s*$', line)
+            if m:
+                shift = int(m.group(2))
+                analyzer.add_operation(
+                    insn_addr=addr_seq[0], op='shl', width=32,
+                    left_range=(0, 0xFFFFFFFF), right_range=(shift, shift))
+                addr_seq[0] += 4
+                continue
+            # n += C (加法回绕)
+            m = re.match(r'\w+\s*\+=\s*(\d+|0x[0-9a-fA-F]+)\s*$', line)
+            if m:
+                analyzer.add_operation(
+                    insn_addr=addr_seq[0], op='add', width=32,
+                    left_range=(0, 0xFFFFFFFF), right_range=(0, 0xFFFFFFFF))
+                addr_seq[0] += 4
+                continue
+            # malloc(n * K) — 溢出结果用于分配
+            m = re.match(r'\w+\s*=\s*malloc\s*\(\s*(\w+)\s*\*\s*(\d+)\s*\)',
+                         line)
+            if m:
+                addr_seq[0] += 4
+                analyzer.mark_used_in_alloc(insn_addr=addr_seq[0])
+                continue
+            # malloc(0x...) 大小常量
+            m = re.match(r'\w+\s*=\s*malloc\s*\(\s*(0x[0-9a-fA-F]+|\d+)\s*\)',
+                         line)
+            if m:
+                size = int(m.group(1), 0)
+                if size > 0xFFFFFFFF:
+                    analyzer.add_operation(
+                        insn_addr=addr_seq[0], op='mul', width=32,
+                        left_range=(size, size), right_range=(1, 1))
+                    analyzer.mark_used_in_alloc(insn_addr=addr_seq[0])
+                addr_seq[0] += 4
+                continue
+
+        candidates = analyzer.analyze_all()
+        new_findings = []
+        for c in candidates:
+            if not c.overflow_possible:
+                continue
+            new_findings.append({
+                'type': 'integer-overflow', 'function': func_name,
+                'severity': 'Critical' if c.risk_level == 'critical'
+                            else 'High',
+                'cwe': 'CWE-190',
+                'confidence': 0.85 if c.risk_level == 'critical' else 0.60,
+                'description': (
+                    f'INT-RANGE {c.overflow_type}: op={c.operation} '
+                    f'width={c.operand_width}bit '
+                    f'left={c.left_range} right={c.right_range}'
+                    + (f' used_in_alloc=1' if c.used_in_alloc else '')),
+                'verdict': 'POSSIBLE', 'source': 'int_range'})
+        return existing_findings + new_findings
+    except Exception as e:
+        logger.debug('INT-RANGE bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-8: DRIFT (对象身份感知UAF检测) --
+def run_drift_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """DRIFT 桥接: objdump→对象身份追踪→free-use验证→时间路径验证.
+
+    与已有 UAF-Lifetime-Tracker (着色追踪) 的区别:
+      DRIFT 的 ObjIdTracker 做真实汇编对象身份消解,
+      消除"不同对象同一寄存器"误报; 无二进制时从伪代码合成汇编.
+    """
+    if not _check_module('drift', lambda: __import__(
+            'modules.vuln.src.uaf.drift_orchestrator',
+            fromlist=['analyze_uaf'])):
+        return existing_findings
+
+    try:
+        import os
+        report = None
+        if binary_path and os.path.isfile(binary_path):
+            from modules.vuln.src.uaf.drift_orchestrator import analyze_uaf
+            report = analyze_uaf(binary_path, timeout_s=10)
+        if report is None or report.disasm_error:
+            asm_lines = _pseudocode_to_intx_asm(pseudocode)
+            report = _run_drift_on_asm_lines(asm_lines, binary_path or 'pseudo')
+        if report is None:
+            return existing_findings
+
+        new_findings = []
+        for r in report.findings:
+            decision = r.get('decision', '')
+            if decision in ('confirmed_uaf', 'likely_uaf'):
+                new_findings.append({
+                    'type': 'use-after-free', 'function': func_name,
+                    'severity': 'High' if decision == 'confirmed_uaf' else 'Medium',
+                    'cwe': 'CWE-416',
+                    'confidence': r.get('confidence', 0.5),
+                    'description': (
+                        f'DRIFT {decision}: obj={r.get("obj_id")} '
+                        f'free@{r.get("free_line")} use@{r.get("use_line")} '
+                        f'phase={r.get("phase")} {r.get("reasoning", "")[:80]}'),
+                    'verdict': 'DEFINITE' if decision == 'confirmed_uaf' else 'POSSIBLE',
+                    'source': 'drift'})
+            elif r.get('double_free'):
+                new_findings.append({
+                    'type': 'double-free', 'function': func_name,
+                    'severity': 'High', 'cwe': 'CWE-415',
+                    'confidence': r.get('confidence', 0.7),
+                    'description': f'DRIFT double-free: obj={r.get("obj_id")}',
+                    'verdict': 'DEFINITE', 'source': 'drift'})
+        return existing_findings + new_findings
+    except Exception as e:
+        logger.debug('DRIFT bridge failed: %s', e)
+        return existing_findings
+
+
+def _run_drift_on_asm_lines(asm_lines: List[str], sample_id: str):
+    """在合成汇编上执行 DRIFT 内部管线 (validator+filter+temporal)."""
+    if not asm_lines:
+        return None
+    try:
+        import sys as _sys
+        import os as _os
+        _drift_dir = _os.path.join(
+            _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+            'modules', 'vuln', 'src', 'uaf')
+        if _drift_dir not in _sys.path:
+            _sys.path.insert(0, _drift_dir)
+        from free_use_validator import FreeUseValidator, filter_infeasible_paths
+        from drift_fp_filter import DriftFPFilter
+        from temporal_path_verifier import TemporalPathVerifier
+        import time
+        t0 = time.time()
+        validator = FreeUseValidator()
+        validated, tracker = validator.validate(asm_lines)
+        validated = filter_infeasible_paths(validated, asm_lines)
+        findings_dicts = [v.to_dict() for v in validated]
+        fp_filter = DriftFPFilter()
+        filter_report = fp_filter.run_pipeline(
+            findings_dicts, asm_lines, list(tracker.objects.values()))
+        temporal_verifier = TemporalPathVerifier()
+        filtered_findings = temporal_verifier.verify(asm_lines, findings_dicts)
+        # 组装与 DriftReport 兼容的轻量结构
+        class _LiteReport:
+            pass
+        report = _LiteReport()
+        report.findings = []
+        for v in validated:
+            r = None
+            for fr in filter_report.results:
+                if (fr.finding.get('use_line') == v.use_line and
+                        fr.finding.get('free_line') == v.free_line):
+                    r = fr
+                    break
+            tv_match = next(
+                (tf for tf in filtered_findings
+                 if tf.get('use_line') == v.use_line and
+                 tf.get('free_line') == v.free_line), None)
+            decision = r.decision.value if r else 'uncertain'
+            if tv_match is None and decision != 'uncertain':
+                decision = 'temporal_filtered'
+            report.findings.append({
+                'obj_id': v.obj_id, 'alloc_func': v.alloc_func,
+                'free_line': v.free_line, 'use_line': v.use_line,
+                'double_free': v.double_free,
+                'confidence': (tv_match.get('confidence', v.confidence)
+                               if tv_match else v.confidence),
+                'decision': decision,
+                'phase': r.decisive_phase.value if r else 'object_identity',
+                'reasoning': r.reasoning if r else '',
+            })
+        report.filtered_fp = filter_report.filtered_fp
+        report.elapsed_sec = round(time.time() - t0, 3)
+        return report
+    except Exception:
+        return None
+
+
+# -- A-9: FMT-SPEC (格式说明符解析器) --
+def run_fmt_spec_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """FMT-SPEC 桥接: POSIX 格式说明符解析 → 危险说明符检测.
+
+    与已有 FMTPROV/FSTP 的区别:
+      FMT-SPEC 解析完整说明符语法 (flags/width/prec/length/posarg),
+      检测 %n 写风险、%s 泄露、%N$pos 任意读, 与语义无关的纯语法层.
+    """
+    if not _check_module('fmt_spec', lambda: __import__(
+            'modules.vuln.src.format.fmt_spec_parser',
+            fromlist=['parse_format_specs'])):
+        return existing_findings
+
+    try:
+        from modules.vuln.src.format.fmt_spec_parser import (
+            parse_format_specs, detect_format_danger)
+        import re
+        new_findings = []
+        # 提取伪代码中的字符串字面量 (含 %)
+        for m in re.finditer(r'"((?:[^"\\]|\\.)*)"', pseudocode or ''):
+            fmt_str = m.group(1)
+            if '%' not in fmt_str:
+                continue
+            specs = parse_format_specs(fmt_str)
+            danger = detect_format_danger(fmt_str, specs)
+            if danger['risk_level'] == 'CRITICAL':
+                new_findings.append({
+                    'type': 'format-string', 'function': func_name,
+                    'severity': 'High', 'cwe': 'CWE-134',
+                    'confidence': 0.90,
+                    'description': (
+                        f'FMT-SPEC CRITICAL: fmt="{fmt_str[:40]}" '
+                        f'dangerous_specs={danger["dangerous_specs"]} '
+                        f'args_consumed={danger["args_consumed"]}'),
+                    'verdict': 'DEFINITE', 'source': 'fmt_spec'})
+            elif danger['risk_level'] == 'HIGH':
+                new_findings.append({
+                    'type': 'format-string', 'function': func_name,
+                    'severity': 'High', 'cwe': 'CWE-134',
+                    'confidence': 0.75,
+                    'description': (
+                        f'FMT-SPEC HIGH: fmt="{fmt_str[:40]}" '
+                        f'positional access {danger["dangerous_specs"]}'),
+                    'verdict': 'POSSIBLE', 'source': 'fmt_spec'})
+            elif danger['risk_level'] == 'MEDIUM':
+                new_findings.append({
+                    'type': 'format-string', 'function': func_name,
+                    'severity': 'Medium', 'cwe': 'CWE-134',
+                    'confidence': 0.55,
+                    'description': (
+                        f'FMT-SPEC MEDIUM: fmt="{fmt_str[:40]}" '
+                        f'leak specs ({danger["args_consumed"]} args)'),
+                    'verdict': 'POSSIBLE', 'source': 'fmt_spec'})
+        return existing_findings + new_findings
+    except Exception as e:
+        logger.debug('FMT-SPEC bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-10: PcWBI 原版 (来源约束写界推断) --
+def run_pcwbi_orig_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """PcWBI 原版桥接: 五级来源格 CONSTANT<GUARDED<ALLOC_LINKED<INPUT_TAINTED<UNKNOWN.
+
+    与差异化版 PcWBI-IRL (内联复制建模) 的区别:
+      原版做真实写界推断三值判定 CONFIRMED/BENIGN/SUSPECTED,
+      守卫别名传播走 ProvValue 对象同一性.
+    """
+    if not _check_module('pcwbi_orig', lambda: __import__(
+            'analysis.pcwbi_impl',
+            fromlist=['WriteBoundInferer'])):
+        return existing_findings
+
+    try:
+        from analysis.pcwbi_impl import WriteBoundInferer
+        heap_findings = [f for f in existing_findings
+                         if 'heap' in f.get('type', '').lower()]
+        non_heap = [f for f in existing_findings
+                    if 'heap' not in f.get('type', '').lower()]
+        if not heap_findings:
+            return existing_findings
+
+        # 从伪代码提取守卫约束, 构建 ProvValue 工厂
+        import re
+        guarded_bounds: Dict[str, int] = {}
+        for line in (pseudocode or '').split('\n'):
+            m = re.match(
+                r'if\s*\(\s*(\w+)\s*[<>=!]+\s*(\d+)\s*\)\s*(\w+)\s*=',
+                line)
+            if m:
+                guarded_bounds.setdefault(m.group(3), int(m.group(2)))
+            m = re.match(r'if\s*\(\s*(\w+)\s*>\s*(\d+)\s*\)\s*return', line)
+            if m:
+                guarded_bounds.setdefault(m.group(1), int(m.group(2)) - 1)
+        # 函数参数视为污点来源
+        params = set()
+        m = re.match(r'\w+\s+\w+\s*\(([^)]*)\)', pseudocode or '')
+        if m:
+            for p in m.group(1).split(','):
+                p = p.strip().split()[-1].strip('*') if p.strip() else ''
+                if p and p[0].isalpha():
+                    params.add(p)
+        tainted = params | set(re.findall(
+            r'(\w+)\s*=\s*(?:atoi|recv|read|getenv|fread)\s*\(',
+            pseudocode or ''))
+
+        def get_write_prov(write_addr, size_reg):
+            from analysis.pcwbi_impl import ProvValue, ProvClass
+            if size_reg in guarded_bounds:
+                return ProvValue(cls=ProvClass.GUARDED,
+                                 bound=guarded_bounds[size_reg])
+            if size_reg in tainted:
+                return ProvValue(cls=ProvClass.INPUT_TAINTED, bound=None)
+            m2 = re.match(r'(\d+|0x[0-9a-fA-F]+)$', str(size_reg))
+            if m2:
+                return ProvValue(cls=ProvClass.CONSTANT,
+                                 bound=int(m2.group(1), 0))
+            return None
+
+        def get_alloc_prov(alloc_addr):
+            from analysis.pcwbi_impl import ProvValue, ProvClass
+            return ProvValue(cls=ProvClass.UNKNOWN, bound=None)
+
+        inferer = WriteBoundInferer()
+        results = inferer.infer(heap_findings, get_write_prov, get_alloc_prov)
+
+        kept = []
+        for f, res in zip(heap_findings, results):
+            # WbVerdict 为字符串常量: confirmed/benign/suspected
+            if res.verdict == 'benign':
+                f['pcwbi_verdict'] = 'BENIGN'
+                f['pcwbi_reason'] = res.reason[:120]
+                continue  # 证明良性 → 过滤
+            if res.verdict == 'confirmed':
+                f['pcwbi_verdict'] = 'CONFIRMED'
+                f['pcwbi_reason'] = res.reason[:120]
+                f.setdefault('confidence', 0.5)
+                f['confidence'] = min(1.0, f.get('confidence', 0.5) + 0.2)
+            else:
+                f['pcwbi_verdict'] = 'SUSPECTED'
+                f['pcwbi_reason'] = res.reason[:120]
+            kept.append(f)
+        return non_heap + kept
+    except Exception as e:
+        logger.debug('PcWBI-orig bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-11: FC-VRA 原版 (流相关值域分析) --
+def run_fc_vra_orig_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """FC-VRA 原版桥接: C0值流配对→C1大小等价→C2区间松弛→C3支配守卫→C4可控性.
+
+    与差异化版 FC-VRA-PTA (指针污点别名) 的区别:
+      原版做完整的五条件判定管线, findings 来自 flow-correlated pairs.
+    """
+    if not _check_module('fc_vra_orig', _probe_fc_vra_orig):
+        return existing_findings
+
+    try:
+        from modules.info.analysis.fc_vra_detector import detect_heap_overflow_fcv3
+        result = detect_heap_overflow_fcv3(
+            code=pseudocode or '', func_name=func_name)
+        new_findings = []
+        for f in result.get('findings', []):
+            new_findings.append({
+                'type': 'heap-overflow', 'function': func_name,
+                'severity': f.get('severity', 'Medium'),
+                'cwe': 'CWE-122',
+                'confidence': f.get('confidence', 0.5),
+                'description': f'FC-VRA: alloc={f.get("alloc_func")} '
+                               f'write={f.get("write_func")} '
+                               f'buffer={f.get("buffer")} — {f.get("reason", "")[:80]}',
+                'verdict': 'POSSIBLE', 'source': 'fc_vra'})
+        return existing_findings + new_findings
+    except Exception as e:
+        logger.debug('FC-VRA-orig bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-12: CACBV-DSS 原版 (动态slack减除) --
+def run_cacbv_dss_orig_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """CACBV-DSS 原版桥接: 按分配函数类型动态计算 chunk 几何.
+
+    与 stage 34 (差异化 CACBV-DSS via analyze_findings) 的区别:
+      原版直接调用 classify_overflow (SAFE/OVERFLOW/UNCERTAIN) 对
+      逐条 finding 的 alloc_size/write_size 做分类判定.
+    """
+    if not _check_module('cacbv_dss_orig', lambda: __import__(
+            'modules.vuln.detection.heap_analysis.acpe.cacbv_dss',
+            fromlist=['DynamicSlackSubtractor'])):
+        return existing_findings
+
+    try:
+        from modules.vuln.detection.heap_analysis.acpe.cacbv_dss import (
+            DynamicSlackSubtractor)
+        import re
+        # 提取分配函数类型映射 var → func
+        alloc_funcs: Dict[str, str] = {}
+        for line in (pseudocode or '').split('\n'):
+            m = re.match(
+                r'(\w+)\s*=\s*(malloc|calloc|realloc|aligned_alloc)\s*\(',
+                line, re.IGNORECASE)
+            if m:
+                alloc_funcs[m.group(1)] = m.group(2).lower()
+
+        subtractor = DynamicSlackSubtractor()
+        for f in existing_findings:
+            if 'heap' not in f.get('type', '').lower():
+                continue
+            alloc_var = f.get('alloc_var', f.get('variable', ''))
+            alloc_func = alloc_funcs.get(alloc_var, 'malloc')
+            alloc_size = f.get('alloc_size', 0)
+            write_size = f.get('write_size', 0)
+            if (isinstance(alloc_size, int) and isinstance(write_size, int)
+                    and alloc_size > 0 and write_size > 0):
+                result = subtractor.classify_overflow(
+                    alloc_func, alloc_size, write_size)
+                f['dss_orig_verdict'] = result['verdict']
+                f['dss_orig_geometry'] = {
+                    k: result.get(k) for k in
+                    ('usable', 'chunk_size', 'slack', 'header_size')}
+                if result['verdict'] == 'OVERFLOW':
+                    f.setdefault('confidence', 0.5)
+                    f['confidence'] = min(1.0, f.get('confidence', 0.5) + 0.15)
+                elif (result['verdict'] == 'UNCERTAIN'
+                      and f.get('severity', '').lower() in ('high', 'critical')):
+                    # 写入 slack 区, 精度提升: 降置信但保留
+                    f['dss_orig_note'] = '写入落在slack区, 越界但未过chunk边界'
+        return existing_findings
+    except Exception as e:
+        logger.debug('CACBV-DSS-orig bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-13: 轻量符号表达式 + 4-Filter (patching侧堆误报过滤) --
+def run_symbolic_fp_filter_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """轻量符号+4-Filter 桥接: alloc站点扫描→污点追踪→区间抽象→可满足性求解.
+
+    与 SHIELD (vuln侧三引擎) 的区别:
+      本模块来自 patching 侧, 用 IntervalAbstractor + OverflowSatisfiabilitySolver
+      对 malloc+memcpy 对做 cannot_overflow 判定, FILTER 误报.
+    """
+    if not _check_module('sym_fp_filter', lambda: __import__(
+            'modules.patching.src.heap_fp_filter',
+            fromlist=['HeapFPFilter'])):
+        return existing_findings
+
+    try:
+        from modules.patching.src.heap_fp_filter import HeapFPFilter
+        asm_lines = _pseudocode_to_intx_asm(pseudocode)
+        if not asm_lines:
+            return existing_findings
+        engine = HeapFPFilter()
+        report = engine.filter(asm_lines, function_name=func_name)
+
+        # 报告中没有按 finding 逐条对应, 只有 alloc_line 级别判定;
+        # 无法映射回现有 findings 时, 仅在有判定且发现 KEEP 时增强
+        for f in existing_findings:
+            if 'heap' not in f.get('type', '').lower():
+                continue
+            alloc_line = f.get('alloc_line', f.get('line', 0))
+            for a in report.details:
+                if a.alloc_line == alloc_line and a.action == 'KEEP':
+                    f['symfp_keep'] = True
+                    f.setdefault('confidence', 0.5)
+                    f['confidence'] = min(1.0, f.get('confidence', 0.5) + 0.1)
+                    break
+        return existing_findings
+    except Exception as e:
+        logger.debug('Symbolic-FP-Filter bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-14: BWR 原版 (有界写恢复, 直接调用) --
+def run_bwr_orig_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """BWR 原版桥接: 对无界写 (strcpy/strcat/sprintf/gets) 恢复写尺寸上界.
+
+    与 stage 23 BWR+PCST 的区别:
+      stage 23 将伪代码合成汇编后调用 recover(); 原版桥接复用同一
+      底层 BoundedWriteRecovery 但以不同编排: 逐 finding 按其
+      write_func/write_var 定位, 输出 BWRVerdict 三值标注.
+    """
+    if not _check_module('bwr_orig', lambda: __import__(
+            'modules.analysis.static.bounded_write_recovery',
+            fromlist=['BoundedWriteRecovery'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.bounded_write_recovery import (
+            BoundedWriteRecovery)
+        from modules.analysis.static.heap_write_semantics import is_unsized_write
+        import re
+        heap_findings = [f for f in existing_findings
+                         if 'heap' in f.get('type', '').lower()]
+        non_heap = [f for f in existing_findings
+                    if 'heap' not in f.get('type', '').lower()]
+        if not heap_findings:
+            return existing_findings
+
+        # 构建最小汇编上下文 (从伪代码), 复用 BWR+PCST 的合成逻辑
+        instructions = _build_bwr_context(pseudocode)
+        bwr = BoundedWriteRecovery()
+
+        kept = []
+        for f in heap_findings:
+            wf = f.get('write_func', '')
+            if not wf or not is_unsized_write(wf):
+                kept.append(f)
+                continue
+            # 在合成指令中定位该函数调用
+            call_idx = -1
+            for i, ins in enumerate(instructions):
+                if (ins.get('mnemonic') == 'call'
+                        and ins.get('operands', [''])[0] == wf):
+                    call_idx = i
+                    break
+            if call_idx < 0:
+                kept.append(f)
+                continue
+            verdict = bwr.recover(
+                instructions, call_idx, wf, _NullTracker(),
+                dst_reg='rdi', src_reg='rsi')
+            if verdict.kind == 'safe':
+                f['bwr_orig_verdict'] = 'safe'
+                f['bwr_orig_reason'] = verdict.reason[:120]
+                continue  # 恢复上界证明安全 → 过滤
+            if verdict.kind == 'overflow':
+                f['bwr_orig_verdict'] = 'overflow'
+                f['bwr_orig_reason'] = verdict.reason[:120]
+                f.setdefault('confidence', 0.5)
+                f['confidence'] = min(1.0, f.get('confidence', 0.5) + 0.15)
+            else:
+                f['bwr_orig_verdict'] = 'unknown'
+            kept.append(f)
+        return non_heap + kept
+    except Exception as e:
+        logger.debug('BWR-orig bridge failed: %s', e)
+        return existing_findings
+
+
+# -- A-15: PG-WBV 原版 (giva: 分配点感知写界验证, 抽象解释引擎级) --
+def run_pg_wbv_orig_bridge(
+    pseudocode: str,
+    func_name: str,
+    binary_path: str,
+    existing_findings: List[dict],
+) -> List[dict]:
+    """PG-WBV 原版桥接: 抽象解释引擎前向追踪分配点 + FpSuppressor 三层判定.
+
+    与差异化版 PG-WBV-LSA (stage 37 循环结构感知伪代码正则) 的区别:
+      原版在 objdump 指令流上运行完整 absint 引擎: _prescan_allocs
+      前向记录分配大小, _step_one 逐指令状态传播, GivaInterpreter
+      捕获堆写完整操作数, FpSuppressor 做归属/大小界定/循环界三层判定.
+      判定基于 StridedValue 步长域抽象而非字符串模式.
+    有 binary_path 时 objdump 真实反汇编; 无二进制时合成 objdump 文本.
+    """
+    if not _check_module('pg_wbv_orig', lambda: __import__(
+            'modules.analysis.static.heap_analysis.giva_detector',
+            fromlist=['GivaScanner'])):
+        return existing_findings
+
+    try:
+        from modules.analysis.static.heap_analysis.giva_detector import (
+            GivaScanner)
+        import os as _os
+        objdump_text = ''
+        # 优先真实二进制: objdump 反汇编
+        if binary_path and _os.path.isfile(binary_path):
+            import subprocess as _sp
+            try:
+                out = _sp.run(
+                    ['objdump', '-d', '-M', 'intel', binary_path],
+                    capture_output=True, text=True, timeout=15)
+                if out.returncode == 0 and out.stdout:
+                    objdump_text = out.stdout
+            except Exception:
+                objdump_text = ''
+        if not objdump_text:
+            objdump_text = _pseudocode_to_giva_asm(pseudocode, func_name)
+        if not objdump_text:
+            return existing_findings
+
+        scanner = GivaScanner(binary_path=binary_path or None)
+        result = scanner.scan(objdump_text, sample_name=func_name)
+        if result.get('error'):
+            return existing_findings
+
+        new_findings = []
+        # real 组: giva 判定真实的堆溢出 (未通过三层抑制)
+        for f in result.get('real', []):
+            new_findings.append({
+                'type': 'heap-overflow', 'function': func_name,
+                'severity': 'High', 'cwe': 'CWE-122',
+                'confidence': f.get('confidence', 0.5),
+                'description': (
+                    f'PG-WBV giva: {f.get("subtype", "giva")} '
+                    f'fn={f.get("func", "?")} addr={f.get("address", "?")} '
+                    f'write={f.get("write_size", 0)} '
+                    f'alloc={f.get("alloc_size", 0)} '
+                    f'usable={f.get("usable_size", 0)} — {f.get("reason", "")[:80]}'),
+                'verdict': 'DEFINITE' if f.get('confidence', 0) >= 0.7
+                           else 'POSSIBLE',
+                'source': 'pg_wbv_giva',
+                'insn_addr': f.get('insn_addr', 0),
+                'alloc_size': f.get('alloc_size', 0),
+                'write_size': f.get('write_size', 0),
+            })
+        # filtered 组: giva 证明安全 → 过滤对应已有 heap findings
+        # 匹配规则: 已有 finding 的 write_size <= giva filtered 的 usable
+        # 且函数名一致时视为同一判定对象的抑制证据
+        non_heap = [f for f in existing_findings
+                    if 'heap' not in f.get('type', '').lower()]
+        heap_findings = [f for f in existing_findings
+                         if 'heap' in f.get('type', '').lower()]
+        filtered_evidence = result.get('filtered', [])
+        kept_heap = []
+        for f in heap_findings:
+            suppressed = False
+            for ev in filtered_evidence:
+                ev_func = ev.get('func', '?')
+                # 函数名匹配: 解析出函数名则精确匹配;
+                # 合成场景无函数头时 func='?', 但管线逐函数调用,
+                # 伪代码即当前函数, 视为同一函数证据
+                func_match = (ev_func == f.get('function')) or (ev_func == '?')
+                # 写入点匹配: 同一写入大小且 giva 证明 write<=usable
+                size_match = (
+                    ev.get('write_size', 0) == f.get('write_size', 0)
+                    and ev.get('usable_size', 0) >= ev.get('write_size', 0))
+                if func_match and size_match:
+                    f['pg_wbv_giva_verdict'] = 'safe'
+                    f['pg_wbv_giva_reason'] = (ev.get('reason', '') or '')[:120]
+                    suppressed = True
+                    break
+            if not suppressed:
+                kept_heap.append(f)
+        return non_heap + kept_heap + new_findings
+    except Exception as e:
+        logger.debug('PG-WBV-orig bridge failed: %s', e)
+        return existing_findings
+
+
+def _pseudocode_to_giva_asm(pseudocode: str, func_name: str = '') -> str:
+    """将伪代码合成为 giva InstructionParser 可解析的 objdump 文本.
+
+    格式: "  addr:\thex bytes\tmnemonic operands" (与 _LINE_RE 匹配:
+      ^\\s*([0-9a-f]+):\\s+(?:[0-9a-f]{2}\\s+)+\\s*(.+)$ ).
+    首行插入函数头 "  addr <func_name>:" 供 parse_functions 解析,
+    使 real/filtered 证据携带真实函数名.
+    合成模式: malloc(N)/calloc(N,M)/危险调用/memcpy 三参数/堆写/守卫.
+    """
+    import re
+    lines: List[str] = []
+    addr = 0x1500
+    if func_name:
+        lines.append(f'  {addr:x} <{func_name}>:')
+    _var_reg: Dict[str, str] = {}
+    _reg_seq = [0]
+    _regs = ['rbx', 'r12', 'r13', 'r14', 'r15', 'rbp']
+
+    def get_reg(v: str) -> str:
+        # 变量名 → 寄存器; 超出表用 rN 序列
+        if v not in _var_reg:
+            if _reg_seq[0] < len(_regs):
+                _var_reg[v] = _regs[_reg_seq[0]]
+            else:
+                _var_reg[v] = f'r{_reg_seq[0]}'
+            _reg_seq[0] += 1
+        return _var_reg[v]
+
+    def emit(mnem: str, ops: str = '') -> None:
+        nonlocal addr
+        ops_part = f'\t{ops}' if ops else ''
+        lines.append(f'  {addr:x}:\t48 8b 00\t{mnem}{ops_part}')
+        addr += 7
+
+    for line in (pseudocode or '').split('\n'):
+        line = line.strip()
+        if not line or line.startswith('//') or line.startswith('#'):
+            continue
+        # p = malloc(N) — 分配: mov rdi,N; call malloc; mov var,rax
+        m = re.match(
+            r'(\w+)\s*=\s*malloc\s*\(\s*(\d+|0x[0-9a-fA-F]+)\s*\)', line)
+        if m:
+            emit('mov', f'rdi,{int(m.group(2), 0)}')
+            emit('call', 'malloc')
+            emit('mov', f'{get_reg(m.group(1))},rax')
+            continue
+        # p = malloc(var) — 动态大小, prescan 回退 128 默认
+        m = re.match(r'(\w+)\s*=\s*malloc\s*\(\s*(\w+)\s*\)', line)
+        if m:
+            emit('mov', f'rdi,{get_reg(m.group(2))}')
+            emit('call', 'malloc')
+            emit('mov', f'{get_reg(m.group(1))},rax')
+            continue
+        # p = calloc(N, M) — rdi=N, rsi=M, rax 指针
+        m = re.match(
+            r'(\w+)\s*=\s*calloc\s*\(\s*(\d+|0x[0-9a-fA-F]+)\s*,\s*'
+            r'(\d+|0x[0-9a-fA-F]+)\s*\)', line)
+        if m:
+            emit('mov', f'rdi,{int(m.group(2), 0)}')
+            emit('mov', f'rsi,{int(m.group(3), 0)}')
+            emit('call', 'calloc')
+            emit('mov', f'{get_reg(m.group(1))},rax')
+            continue
+        # memcpy(dst, src, N) — 危险调用: rdi=dst, rsi=src, rdx=N
+        m = re.match(
+            r'memcpy\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*'
+            r'(\d+|0x[0-9a-fA-F]+)\s*\)', line)
+        if m:
+            emit('mov', f'rdi,{get_reg(m.group(1))}')
+            emit('mov', f'rsi,{get_reg(m.group(2))}')
+            emit('mov', f'rdx,{int(m.group(3), 0)}')
+            emit('call', 'memcpy')
+            continue
+        # memcpy(dst, src, var)
+        m = re.match(r'memcpy\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*(\w+)\s*\)',
+                     line)
+        if m and m.group(3) not in ('0',) and not m.group(3).isdigit():
+            emit('mov', f'rdi,{get_reg(m.group(1))}')
+            emit('mov', f'rsi,{get_reg(m.group(2))}')
+            emit('mov', f'rdx,{get_reg(m.group(3))}')
+            emit('call', 'memcpy')
+            continue
+        # strcpy/strcat/sprintf/gets — 危险调用 (2参/1参)
+        m = re.match(
+            r'(strcpy|strcat|sprintf|gets|strncpy|snprintf)\s*\((.*)\)\s*;?\s*$',
+            line)
+        if m:
+            func, argstr = m.groups()
+            args = [a.strip() for a in argstr.split(',')]
+            if func in ('strcpy', 'strcat'):
+                if len(args) >= 2:
+                    emit('mov', f'rdi,{get_reg(args[0])}')
+                    emit('mov', f'rsi,{get_reg(args[1])}')
+                    emit('call', func)
+            elif func == 'gets':
+                if args:
+                    emit('mov', f'rdi,{get_reg(args[0])}')
+                    emit('call', 'gets')
+            elif func in ('strncpy', 'snprintf'):
+                if len(args) >= 3:
+                    emit('mov', f'rdi,{get_reg(args[0])}')
+                    emit('mov', f'rsi,{get_reg(args[1])}')
+                    emit('mov', f'rdx,{int(args[2], 0) if args[2].isdigit() else get_reg(args[2])}')
+                    emit('call', func)
+            elif func == 'sprintf':
+                if len(args) >= 2:
+                    emit('mov', f'rdi,{get_reg(args[0])}')
+                    emit('mov', f'rsi,{get_reg(args[1])}')
+                    emit('call', func)
+            continue
+        # 堆写: *(p + off) = val / p[off] = val
+        m = re.match(
+            r'\*?\s*\(?(\w+)(?:\s*\+\s*(\d+|0x[0-9a-fA-F]+))?\)?\s*\[?\s*(\d*)\s*\]?\s*=\s*'
+            r'(\w+|\d+|0x[0-9a-fA-F]+)', line)
+        if m:
+            ptr_var, off, idx, val = m.groups()
+            base_reg = get_reg(ptr_var)
+            off_int = int(off, 0) if off else 0
+            # 堆写需要基址为堆指针: 前一条 mov dst,[base+off] 形式
+            # lea 先计算地址, 再 mov [地址], imm 写入
+            emit('lea', f'rax,[{base_reg}+0x{off_int:x}]')
+            if val.isdigit() or val.startswith('0x'):
+                emit('mov', f'DWORD PTR [rax],{val}')
+            else:
+                emit('mov', f'DWORD PTR [rax],{get_reg(val)}')
+            continue
+        # 赋值别名: dst = src
+        m = re.match(r'(\w+)\s*=\s*(\w+)\s*;?\s*$', line)
+        if m and m.group(2) not in (
+                'malloc', 'calloc', 'realloc', 'free', 'NULL'):
+            emit('mov', f'{get_reg(m.group(1))},{get_reg(m.group(2))}')
+            continue
+    return '\n'.join(lines)
+
+
+def _build_bwr_context(pseudocode: str) -> List[dict]:
+    """为 BWR 原版桥接构建最小化汇编指令上下文."""
+    import re
+    instructions: List[dict] = []
+    addr = 0x1000
+    _var_reg = {}
+    _regs = ['rbx', 'r12', 'r13', 'r14', 'r15']
+
+    def get_reg(v: str) -> str:
+        if v not in _var_reg:
+            _var_reg[v] = _regs[len(_var_reg) % len(_regs)]
+        return _var_reg[v]
+
+    for line in (pseudocode or '').split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        m = re.match(
+            r'(\w+)\s*=\s*malloc\s*\(\s*(\d+|0x[0-9a-fA-F]+)\s*\)', line)
+        if m:
+            size = int(m.group(2), 0)
+            instructions.append({'address': addr, 'mnemonic': 'mov',
+                                 'operands': ['rdi', str(size)]})
+            addr += 4
+            instructions.append({'address': addr, 'mnemonic': 'call',
+                                  'operands': ['malloc']})
+            addr += 4
+            instructions.append({'address': addr, 'mnemonic': 'mov',
+                                 'operands': [get_reg(m.group(1)), 'rax']})
+            addr += 4
+            continue
+        m = re.match(
+            r'(strcpy|strcat|stpcpy|sprintf|vsprintf)\s*\(\s*(\w+)\s*,\s*'
+            r'(?:"([^"]*)"|(\w+))\s*\)', line)
+        if m:
+            func, dst = m.group(1), m.group(2)
+            instructions.append({'address': addr, 'mnemonic': 'mov',
+                                  'operands': ['rdi', get_reg(dst)]})
+            addr += 4
+            if m.group(3) is not None:
+                instructions.append({
+                    'address': addr, 'mnemonic': 'lea',
+                    'operands': ['rsi', f'[rip+0x0] # "{m.group(3)}"']})
+            else:
+                instructions.append({'address': addr, 'mnemonic': 'mov',
+                                     'operands': ['rsi', get_reg(m.group(4))]})
+            addr += 4
+            instructions.append({'address': addr, 'mnemonic': 'call',
+                                  'operands': [func]})
+            addr += 4
+            continue
+        m = re.match(r'gets\s*\(\s*(\w+)\s*\)', line)
+        if m:
+            instructions.append({'address': addr, 'mnemonic': 'mov',
+                                 'operands': ['rdi', get_reg(m.group(1))]})
+            addr += 4
+            instructions.append({'address': addr, 'mnemonic': 'call',
+                                 'operands': ['gets']})
+            addr += 4
+            continue
+    return instructions
+
+
+class _NullTracker:
+    """BWR 原版桥接用占位 alloc_tracker — 无分配信息时保守 unknown."""
+
+    _ptr_to_alloc: Dict[str, int] = {}
+
+
 def run_innovation_pipeline(
     pseudocode: str,
     func_name: str,
@@ -4647,7 +6197,7 @@ def run_innovation_pipeline(
 ) -> List[dict]:
     """创新模块统一入口 — 按管线顺序执行全部创新模块.
 
-    管线顺序 (39个创新模块):
+    管线顺序 (54个创新模块):
       --- 原有7模块 (堆溢出聚焦) ---
       1. HOFPR: C源码级误报抑制 (产出新findings)
       2. HFP: IR级三态判定 (产出新findings)
@@ -4691,6 +6241,22 @@ def run_innovation_pipeline(
       37. PG-WBV-LSA: 循环结构感知写界 (对已有findings增强)
       38. ACPE-VRP: 值域传播增强 (对已有findings增强)
       39. ACFPC-CMS: 冲突感知多源融合 (对已有findings增强)
+      --- A类14模块 (原版独立模块接入) ---
+      40. PCFV: 反汇编级指针流约束验证管线 (产出新findings)
+      41. TOVS: 时间序验证UAF检测 (产出新findings)
+      42. MIVR: 多变量区间约束传播证明 (对已有findings过滤)
+      43. FSTP: 格式说明符语义污点传播 (产出+过滤)
+      44. INT-SHIFT: 整数溢出8模式汇编检测 (产出新findings)
+      45. SHIELD: 三引擎堆溢出误报消减 (对已有findings过滤)
+      46. INT-RANGE: 整数溢出区间分析 (产出新findings)
+      47. DRIFT: 对象身份感知UAF检测 (产出新findings)
+      48. FMT-SPEC: 格式说明符解析器 (产出新findings)
+      49. PcWBI原版: 来源约束写界推断 (对已有findings过滤)
+      50. FC-VRA原版: 流相关值域分析 (产出新findings)
+      51. CACBV-DSS原版: 动态slack减除 (对已有findings增强)
+      52. 轻量符号+4-Filter: patching侧堆误报过滤 (对已有findings增强)
+      53. BWR原版: 有界写恢复 (对已有findings过滤)
+      54. PG-WBV原版: giva分配点感知写界验证 (产出+过滤)
 
     参数:
       pseudocode: 反编译伪代码文本
@@ -4843,9 +6409,206 @@ def run_innovation_pipeline(
     # 阶段39: ACFPC-CMS — 冲突感知多源融合 (对已有findings增强)
     findings = run_acfpc_cms_bridge(pseudocode, func_name, binary_path, findings)
 
+    # === 阶段40-53: A类原版模块接入 (14个独立模块真实API调用) ===
+    # 阶段40: PCFV — 反汇编级指针流约束验证完整管线 (产出新findings)
+    findings = run_pcfv_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段41: TOVS — 时间序验证UAF检测 (产出新findings)
+    findings = run_tovs_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段42: MIVR — 多变量区间约束传播证明 (对已有findings过滤)
+    findings = run_mivr_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段43: FSTP — 格式说明符语义污点传播 (产出+过滤)
+    findings = run_fstp_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段44: INT-SHIFT — 整数溢出8模式汇编检测 (产出新findings)
+    findings = run_int_shift_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段45: SHIELD — 三引擎堆溢出误报消减 (对已有findings过滤)
+    findings = run_shield_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段46: INT-RANGE — 整数溢出区间分析 (产出新findings)
+    findings = run_int_range_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段47: DRIFT — 对象身份感知UAF检测 (产出新findings)
+    findings = run_drift_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段48: FMT-SPEC — 格式说明符解析器 (产出新findings)
+    findings = run_fmt_spec_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段49: PcWBI原版 — 来源约束写界推断 (对已有findings过滤)
+    findings = run_pcwbi_orig_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段50: FC-VRA原版 — 流相关值域分析 (产出新findings)
+    findings = run_fc_vra_orig_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段51: CACBV-DSS原版 — 动态slack减除 (对已有findings增强)
+    findings = run_cacbv_dss_orig_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段52: 轻量符号+4-Filter — patching侧堆误报过滤 (对已有findings增强)
+    findings = run_symbolic_fp_filter_bridge(pseudocode, func_name, binary_path, findings)
+
+    # 阶段53: BWR原版 — 有界写恢复 (对已有findings过滤)
+    findings = run_bwr_orig_bridge(pseudocode, func_name, binary_path, findings)
+
+    # === 阶段54: PG-WBV原版 (giva 抽象解释引擎级) ===
+    # 阶段54: PG-WBV原版 — 分配点感知写界验证 (产出新findings + 对已有findings过滤)
+    findings = run_pg_wbv_orig_bridge(pseudocode, func_name, binary_path, findings)
+
     return findings
 
 
+# 创新模块探测注册表: (键名, 探测函数), 与各 bridge 入口的
+# _check_module 调用保持一致. 新增 bridge 时需同步登记,
+# 保证 get_innovation_status 主动探测时覆盖全部模块.
+_INNOVATION_PROBES: List[Tuple[str, Any]] = [
+    ('hofpr', lambda: __import__(
+        'modules.exploit.src.analysis.hofpr', fromlist=['run_hofpr_pipeline'])),
+    ('hfp', lambda: __import__(
+        'modules.hfp.hfp_engine', fromlist=['detect_heap_overflow_hfp'])),
+    ('acfpc', lambda: __import__(
+        'modules.vuln.src.heap.acfpc.acfpc_pipeline',
+        fromlist=['run_acfpc_pipeline'])),
+    ('ddssc', lambda: __import__(
+        'modules.analysis.static.ddssc_coordinator',
+        fromlist=['DDSSCCoordinator'])),
+    ('awsc', lambda: __import__(
+        'modules.analysis.static.co_source_engine',
+        fromlist=['AWSCEngine'])),
+    ('cj_bvf', lambda: __import__(
+        'core.cj_bvf_filter', fromlist=['filter_by_bvf'])),
+    ('cj_pcbvf', lambda: __import__(
+        'core.cj_pcbvf_filter', fromlist=['filter_by_pcbvf'])),
+    ('uaf_hoig', lambda: __import__(
+        'analysis.uaf_hoig_pipeline', fromlist=['UafHoigPipeline'])),
+    ('gapsbv', lambda: __import__(
+        'analysis.gapsbv_pipeline', fromlist=['detect_heap_overflow_gapsbv'])),
+    ('fmtprov', lambda: __import__(
+        'analysis.fmt_verifier', fromlist=['verify_fmt_candidates'])),
+    ('gasri', lambda: __import__(
+        'core.guard_correlator', fromlist=['correlate_write'])),
+    ('uaf_enhanced', lambda: __import__(
+        'core.uaf_enhanced', fromlist=['detect_uaf_enhanced'])),
+    ('uaf_lifecycle', lambda: __import__(
+        'core.uaf_pointer_lifecycle', fromlist=['analyze_pointer_lifecycle'])),
+    ('double_free', lambda: __import__(
+        'modules.core.compat.double_free', fromlist=['FreeHistory'])),
+    ('buffer_underflow', lambda: __import__(
+        'modules.core.compat.buffer_underflow', fromlist=['detect_buffer_underflow'])),
+    ('off_by_one', lambda: __import__(
+        'modules.core.compat.off_by_one', fromlist=['detect_off_by_one'])),
+    ('uninit', lambda: __import__(
+        'modules.core.compat.uninitialized_memory', fromlist=['InitTracker'])),
+    ('intovf_enhance', lambda: __import__(
+        'modules.core.compat.int_overflow_enhance',
+        fromlist=['CongruenceWrapAnalyzer'])),
+    ('cross_pipeline', lambda: __import__(
+        'modules.core.compat.cross_pipeline_correlate',
+        fromlist=['batch_correlate'])),
+    ('cross_domain', lambda: __import__(
+        'modules.exploit.src.analysis.cross_domain_refiner',
+        fromlist=['CrossDomainRefiner'])),
+    ('uaf_lifetime', lambda: __import__(
+        'modules.exploit.src.analysis.uaf_lifetime_tracker',
+        fromlist=['UAF_LifetimeTracker'])),
+    ('provenance', lambda: __import__(
+        'modules.analysis.static.heap_analysis.provenance_aware_filter',
+        fromlist=['ProvenanceAwareFilter'])),
+    ('bwr_pcst', lambda: __import__(
+        'modules.analysis.static.bounded_write_recovery',
+        fromlist=['BoundedWriteRecovery'])),
+    ('dd_bvf', lambda: __import__(
+        'core.cj_bvf_solver_bridge', fromlist=['try_bvf_proof'])),
+    ('cacbv', lambda: __import__(
+        'modules.vuln.detection.heap_analysis.acpe.verdict',
+        fromlist=['evaluate', 'Verdict', 'AcpeVerdict'])),
+    ('bidir_range', lambda: __import__(
+        'modules.info.analysis.pointer_tracker',
+        fromlist=['extract_heap_ptrs'])),
+    ('acpe', lambda: __import__(
+        'modules.vuln.detection.heap_analysis.acpe.equivalence',
+        fromlist=['classify_pair'])),
+    ('psvr_hlm', lambda: __import__(
+        'modules.info.analysis.path_feasibility_check',
+        fromlist=['build_path_constraints'])),
+    ('dp_tvra', lambda: __import__(
+        'modules.vuln.detection.heap_analysis.fp_filter_v2',
+        fromlist=['evaluate_finding'])),
+    ('awsc_icf', lambda: __import__(
+        'modules.analysis.static.awsc_icf', fromlist=['InterproceduralCofluenceTracker'])),
+    ('hofpr_apc', lambda: __import__(
+        'modules.analysis.static.hofpr_apc', fromlist=['AdaptivePriorityCascade'])),
+    ('pcwbi_irl', lambda: __import__(
+        'modules.analysis.static.pcwbi_irl', fromlist=['InlineRepLoadModeler'])),
+    ('fc_vra_pta', lambda: __import__(
+        'modules.info.analysis.fc_vra_pta', fromlist=['PointerTaintAliasTracker'])),
+    ('cacbv_dss', lambda: __import__(
+        'modules.vuln.detection.heap_analysis.acpe.cacbv_dss',
+        fromlist=['DynamicSlackSubtractor'])),
+    ('biv_ctc', lambda: __import__(
+        'modules.patching.src.biv_ctc', fromlist=['CrossTypeConstraintPropagator'])),
+    ('si_cta', lambda: __import__(
+        'modules.project.analysis.si_cta', fromlist=['CrossTypeAliasTracker'])),
+    ('pg_wbv_lsa', lambda: __import__(
+        'modules.analysis.static.pg_wbv_lsa', fromlist=['LoopStructureAwareVerifier'])),
+    ('acpe_vrp', lambda: __import__(
+        'modules.vuln.detection.heap_analysis.acpe.acpe_vrp',
+        fromlist=['ValueRangePropagationEnhancer'])),
+    ('acfpc_cms', lambda: __import__(
+        'modules.vuln.detection.acfpc_cms', fromlist=['ConflictAwareMultiSourceFuser'])),
+    ('pcfv', lambda: __import__(
+        'modules.vuln.src.heap.pcfv.pipeline',
+        fromlist=['analyze_heap_pcfv'])),
+    ('tovs', lambda: __import__(
+        'modules.vuln.src.heap.uaf_tovs.pipeline',
+        fromlist=['analyze_uaf_tovs'])),
+    ('mivr', lambda: __import__(
+        'analysis.mivr_pipeline',
+        fromlist=['detect_heap_overflow_mivr'])),
+    ('fstp', lambda: __import__(
+        'analysis.fmt_semantic_taint',
+        fromlist=['FmtSemanticTaintPropagator'])),
+    ('int_shift', lambda: __import__(
+        'analysis.int_shift_impl',
+        fromlist=['IntOverflowDetector'])),
+    ('shield', lambda: __import__(
+        'modules.vuln.src.heap.shield_orchestrator',
+        fromlist=['ShieldOrchestrator'])),
+    ('int_range', _probe_int_range),
+    ('drift', lambda: __import__(
+        'modules.vuln.src.uaf.drift_orchestrator',
+        fromlist=['analyze_uaf'])),
+    ('fmt_spec', lambda: __import__(
+        'modules.vuln.src.format.fmt_spec_parser',
+        fromlist=['parse_format_specs'])),
+    ('pcwbi_orig', lambda: __import__(
+        'analysis.pcwbi_impl',
+        fromlist=['WriteBoundInferer'])),
+    ('fc_vra_orig', _probe_fc_vra_orig),
+    ('cacbv_dss_orig', lambda: __import__(
+        'modules.vuln.detection.heap_analysis.acpe.cacbv_dss',
+        fromlist=['DynamicSlackSubtractor'])),
+    ('sym_fp_filter', lambda: __import__(
+        'modules.patching.src.heap_fp_filter',
+        fromlist=['HeapFPFilter'])),
+    ('bwr_orig', lambda: __import__(
+        'modules.analysis.static.bounded_write_recovery',
+        fromlist=['BoundedWriteRecovery'])),
+    ('pg_wbv_orig', lambda: __import__(
+        'modules.analysis.static.heap_analysis.giva_detector',
+        fromlist=['GivaScanner'])),
+]
+
+
 def get_innovation_status() -> Dict[str, bool]:
-    """返回各创新模块的可用性状态, 供调试与报告使用."""
+    """返回各创新模块的可用性状态, 供调试与报告使用.
+
+    _module_available 为惰性缓存, 仅当某个 bridge 首次被调用后才
+    记录探测结果, 直接 import 后调用本函数会拿到不完整数据.
+    这里依据 _INNOVATION_PROBES 注册表主动补全全部 54 个模块
+    的探测, 保证任意时刻返回的都是全量状态.
+    """
+    for _name, _probe in _INNOVATION_PROBES:
+        _check_module(_name, _probe)
     return dict(_module_available)
