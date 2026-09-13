@@ -52,10 +52,21 @@ def _def_chain_depth(var: str, lines: List[str]) -> int:
 
 
 def _write_fanout(var: str, lines: List[str]) -> int:
-    """统计指向 var 的写点数量: var[off]= 或 [var+off]= 形式."""
+    """统计指向 var 的写点数量: var[off]= 或 [var+off]= 形式.
+
+    排除 RHS 是分配调用(malloc/calloc/realloc)的行, 避免分配行本身被误计.
+    """
     pat_write = re.compile(
         r"\[?\s*\b" + re.escape(var) + r"\b\s*(\+\s*\w+)?\]?\s*=")
-    return sum(1 for line in lines if pat_write.search(line))
+    pat_alloc = re.compile(r"(?:malloc|calloc|realloc)\s*\(")
+    count = 0
+    for line in lines:
+        if not pat_write.search(line):
+            continue
+        if pat_alloc.search(line):
+            continue
+        count += 1
+    return count
 
 
 def run_call_ctx_saturation(

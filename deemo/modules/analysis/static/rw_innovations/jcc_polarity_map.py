@@ -50,8 +50,15 @@ def _reach_polarity(graph: Dict[int, List[Tuple[int, int]]],
         old = reach.get(node)
         if old is None:
             reach[node] = pol
-        elif old != pol and old != 0:
-            reach[node] = 0      # 双极性路径均可达
+        elif old == 0:
+            # 已是双极性，极性不再变化，跳过重复传播
+            continue
+        elif old != pol:
+            # 极性冲突，合并为双极性0并继续向下传播
+            reach[node] = 0
+            pol = 0
+        else:
+            # 极性相同，无需重复传播
             continue
         for nxt, edge in graph.get(node, []):
             new_pol = pol if edge == 0 else (pol if edge == 1 else -pol)

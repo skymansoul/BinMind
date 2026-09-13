@@ -1,13 +1,13 @@
 """CorrelatedWrapCheck - 相关回绕检查 (stage 59).
 
 对 a*b+c、(a+b)<<k 等复合表达式建运算树, 检测任一子节点回绕但父节点
-吸收 (mask/add 截断) 的场景, 定位"中间回绕被吸收"型漏报.
+吸收 (mask 截断 / 移位补0) 的场景, 定位"中间回绕被吸收"型漏报.
 与 INT-RANGE 区间传播不同: 运算树匹配 + 吸收判定.
 
 设计决策:
   - 将表达式解析为二元运算树 (mul/add/shl/mask)
   - 对叶子求常量估值, 子节点若乘法/移位溢出则标记 wrap
-  - 父节点若做 & mask 或截断则"吸收", 吸收后整体视为漏报候选
+  - 父节点若做 & mask 或 << 低位补0则"吸收", 吸收后整体视为漏报候选; 加法不吸收
 """
 
 import re
@@ -81,12 +81,16 @@ def _mark_wrap(node: _Node) -> bool:
 
 
 def _find_absorbed_wrap(node: _Node, out: List[str]) -> None:
-    """寻找子节点回绕但父节点吸收 (mask & 或截断) 的场景."""
+    """寻找子节点回绕但父节点吸收的场景.
+
+    只有 & mask (掩码常量) 能真正吸收子节点回绕;
+    << 低位补0 视为部分吸收; 加法不能吸收回绕.
+    """
     if node.op == "&" and (node.left.wrap or node.right.wrap):
         out.append(f"absorbed_wrap: parent '&' masks wrapped child")
-    if node.op == "+" and (node.left.wrap or node.right.wrap):
-        # 加法吸收: 子节点溢出, 父节点加一个常量吸收
-        out.append(f"absorbed_wrap: parent '+' absorbs wrapped child")
+    if node.op == "<<" and (node.left.wrap or node.right.wrap):
+        # 移位低位补0, 部分吸收子节点回绕
+        out.append(f"absorbed_wrap: parent '<<' partially absorbs wrapped child")
     for child in (node.left, node.right):
         if child:
             _find_absorbed_wrap(child, out)

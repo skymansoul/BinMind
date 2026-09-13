@@ -46,7 +46,12 @@ def _roll_hash(seq: List[str]) -> int:
     base = 131
     mod = (1 << 61) - 1
     for s in seq:
-        h = (h * base + hash(s)) % mod
+        # 内置 hash 受 PYTHONHASHSEED 进程级随机化, 跨进程结果不可复现;
+        # 改用逐字符多项式哈希保证描述中 hash 数值确定性
+        sh = 0
+        for ch in s:
+            sh = (sh * base + ord(ch)) % mod
+        h = (h * base + sh) % mod
     return h
 
 

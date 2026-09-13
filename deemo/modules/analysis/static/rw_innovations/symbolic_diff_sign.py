@@ -1,12 +1,12 @@
 """SymbolicDiffSign - 符号差符号判定 (stage 69).
 
-write_expr - alloc_expr 化简后若只剩正系数常量项 -> 确定溢出 k 字节.
+写范围上界(偏移+写宽度) - alloc_expr 化简后若只剩正系数常量项 -> 确定溢出 k 字节.
 与 GAPSBV 仿射不同: 不做区间求值, 仅符号化简取符号.
 
 设计决策:
   - 将表达式化简为 (vars, const) 形式: vars 收集变量系数,
     const 为常量部分
-  - 求 diff = write - alloc
+  - 求 diff = (写偏移 + 写宽度) - alloc
   - 若 diff 无变量项且 const > 0 -> 确定溢出 const 字节
   - const <= 0 -> 安全; 含变量项 -> 未知
 """
@@ -40,6 +40,40 @@ def _simplify(expr: str) -> Tuple[Dict[str, int], int]:
     return coeff, const
 
 
+def _write_width(line: str) -> int:
+    """从写操作行推断写入字节数. 依据操作数宽度而非立即数值."""
+    line = line.strip()
+    # 行内宽度前缀优先: qword/dword/word/byte ptr
+    if re.search(r"\bqword\b", line, re.IGNORECASE):
+        return 8
+    if re.search(r"\bdword\b", line, re.IGNORECASE):
+        return 4
+    if re.search(r"\bword\b", line, re.IGNORECASE):
+        return 2
+    if re.search(r"\bbyte\b", line, re.IGNORECASE):
+        return 1
+    # 寄存器源宽度判断
+    # 先找 mov [mem], reg 模式中的 reg
+    m_reg = re.search(r"\[[^\]]*\]\s*(?:,|=)\s*([A-Za-z])", line)
+    if m_reg:
+        reg = m_reg.group(1)
+        # 64 位寄存器: rax~r15, r8~r15 (R 开头)
+        if re.match(r"r[a-z0-9]+", line[line.index(reg):].split()[0] if " " in line[line.index(reg):] else line[line.index(reg):]):
+            # 完整匹配寄存器名
+            rest = line[line.index(reg):]
+            reg_full = re.match(r"[A-Za-z][A-Za-z0-9]*", rest)
+            if reg_full:
+                name = reg_full.group(0).lower()
+                if name.startswith("r") and len(name) >= 2:
+                    return 8
+                if name.startswith("e"):
+                    return 4
+                if len(name) == 2 and name[0] in ("a", "b", "c", "d"):
+                    return 1
+    # 立即数无其他信息时按 4 字节
+    return 4
+
+
 def run_symbolic_diff_sign(
     pseudocode: str,
     func_name: str,
@@ -53,12 +87,22 @@ def run_symbolic_diff_sign(
     alloc_expr = m_alloc.group(1)
     alloc_c, alloc_const = _simplify(alloc_expr)
     for ln, line in enumerate(pseudocode.splitlines(), 1):
-        # 写点: [ptr+off], 值 或 [ptr], 值
-        m = re.search(r"\[[^\]]*\]\s*(?:,|=)\s*([^;,]+)", line)
+        # 写点: [ptr+off] 或 [ptr], 提取写偏移与写宽度
+        m = re.search(r"\[([^\]]*)\]\s*(?:,|=)", line)
         if not m:
             continue
-        write_expr = m.group(1).strip()
-        wc, wconst = _simplify(write_expr)
+        mem_expr = m.group(1).strip()
+        # 提取方括号内的常量偏移 +N
+        off_const = 0
+        m_off = re.search(r"\+\s*(\d+|0[xX][0-9a-fA-F]+)", mem_expr)
+        if m_off:
+            off_str = m_off.group(1)
+            off_const = int(off_str, 16) if off_str.lower().startswith("0x") else int(off_str)
+        # 写宽度从操作数推断
+        wwidth = _write_width(line)
+        # write = 偏移 + 写宽度
+        wc: Dict[str, int] = {}
+        wconst = off_const + wwidth
         # diff = write - alloc
         diff_c: Dict[str, int] = {}
         for v, c in wc.items():

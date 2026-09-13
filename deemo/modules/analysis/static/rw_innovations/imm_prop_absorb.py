@@ -136,19 +136,6 @@ def run_imm_prop_absorb(
     return findings
 
 
-def _scan_constants(pseudocode: str) -> Dict[str, int]:
-    return _scan_const_values(pseudocode)
-
-
-def _scan_const_values(pseudocode: str) -> Dict[str, int]:
-    consts: Dict[str, int] = {}
-    for line in pseudocode.splitlines():
-        m = re.search(r"\bmov\s+(r\w+)\s*,\s*(0[xX][0-9a-fA-F]+|\d+)", line)
-        if m:
-            consts[m.group(1)] = int(m.group(2), 0)
-    return consts
-
-
 if __name__ == "__main__":
     demo = """\
 mov rax, 16;

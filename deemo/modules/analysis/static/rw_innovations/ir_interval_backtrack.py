@@ -36,13 +36,15 @@ class VarRange:
         return best
 
 
-def _parse_def(line: str) -> Optional[Tuple[str, int, int]]:
+def _parse_def(line: str) -> Optional[Tuple[str, int, int, Optional[str]]]:
     m = re.search(r"\b(\w+)\s*=\s*(\d+)\s*;", line)
     if m:
-        return m.group(1), int(m.group(2)), int(m.group(2))
+        val = int(m.group(2))
+        return m.group(1), val, val, None
     m = re.search(r"\b(\w+)\s*=\s*(\w+)\s*\+\s*(\d+)", line)
     if m:
-        return m.group(1), 0, int(m.group(3))
+        # 返回 base 变量名供回溯查表，offset 存入 hi 占位
+        return m.group(1), 0, int(m.group(3)), m.group(2)
     return None
 
 
@@ -58,14 +60,26 @@ def run_ir_interval_backtrace(
     for ln, line in enumerate(lines, 1):
         d = _parse_def(line)
         if d:
-            vr.set(d[0], ln, (d[1], d[2]))
+            var, lo, hi, base_var = d
+            if base_var is not None:
+                # var = base + N: 回溯 base 的已定义区间计算 var 区间
+                base_r = vr.at(base_var, ln)
+                if base_r is not None:
+                    lo = base_r[0] + hi
+                    hi = base_r[1] + hi
+                    vr.set(var, ln, (lo, hi))
+                else:
+                    # base 无已知定义，保守标记无法定界
+                    vr.set(var, ln, (0, -1))
+            else:
+                vr.set(var, ln, (lo, hi))
     for ln, line in enumerate(lines, 1):
         m = re.search(r"\[\s*\w+\s*\+\s*(\w+)\s*\]\s*(?:,|=)", line)
         if not m:
             continue
         idx = m.group(1)
         r = vr.at(idx, ln)
-        if r is None:
+        if r is None or r[0] > r[1]:
             verdict, conf = "unknown", 0.2
         else:
             verdict, conf = "backtraced", 0.8

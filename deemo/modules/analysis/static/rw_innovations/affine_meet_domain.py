@@ -120,9 +120,11 @@ def run_affine_meet_domain(
         if base is None:
             continue
         # 仿射映射: idx 落在 [lo,hi] -> 写偏移 [mult*lo+const, mult*hi+const]
+        # 负乘数时区间可能反向, 用 min/max 确保正确顺序
         lo, hi = base
         wlo = ex[0] * lo + ex[2]
         whi = ex[0] * hi + ex[2]
+        wlo, whi = min(wlo, whi), max(wlo, whi)
         merged = _join(ranges.get(var, (wlo, whi)), (wlo, whi))
         # 对每个分配点分别做 meet 判定
         best_meet: Optional[Tuple[int, int]] = None

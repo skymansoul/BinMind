@@ -66,17 +66,6 @@ def run_call_conv_duality(
     return findings
 
 
-def _resolve_size(pseudocode: str, line_no: int, regs: tuple) -> Optional[int]:
-    """在 call 前若干行查找对 size 寄存器的常量赋值."""
-    lines = pseudocode.splitlines()
-    for i in range(max(0, line_no - 8), line_no):
-        for reg in regs:
-            m = re.search(r"\bmov\s+" + reg + r"\s*,\s*(0[xX][0-9a-fA-F]+|\d+)", lines[i])
-            if m:
-                return int(m.group(1), 0)
-    return None
-
-
 if __name__ == "__main__":
     demo = """\
 mov rdi, buf;

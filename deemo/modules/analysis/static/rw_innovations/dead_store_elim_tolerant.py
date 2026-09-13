@@ -21,8 +21,7 @@ def _track_slots(pseudocode: str) -> Dict[str, Set[str]]:
         m = re.search(r"\bmov\s+\[\s*(\w+)\s*\+\s*(\d+)\s*\]\s*,\s*(\w+)", line)
         if m:
             ptr, off, val = m.group(1), m.group(2), m.group(3)
-            slots.setdefault(ptr, set()).add(off)
-            # O2: 仅最后一槽活 -> 保留最近加入的槽
+            # O2: 仅最后一槽活 -> 保留最近写入的槽
             slots[ptr] = {off}
     return slots
 

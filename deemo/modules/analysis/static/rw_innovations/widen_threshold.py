@@ -17,11 +17,11 @@ _TOP = (None, None)
 
 
 def _widen(a: Tuple[int, int], b: Tuple[int, int]) -> Tuple[int, int]:
-    """标准 widening: 若下界增大到 inf, 上界减小到 -inf."""
+    """饱和加宽: 下界超阈值钳到 _LO, 上界超阈值钳到 _HI, 不直接置 None."""
     lo, hi = a
     clo, chi = b
-    new_lo = lo if clo >= lo else None
-    new_hi = hi if chi <= hi else None
+    new_lo = clo if clo >= lo else _LO
+    new_hi = chi if chi <= hi else _HI
     return (new_lo, new_hi)
 
 

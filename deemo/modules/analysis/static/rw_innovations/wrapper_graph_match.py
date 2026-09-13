@@ -14,33 +14,6 @@ import re
 from typing import Dict, List, Optional, Set, Tuple
 
 
-def _find_wrappers(pseudocode: str) -> Dict[str, List[str]]:
-    """识别包装器函数及其被调函数."""
-    wrappers: Dict[str, List[str]] = {}
-    current = None
-    for line in pseudocode.splitlines():
-        m_def = re.search(r"\b(\w+)\s*\([^)]*\)\s*\{", line)
-        if m_def:
-            current = m_def.group(1)
-            wrappers.setdefault(current, [])
-            continue
-        if "}" in line:
-            current = None
-            continue
-        if current:
-            m_call = re.search(r"\b(?:malloc|calloc|realloc|memcpy|memmove|strcpy)\s*\(", line)
-            if m_call:
-                callee = re.search(r"\b(\w+)\s*\(", line).group(1)
-                wrappers[current].append(callee)
-    return wrappers
-
-
-def _graph_key(wrappers: Dict[str, List[str]]) -> Dict[str, Tuple[str, ...]]:
-    """为每个 wrapper 构造规范签名: 被调函数集合排序元组."""
-    return {name: tuple(sorted(set(callees)))
-            for name, callees in wrappers.items()}
-
-
 def run_wrapper_graph_match(
     pseudocode: str,
     func_name: str,
@@ -75,7 +48,7 @@ def run_wrapper_graph_match(
 
 
 def _graph_keys(wrappers: Dict[str, List[str]]) -> Dict[str, Tuple[str, ...]]:
-    return {name: tuple(sorted(callees))
+    return {name: tuple(sorted(set(callees)))
             for name, callees in wrappers.items()}
 
 

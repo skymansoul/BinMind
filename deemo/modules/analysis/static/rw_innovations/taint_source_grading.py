@@ -19,17 +19,6 @@ _SOURCE_GRADE = {
 }
 
 
-def _collect_sources(pseudocode: str) -> Dict[str, int]:
-    """返回 {变量名: 污点等级}."""
-    out: Dict[str, int] = {}
-    for ln, line in enumerate(pseudocode.splitlines(), 1):
-        for src, grade in _SOURCE_GRAD.items():
-            m = re.search(r"\b(\w+)\s*=\s*[^;]*\b" + re.escape(src) + r"\b", line)
-            if m:
-                out[m.group(1)] = grade
-    return out
-
-
 def run_taint_source_grading(
     pseudocode: str,
     func_name: str,

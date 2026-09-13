@@ -21,6 +21,32 @@ def _narrow_offset(line: str) -> Optional[int]:
     return int(m.group(1)) if m else None
 
 
+def _write_width(line: str) -> int:
+    """从写操作行推断写入字节数. 取不到时保守用 8 字节."""
+    line = line.strip()
+    # 行内宽度前缀优先
+    if re.search(r"\bqword\b", line, re.IGNORECASE):
+        return 8
+    if re.search(r"\bdword\b", line, re.IGNORECASE):
+        return 4
+    if re.search(r"\bword\b", line, re.IGNORECASE):
+        return 2
+    if re.search(r"\bbyte\b", line, re.IGNORECASE):
+        return 1
+    # 寄存器源宽度
+    m_reg = re.search(r"\[[^\]]*\]\s*(?:,|=)\s*([A-Za-z][A-Za-z0-9]*)", line)
+    if m_reg:
+        name = m_reg.group(1).lower()
+        if name.startswith("r") and len(name) >= 2:
+            return 8
+        if name.startswith("e"):
+            return 4
+        if len(name) == 2 and name[0] in ("a", "b", "c", "d"):
+            return 1
+    # 立即数默认 4 字节, 但 L4 保守判定取不到时用 8
+    return 4
+
+
 def run_four_level_adjudicator(
     pseudocode: str,
     func_name: str,
@@ -43,10 +69,13 @@ def run_four_level_adjudicator(
         l2 = 1 if re.search(r"\b" + re.escape(var) + r"\s*=\s*(?:\([^)]*\)\s*)?(?:malloc|calloc|realloc)", pseudocode) else 0
         # L3 守卫窄化
         l3 = 1 if re.search(r"if\s*\([^)]*" + re.escape(var), pseudocode) else 0
-        # L4 偏移判定
+        # L4 偏移判定: off + write_width vs alloc_size
         off = int(off_txt) if off_txt.isdigit() else None
         if l1 and l2 and off is not None and alloc_size is not None:
-            l4 = 1 if off < alloc_size else -1
+            ww = _write_width(line)
+            if ww < 8:
+                ww = 8  # 保守取不到时用 8 字节, 宁可漏判溢出
+            l4 = -1 if off + ww > alloc_size else 1
         else:
             l4 = 0
         if l4 == 1:

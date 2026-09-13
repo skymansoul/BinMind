@@ -42,7 +42,7 @@ def run_heap_stack_global_tri(
 ) -> List[dict]:
     """堆栈全局三分. 返回 findings."""
     findings: List[dict] = []
-    domains = _find_vars(pseudocode)
+    domains = _classify_vars(pseudocode)
     for ln, line in enumerate(pseudocode.splitlines(), 1):
         m = re.search(r"\[\s*(\w+)\s*(\+\s*\d+)?\]\s*(?:,|=)\s*(\w+)", line)
         if not m:
@@ -68,24 +68,6 @@ def run_heap_stack_global_tri(
             "source": "heap_stack_global_tri",
         })
     return findings
-
-
-def _find_vars(pseudocode: str) -> Dict[str, str]:
-    """为变量分配域名 (heap/stack/global)."""
-    domains: Dict[str, str] = {}
-    for line in pseudocode.splitlines():
-        m = re.search(r"\b(\w+)\s*=\s*(?:\([^)]*\)\s*)?(?:malloc|calloc|realloc)\s*\(", line)
-        if m:
-            domains[m.group(1)] = "heap"
-            continue
-        m = re.search(r"\b(\w+)\s*=\s*(?:rbp|rsp)", line)
-        if m:
-            domains[m.group(1)] = "stack"
-            continue
-        m = re.search(r"\b([a-z_]\w*)\s*=\s*", line)
-        if m and m.group(1) not in domains:
-            domains[m.group(1)] = "global"
-    return domains
 
 
 if __name__ == "__main__":

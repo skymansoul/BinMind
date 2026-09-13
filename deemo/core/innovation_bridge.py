@@ -5166,12 +5166,20 @@ def run_fstp_bridge(
                                    f'func={v.func_name} — {v.reason}',
                     'verdict': 'POSSIBLE', 'source': 'fstp'})
 
-        # 已有 format findings 中被 FSTP 证明清理过的 → 过滤
+        # 已有 format findings 被 FSTP 判定为安全时标记 fstp_clean
+        clean_lines = set()
+        for v in verdicts:
+            if v.sem_class in (SemClass.SEM_CLEAN, SemClass.SEM_CONST_FMT):
+                clean_lines.add(v.call_line)
         filtered = []
         for f in existing_findings:
             ftype = f.get('type', '').lower()
-            if ('format' in ftype or 'fmt' in ftype) and f.get('fstp_clean'):
-                continue
+            if ('format' in ftype or 'fmt' in ftype):
+                f_line = f.get('line', f.get('call_line', 0))
+                if f_line in clean_lines or f.get('fstp_clean'):
+                    f['fstp_clean'] = True
+                    f['confidence'] = round(f.get('confidence', 0.5) * 0.5, 2)
+                    continue
             filtered.append(f)
         return filtered + new_findings
     except Exception as e:
@@ -5906,19 +5914,30 @@ def run_symbolic_fp_filter_bridge(
         engine = HeapFPFilter()
         report = engine.filter(asm_lines, function_name=func_name)
 
-        # 报告中没有按 finding 逐条对应, 只有 alloc_line 级别判定;
-        # 无法映射回现有 findings 时, 仅在有判定且发现 KEEP 时增强
+        # 按 alloc_line 匹配 KEEP/FILTER 动作到已有 heap findings
+        filtered = []
         for f in existing_findings:
             if 'heap' not in f.get('type', '').lower():
+                filtered.append(f)
                 continue
             alloc_line = f.get('alloc_line', f.get('line', 0))
+            matched = False
             for a in report.details:
-                if a.alloc_line == alloc_line and a.action == 'KEEP':
-                    f['symfp_keep'] = True
-                    f.setdefault('confidence', 0.5)
-                    f['confidence'] = min(1.0, f.get('confidence', 0.5) + 0.1)
+                if a.alloc_line == alloc_line:
+                    matched = True
+                    if a.action == 'KEEP':
+                        f['symfp_keep'] = True
+                        f.setdefault('confidence', 0.5)
+                        f['confidence'] = min(1.0, f.get('confidence', 0.5) + 0.1)
+                    elif a.action == 'FILTER':
+                        f['symfp_filtered'] = True
+                        f['symfp_reason'] = a.reason
+                        f['confidence'] = round(f.get('confidence', 0.5) * 0.3, 2)
                     break
-        return existing_findings
+            if not matched:
+                pass  # 无匹配 → 保留原样
+            filtered.append(f)
+        return filtered
     except Exception as e:
         logger.debug('Symbolic-FP-Filter bridge failed: %s', e)
         return existing_findings
@@ -6513,8 +6532,7 @@ def run_rw_seven_stage_fanout_bridge(
 ) -> List[dict]:
     """RW-SevenStageFanout 桥接 (stage 61): 七阶段扇出覆盖率审计.
 
-    输出为管线覆盖率画像 (safe/unsafe), 属审计类证据, 真实调用
-    但不注入 findings 主列表, 避免画像类噪声.
+    unsafe 告警白名单注入; safe 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_seven_stage_fanout', lambda: __import__(
             'modules.analysis.static.rw_innovations.seven_stage_fanout',
@@ -6524,8 +6542,15 @@ def run_rw_seven_stage_fanout_bridge(
     try:
         from modules.analysis.static.rw_innovations.seven_stage_fanout import (
             run_seven_stage_fanout)
-        run_seven_stage_fanout(pseudocode, func_name, None)
-        return existing_findings
+        results = run_seven_stage_fanout(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'unsafe':
+                findings.append(r)
+            elif v == 'safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW seven_stage_fanout bridge failed: %s', e)
         return existing_findings
@@ -6794,8 +6819,7 @@ def run_rw_heap_stack_global_tri_bridge(
 ) -> List[dict]:
     """RW-HeapStackGlobalTri 桥接 (stage 70): 堆/栈/全局三分域分类.
 
-    写操作目标域分类画像 (heap_write/stack_write/global_write),
-    属审计类证据, 真实调用但不注入 findings 主列表.
+    domain_mismatch 告警注入; stack/global 域写作为安全证据温和降权堆类已有 findings.
     """
     if not _check_module('rw_heap_stack_global_tri', lambda: __import__(
             'modules.analysis.static.rw_innovations.heap_stack_global_tri',
@@ -6805,8 +6829,15 @@ def run_rw_heap_stack_global_tri_bridge(
     try:
         from modules.analysis.static.rw_innovations.heap_stack_global_tri import (
             run_heap_stack_global_tri)
-        run_heap_stack_global_tri(pseudocode, func_name, None)
-        return existing_findings
+        results = run_heap_stack_global_tri(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'domain_mismatch':
+                findings.append(r)
+            elif v in ('stack_write', 'global_write'):
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW heap_stack_global_tri bridge failed: %s', e)
         return existing_findings
@@ -6942,8 +6973,7 @@ def run_rw_recovery_soundness_gate_bridge(
 ) -> List[dict]:
     """RW-RecoverySoundnessGate 桥接 (stage 75): 恢复可靠性门.
 
-    BWR 恢复值超上界 (unsound) 属恢复过程审计画像, 真实调用但
-    不注入 findings 主列表, 避免恢复中间态噪声.
+    unsound 告警白名单注入; sound 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_recovery_soundness_gate', lambda: __import__(
             'modules.analysis.static.rw_innovations.recovery_soundness_gate',
@@ -6953,8 +6983,15 @@ def run_rw_recovery_soundness_gate_bridge(
     try:
         from modules.analysis.static.rw_innovations.recovery_soundness_gate import (
             run_recovery_soundness_gate)
-        run_recovery_soundness_gate(pseudocode, func_name, None)
-        return existing_findings
+        results = run_recovery_soundness_gate(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'unsound':
+                findings.append(r)
+            elif v == 'sound':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW recovery_soundness_gate bridge failed: %s', e)
         return existing_findings
@@ -7000,9 +7037,7 @@ def run_rw_guard_alias_transitive_bridge(
 ) -> List[dict]:
     """RW-GuardAliasTransitive 桥接 (stage 77): 守卫别名传递闭包.
 
-    guarded_safe/guarded_var_off/unguarded 均为守卫覆盖画像
-    (冒烟实测 unguarded 在安全场景也触发, 不可作为告警依据),
-    真实调用但不注入 findings 主列表.
+    guarded_safe 作为安全证据温和降权同类型已有 findings; unguarded 冒烟实测安全场景也触发, 不注入.
     """
     if not _check_module('rw_guard_alias_transitive', lambda: __import__(
             'modules.analysis.static.rw_innovations.guard_alias_transitive',
@@ -7012,8 +7047,14 @@ def run_rw_guard_alias_transitive_bridge(
     try:
         from modules.analysis.static.rw_innovations.guard_alias_transitive import (
             run_guard_alias_transitive)
-        run_guard_alias_transitive(pseudocode, func_name, None)
-        return existing_findings
+        results = run_guard_alias_transitive(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'guarded_safe' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'guarded_safe':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW guard_alias_transitive bridge failed: %s', e)
         return existing_findings
@@ -7093,8 +7134,7 @@ def run_rw_imm_prop_absorb_bridge(
 ) -> List[dict]:
     """RW-ImmPropAbsorb 桥接 (stage 80): 立即数属性吸收.
 
-    写入值常量被吸收为尺寸证据的画像 (const_exact/unknown_size),
-    属审计类证据, 真实调用但不注入 findings 主列表.
+    const_too_large 告警白名单注入; const_exact 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_imm_prop_absorb', lambda: __import__(
             'modules.analysis.static.rw_innovations.imm_prop_absorb',
@@ -7104,8 +7144,15 @@ def run_rw_imm_prop_absorb_bridge(
     try:
         from modules.analysis.static.rw_innovations.imm_prop_absorb import (
             run_imm_prop_absorb)
-        run_imm_prop_absorb(pseudocode, func_name, None)
-        return existing_findings
+        results = run_imm_prop_absorb(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'const_too_large':
+                findings.append(r)
+            elif v == 'const_exact':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW imm_prop_absorb bridge failed: %s', e)
         return existing_findings
@@ -7119,8 +7166,7 @@ def run_rw_call_conv_duality_bridge(
 ) -> List[dict]:
     """RW-CallConvDuality 桥接 (stage 81): 调用约定对偶校验.
 
-    SysV/Win64 双调用约定尺寸解释画像 (dual_agree/dual_conflict/
-    sysv_only/win_only), 属审计类证据, 真实调用但不注入主列表.
+    dual_conflict 告警白名单注入; dual_agree 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_call_conv_duality', lambda: __import__(
             'modules.analysis.static.rw_innovations.call_conv_duality',
@@ -7130,8 +7176,15 @@ def run_rw_call_conv_duality_bridge(
     try:
         from modules.analysis.static.rw_innovations.call_conv_duality import (
             run_call_conv_duality)
-        run_call_conv_duality(pseudocode, func_name, None)
-        return existing_findings
+        results = run_call_conv_duality(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'dual_conflict':
+                findings.append(r)
+            elif v == 'dual_agree':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW call_conv_duality bridge failed: %s', e)
         return existing_findings
@@ -7145,8 +7198,7 @@ def run_rw_wrapper_graph_match_bridge(
 ) -> List[dict]:
     """RW-WrapperGraphMatch 桥接 (stage 82): 包装函数图同构匹配.
 
-    同构匹配画像 (isomorphic), 属审计类证据, 真实调用但
-    不注入 findings 主列表.
+    isomorphic 作为安全证据温和降权同类型已有 findings; not_wrapper 属画像不注入.
     """
     if not _check_module('rw_wrapper_graph_match', lambda: __import__(
             'modules.analysis.static.rw_innovations.wrapper_graph_match',
@@ -7156,8 +7208,14 @@ def run_rw_wrapper_graph_match_bridge(
     try:
         from modules.analysis.static.rw_innovations.wrapper_graph_match import (
             run_wrapper_graph_match)
-        run_wrapper_graph_match(pseudocode, func_name, None)
-        return existing_findings
+        results = run_wrapper_graph_match(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'isomorphic' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'isomorphic':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW wrapper_graph_match bridge failed: %s', e)
         return existing_findings
@@ -7264,8 +7322,7 @@ def run_rw_color_class_quad_bridge(
 ) -> List[dict]:
     """RW-ColorClassQuad 桥接 (stage 86): 四色类域分类.
 
-    写操作四色分类画像 (heap_write/stack_write/global_write/
-    unknown_color), 属审计类证据, 真实调用但不注入主列表.
+    unknown_color 告警注入; stack/global 域写作为安全证据温和降权堆类已有 findings.
     """
     if not _check_module('rw_color_class_quad', lambda: __import__(
             'modules.analysis.static.rw_innovations.color_class_quad',
@@ -7275,8 +7332,15 @@ def run_rw_color_class_quad_bridge(
     try:
         from modules.analysis.static.rw_innovations.color_class_quad import (
             run_color_class_quad)
-        run_color_class_quad(pseudocode, func_name, None)
-        return existing_findings
+        results = run_color_class_quad(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'unknown_color':
+                findings.append(r)
+            elif v in ('stack_write', 'global_write'):
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW color_class_quad bridge failed: %s', e)
         return existing_findings
@@ -7290,8 +7354,7 @@ def run_rw_widen_threshold_bridge(
 ) -> List[dict]:
     """RW-WidenThreshold 桥接 (stage 87): 加宽阈值监控.
 
-    区间加宽 topped/stable 状态画像, 属审计类证据,
-    真实调用但不注入 findings 主列表.
+    topped 告警白名单注入; stable 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_widen_threshold', lambda: __import__(
             'modules.analysis.static.rw_innovations.widen_threshold',
@@ -7301,8 +7364,15 @@ def run_rw_widen_threshold_bridge(
     try:
         from modules.analysis.static.rw_innovations.widen_threshold import (
             run_widen_threshold)
-        run_widen_threshold(pseudocode, func_name, None)
-        return existing_findings
+        results = run_widen_threshold(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'topped':
+                findings.append(r)
+            elif v == 'stable':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW widen_threshold bridge failed: %s', e)
         return existing_findings
@@ -7349,8 +7419,7 @@ def run_rw_provenance_octagon_bridge(
 ) -> List[dict]:
     """RW-ProvenanceOctagon 桥接 (stage 89): 八角域溯源.
 
-    指针溯源八角域分类画像 (heap_prov/non_heap_prov), 属审计类
-    证据, 真实调用但不注入 findings 主列表.
+    non_heap_prov 告警白名单注入; heap_prov 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_provenance_octagon', lambda: __import__(
             'modules.analysis.static.rw_innovations.provenance_octagon',
@@ -7360,8 +7429,15 @@ def run_rw_provenance_octagon_bridge(
     try:
         from modules.analysis.static.rw_innovations.provenance_octagon import (
             run_provenance_octagon)
-        run_provenance_octagon(pseudocode, func_name, None)
-        return existing_findings
+        results = run_provenance_octagon(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'non_heap_prov':
+                findings.append(r)
+            elif v == 'heap_prov':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW provenance_octagon bridge failed: %s', e)
         return existing_findings
@@ -7407,8 +7483,7 @@ def run_rw_abi_auto_detect_bridge(
 ) -> List[dict]:
     """RW-AbiAutoDetect 桥接 (stage 91): ABI 自动探测.
 
-    序言/寄存器用法 ABI 探测画像 (abi_confirmed/abi_partial/
-    abi_unknown), 属审计类证据, 真实调用但不注入主列表.
+    abi_confirmed 作为安全证据温和降权同类型已有 findings; abi_partial/abi_unknown 属画像不注入.
     """
     if not _check_module('rw_abi_auto_detect', lambda: __import__(
             'modules.analysis.static.rw_innovations.abi_auto_detect',
@@ -7418,8 +7493,14 @@ def run_rw_abi_auto_detect_bridge(
     try:
         from modules.analysis.static.rw_innovations.abi_auto_detect import (
             run_abi_auto_detect)
-        run_abi_auto_detect(pseudocode, func_name, None)
-        return existing_findings
+        results = run_abi_auto_detect(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'abi_confirmed' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'abi_confirmed':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW abi_auto_detect bridge failed: %s', e)
         return existing_findings
@@ -7433,8 +7514,7 @@ def run_rw_reduction_rate_audit_bridge(
 ) -> List[dict]:
     """RW-ReductionRateAudit 桥接 (stage 92): 减除率审计.
 
-    管线各级过滤减除率审计画像 (no_data/recheck/ok), 属元审计
-    类证据, 真实调用但不注入 findings 主列表.
+    recheck 告警白名单注入; ok 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_reduction_rate_audit', lambda: __import__(
             'modules.analysis.static.rw_innovations.reduction_rate_audit',
@@ -7444,8 +7524,15 @@ def run_rw_reduction_rate_audit_bridge(
     try:
         from modules.analysis.static.rw_innovations.reduction_rate_audit import (
             run_reduction_rate_audit)
-        run_reduction_rate_audit(pseudocode, func_name, None)
-        return existing_findings
+        results = run_reduction_rate_audit(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'recheck':
+                findings.append(r)
+            elif v == 'ok':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW reduction_rate_audit bridge failed: %s', e)
         return existing_findings
@@ -7459,8 +7546,7 @@ def run_rw_guard_op_enum_bridge(
 ) -> List[dict]:
     """RW-GuardOpEnum 桥接 (stage 93): 守卫操作枚举.
 
-    边界检查操作枚举画像 (guard_sem), 属审计类证据,
-    真实调用但不注入 findings 主列表.
+    guard_found 作为安全证据温和降权同类型已有 findings; no_guard 属画像不注入.
     """
     if not _check_module('rw_guard_op_enum', lambda: __import__(
             'modules.analysis.static.rw_innovations.guard_op_enum',
@@ -7470,8 +7556,14 @@ def run_rw_guard_op_enum_bridge(
     try:
         from modules.analysis.static.rw_innovations.guard_op_enum import (
             run_guard_op_enum)
-        run_guard_op_enum(pseudocode, func_name, None)
-        return existing_findings
+        results = run_guard_op_enum(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'guard_found' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'guard_found':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW guard_op_enum bridge failed: %s', e)
         return existing_findings
@@ -7519,9 +7611,7 @@ def run_rw_strided_interval3_bridge(
 ) -> List[dict]:
     """RW-StridedInterval3 桥接 (stage 95): 三元组步长区间.
 
-    out_domain/in_domain/unknown 均为区间域画像 (冒烟实测
-    out_domain 在安全场景也触发, 不可作为告警依据), 真实调用
-    但不注入 findings 主列表.
+    in_domain 作为安全证据温和降权同类型已有 findings; out_domain/unknown 冒烟实测安全场景也触发, 不注入.
     """
     if not _check_module('rw_strided_interval3', lambda: __import__(
             'modules.analysis.static.rw_innovations.strided_interval3',
@@ -7531,8 +7621,14 @@ def run_rw_strided_interval3_bridge(
     try:
         from modules.analysis.static.rw_innovations.strided_interval3 import (
             run_strided_interval3)
-        run_strided_interval3(pseudocode, func_name, None)
-        return existing_findings
+        results = run_strided_interval3(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'in_domain' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'in_domain':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW strided_interval3 bridge failed: %s', e)
         return existing_findings
@@ -7546,8 +7642,7 @@ def run_rw_dead_store_elim_tolerant_bridge(
 ) -> List[dict]:
     """RW-DeadStoreElimTolerant 桥接 (stage 96): 容忍型死存储消除.
 
-    写槽活跃性画像 (live_slot/dead_slot), dead_slot 表示写槽被
-    后续写覆盖, 属审计类证据, 真实调用但不注入主列表.
+    dead_slot 作为安全证据温和降权同类型已有 findings (写槽被后续覆盖); live_slot 属画像不注入.
     """
     if not _check_module('rw_dead_store_elim_tolerant', lambda: __import__(
             'modules.analysis.static.rw_innovations.dead_store_elim_tolerant',
@@ -7557,8 +7652,14 @@ def run_rw_dead_store_elim_tolerant_bridge(
     try:
         from modules.analysis.static.rw_innovations.dead_store_elim_tolerant import (
             run_dead_store_elim_tolerant)
-        run_dead_store_elim_tolerant(pseudocode, func_name, None)
-        return existing_findings
+        results = run_dead_store_elim_tolerant(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'dead_slot' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'dead_slot':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW dead_store_elim_tolerant bridge failed: %s', e)
         return existing_findings
@@ -7602,9 +7703,7 @@ def run_rw_four_verdict_scale_bridge(
 ) -> List[dict]:
     """RW-FourVerdictScale 桥接 (stage 98): 四级判决标尺.
 
-    CONFIRMED/LIKELY/UNCERTAIN/FILTERED 为概率标尺画像 (冒烟实测
-    CONFIRMED 在安全场景也出现, 是置信度标尺而非告警判定),
-    真实调用但不注入 findings 主列表.
+    FILTERED 作为安全证据温和降权同类型已有 findings; CONFIRMED/LIKELY/UNCERTAIN 冒烟实测安全场景也出现, 不注入.
     """
     if not _check_module('rw_four_verdict_scale', lambda: __import__(
             'modules.analysis.static.rw_innovations.four_verdict_scale',
@@ -7614,8 +7713,14 @@ def run_rw_four_verdict_scale_bridge(
     try:
         from modules.analysis.static.rw_innovations.four_verdict_scale import (
             run_four_verdict_scale)
-        run_four_verdict_scale(pseudocode, func_name, None)
-        return existing_findings
+        results = run_four_verdict_scale(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'FILTERED' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'FILTERED':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW four_verdict_scale bridge failed: %s', e)
         return existing_findings
@@ -7629,8 +7734,7 @@ def run_rw_affine_meet_domain_bridge(
 ) -> List[dict]:
     """RW-AffineMeetDomain 桥接 (stage 99): 仿射交汇域.
 
-    仿射关系交汇域画像 (affine_bounded/affine_top), 属审计类
-    证据, 真实调用但不注入 findings 主列表.
+    affine_top 告警白名单注入; affine_bounded 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_affine_meet_domain', lambda: __import__(
             'modules.analysis.static.rw_innovations.affine_meet_domain',
@@ -7640,8 +7744,15 @@ def run_rw_affine_meet_domain_bridge(
     try:
         from modules.analysis.static.rw_innovations.affine_meet_domain import (
             run_affine_meet_domain)
-        run_affine_meet_domain(pseudocode, func_name, None)
-        return existing_findings
+        results = run_affine_meet_domain(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'affine_top':
+                findings.append(r)
+            elif v == 'affine_bounded':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW affine_meet_domain bridge failed: %s', e)
         return existing_findings
@@ -7688,9 +7799,7 @@ def run_rw_write_side_first_bridge(
 ) -> List[dict]:
     """RW-WriteSideFirst 桥接 (stage 101): 写侧优先检查.
 
-    写侧上界优先判定画像 (write_bounded/cannot_hold), cannot_hold
-    仅表示无法定界 (非告警), 属审计类证据, 真实调用但
-    不注入 findings 主列表.
+    write_bounded 作为安全证据温和降权同类型已有 findings; cannot_hold 仅表示无法定界, 不注入.
     """
     if not _check_module('rw_write_side_first', lambda: __import__(
             'modules.analysis.static.rw_innovations.write_side_first',
@@ -7700,8 +7809,14 @@ def run_rw_write_side_first_bridge(
     try:
         from modules.analysis.static.rw_innovations.write_side_first import (
             run_write_side_first)
-        run_write_side_first(pseudocode, func_name, None)
-        return existing_findings
+        results = run_write_side_first(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'write_bounded' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'write_bounded':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW write_side_first bridge failed: %s', e)
         return existing_findings
@@ -7715,8 +7830,7 @@ def run_rw_chain_id_cross_func_bridge(
 ) -> List[dict]:
     """RW-ChainIdCrossFunc 桥接 (stage 102): 跨函数链 id.
 
-    跨函数别名链干净度画像 (chain_clean/chain_dirty), 属审计类
-    证据, 真实调用但不注入 findings 主列表.
+    chain_dirty 告警白名单注入; chain_clean 作为安全证据温和降权同类型已有 findings.
     """
     if not _check_module('rw_chain_id_cross_func', lambda: __import__(
             'modules.analysis.static.rw_innovations.chain_id_cross_func',
@@ -7726,8 +7840,15 @@ def run_rw_chain_id_cross_func_bridge(
     try:
         from modules.analysis.static.rw_innovations.chain_id_cross_func import (
             run_chain_id_cross_func)
-        run_chain_id_cross_func(pseudocode, func_name, None)
-        return existing_findings
+        results = run_chain_id_cross_func(pseudocode, func_name, None)
+        findings = list(existing_findings)
+        for r in results:
+            v = r.get('verdict')
+            if v == 'chain_dirty':
+                findings.append(r)
+            elif v == 'chain_clean':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW chain_id_cross_func bridge failed: %s', e)
         return existing_findings
@@ -7774,8 +7895,7 @@ def run_rw_ir_interval_backtrack_bridge(
 ) -> List[dict]:
     """RW-IrIntervalBacktrack 桥接 (stage 104): IR 区间回溯.
 
-    IR 层区间回溯画像 (backtraced/unknown), 属审计类证据,
-    真实调用但不注入 findings 主列表.
+    backtraced 作为安全证据温和降权同类型已有 findings; unknown 属画像不注入.
     """
     if not _check_module('rw_ir_interval_backtrack', lambda: __import__(
             'modules.analysis.static.rw_innovations.ir_interval_backtrack',
@@ -7785,8 +7905,14 @@ def run_rw_ir_interval_backtrack_bridge(
     try:
         from modules.analysis.static.rw_innovations.ir_interval_backtrack import (
             run_ir_interval_backtrace)
-        run_ir_interval_backtrace(pseudocode, func_name, None)
-        return existing_findings
+        results = run_ir_interval_backtrace(pseudocode, func_name, None)
+        if not any(r.get('verdict') == 'backtraced' for r in results):
+            return existing_findings
+        findings = list(existing_findings)
+        for r in results:
+            if r.get('verdict') == 'backtraced':
+                _rw_apply_fp_vote(findings, r)
+        return findings
     except Exception as e:
         logger.debug('RW ir_interval_backtrack bridge failed: %s', e)
         return existing_findings
@@ -8145,7 +8271,7 @@ def run_innovation_pipeline(
     # 阶段60: RW-DomFrontierWitness — 支配边界UAF误报见证 (对已有findings降权)
     findings = run_rw_dom_frontier_witness_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段61: RW-SevenStageFanout — 七阶段扇出覆盖率审计 (纯审计调用)
+    # 阶段61: RW-SevenStageFanout — 七阶段扇出覆盖率审计 (产出弱告警+降权)
     findings = run_rw_seven_stage_fanout_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段62: RW-ScaledIndexLinear — scaled-index线性化 (产出+降权)
@@ -8172,7 +8298,7 @@ def run_innovation_pipeline(
     # 阶段69: RW-SymbolicDiffSign — 符号差符号判定 (产出+降权)
     findings = run_rw_symbolic_diff_sign_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段70: RW-HeapStackGlobalTri — 堆/栈/全局三分域分类 (纯审计调用)
+    # 阶段70: RW-HeapStackGlobalTri — 堆/栈/全局三分域分类 (产出弱告警+降权)
     findings = run_rw_heap_stack_global_tri_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段71: RW-ChainEquivHash — 溯源链等价哈希 (对已有findings降权)
@@ -8187,13 +8313,13 @@ def run_innovation_pipeline(
     # 阶段74: RW-MinChunkGeometry — 最小块几何判定 (产出弱告警+降权)
     findings = run_rw_min_chunk_geometry_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段75: RW-RecoverySoundnessGate — 恢复可靠性门 (纯审计调用)
+    # 阶段75: RW-RecoverySoundnessGate — 恢复可靠性门 (产出弱告警+降权)
     findings = run_rw_recovery_soundness_gate_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段76: RW-RdataConstRegion — .rdata常量区判定 (对已有findings降权)
     findings = run_rw_rdata_const_region_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段77: RW-GuardAliasTransitive — 守卫别名传递闭包 (纯审计调用)
+    # 阶段77: RW-GuardAliasTransitive — 守卫别名传递闭包 (降权)
     findings = run_rw_guard_alias_transitive_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段78: RW-WalkStrideModel — 步长模型覆盖检查 (产出弱告警+降权)
@@ -8202,13 +8328,13 @@ def run_innovation_pipeline(
     # 阶段79: RW-UseDerefLattice — 解引用格模型 (产出+降权)
     findings = run_rw_use_deref_lattice_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段80: RW-ImmPropAbsorb — 立即数属性吸收 (纯审计调用)
+    # 阶段80: RW-ImmPropAbsorb — 立即数属性吸收 (产出弱告警+降权)
     findings = run_rw_imm_prop_absorb_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段81: RW-CallConvDuality — 调用约定对偶校验 (纯审计调用)
+    # 阶段81: RW-CallConvDuality — 调用约定对偶校验 (产出弱告警+降权)
     findings = run_rw_call_conv_duality_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段82: RW-WrapperGraphMatch — 包装函数图同构匹配 (纯审计调用)
+    # 阶段82: RW-WrapperGraphMatch — 包装函数图同构匹配 (降权)
     findings = run_rw_wrapper_graph_match_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段83: RW-TwoVarDiffBound — 双变量差界判定 (产出+降权)
@@ -8220,61 +8346,61 @@ def run_innovation_pipeline(
     # 阶段85: RW-CrossTypeEvidencePool — 跨类型证据池 (对已有findings互证提升)
     findings = run_rw_cross_type_evidence_pool_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段86: RW-ColorClassQuad — 四色类域分类 (纯审计调用)
+    # 阶段86: RW-ColorClassQuad — 四色类域分类 (产出弱告警+降权)
     findings = run_rw_color_class_quad_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段87: RW-WidenThreshold — 加宽阈值监控 (纯审计调用)
+    # 阶段87: RW-WidenThreshold — 加宽阈值监控 (产出弱告警+降权)
     findings = run_rw_widen_threshold_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段88: RW-FourLevelAdjudicator — 四级裁决器 (产出+降权)
     findings = run_rw_four_level_adjudicator_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段89: RW-ProvenanceOctagon — 八角域溯源 (纯审计调用)
+    # 阶段89: RW-ProvenanceOctagon — 八角域溯源 (产出弱告警+降权)
     findings = run_rw_provenance_octagon_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段90: RW-SevenDimWeighted — 七维加权融合 (产出弱告警)
     findings = run_rw_seven_dim_weighted_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段91: RW-AbiAutoDetect — ABI自动探测 (纯审计调用)
+    # 阶段91: RW-AbiAutoDetect — ABI自动探测 (降权)
     findings = run_rw_abi_auto_detect_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段92: RW-ReductionRateAudit — 减除率审计 (纯审计调用)
+    # 阶段92: RW-ReductionRateAudit — 减除率审计 (产出弱告警+降权)
     findings = run_rw_reduction_rate_audit_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段93: RW-GuardOpEnum — 守卫操作枚举 (纯审计调用)
+    # 阶段93: RW-GuardOpEnum — 守卫操作枚举 (降权)
     findings = run_rw_guard_op_enum_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段94: RW-ThreePathDisjoint — 三路径不相交判定 (产出+降权)
     findings = run_rw_three_path_disjoint_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段95: RW-StridedInterval3 — 三元组步长区间 (纯审计调用)
+    # 阶段95: RW-StridedInterval3 — 三元组步长区间 (降权)
     findings = run_rw_strided_interval3_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段96: RW-DeadStoreElimTolerant — 容忍型死存储消除 (纯审计调用)
+    # 阶段96: RW-DeadStoreElimTolerant — 容忍型死存储消除 (降权)
     findings = run_rw_dead_store_elim_tolerant_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段97: RW-InlineCopyBind — 内联复制绑定 (产出弱告警)
     findings = run_rw_inline_copy_bind_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段98: RW-FourVerdictScale — 四级判决标尺 (纯审计调用)
+    # 阶段98: RW-FourVerdictScale — 四级判决标尺 (降权)
     findings = run_rw_four_verdict_scale_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段99: RW-AffineMeetDomain — 仿射交汇域 (纯审计调用)
+    # 阶段99: RW-AffineMeetDomain — 仿射交汇域 (产出弱告警+降权)
     findings = run_rw_affine_meet_domain_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段100: RW-DeltaIntervalEval — 差区间极值判定 (产出+降权)
     findings = run_rw_delta_interval_eval_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段101: RW-WriteSideFirst — 写侧优先检查 (纯审计调用)
+    # 阶段101: RW-WriteSideFirst — 写侧优先检查 (降权)
     findings = run_rw_write_side_first_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段102: RW-ChainIdCrossFunc — 跨函数链id (纯审计调用)
+    # 阶段102: RW-ChainIdCrossFunc — 跨函数链id (产出弱告警+降权)
     findings = run_rw_chain_id_cross_func_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段103: RW-HeapWriteOperandCap — 写操作数容量上限 (产出+降权)
     findings = run_rw_heap_write_operand_cap_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段104: RW-IrIntervalBacktrack — IR区间回溯 (纯审计调用)
+    # 阶段104: RW-IrIntervalBacktrack — IR区间回溯 (降权)
     findings = run_rw_ir_interval_backtrack_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段105: RW-FiveModalDSTheory — 五模态D-S证据组合 (产出+降权)
