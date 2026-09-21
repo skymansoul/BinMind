@@ -1,9 +1,7 @@
 """
-FSTP — Format Semantic Taint Propagation (格式说明符语义感知污点传播).
+格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation) — 将二进制污点 (tainted/not) 升级为格式说明符语义级别.
 
-将二进制污点 (tainted/not) 升级为格式说明符语义级别.
-
-FSTP 语义分类 (5级):
+格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation) 语义分类 (5级):
   SEM_CLEAN     (0): 常量字符串, 无格式说明符 → 绝对安全
   SEM_CONST_FMT (1): 常量但有格式说明符 → 有意图的格式化, 安全
   SEM_USER_SAFE (2): 用户输入但被清理 (%% 替换等) → 安全
@@ -42,7 +40,7 @@ class SemClass(IntEnum):
 
 @dataclass
 class FstpVerdict:
-    """FSTP 验证结果."""
+    """格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation) 验证结果."""
     call_line: int
     func_name: str
     fmt_arg: str

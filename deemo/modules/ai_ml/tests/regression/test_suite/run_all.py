@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # 一键回归测试——编译→扫描→结果收集 全流程
 # 用法: python run_all.py [--heap-only] [--skip-compile]
-# 退出码: 0=全部通过, 1=部分失败
+# 退出码: 0=全部通过, 1=部分失败  （口径: 退出码语义, 非测试结果宣称）
 
 import sys
 import subprocess

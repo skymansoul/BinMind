@@ -14,10 +14,10 @@ from analysis.double_free_src_verifier import DoubleFreeSrcVerifier
 from analysis.double_free_types import DfVerdict
 from analysis.stack_overflow_src_verifier import StackOverflowSrcVerifier
 from analysis.stack_overflow_types import SoVerdict
-from analysis.sgav_pipeline import SGAVVerifier
+from analysis.guard_range_pipeline import SGAVVerifier
 from analysis.heap_overflow_src_verifier import HeapOverflowSrcVerifier
 from analysis.heap_overflow_types import HoVerdict
-from analysis.hosv_ext_verifier import HosvExtVerifier
+from analysis.heap_write_ext_verifier import HosvExtVerifier
 
 
 class UsvVulnType(Enum):
@@ -97,7 +97,7 @@ class UnifiedSrcVerifier:
                 confidence=r.confidence, line=r.free_line,
                 reason=r.reason))
 
-        # SGAV 为栈溢出主检测器; SOSV 作为补充保留
+        # 守卫感知区间验证 (Guard-Aware Range Verification) 为栈溢出主检测器; SOSV 作为补充保留
         sgav_results = self._sgav.verify(source)
         so_seen = set()
         for r in sgav_results:
@@ -109,7 +109,7 @@ class UnifiedSrcVerifier:
                 line=r.write_line or r.buffer_line,
                 reason=r.reason))
             so_seen.add((r.write_line, r.buf_name))
-        # SOSV 补充: SGAV 未覆盖的检测结果
+        # SOSV 补充: 守卫感知 (Guard-Aware Range Verification) 未覆盖的检测结果
         for r in self._so.verify(source):
             key = (r.write_line, r.buf_name)
             if key in so_seen:
@@ -156,7 +156,7 @@ class UnifiedSrcVerifier:
                     heap_results, ext_results) -> None:
         """合并两套堆溢出验证器的判定.
 
-        两个验证器的 VULN 均保留. 扩展模块覆盖原 HOSV 缺失的
+        两个验证器的 VULN 均保留. 扩展模块覆盖原 堆写模式验证 (Heap Write Verification) 缺失的
         写模式 (walk/struct_idx/unbounded_io/factory), 按告警点去重.
         """
         # 扩展结果优先 (覆盖更广)

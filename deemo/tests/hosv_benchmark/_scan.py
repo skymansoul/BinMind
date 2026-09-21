@@ -1,6 +1,6 @@
 # coding: utf-8
 """
-扫描调度. 对每个样本运行堆溢出验证器组合 (原 HOSV + 写模式扩展),
+扫描调度. 对每个样本运行堆溢出验证器组合 (原堆写模式验证 + 写模式扩展),
 记录检出/漏报/误报状态与耗时, 供收集模块聚合.
 """
 
@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 from analysis.heap_overflow_src_verifier import HeapOverflowSrcVerifier
 from analysis.heap_overflow_types import HoVerdict
-from analysis.hosv_ext_verifier import HosvExtVerifier
+from analysis.heap_write_ext_verifier import HosvExtVerifier
 
 
 @dataclass

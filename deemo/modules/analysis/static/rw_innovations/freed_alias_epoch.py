@@ -24,34 +24,63 @@ def run_freed_alias_epoch(
     findings: List[dict] = []
     # per-object free 次数计数: 奇数=已释放未重生(UAF), 偶数=reborn
     _obj_freed_count: Dict[str, int] = {}
+    # 按分号拆分子语句, 保留行号, 使单行多语句可正确处理时间序
+    stmts = []
     for ln, line in enumerate(pseudocode.splitlines(), 1):
-        m_free = re.search(r"\bfree\s*\(\s*(\w+)\s*\)", line)
+        for stmt in line.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                stmts.append((ln, stmt))
+    for ln, stmt in stmts:
+        m_free = re.search(r"\bfree\s*\(\s*(\w+)\s*\)", stmt)
         if m_free:
             obj = m_free.group(1)
             _obj_freed_count[obj] = _obj_freed_count.get(obj, 0) + 1
             continue
-        m_realloc = re.search(r"\b(\w+)\s*=\s*realloc\s*\(\s*(\w+)\s*,", line)
+        m_realloc = re.search(r"\b(\w+)\s*=\s*(?:\([^)]*\)\s*)?realloc\s*\(\s*(\w+)\s*,", stmt)
         if m_realloc:
             obj = m_realloc.group(2)
-            # realloc 视为一次释放+重生, 计数+1 变为偶数 -> reborn
-            _obj_freed_count[obj] = _obj_freed_count.get(obj, 0) + 1
+            # realloc 视为释放旧块+重生新块, 强制偶数计数的 reborn 状态
+            _obj_freed_count[obj] = (_obj_freed_count.get(obj, 0) // 2 + 1) * 2
             continue
-        # 写点: [obj+off] =
-        m_write = re.search(r"\[\s*(\w+)\s*\+\s*\d+\s*\]\s*=", line)
+        # use 点识别: 覆盖汇编风格与 C 风格
+        obj = None
+        # 汇编风格: [obj+off] =
+        m_write = re.search(r"\[\s*(\w+)\s*\+\s*\d+\s*\]\s*=", stmt)
         if m_write:
             obj = m_write.group(1)
-            if obj in _obj_freed_count:
-                cnt = _obj_freed_count[obj]
-                findings.append({
-                    "type": "use_after_free",
-                    "function": func_name or "unknown",
-                    "severity": "medium",
-                    "cwe": "CWE-416",
-                    "confidence": 0.9 if cnt % 2 == 1 else 0.2,
-                    "description": f"line{ln} write to {obj} freed_count={cnt}",
-                    "verdict": "use_after_free" if cnt % 2 == 1 else "reborn",
-                    "source": "freed_alias_epoch",
-                })
+        # C 风格: func(obj, ...) 函数调用实参
+        if obj is None:
+            m_call = re.search(r"\b(\w+)\s*\(\s*(\w+)", stmt)
+            if m_call:
+                obj = m_call.group(2)
+        # C 风格: obj->field 或 obj.field 成员访问
+        if obj is None:
+            m_member = re.search(r"\b(\w+)\s*(?:->|\.)\s*\w+", stmt)
+            if m_member:
+                obj = m_member.group(1)
+        # C 风格: *obj 解引用
+        if obj is None:
+            m_deref = re.search(r"\*(\w+)", stmt)
+            if m_deref:
+                obj = m_deref.group(1)
+        # C 风格: obj[idx] 下标写
+        if obj is None:
+            m_idx = re.search(r"\b(\w+)\s*\[", stmt)
+            if m_idx:
+                obj = m_idx.group(1)
+        if obj and obj in _obj_freed_count:
+            cnt = _obj_freed_count[obj]
+            findings.append({
+                "type": "use_after_free",
+                "function": func_name or "unknown",
+                "severity": "medium",
+                "cwe": "CWE-416",
+                "confidence": 0.9 if cnt % 2 == 1 else 0.2,
+                "description": f"line{ln} write to {obj} freed_count={cnt}",
+                "verdict": "use_after_free" if cnt % 2 == 1 else "reborn",
+                "source": "freed_alias_epoch",
+            })
     return findings
 
 

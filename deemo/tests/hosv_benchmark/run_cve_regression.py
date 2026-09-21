@@ -14,7 +14,7 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", ".."))
 
-from analysis.hosv_ext_verifier import HosvExtVerifier  # noqa: E402
+from analysis.heap_write_ext_verifier import HosvExtVerifier  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 CVE_SAMPLES = os.path.join(BASE, "..", "..", "samples", "cve_heap_overflow")

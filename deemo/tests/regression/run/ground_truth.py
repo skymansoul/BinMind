@@ -1,11 +1,41 @@
 """
-权威 Ground Truth 数据 — 108样本 × 4类型的预期检测结果.
-与 cross_type_benchmark.py 同步, 基于CVE验证 + 手动审计.
+权威 Ground Truth 数据 — 正式标签见 deemo/labels/gold.jsonl (124 条).
 
+口径审计 2026-09-16:
+- 原 docstring 宣称 108 样本与实际不符, EXPECTED 实际 124 条, 特此更正;
+- tests/samples 可扫样本(含 vuln.c)共 130 个, 其中 6 个无标注样本
+  (CVE-2015-0235 / CVE-2016-2177 / CVE-2020-25656 / CVE-2023-3576 /
+   cross_func_free / fmt_cross_func) 不得进入指标;
+- 正式标签以 gold.jsonl 为准, 下方 EXPECTED 为 legacy 手写历史保留.
 """
 
+import json
+from pathlib import Path
 from typing import Dict
 
+_GOLD_PATH = (Path(__file__).resolve().parents[3]
+              / 'labels' / 'gold.jsonl')
+
+
+def load_gold(path: Path = _GOLD_PATH) -> Dict[str, int]:
+    """读取正式标签文件; 缺失直接报错, 不回退 legacy 字典."""
+    if not Path(path).exists():
+        raise FileNotFoundError(f"正式标签文件缺失: {path}")
+    gold: Dict[str, int] = {}
+    with open(path, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+            gold[row['sample_id']] = int(row['label'])
+    return gold
+
+
+# 正式标签: 样本名 → 1(vulnerable) / 0(safe)
+GOLD: Dict[str, int] = load_gold()
+
+#[DEPRECATED] legacy 手写标签字典, 2026-09-16 起仅作历史保留, 正式以 GOLD 为准
 # 样本名 → 预期检测结果 (1=vulnerable, 0=safe)
 EXPECTED: Dict[str, int] = {
 # Heap Overflow (34 samples)

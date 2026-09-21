@@ -1,0 +1,105 @@
+version: 1
+audit: '唯一基准清单 2026-09-16。来源: modules/core/eval/heap_cve_benchmark.py 内联 SAMPLE_IR (20条)。legacy 口径纠错: 该文件 docstring 曾宣称 16
+  样本(12TP+4FP), 以本清单为准; heap_cve_data_a/b.py 的 SAMPLE_IR_A/B (13TP+7FP) 与内联版不一致且已被覆盖, 属失效遗留, 不得作为口径依据。样本为源码 IR 手工构造, 非编译二进制,
+  指标不可作为真实二进制链路结果。'
+samples:
+- id: cve_sample_01
+  cve: CVE-2020-29370
+  label: 1
+  source: real_cve_replica
+  desc: kmalloc(256) + memcpy(user_size=512) — 用户可控size
+- id: cve_sample_02
+  cve: CVE-2019-9213
+  label: 1
+  source: real_cve_replica
+  desc: mmap零页绕过 → 用户写入落入内核堆
+- id: cve_sample_03
+  cve: CVE-2021-3156
+  label: 1
+  source: real_cve_replica
+  desc: 'sudoedit: alloc=strlen+16, 但转义循环导致实际写入>alloc'
+- id: cve_sample_04
+  cve: SAFE-BOUNDS
+  label: 0
+  source: synthetic
+  desc: '安全: 边界检查后alloc=256≥write=128'
+- id: cve_sample_05
+  cve: CVE-2016-10190
+  label: 1
+  source: real_cve_replica
+  desc: 'FFmpeg: malloc(chunk_hdr=1024) + memset(chunk_hdr+512)'
+- id: cve_sample_06
+  cve: CVE-INT-HEAP
+  label: 1
+  source: synthetic
+  desc: '整数溢出→堆: malloc(n*m) 溢出回绕, 分配不足'
+- id: cve_sample_07
+  cve: CVE-2015-0235
+  label: 1
+  source: real_cve_replica
+  desc: 'GHOST: realloc缩小4B, memcpy仍用旧sz'
+- id: cve_sample_08
+  cve: SAFE-SAME-VAR
+  label: 0
+  source: synthetic
+  desc: '安全: alloc和write用同一变量size, VCT可证同源'
+- id: cve_sample_09
+  cve: CVE-2014-0160
+  label: 1
+  source: real_cve_replica
+  desc: 'Heartbleed: malloc(payload_len) 但实际payload更小, memcpy可越界'
+- id: cve_sample_10
+  cve: CVE-MULTIPATH
+  label: 1
+  source: synthetic
+  desc: '多路径: 安全路径写64B, 危险路径写256B>128B'
+- id: cve_sample_11
+  cve: SAFE-INTERNAL
+  label: 0
+  source: synthetic
+  desc: '安全: 内部分配间数据拷贝, 无外部输入'
+- id: cve_sample_12
+  cve: CVE-RECURSIVE
+  label: 1
+  source: synthetic
+  desc: '递归: malloc(32) + memcpy(plen≤256), plen=200>32'
+- id: cve_sample_13
+  cve: SAFE-ALLOC-CONSTRAINT
+  label: 0
+  source: synthetic
+  desc: '安全: malloc(5)→usable=16≥write=8, 分配器约束证明安全'
+- id: cve_sample_14
+  cve: CVE-2022-0185
+  label: 1
+  source: real_cve_replica
+  desc: 'fsconfig: malloc(64) + snprintf(buf,256,...) — size参数不一致'
+- id: cve_sample_15
+  cve: CVE-2023-0461
+  label: 1
+  source: real_cve_replica
+  desc: 'io_uring: fixed buffer refcount → UAF后可溢出'
+- id: cve_sample_16
+  cve: CVE-STRCAT
+  label: 1
+  source: synthetic
+  desc: 'strcat链: alloc=dir+32, 拼接后总长>alloc'
+- id: cve_sample_17
+  cve: CVE-2019-14934
+  label: 1
+  source: real_cve_replica
+  desc: calloc(nmemb,size) + memcpy(user_len > total) — calloc内部乘但外部memcpy用独立len
+- id: cve_sample_18
+  cve: CVE-2020-10757
+  label: 1
+  source: real_cve_replica
+  desc: '循环累加: alloc=64, 循环strcat导致total>64 — 累积溢出'
+- id: cve_sample_19
+  cve: SAFE-REALLOC-GROW
+  label: 0
+  source: synthetic
+  desc: realloc(p,new_sz=128) → alloc_size==write_size, VCT应证安全
+- id: cve_sample_20
+  cve: SAFE-PTR-DIFF-GUARD
+  label: 0
+  source: synthetic
+  desc: 'ptr差值边界检查: end-start≤alloc, write=diff≤alloc → safe'

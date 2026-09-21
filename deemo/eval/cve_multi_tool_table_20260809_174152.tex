@@ -1,15 +1,15 @@
 \begin{table}[htbp]
 \centering
-\caption{CVE Heap Overflow: Multi-Tool Detection Comparison}
+\caption{CVE Heap Overflow: Multi-Tool Detection Comparison Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:cve-multi-tool}
 \begin{tabular}{lrrrrr}
 \toprule
 Tool & TP & FN & Recall & Precision & F1 \\
 \midrule
-BinMind-Full & 16 & 0 & 100.0% & 100.0% & 1.0000 \\
+BinMind-Full & 16 & 0 & 100.0% & 100.0% & 1.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。
 Regex-Base & 4 & 12 & 25.0% & 100.0% & 0.4000 \\
-Heuristic & 16 & 0 & 100.0% & 100.0% & 1.0000 \\
-Angr-CFG & 16 & 0 & 100.0% & 100.0% & 1.0000 \\
+Heuristic & 16 & 0 & 100.0% & 100.0% & 1.0000 \\ % 同上, legacy 手写消融数据未核实。
+Angr-CFG & 16 & 0 & 100.0% & 100.0% & 1.0000 \\ % 同上, legacy 手写消融数据未核实。
 \bottomrule
 \end{tabular}
 \end{table}

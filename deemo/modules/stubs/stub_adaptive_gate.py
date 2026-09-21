@@ -3,7 +3,7 @@
 #
 # 关键性评分 (0~1):
 #   crit = 0.35*norm(depth) + 0.30*norm(closure) + 0.25*norm(calls) + 0.10*(1-fail_rate)
-#   crit ≥ 0.7 → STRICT (签名/IO 100%、MR 零异常、incoherence<0.05)
+#   crit ≥ 0.7 → STRICT (签名/IO 100%、MR 零异常、incoherence<0.05)（口径: 技术性参数/计算值, 非检测结果宣称）
 #   0.4 ≤ crit < 0.7 → STANDARD
 #   crit < 0.4 → RELAXED
 #

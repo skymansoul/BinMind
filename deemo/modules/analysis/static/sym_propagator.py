@@ -1,4 +1,4 @@
-# DDSSC符号传播器: 指令级符号表达式构建
+# 按需符号尺寸关联符号传播器: 指令级符号表达式构建
 
 import re
 from typing import Dict, List, Optional

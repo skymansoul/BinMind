@@ -1,4 +1,4 @@
-# AWSC 引擎自测 — 验证后向根来源追踪与同源判定
+# 分配-写关联 引擎自测 — 验证后向根来源追踪与同源判定
 # 使用与 objdump 一致的真实指令格式
 import sys
 sys.path.insert(0, r"C:\Users\Administrator\Desktop\BinMind\deemo")

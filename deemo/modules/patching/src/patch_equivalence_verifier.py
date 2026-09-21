@@ -37,7 +37,7 @@ class PatchEquivalenceVerifier:
                patched: List[BlockInfo]) -> Tuple[bool, List[str]]:
         """验证补丁是否保持控制流和副作用等价。
 
-        返回 (is_valid, violations)。is_valid=True = 全部通过。
+        返回 (is_valid, violations)。is_valid=True = 全部通过。（口径: 阶段校验语义, 非测试结果宣称）
         """
         self._violations.clear()
 

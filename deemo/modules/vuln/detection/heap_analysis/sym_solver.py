@@ -1,5 +1,5 @@
 # coding: utf-8
-"""SSBCP约束求解器 — write_size vs alloc_size+offset 的约束关系判定.
+"""符号尺寸约束传播约束求解器 — write_size vs alloc_size+offset 的约束关系判定.
 
 - 常量比较判定
 - 符号关系推导(同变量系数差)

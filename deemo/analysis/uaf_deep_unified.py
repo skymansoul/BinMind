@@ -1,5 +1,5 @@
 """
-UAF深度检测统一入口 — 集成语义VRF + 增强VRF(字段/Realloc/循环/跨函数) + CFG + TARPS.
+UAF深度检测统一入口 — 集成语义VRF + 增强VRF(字段/Realloc/循环/跨函数) + CFG + 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification).
 提供 analyze_uaf_deep() 作为统一深度分析入口.
 """
 import logging
@@ -9,7 +9,7 @@ _log = logging.getLogger(__name__)
 
 
 def analyze_uaf_deep(code: str, func_name: str = "") -> Dict:
-    """UAF深度分析: 基础VRF + 增强VRF(字段/realloc/循环/跨函数) + TARPS.
+    """UAF深度分析: 基础VRF + 增强VRF(字段/realloc/循环/跨函数) + 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification).
 
     返回与 analyze_uaf() 兼容的 Dict, 额外包含各层级计数.
     """

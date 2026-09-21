@@ -4,7 +4,7 @@
 cover six scenarios: three true overflows (HO-01--03) and three false positive
 scenarios (FP-01--03) representing alignment-compatible writes, \texttt{realloc}
 expansion, and struct field access patterns. The four-stage pipeline achieves
-100\% precision and 100\% recall on this benchmark.}
+100\% precision and 100\% recall on this benchmark. Audited qualifier: n=6 synthetic scenarios (3 overflow + 3 safe), source-regex baseline on handwritten labels, not the binary pipeline; 95\% error-rate Wilson CI $[0.00, 0.39]$.}
 \label{tab:heap_fp}
 \begin{tabular}{@{}l c c c c c@{}}
 \toprule
@@ -17,7 +17,7 @@ expansion, and struct field access patterns. The four-stage pipeline achieves
   FP-02 & realloc(256) write offset 200 (legal) & safe & No & 1 & 0 \\
   FP-03 & struct multi-field access pattern & safe & No & 1 & 0 \\
 \midrule
-\multicolumn{6}{@{}l@{}}{\textbf{Summary:} TP=3, FP=0, TN=3, FN=0, Precision=1.00, Recall=1.00, F1=1.00} \\
+\multicolumn{6}{@{}l@{}}{\textbf{Summary:} TP=3, FP=0, TN=3, FN=0, Precision=1.00, Recall=1.00, F1=1.00} \\ % 审计口径: n=6 合成场景源码正则基线, 完整限定语见 caption; 真实二进制链路 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。数据行本体不动。
 \bottomrule
 \end{tabular}
 \end{table}

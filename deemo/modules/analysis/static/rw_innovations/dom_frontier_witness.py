@@ -83,31 +83,55 @@ def run_dom_frontier_witness(
     lines = pseudocode.splitlines()
     if not lines:
         return []
+    # 按分号拆分子语句, 保留原始行号与子语句序号
+    stmts = []
+    for ln, line in enumerate(lines):
+        for stmt in line.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                stmts.append((ln, stmt))
     cfg = _build_cfg(lines)
     dom = _compute_domin(cfg, 0)
     df = _compute_df(dom, cfg)
     findings: List[dict] = []
-    free_lines = [i for i, l in enumerate(lines) if re.search(r"\bfree\s*\(", l)]
-    use_lines = [i for i, l in enumerate(lines)
-                 if re.search(r"\[[^\]]+\]\s*=", l) or re.search(r"\buse\b", l)]
-    for fi in free_lines:
-        for ui in use_lines:
-            if ui == fi:
+    # 定位 free 子语句的序号与变量名
+    free_stmts = []  # (stmt_idx, var)
+    for idx, (ln, stmt) in enumerate(stmts):
+        m_free = re.search(r"\bfree\s*\(\s*(\w+)\s*\)", stmt)
+        if m_free:
+            free_stmts.append((idx, m_free.group(1)))
+    # C 风格 use 点识别: 检测指针在 free 后的使用
+    _use_pat = re.compile(
+        r"\[\s*(\w+)\s*(?:\+\s*\d+)?\]\s*(?:,|=)"  # 汇编风格 [p+off]
+        r"|(\w+)\s*\(\s*(\w+)"  # 函数调用实参 func(p, ...)
+        r"|(\w+)\s*(?:->|\.)\s*\w+"  # 成员访问 p->x
+        r"|\*(\w+)"  # 解引用 *p
+        r"|(\w+)\s*\["  # 下标写 buf[off]
+    )
+    for fi_idx, var in free_stmts:
+        has_use = False
+        for idx, (ln, stmt) in enumerate(stmts):
+            if idx <= fi_idx:
                 continue
-            # 若 free 的支配边界不含 use, use 在所有路径上
-            # 都不可达 free 之后的状态 -> 误报
-            if ui not in df.get(fi, set()):
-                findings.append({
-                    "type": "use_after_free",
-                    "function": func_name or "unknown",
-                    "severity": "medium",
-                    "cwe": "CWE-416",
-                    "confidence": 0.8,
-                    "description": f"free@line{fi + 1} use@line{ui + 1} "
-                                   f"df_not_contains_use",
-                    "verdict": "false_positive",
-                    "source": "dom_frontier_witness",
-                })
+            m = _use_pat.search(stmt)
+            if m:
+                use_var = m.group(1) or m.group(3) or m.group(4) or m.group(5) or m.group(6)
+                if use_var == var:
+                    has_use = True
+                    break
+        # 若 free 之后无任何 use 点, UAF 告警为误报
+        if not has_use:
+            findings.append({
+                "type": "use_after_free",
+                "function": func_name or "unknown",
+                "severity": "medium",
+                "cwe": "CWE-416",
+                "confidence": 0.8,
+                "description": f"free@stmt{fi_idx} var={var} "
+                               f"no_use_after_free",
+                "verdict": "false_positive",
+                "source": "dom_frontier_witness",
+            })
     return findings
 
 

@@ -110,7 +110,12 @@ def run_pipeline_integration_test() -> Dict:
 
 
 def collect_tool_comparison_data() -> Dict:
-    """收集多工具对比数据 (基于 demo 实际指标 + 文献基线)."""
+    """收集多工具对比数据 (基于 demo 实际指标 + 文献基线).
+
+    口径说明: 各行指标均为 20 样本合成 demo 口径 (tp/fp/tn/fn 字段可复算),
+    非真实二进制链路; BinMind 全量真实口径 F1=0.939 (n=121) 见
+    deemo/test_reports/binary_pipeline_full.json
+    """
     return {
         'BinMind': {'precision': 0.917, 'recall': 0.917, 'f1': 0.917,
                      'fp_rate': 0.083, 'tp': 11, 'fp': 1, 'tn': 4, 'fn': 1,
@@ -124,8 +129,9 @@ def collect_tool_comparison_data() -> Dict:
         'Ghidra (static)': {'precision': 0.600, 'recall': 0.562, 'f1': 0.581,
                              'fp_rate': 0.400, 'tp': 9, 'fp': 6, 'tn': 9, 'fn': 7,
                              'method': 'Static pattern matching + data-flow'},
-        'ASAN': {'precision': 1.000, 'recall': 0.500, 'f1': 0.667,
-                  'fp_rate': 0.000, 'tp': 8, 'fp': 0, 'tn': 15, 'fn': 8,
+        # precision=1.0 为 demo 口径下 8/8 (tp=8, fp=0) 的复算值, 非独立评测
+        'ASAN': {'precision': 1.0, 'recall': 0.500, 'f1': 0.667,
+                  'fp_rate': 0.0, 'tp': 8, 'fp': 0, 'tn': 15, 'fn': 8,
                   'method': 'Compiler-instrumented runtime check'},
     }
 
@@ -185,10 +191,16 @@ def build_master_report(output_dir: str) -> MasterBenchmarkReport:
         'uaf': uaf,
         'pipeline_test': pipeline,
         'tool_comparison': tools,
+        # 真实二进制链路口径 by_type 实测值 (deemo/test_reports/binary_pipeline_full.json, 2026-09-16)
+        # 各类附样本量 n 与 FP; integer_overflow/uaf 小样本 F1=1.0 但 95% Wilson CI
+        # 下界分别 0.89/0.77, 不可外推; 历史 legacy 演示值 heap 0.917 / uaf 1.000 /
+        # fmt 0.924 / io 0.865 / combined 0.926 已废置, 由本真实口径替换
         'cross_vuln': {
-            'heap_overflow': {'f1': 0.917}, 'uaf': {'f1': 1.000},
-            'format_string': {'f1': 0.924}, 'integer_overflow': {'f1': 0.865},
-            'combined': {'f1': 0.926},
+            'heap_overflow': {'f1': 0.886, 'n': 49, 'fp': 10},
+            'uaf': {'f1': 1.0, 'n': 13, 'fp': 0},
+            'format_string': {'f1': 0.926, 'n': 29, 'fp': 4},
+            'integer_overflow': {'f1': 1.0, 'n': 30, 'fp': 0},
+            'combined': {'f1': 0.939, 'n': 121, 'fp': 14},
         },
         'wall_time_s': report.wall_time_s,
     }

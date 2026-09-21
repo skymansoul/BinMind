@@ -3,9 +3,9 @@
 UAF误报削减benchmark自动化测试脚本.
 
 功能:
-  1. 对每个UAF样本执行基线regex检测 + TARPS五阶段验证 + 路径敏感时序验证
+  1. 对每个UAF样本执行基线regex检测 + 时序-别名-可达-路径验证五阶段验证 + 路径敏感时序验证
   2. 结果收集与对比: TP/TN/FP/FN/Precision/Recall/F1
-  3. 三种方法横向比较: Baseline | TARPS | Temporal Path
+  3. 三种方法横向比较: Baseline | 时序-别名-可达-路径验证 | Temporal Path
 
 一键运行: python -m tests.run_uaf_benchmark
 输出: tests/uaf_benchmark/BENCHMARK_REPORT.md
@@ -37,7 +37,7 @@ class UafSampleResult:
     baseline_candidates: int = 0
     baseline_time_ms: float = 0.0
 
-    # TARPS结果
+    # 时序-别名-可达-路径验证结果
     tarps_verdict: str = ""
     tarps_stages_safe: int = 0
     tarps_confidence: float = 0.0
@@ -104,7 +104,7 @@ class UafBenchmarkReport:
 
 
 class UafScanner:
-    """UAF扫描器 — 三种方法: baseline / TARPS / temporal path."""
+    """UAF扫描器 — 三种方法: baseline / 时序-别名-可达-路径验证 / temporal path."""
 
     _FREE_RE = re.compile(r'free\s*\(\s*(\w+(?:->\w+)*)\s*\)', re.IGNORECASE)
     _USE_RE = re.compile(
@@ -134,10 +134,10 @@ class UafScanner:
                 f"baseline: {len(free_lines)} frees, {candidates} candidates")
 
     def tarps_scan(self, source: str) -> Tuple[str, int, float, str]:
-        """TARPS五阶段验证."""
+        """时序-别名-可达-路径验证五阶段验证."""
         try:
-            from analysis.uaf_tarps_verifier import UafTarpsVerifier
-            from analysis.uaf_tarps_types import TarpsVerdict
+            from analysis.uaf_state_path_verifier import UafTarpsVerifier
+            from analysis.uaf_state_path_types import TarpsVerdict
 
             lines = source.splitlines()
             insns = []
@@ -241,9 +241,9 @@ class UafScanner:
 UAF误报削减benchmark自动化测试脚本.
 
 功能:
-  1. 对每个UAF样本执行基线regex检测 + TARPS五阶段验证 + 路径敏感时序验证
+  1. 对每个UAF样本执行基线regex检测 + 时序-别名-可达-路径验证五阶段验证 + 路径敏感时序验证
   2. 结果收集与对比: TP/TN/FP/FN/Precision/Recall/F1
-  3. 三种方法横向比较: Baseline | TARPS | Temporal Path
+  3. 三种方法横向比较: Baseline | 时序-别名-可达-路径验证 | Temporal Path
 
 一键运行: python -m tests.run_uaf_benchmark
 输出: tests/uaf_benchmark/BENCHMARK_REPORT.md
@@ -279,7 +279,7 @@ def evaluate_sample(sample_dir: Path,
         pass
     result.baseline_time_ms = (time.time() - t0) * 1000
 
-    # TARPS验证
+    # 时序-别名-可达-路径验证
     t0 = time.time()
     verdict, safe_stages, confidence, error = scanner.tarps_scan(source)
     result.tarps_verdict = verdict

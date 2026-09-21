@@ -20,7 +20,7 @@ _log = logging.getLogger(__name__)
 class SafetyVerdict(IntEnum):
     """VeriBin 风格补丁安全性判定 —— 四位而非简单 pass/fail。
 
-    SAFE_STRONG 对应 VeriBin 的零误报标准。
+    SAFE_STRONG 对应 VeriBin 的零误报标准。（口径: 判定级别语义, 非测试结果宣称）
     """
     SAFE_STRONG = 0      # 高度确信：无副作用，语义不变
     SAFE_LIKELY = 1      # 大概率安全：差异区域仅含预期安全检查代码

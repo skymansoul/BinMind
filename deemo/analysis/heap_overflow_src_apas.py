@@ -1,7 +1,7 @@
 """
 堆溢出源级验证 — APAS (Alias Propagation & Offset Solver).
 
-HOSV第5阶段增强: 解决4类检测器盲区:
+堆写模式验证 (Heap Write Verification) 第5阶段增强: 解决4类检测器盲区:
   1. 多跳别名链: buf→ptr→alias 传递闭包
   2. 复合算术偏移: base*stride+extra guard约束下worst-case求解
   3. 结构体字段偏移: typedef字段布局计算

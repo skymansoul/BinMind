@@ -1,5 +1,5 @@
 """
-集成堆溢出检测器 — 三阶段约束验证管线 (GAPSBV 核心).
+集成堆溢出检测器 — 三阶段约束验证管线 (仿射边界验证 (Affine Bound Verification) 核心).
 
 管线:
   阶段1 (SVSA): Strided Interval 推断 malloc size 的可能值集

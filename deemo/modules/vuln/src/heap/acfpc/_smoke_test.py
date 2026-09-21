@@ -1,4 +1,4 @@
-"""ACFPC 引擎冒烟测试 — 覆盖三证据链与压制/确认路径."""
+"""分配契约流保持引擎冒烟测试 — 覆盖三证据链与压制/确认路径."""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -138,7 +138,7 @@ def _run_smoke() -> int:
 
 
 def test_acfpc_smoke():
-    """ACFPC 引擎冒烟路径的 pytest 入口。"""
+    """分配契约流保持引擎冒烟路径的 pytest 入口。"""
     assert _run_smoke() == 0
 
 

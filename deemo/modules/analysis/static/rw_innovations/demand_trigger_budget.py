@@ -1,7 +1,7 @@
 """DemandTriggerBudget - 按需触发预算管理器 (stage 73).
 
 全局配额制: 每函数高级分析次数上限 N 次, 低置信度先用轻量证据,
-配额耗尽走保守路径. 与 DDSSC 按需不同: 预算管理器模式.
+配额耗尽走保守路径. 与按需符号尺寸关联 (Demand-Driven Symbolic Size Correlation) 不同: 预算管理器模式.
 
 设计决策:
   - 类 DemandBudget: budget 计数 + 消耗接口
@@ -56,6 +56,10 @@ def run_demand_trigger_budget(
                 })
     for f in targets:
         out = dict(f)
+        # 预算分类会覆盖 verdict 字段; 先保留基础检测器的原始判定,
+        # 供计数层(pipeline 词表过滤)按原语义豁免, 避免基础检出
+        # (如 intof LIKELY)被改写为中间态后误杀成漏报
+        out.setdefault('verdict_original', out.get('verdict'))
         # 高置信度直接走高级分析
         if out.get("confidence", 0.5) >= 0.7:
             if budget.request():

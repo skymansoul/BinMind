@@ -1,4 +1,4 @@
-"""UAF完整消融实验 - 7配置×55样本 量化TPV/PCOL/Interproc增量 ≤300行."""
+"""UAF完整消融实验 - 7配置×55样本 量化TPV/路径条件对象生命周期 (Path-Conditioned Object Lifecycle)/Interproc增量 ≤300行."""
 from __future__ import annotations
 import csv, json, sys, time
 from pathlib import Path
@@ -9,13 +9,13 @@ if str(_DEEMO) not in sys.path:
     sys.path.insert(0, str(_DEEMO))
 
 from eval.uaf_cve_samples import ALL_UAF_CVE_SAMPLES
-from eval.uaf_hoig_ablation_samples import (
+from eval.uaf_obj_graph_ablation_samples import (
     INTRA_SAMPLES, PATH_SAMPLES, CROSS_SAMPLES, CVE_SAMPLES)
-from analysis.uaf_hoig_builder import HoigBuilder
-from analysis.uaf_hoig_propagator import HoigPropagator
-from analysis.uaf_hoig_cross_func import HoigCrossFuncVerifier
-from analysis.uaf_hoig_path_sensitive import PathSensitiveHOIG
-from analysis.uaf_pcol_bridge import verify_with_pcol
+from analysis.uaf_obj_graph_builder import HoigBuilder
+from analysis.uaf_obj_graph_propagator import HoigPropagator
+from analysis.uaf_obj_graph_cross_func import HoigCrossFuncVerifier
+from analysis.uaf_obj_graph_path_sensitive import PathSensitiveHOIG
+from analysis.uaf_path_lifecycle_bridge import verify_with_pcol
 from analysis.uaf_temporal_path_verifier import TemporalPathVerifier
 from analysis.uaf_interprocedural import InterprocSummarizer
 
@@ -24,13 +24,13 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # 消融配置
 def _hoig_only(code: str, name: str) -> str:
-    """仅HOIG Builder判定."""
+    """仅对象身份图 Builder判定."""
     b = HoigBuilder()
     _, _, vs = b.build(code, name)
     return 'CONFIRMED' if any(v.verdict == 'CONFIRMED' for v in vs) else 'SAFE'
 
 def _hoig_pcol(code: str, name: str) -> str:
-    """HOIG+PCOL联合判定."""
+    """对象身份图+路径条件对象生命周期联合判定."""
     return verify_with_pcol(code, name).verdict
 
 def _tpv_only(source: str) -> str:
@@ -44,18 +44,18 @@ def _tpv_only(source: str) -> str:
     return 'SAFE'
 
 def _hoig_pcol_tpv(code: str, name: str, source: str) -> str:
-    """HOIG+PCOL+TPV全融合: PCOL为终审, TPV补充跨函数FN + 别名double-free.
+    """对象身份图+路径条件对象生命周期+TPV全融合: 路径条件对象生命周期为终审, TPV补充跨函数FN + 别名double-free.
 
-    架构: HOIG+PCOL处理互斥/安全模式 + TPV处理跨函数/别名/回调
-    级联: PCOL判CONFIRMED→确认; SAFE时TPV补充:
+    架构: 对象身份图+路径条件对象生命周期处理互斥/安全模式 + TPV处理跨函数/别名/回调
+    级联: 路径条件对象生命周期判CONFIRMED→确认; SAFE时TPV补充:
       - virtual free(跨函数传播) → CONFIRMED
       - double-free(别名闭包) → CONFIRMED
-      - 其他(MUTEX等) → PCOL终审SAFE
+      - 其他(MUTEX等) → 路径条件对象生命周期终审SAFE
     """
     pcol_v = verify_with_pcol(code, name).verdict
     if pcol_v == 'CONFIRMED':
         return 'CONFIRMED'
-    # PCOL判SAFE → TPV补充
+    # 路径条件对象生命周期判SAFE → TPV补充
     tpv = TemporalPathVerifier(max_paths=128)
     tpv_results = tpv.verify(source)
     tpv_uaf = False
@@ -117,7 +117,7 @@ def run_ablation():
     print("UAF Full Ablation Study - 7 Configs × 55 Samples")
     print("=" * 70)
 
-    # 加载40个HOIG/PCOL样本
+    # 加载40个对象身份图/路径条件对象生命周期样本
     pcol_samples = [(n, c, e) for n, c, e, _ in ALL_UAF_CVE_SAMPLES]
     # 加载15个挑战样本
     challenge_samples = _load_challenge()

@@ -1,9 +1,9 @@
-"""UAF 检测模块导入 — TARPS/Temporal/Dominator/HOIG/PTASM."""
-from analysis.uaf_tarps_verifier import (
+"""UAF 检测模块导入 — 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification)/Temporal/Dominator/对象身份图 (Object Identity Graph)/PTASM."""
+from analysis.uaf_state_path_verifier import (
     UafTarpsVerifier, TarpsVerdict, TarpsResult,
 )
 try:
-    from analysis.uaf_tarps_verifier import batch_verify_uaf
+    from analysis.uaf_state_path_verifier import batch_verify_uaf
 except ImportError:
     batch_verify_uaf = None  # type: ignore
 from analysis.uaf_temporal_verifier import (
@@ -45,21 +45,21 @@ except ImportError:
 from analysis.uaf_cfg_builder import (
     UafBasicBlock, UafCFGBuilder,
 )
-# HOIG
-from analysis.uaf_hoig_types import (
+# 对象身份图 (Object Identity Graph)
+from analysis.uaf_obj_graph_types import (
     ObjState, ObjectID, ObjStateAtPoint,
     IdentityEdge, FuncObjSummary, UafHoigVerdict,
 )
-from analysis.uaf_hoig_builder import HoigBuilder
+from analysis.uaf_obj_graph_builder import HoigBuilder
 try:
-    from analysis.uaf_hoig_propagator import HoigPropagator
+    from analysis.uaf_obj_graph_propagator import HoigPropagator
 except ImportError:
     HoigPropagator = None  # type: ignore
 try:
-    from analysis.uaf_hoig_cross_func import HoigCrossFuncVerifier
+    from analysis.uaf_obj_graph_cross_func import HoigCrossFuncVerifier
 except ImportError:
     HoigCrossFuncVerifier = None  # type: ignore
-from analysis.uaf_hoig_verifier import HoigVerifier, HoigReallocTracker
+from analysis.uaf_obj_graph_verifier import HoigVerifier, HoigReallocTracker
 # PTASM
 from analysis.ptasm_engine import (
     PTASMEngine, PTASMStats, ptasm_analyze,

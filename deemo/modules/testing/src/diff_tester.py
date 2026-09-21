@@ -1,6 +1,6 @@
 # 差分测试核心 — 多引擎输出比对 + Oracle共识判定
 # 核心思想: 多个引擎处理同一输入，输出不一致处标记为差异。
-# Oracle机制: 多数票（>=50%引擎输出一致），不要求100%共识。
+# Oracle机制: 多数票（>=50%引擎输出一致），不要求100%共识。（口径: 技术性参数/计算值, 非检测结果宣称）
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Callable, Optional, Tuple
 import hashlib

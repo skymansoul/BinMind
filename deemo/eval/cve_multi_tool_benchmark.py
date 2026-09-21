@@ -2,7 +2,7 @@
 CVE样本多工具对比基准 — BinMind vs Angr vs 正则基线.
 
 在 16 个 CVE 堆溢出样本上运行对比:
-  BinMind-Full  — 完整C源码管线 (source_scanner + GAPSBV + 守卫推断)
+  BinMind-Full  — 完整C源码管线 (source_scanner + 仿射边界验证 + 守卫推断)
   Regex-Base   — 纯正则基线 (模拟 Flawfinder 的简单模式匹配)
   Heuristic    — 启发式: malloc附近有memcpy且size不匹配
 

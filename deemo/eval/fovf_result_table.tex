@@ -3,7 +3,7 @@
 
 \begin{table}[htbp]
 \centering
-\caption{Multi-Tool Format-String Detection Comparison (FOVF benchmark, 60 samples)}
+\caption{Multi-Tool Format-String Detection Comparison (FOVF benchmark, 60 samples) Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:fovf-multitool}
 \begin{tabular}{lrrrrrrrrrr}
 \toprule
@@ -11,7 +11,7 @@
 \midrule
 Angr & 23 & 3 & 0 & 0 & 88.5\% & 100.0\% & 0.9388 & 100.0\% & 1573 \\
 FMT-Existing & 56 & 4 & 0 & 0 & 93.3\% & 100.0\% & 0.9655 & 100.0\% & 0 \\
-FOVF & 56 & 0 & 4 & 0 & 100.0\% & 100.0\% & 1.0000 & 0.0\% & 0 \\
+FOVF & 56 & 0 & 4 & 0 & 100.0\% & 100.0\% & 1.0000 & 0.0\% & 0 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。
 Ghidra & 23 & 3 & 0 & 0 & 88.5\% & 100.0\% & 0.9388 & 100.0\% & 67 \\
 QEMU-Tracer & 23 & 3 & 0 & 0 & 88.5\% & 100.0\% & 0.9388 & 100.0\% & 65 \\
 \bottomrule

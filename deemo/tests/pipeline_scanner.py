@@ -143,7 +143,7 @@ def scan_binary(binary_path: str, src_path: str = None) -> dict:
         except ImportError:
             pass
 
-# 第2层: GAPSBV HeapVerify (辅助验证)
+# 第2层: 仿射边界验证 HeapVerify (辅助验证)
         try:
             from core.heap_verify import HeapVerify
             verifier = HeapVerify()

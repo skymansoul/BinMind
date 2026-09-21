@@ -19,13 +19,13 @@ def enhance_tarps_with_interproc(
     source_code: str,
     alloc_site: int, free_site: int, use_site: int,
 ) -> Tuple[bool, str]:
-    """TARPS 前置增强: 跨函数可达性预筛选.
+    """时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 前置增强: 跨函数可达性预筛选.
 
-    在 TARPS 五阶段之前调用本函数:
-      - 若跨函数不可达 → 直接判定 SAFE, 跳过 TARPS
-      - 若可达 → 继续 TARPS 五阶段分析
+    在 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段之前调用本函数:
+      - 若跨函数不可达 → 直接判定 SAFE, 跳过 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification)
+      - 若可达 → 继续 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段分析
 
-    返回 (should_skip_tarps, reason), True 表示确认安全跳过 TARPS。
+    返回 (should_skip_tarps, reason), True 表示确认安全跳过 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification)。
     """
     builder = InterProcCFGBuilder()
     cg = builder.build(source_code)
@@ -59,7 +59,7 @@ def enhance_tarps_with_interproc(
 def batch_verify_uaf(candidates: list,
                      insns: list,
                      ir_text: str = "") -> list:
-    from analysis.uaf_tarps_verifier import UafTarpsVerifier
+    from analysis.uaf_state_path_verifier import UafTarpsVerifier
     verifier = UafTarpsVerifier()
     results = []
     for alloc_s, free_s, use_s in candidates:

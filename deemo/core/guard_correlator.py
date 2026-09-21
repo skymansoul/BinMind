@@ -18,8 +18,9 @@ class CorrelatedGuard:
     guard_var: str; write_var: str     # 别名时可能不同
     op: str; bound_value: int
     constrains_size: bool              # 守卫限制写入大小(而非仅分配)
-    scope_match: bool                  # 守卫作用域包含该写入
-    strength: float                    # 0-1, 表示误报过滤的强度
+    constrains_offset: bool = False    # 守卫限制写偏移(索引变量)
+    scope_match: bool = False          # 守卫作用域包含该写入
+    strength: float = 0.0             # 0-1, 表示误报过滤的强度
     detail: str = ''
 
 @dataclass
@@ -97,6 +98,24 @@ class GuardCorrelator:
         canon_size = aliases.get(size_var, size_var)
         canon_alloc = aliases.get(alloc_var, alloc_var)
 
+        # 从写入行提取偏移/索引变量: buf[idx] 或 *(dst + off) 或 dst+off
+        canon_offset = None
+        write_text = line
+        if wm and wm.group(3):
+            off_tok = wm.group(3)
+            if not off_tok.isdigit():
+                canon_offset = aliases.get(off_tok, off_tok)
+        if canon_offset is None:
+            m_arr = re.search(r'\b(\w[\w.]*)\s*\[\s*(\w[\w.]*)\s*\]', write_text)
+            if m_arr:
+                canon_offset = aliases.get(m_arr.group(2), m_arr.group(2))
+        if canon_offset is None:
+            m_deref = re.search(r'\+\s*(\w[\w.]*)\s*\)', write_text)
+            if m_deref:
+                tok = m_deref.group(1)
+                if not tok.isdigit():
+                    canon_offset = aliases.get(tok, tok)
+
         # 扫描守卫
         for i in range(max(0, write_line - self._lookback), write_line):
             m = _GUARD_IF.search(ir_lines[i])
@@ -110,10 +129,13 @@ class GuardCorrelator:
             gvar = m.group(1); gop = m.group(2)
             canon_gvar = aliases.get(gvar, gvar)
 
-            # 检查守卫是否约束大小变量或分配变量
+            # 检查守卫是否约束大小变量/分配变量/偏移变量
             constrains_size = (canon_gvar == canon_size)
             constrains_alloc = (canon_gvar == canon_alloc)
-            if not constrains_size and not constrains_alloc:
+            constrains_offset = (canon_offset is not None
+                                 and canon_gvar == canon_offset)
+            if not constrains_size and not constrains_alloc \
+                    and not constrains_offset:
                 continue
 
             # 检查作用域支配
@@ -127,6 +149,7 @@ class GuardCorrelator:
                 guard_var=gvar, write_var=size_var,
                 op=gop, bound_value=bound,
                 constrains_size=constrains_size,
+                constrains_offset=constrains_offset,
                 scope_match=scope_ok,
                 strength=strength,
                 detail=f'if({gvar}{gop}{bound}) → write at L{write_line}'
@@ -233,8 +256,9 @@ class GuardCorrelator:
         if len(scope_guards) >= 2:
             base = min(0.95, base + 0.10)
 
-        # 约束大小的守卫强于约束分配的守卫
-        if result.dominant_guard and result.dominant_guard.constrains_size:
+        # 约束大小或偏移的守卫强于仅约束分配的守卫
+        if result.dominant_guard and (result.dominant_guard.constrains_size
+                                      or result.dominant_guard.constrains_offset):
             base = min(0.95, base + 0.05)
 
         return base

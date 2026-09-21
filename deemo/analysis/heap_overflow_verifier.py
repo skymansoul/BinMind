@@ -1,5 +1,5 @@
 """
-GAPSBV 堆溢出验证器 — guard_inference + path_condition + interval_bounds + affine_relation 四阶段过滤.
+仿射边界验证 (Affine Bound Verification) 堆溢出验证器 — guard_inference + path_condition + interval_bounds + affine_relation 四阶段过滤.
 A(cmp+jcc) → B(路径条件) → C(区间抽象) → D.
 保守设计: 无法确定时保留候选; 每层可开关; 过滤可追溯.
 """
@@ -26,7 +26,7 @@ class VerificationResult:
 
 class HeapOverflowVerifier:
     """
-    GAPSBV 堆溢出验证器。用法: verifier = HeapOverflowVerifier(); verifier.verify(candidates, ir_lines, decompiled_text).
+    仿射边界验证 (Affine Bound Verification) 堆溢出验证器。用法: verifier = HeapOverflowVerifier(); verifier.verify(candidates, ir_lines, decompiled_text).
     candidates 来自 heap_overflow_detector.detect_heap_overflow。若某 stage 不可用, 静默跳过。
     """
 

@@ -1,8 +1,10 @@
 """
 
 包含: CFG构建、FP过滤阶段、格式字符串栈偏移、整数溢出约束、
-     UAF时序/dominator验证、分配-写入提取器、FSTP、HOIG、PTASM、
-     I-GUARD、GAPSBV、MIVR、贝叶斯融合、桥接模块等。
+     UAF时序/dominator验证、分配-写入提取器、格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation)、
+     对象身份图 (Object Identity Graph)、PTASM、I-GUARD、
+     仿射边界验证 (Affine Bound Verification)、路径敏感约束传播 (Path-Sensitive Constraint Propagation)、
+     贝叶斯融合、桥接模块等。
 """
 
 # 深度分析模块
@@ -110,20 +112,20 @@ from analysis.alloc_write_extractor import (
     AllocWriteExtractor, extract_alloc_write_pairs,
 )
 
-# FSTP (Format Semantic Taint Propagation) 格式说明符语义感知污点传播
+# 格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation)
 from analysis.fmt_semantic_taint import (
     SemClass, FstpVerdict, FmtSemanticTaintPropagator,
 )
 
-# HOIG (Heap Object Identity Graph) 对象身份追踪 UAF检测
-from analysis.uaf_hoig_types import (
+# 对象身份图 (Object Identity Graph) 对象身份追踪 UAF检测
+from analysis.uaf_obj_graph_types import (
     ObjState, ObjectID, ObjStateAtPoint,
     IdentityEdge, FuncObjSummary, UafHoigVerdict,
 )
-from analysis.uaf_hoig_builder import HoigBuilder
-from analysis.uaf_hoig_propagator import HoigPropagator
-from analysis.uaf_hoig_cross_func import HoigCrossFuncVerifier
-from analysis.uaf_hoig_verifier import HoigVerifier, HoigReallocTracker
+from analysis.uaf_obj_graph_builder import HoigBuilder
+from analysis.uaf_obj_graph_propagator import HoigPropagator
+from analysis.uaf_obj_graph_cross_func import HoigCrossFuncVerifier
+from analysis.uaf_obj_graph_verifier import HoigVerifier, HoigReallocTracker
 
 # PTASM (Pointer Temporal Automaton State Machine) UAF检测
 from analysis.ptasm_engine import (
@@ -156,43 +158,43 @@ from analysis.int_loop_types import (
 )
 from analysis.int_loop_induction import LoopInductionTracker
 
-# GAPSBV端到端检测管道 (仿射关系+守卫+StridedInterval+分配器语义)
-from analysis.gapsbv_pipeline import (
+# 仿射边界验证 (Affine Bound Verification) 端到端检测管道 (仿射关系+守卫+StridedInterval+分配器语义)
+from analysis.affine_bound_pipeline import (
     GapsbvVerdict, DimensionResult, GapsbvReport,
     detect_heap_overflow_gapsbv, detect_heap_gapsbv_quick,
 )
-# GAPSBV 四维度分析函数
-from analysis.gapsbv_dimensions import (
+# 仿射边界验证 (Affine Bound Verification) 四维度分析函数
+from analysis.affine_bound_dimensions import (
     _resolve_macros,
     dim1_affine_relations, dim2_guard_analysis,
     dim3_strided_interval, dim4_allocator_semantics,
 )
-# GAPSBV 后期维度 (dim3+dim4 完整实现)
-from analysis.gapsbv_dimensions_late import (  # noqa: F401
+# 仿射边界验证 (Affine Bound Verification) 后期维度 (dim3+dim4 完整实现)
+from analysis.affine_bound_dimensions_late import (  # noqa: F401
     _extract_size_interval, _estimate_sizeof,
 )
-# GAPSBV 维度5: 完备性检查安全网
-from analysis.gapsbv_dimension5 import dim5_completeness_check  # noqa: F401
-# MIVR: 路径敏感约束传播 (GAPSBV维度6)
-from analysis.mivr_constraint_graph import (  # noqa: F401
+# 仿射边界验证 (Affine Bound Verification) 维度5: 完备性检查安全网
+from analysis.affine_bound_dimension5 import dim5_completeness_check  # noqa: F401
+# 路径敏感约束传播 (Path-Sensitive Constraint Propagation): (仿射边界验证维度6)
+from analysis.path_proof_constraint_graph import (  # noqa: F401
     VarConstraint, GuardSite, ConstraintEdge, MIVRConstraintGraph,
 )
-from analysis.mivr_path_propagator import (  # noqa: F401
+from analysis.path_proof_path_propagator import (  # noqa: F401
     PropagatedState, WriteSafetyVerdict, MIVRPathPropagator,
 )
-from analysis.mivr_proof_layers import (  # noqa: F401
+from analysis.path_proof_proof_layers import (  # noqa: F401
     PairProof, prove_single,
     _shared_vars, _is_complex_expr,
     _extract_var_coef, _extract_const_term,
     _eval_expr_bound, _effective_boundary,
 )
-from analysis.mivr_pair_prover import MIVRPairProver  # noqa: F401
-from analysis.mivr_pipeline import (  # noqa: F401
+from analysis.path_proof_pair_prover import MIVRPairProver  # noqa: F401
+from analysis.path_proof_pipeline import (  # noqa: F401
     dim6_mivr_constraint_proof,
     detect_heap_overflow_mivr,
     run_gapsbv_with_mivr,
 )
-# GAPSBV: 证明义务引擎 + 约束收集 + FP削减积分器
+# 仿射边界验证 (Affine Bound Verification): 证明义务引擎 + 约束收集 + FP削减积分器
 try:
     from analysis.heap_proof_types import (
         ProofVerdict, ProofObligation, SizeConstraint,

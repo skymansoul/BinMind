@@ -49,10 +49,10 @@ def _infer_guards(source: str) -> dict:
     return guards
 
 
-# Tool 1: BinMind GAPSBV
+# Tool 1: BinMind 仿射边界验证
 
 def run_binmind(name: str, src_path: str, binary_path: str) -> dict:
-    """运行 BinMind GAPSBV 管线: 源码扫描 + 守卫推断 + 分类。"""
+    """运行 BinMind 仿射边界验证管线: 源码扫描 + 守卫推断 + 分类。"""
     t0 = time.time()
     try:
         from tests.source_scanner import extract_heap_ops_c

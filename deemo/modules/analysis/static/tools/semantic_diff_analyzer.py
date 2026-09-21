@@ -201,7 +201,7 @@ class SideChannelDetector:
             return min(new_density * 5.0, 1.0)  # 从零分支到有分支是高危信号
         increase = (new_density - old_density) / old_density
         if increase > 0.2:
-            # 使用 sigmoid 平滑：增长率 20%→评分 0.5, 100%→评分 0.88
+            # 使用 sigmoid 平滑：增长率 20%→评分 0.5, 100%→评分 0.88（口径: 技术性参数/计算值, 非检测结果宣称）
             return 1.0 / (1.0 + _math.exp(-5.0 * (increase - 0.2)))
         return 0.0
 

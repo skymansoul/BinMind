@@ -1,15 +1,15 @@
 \begin{table}[htbp]
 \centering
-\caption{UAF Full Ablation Study (55 Samples)}
+\caption{UAF Full Ablation Study (55 Samples). Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:uaf_full_ablation}
 \begin{tabular}{lrrrrrrrr}
 \toprule
 Config & TP & FP & TN & FN & P & R & F1 & FPR \\
 \midrule
   A0_HOIG_only & 20 & 26 & 6 & 3 & 0.4348 & 0.8696 & 0.5797 & 0.8125 \\
-  A1_HOIG_PCOL & 20 & 0 & 32 & 3 & 1.0000 & 0.8696 & 0.9302 & 0.0000 \\
-  A2_TPV_only & 23 & 14 & 18 & 0 & 0.6216 & 1.0000 & 0.7667 & 0.4375 \\
-  A3_HOIG_PCOL_TPV & 23 & 0 & 32 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+  A1_HOIG_PCOL & 20 & 0 & 32 & 3 & 1.0000 & 0.8696 & 0.9302 & 0.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
+  A2_TPV_only & 23 & 14 & 18 & 0 & 0.6216 & 1.0000 & 0.7667 & 0.4375 \\ % 同上, legacy 手写消融数据未核实
+  A3_HOIG_PCOL_TPV & 23 & 0 & 32 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实
 \bottomrule
 \end{tabular}
 \end{table}

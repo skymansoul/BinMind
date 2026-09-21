@@ -23,7 +23,7 @@ def _extract_var_lower_bound(alloc_expr: str, source: str) -> int:
 
 
 def run_heap_detector(source: str) -> Tuple[bool, str]:
-    """GAPSBV堆溢出检测: 三层过滤 (Tier 0 source_scanner → Tier 1 guard → Tier 2 calloc回填).
+    """仿射边界验证堆溢出检测: 三层过滤 (Tier 0 source_scanner → Tier 1 guard → Tier 2 calloc回填).
 
     与 cross_type_benchmark.py 完全一致的检测逻辑.
     """
@@ -128,7 +128,7 @@ def run_heap_detector(source: str) -> Tuple[bool, str]:
 
 
 def run_uaf_detector(source: str) -> Tuple[bool, str]:
-    """TARPS+RAP UAF检测: free/use/nullify/realloc模式分析."""
+    """时序-别名-可达-路径验证+RAP UAF检测: free/use/nullify/realloc模式分析."""
     from tests.uaf_detector import detect_uaf
     result = detect_uaf(source)
     return result['detected'], f"findings={result['count']} free={result['free_count']}"

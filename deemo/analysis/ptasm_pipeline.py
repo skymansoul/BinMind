@@ -1,16 +1,16 @@
 """
 PTASM 管线集成层 — 将 PTASM 引擎接入 UAF 检测管线.
 
-本模块是 PTASM 与现有 TARPS 五阶段管线的桥接:
+本模块是 PTASM 与现有 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段管线的桥接:
   - ptasm_analyze: 便捷分析入口
-  - ptasm_verify_candidates: 批量形式化验证 (作为 TARPS Stage 3.5)
+  - ptasm_verify_candidates: 批量形式化验证 (作为 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) Stage 3.5)
   - ptasm_detect_uaf: 独立检测模式
   - ptasm_pipeline_detect: 完整单次分析管线
 
 保守性保证 (功能只增不减):
   - PTASM 仅 FILTER 可证明安全的候选项
   - PTASM 仅 CONFIRM 形式化确认的UAF
-  - 不确定候选项 → UNCERTAIN, fall through 到 TARPS 继续处理
+  - 不确定候选项 → UNCERTAIN, fall through 到 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 继续处理
 """
 
 
@@ -212,7 +212,7 @@ def ptasm_pipeline_detect(source: str) -> Dict:
     管线架构:
       Source → [PTASM Engine] → confirmed UAFs  (confidence ≥ 0.90)
                                → safe pointers (filtered, 零新增漏报)
-                               → uncertain     (fall through → TARPS)
+                                → uncertain     (fall through → 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification))
 
     返回 {detected, findings, confirmed, filtered, uncertain, stats}。
     """

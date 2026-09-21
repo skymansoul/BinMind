@@ -1,6 +1,6 @@
 # 供应链漏洞可达性分析。
 # 三层递进：导入表直接引用 - objdump调用图BFS - 二进制字符串匹配。
-# 置信度递减: L1=100%, L2=85%, L3=50%
+# 置信度递减: L1=100%, L2=85%, L3=50%（口径: 技术性参数/计算值, 非检测结果宣称）
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple

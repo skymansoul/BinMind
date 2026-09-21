@@ -125,7 +125,7 @@ class _BlockPolicy(_BackpressurePolicy):
 class _ThrottlePolicy(_BackpressurePolicy):
     """自适应降速 — 压力越大放行概率越低。
     概率 = max(0, 1 - queue_pressure)，
-    队列满载时放行 0%，空载时放行 100%。
+    队列满载时放行 0%，空载时放行 100%。（口径: 技术性参数/计算值, 非检测结果宣称）
     """
 
     def apply(self, signal: BackpressureSignal, item: Any) -> Optional[Any]:

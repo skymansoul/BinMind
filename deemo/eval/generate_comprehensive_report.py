@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GAPSBV 85样本综合评估报告生成器。
+仿射边界验证 85样本综合评估报告生成器。
 
 生成:
   - 每个样本的详细检测结果 (5维度判定 + 融合结果)
@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def generate_report():
-    """生成完整的 GAPSBV 评估报告."""
-    from analysis.gapsbv_pipeline import detect_heap_overflow_gapsbv
+    """生成完整的 仿射边界验证 评估报告."""
+    from analysis.affine_bound_pipeline import detect_heap_overflow_gapsbv
 
     # 加载基准数据
     benchmark_path = os.path.join(

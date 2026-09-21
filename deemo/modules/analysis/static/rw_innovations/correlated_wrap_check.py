@@ -127,6 +127,35 @@ def run_correlated_wrap_check(
                 "verdict": "missed_wrap",
                 "source": "correlated_wrap_check",
             })
+    # C 风格掩码折叠检测: 变量赋值含 & 0xMASK / % CONST 且结果用于下标写
+    # 收集含掩码的赋值变量名与对应行号
+    mask_assigns: List[Tuple[str, int, str]] = []
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        # off = (expr) & 0xFF 或 off = expr % CONST
+        m_mask = re.search(r"(\w+)\s*=\s*.+\s*&\s*(0[xX][0-9a-fA-F]+|\d+)", line)
+        if not m_mask:
+            m_mask = re.search(r"(\w+)\s*=\s*.+\s*%\s*(\d+)", line)
+        if m_mask:
+            mask_var = m_mask.group(1)
+            mask_val = m_mask.group(2)
+            mask_assigns.append((mask_var, ln, mask_val))
+    # 检查掩码变量是否用于下标写
+    for mask_var, mask_ln, mask_val in mask_assigns:
+        for ln, line in enumerate(pseudocode.splitlines(), 1):
+            m_sub = re.search(r"(\w+)\[([^\]]*)\]\s*=", line)
+            if m_sub and mask_var in m_sub.group(2):
+                findings.append({
+                    "type": "integer_overflow",
+                    "function": func_name or "unknown",
+                    "severity": "high",
+                    "cwe": "CWE-190",
+                    "confidence": 0.7,
+                    "description": f"line{mask_ln} mask {mask_val} folds wrap of "
+                                   f"{mask_var} used in subscript write line{ln}",
+                    "verdict": "missed_wrap",
+                    "source": "correlated_wrap_check",
+                })
+                break
     return findings
 
 

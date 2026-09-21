@@ -252,7 +252,7 @@ class AIEnsembleVoter:
             idx += 1
         if pair_count == 0:
             return 0.0
-        # 最大可能excess = 0.5 (100%一致 - 50%基线)
+        # 最大可能excess = 0.5 (100%一致 - 50%基线)（口径: 技术性参数/计算值, 非检测结果宣称）
         return min(excess_sum / (pair_count * 0.5), 0.95) if pair_count else 0.0
 
     def ensemble_analyze(self, code, context=None):

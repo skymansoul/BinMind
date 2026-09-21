@@ -201,6 +201,8 @@ def run_audit() -> Dict:
             'max_depth': type_max,
             'target_depth': info['target_layers'],
             'gap': gap,
+            # 审计口径: SATURATED 表示分析层数覆盖达到目标层数的判定状态,
+            # 非检测指标饱和宣称; 指标饱和判定见 tools/audit/compute_metrics.py
             'status': 'SATURATED' if gap <= 0 else f'GAP={gap}',
             'modules': module_layers,
             'cvss': info['cvss_ids'],
@@ -213,9 +215,11 @@ def run_audit() -> Dict:
         'total_modules': total_modules,
         'total_lines': total_lines,
         'layer_coverage_pct': round(coverage_pct, 1),
+        # 审计口径: 统计层数覆盖达标(SATURATED 状态)的类型数, 非指标宣称
         'types_saturated': sum(
             1 for t in report['covered_types'].values()
             if t['status'] == 'SATURATED'),
+        # 审计口径: 层数覆盖存在缺口的类型统计, 判定语义同上
         'types_with_gaps': sum(
             1 for t in report['covered_types'].values()
             if t['status'] != 'SATURATED'),
@@ -252,6 +256,7 @@ def print_audit_report(report: Dict):
     print(f"  {'─'*70}")
 
     for tid, info in report['covered_types'].items():
+        # 审计口径: 图标仅反映层数覆盖判定结果, 非检测指标结论
         status_icon = 'OK' if info['status'] == 'SATURATED' else '!!'
         print(f"  {info['name']:<22} {info['max_depth']:<8} "
               f"{info['target_depth']:<8} {info['gap']:<6} "

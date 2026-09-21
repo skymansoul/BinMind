@@ -1,5 +1,5 @@
 """
-TARPS五阶段增强UAF检测: A-NULL置零, B-立即复用, C-别名分析,
+时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段增强UAF检测: A-NULL置零, B-立即复用, C-别名分析,
 D-路径可行性, E-置信度评分。事件提取移至 core/uaf_event_extractor.py。
 """
 
@@ -41,7 +41,7 @@ class UafCandidate:
         )
 
 
-# TARPS 增强检测器 ──────────────────────────────────────────────────
+# 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 增强检测器 ──────────────────────────────────────────────────
 
 class EnhancedUafDetector:
     """五阶段增强UAF检测器。
@@ -55,7 +55,7 @@ class EnhancedUafDetector:
         self.stats: Dict[str, Any] = {}
 
     def detect(self, ir_lines: List[str]) -> List[UafCandidate]:
-        """运行五阶段TARPS检测, 返回排序后的候选列表。"""
+        """运行五阶段时序-别名-可达-路径验证检测, 返回排序后的候选列表。"""
         t0 = time.time()
         self.stats = {
             'stageA_null_guards': 0, 'stageB_reassign': 0,
@@ -184,7 +184,7 @@ class EnhancedUafDetector:
         aliases: Set[str],
         ir_lines: List[str],
     ) -> UafCandidate:
-        """综合评估UAF候选 — 应用TARPS五阶段过滤。"""
+        """综合评估UAF候选 — 应用时序-别名-可达-路径验证五阶段过滤。"""
         cand = UafCandidate(
             ptr_name=ptr_name,
             alloc_event=alloc_ev,

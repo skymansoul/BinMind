@@ -1,5 +1,5 @@
 """
-SFOD消融实验 — 量化结构体字段偏移域对CJ管线自主率的提升.
+SFOD消融实验 — 量化结构体字段偏移域对约束求解 (Constraint Solving)管线自主率的提升.
 
 对比方式:
   对60样本运行源级验证器(含SFOD), 统计:
@@ -32,7 +32,7 @@ def load_ground_truth() -> Dict:
 
 
 def run_src_verifier(source: str) -> List[Dict]:
-    """运行HOSV源级检测, 返回findings列表."""
+    """运行堆写模式验证源级检测, 返回findings列表."""
     from analysis.heap_overflow_src_verifier import HeapOverflowSrcVerifier
     v = HeapOverflowSrcVerifier()
     results = v.verify(source)
@@ -78,11 +78,11 @@ def run_ablation():
 
         # 如果禁用SFOD, monkey-patch inject_sfod_constraints为空操作
         if not enable_sfod:
-            import core.cj_struct_field as sfod_mod
+            import core.constraint_struct_field as sfod_mod
             _original = sfod_mod.inject_sfod_constraints
             sfod_mod.inject_sfod_constraints = lambda *a, **kw: False
             # 也需要patch collector中的引用
-            import core.cj_constraint_collector as coll_mod
+            import core.constraint_constraint_collector as coll_mod
             # collector通过from...import引用, 需要重新patch
             # 因为collector在函数内部import, 每次调用都会获取最新版本
             # 所以只需patch模块级别函数即可

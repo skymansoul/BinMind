@@ -1,5 +1,5 @@
 """
-UAF误报验证器 — TARPS (Temporal-Alias-Reference-Path-Scope) 五阶段FP削减.
+UAF误报验证器 — 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段FP削减.
 
 Stage A: NULL置零 / Stage B: 立即复用 / Stage C: 别名分析
 Stage D: 路径条件 / Stage E: 引用计数/作用域守卫.

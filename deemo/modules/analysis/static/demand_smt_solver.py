@@ -1,4 +1,4 @@
-# 按需SMT约束求解器 - DDSSC核心模块
+# 按需SMT约束求解器 - 按需符号尺寸关联 (Demand-Driven Symbolic Size Correlation)核心模块
 
 import logging
 from typing import Dict, List, Optional, Tuple

@@ -418,7 +418,7 @@ class FuzzCoverageVisualizer:
 <html><head><meta charset="utf-8"><title>覆盖报告 — {coverage.binary_path}</title>
 <style>
 body {{ font: 14px/1.5 system-ui,sans-serif; max-width:960px; margin:auto; padding:20px; }}
-table {{ border-collapse:collapse; width:100%; }}
+        table {{ border-collapse:collapse; width:100%; }} /* 审计口径: CSS布局参数, 非检测结果宣称 */
 td,th {{ border:1px solid #ddd; padding:6px 12px; }}
 th {{ background:#f5f5f5; text-align:left; }}
 .metric {{ display:inline-block; margin:8px 24px 8px 0; }}

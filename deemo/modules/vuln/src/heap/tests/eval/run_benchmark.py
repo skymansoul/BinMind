@@ -1,11 +1,11 @@
-"""SHIELD 综合对比实验 — 基准运行器.
+"""堆区间证据消歧综合对比实验 — 基准运行器.
 
-协调所有四个检测方法 (SHIELD / Angr / QEMU / Ghidra),
+协调所有四个检测方法 (堆区间证据消歧 / Angr / QEMU / Ghidra),
 运行全量对比, 汇总结果到统一 JSON.
 
 用法:
   python run_benchmark.py              # 全量 (耗时较长)
-  python run_benchmark.py --quick       # 快速模式 (仅 SHIELD)
+  python run_benchmark.py --quick       # 快速模式 (仅堆区间证据消歧)
 
 创建: 2024-12-09
 """
@@ -81,7 +81,7 @@ def merge_results() -> dict:
         "tools": {},
     }
 
-    # SHIELD results
+    # 堆区间证据消歧 results
     shield_path = RESULTS_DIR / "scan_results.json"
     if shield_path.exists():
         with open(shield_path, encoding="utf-8") as f:

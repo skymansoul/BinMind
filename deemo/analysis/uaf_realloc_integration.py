@@ -1,5 +1,5 @@
 """
-UAF Realloc 集成适配器 — TARPS集成 + 便捷函数 + 报告生成.
+UAF Realloc 集成适配器 — 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 集成 + 便捷函数 + 报告生成.
 """
 
 
@@ -13,7 +13,7 @@ def enhance_tarps_alias_with_realloc(
     pseudocode: str,
     existing_aliases: Optional[Dict[str, str]] = None,
 ) -> Tuple[List[DanglingAlias], Dict[str, Set[str]]]:
-    """TARPS Stage A 增强: 将 realloc 感知的别名分析注入现有别名映射."""
+    """时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) Stage A 增强: 将 realloc 感知的别名分析注入现有别名映射."""
     tracker = ReallocPathTracker()
     danglings = tracker.analyze(pseudocode)
     enriched = dict(tracker._ptr_aliases)

@@ -2,7 +2,7 @@
 """eval/run_cb_benchmark.py — CB-HOD v1.0 vs AC3 Baseline 对比基准
 对 heap overflow 样本分别运行 3 种方法:
   1. AC3-v1 (导入表配对, 无过滤)
-  2. PSVR-HLM-v3.0 (当前管线: P0→P0.5→P1→P2→P3→P4)
+  2. 路径敏感值域推理-HLM-v3.0 (当前管线: P0→P0.5→P1→P2→P3→P4)
   3. CB-HOD-v1.0 (约束驱动: PtrTrack→Constraint→HLM)
 输出: CSV + JSON + 终端汇总"""
 import os, sys, json, time, csv
@@ -69,7 +69,7 @@ def run_baseline(code: str, sample_name: str) -> dict:
 
 
 def run_psvr_hlm(code: str, imports: dict, checksec: dict) -> dict:
-    """PSVR-HLM v3.0: the full existing pipeline."""
+    """路径敏感值域推理-HLM v3.0: the full existing pipeline."""
     t0 = time.time()
     from heap_overflow_v2 import detect_heap_overflow_v2
     result = detect_heap_overflow_v2(code=code, imports=imports,

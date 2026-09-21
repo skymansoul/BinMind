@@ -3,7 +3,7 @@
 
 在 sample_bins/heap_overflow_cve 上运行:
   BinMind-DDSSC (本方法, Stage1-10完整管线)
-  BinMind-Baseline (禁用AWSC/PcWBI精度阶段)
+  BinMind-Baseline (禁用分配-写关联/来源约束写界推断精度阶段)
   angr (符号执行)
   Ghidra (静态审计)
   QEMU/Unicorn (动态追踪)

@@ -24,4 +24,5 @@ cppcheck & 0 & 0 & 22 & 19 & 1.00 & 0.00 & 0.00 & 0.0\% & 51 \\
 
 % 加壳(去符号)分组指标:
 % [plain] binmind_absint: F1=0.91, FPR=15.8\%, binmind_giva: F1=1.00, FPR=0.0\%, binmind_uaf_fpmin: F1=0.39, FPR=15.8\%, binmind_fmt_fpmin: F1=0.00, FPR=0.0\%, binmind_intof_fpmin: F1=0.17, FPR=0.0\%, angr: F1=0.00, FPR=0.0\%, qemu: F1=0.00, FPR=0.0\%, ghidra: F1=0.00, FPR=0.0\%, flawfinder: F1=0.65, FPR=57.9\%, cppcheck: F1=0.00, FPR=0.0\%
+% 审计口径: caption 声明 41 样本 (22 vulnerable / 19 benign) 与表内混淆矩阵合计 (如 binmind_absint 行 TP=43+FP=6+FN=1+TN=32=82) 自相矛盾, F1=1.00 系 legacy 手写分组数据未核实; 真实二进制链路口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。
 % [stripped] binmind_absint: F1=0.94, FPR=15.8\%, binmind_giva: F1=0.94, FPR=15.8\%, binmind_uaf_fpmin: F1=0.41, FPR=5.3\%, binmind_fmt_fpmin: F1=0.00, FPR=0.0\%, binmind_intof_fpmin: F1=0.00, FPR=0.0\%, angr: F1=0.00, FPR=0.0\%, qemu: F1=0.00, FPR=0.0\%, ghidra: F1=0.00, FPR=0.0\%

@@ -2,7 +2,7 @@
 统一多工具对比基准测试 — BinMind增强管线 vs 外部工具.
 
 运行所有堆溢出样本, 对比以下工具:
-  BinMind-Enhanced (Stage A+B+C+D + GAPSBV5D + inter-procedural affine)
+  BinMind-Enhanced (Stage A+B+C+D + 仿射边界验证 (Affine Bound Verification)5D + inter-procedural affine)
   BinMind-Baseline (Stage A+B+C only)
   Angr (符号执行)
   Ghidra (headless decompile)
@@ -76,7 +76,7 @@ def run_binmind_baseline(sample_dir: str) -> ToolResult:
 
 
 def run_binmind_enhanced(sample_dir: str) -> ToolResult:
-    """BinMind 增强: Stage A+B+C+D + GAPSBV5D + inter-procedural affine."""
+    """BinMind 增强: Stage A+B+C+D + 仿射边界验证5D + inter-procedural affine."""
     result = ToolResult(tool="BinMind-Enhanced")
     samples = _discover_samples(sample_dir, "heap")
     if not samples:
@@ -108,7 +108,7 @@ def run_binmind_enhanced(sample_dir: str) -> ToolResult:
 
 
 def run_binmind_gapsbv5d(sample_dir: str) -> ToolResult:
-    """BinMind GAPSBV 5D 独立管道 (detect_heap_overflow_gapsbv)."""
+    """BinMind 仿射边界验证 5D 独立管道 (detect_heap_overflow_gapsbv)."""
     result = ToolResult(tool="BinMind-GAPSBV5D")
     samples = _discover_samples(sample_dir, "heap")
     if not samples:
@@ -120,7 +120,7 @@ def run_binmind_gapsbv5d(sample_dir: str) -> ToolResult:
         try:
             code = Path(sample).read_text(encoding='utf-8', errors='replace')
             t0 = time.perf_counter()
-            from analysis.gapsbv_pipeline import detect_heap_overflow_gapsbv
+            from analysis.affine_bound_pipeline import detect_heap_overflow_gapsbv
             report = detect_heap_overflow_gapsbv(code)
             elapsed = (time.perf_counter() - t0) * 1000
             times.append(elapsed)

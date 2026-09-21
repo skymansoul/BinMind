@@ -85,7 +85,7 @@ def run_pattern_match(exe_path: str, sample_id: str) -> ToolResult:
 
 
 # 估算工具 (文献基准)
-# UAFL: intra-proc typestate, ~65% recall, ~40% prec
+# UAF 生命周期验证: intra-proc typestate, ~65% recall, ~40% prec
 # CodeQL UAF queries: inter-proc, ~55% recall, ~75% prec
 # Angr UAF explorer: symbolic, ~50% recall, ~25% prec
 

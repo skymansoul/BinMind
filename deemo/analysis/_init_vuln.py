@@ -130,11 +130,11 @@ from analysis.alloc_write_extractor import (
 from analysis.fmt_semantic_taint import (
     SemClass, FstpVerdict, FmtSemanticTaintPropagator,
 )
-from analysis.uaf_hoig_types import (
+from analysis.uaf_obj_graph_types import (
     ObjState, ObjectID, ObjStateAtPoint,
     IdentityEdge, FuncObjSummary, UafHoigVerdict,
 )
-from analysis.uaf_hoig_builder import HoigBuilder
-from analysis.uaf_hoig_propagator import HoigPropagator
-from analysis.uaf_hoig_cross_func import HoigCrossFuncVerifier
-from analysis.uaf_hoig_verifier import HoigVerifier, HoigReallocTracker
+from analysis.uaf_obj_graph_builder import HoigBuilder
+from analysis.uaf_obj_graph_propagator import HoigPropagator
+from analysis.uaf_obj_graph_cross_func import HoigCrossFuncVerifier
+from analysis.uaf_obj_graph_verifier import HoigVerifier, HoigReallocTracker

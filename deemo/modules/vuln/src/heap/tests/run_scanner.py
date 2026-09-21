@@ -1,6 +1,6 @@
-"""SHIELD 回归测试 — 扫描器.
+"""堆区间证据消歧回归测试 — 扫描器.
 
-对编译好的 .objdump 文件运行堆溢出检测器 (原始 + SHIELD 过滤),
+对编译好的 .objdump 文件运行堆溢出检测器 (原始 + 堆区间证据消歧过滤),
 收集所有 findings 并写入 JSON.
 
 用法:
@@ -84,11 +84,11 @@ def scan_raw(instructions: List[str], addrs: List[int],
 
 def scan_shield(instructions: List[str], findings: List[dict],
                 addrs: List[int]) -> dict:
-    """用 SHIELD 编排器过滤原始 findings."""
+    """用堆区间证据消歧编排器过滤原始 findings."""
     try:
-        from shield_orchestrator import ShieldOrchestrator
+        from heap_shield_orchestrator import ShieldOrchestrator
     except ImportError:
-        print("  [WARN] shield_orchestrator not importable, skipping SHIELD scan")
+        print("  [WARN] heap_shield_orchestrator not importable, skipping SHIELD scan")
         return {'verdicts': [], 'filtered': 0, 'confirmed': 0,
                 'filter_rate': 0.0, 'engine_stats': {}}
 

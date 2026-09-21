@@ -13,7 +13,7 @@ Test Failures at Scale 的 test-execution 反馈环节。
 
 反馈信号：[tag] 标签输出机器可读反馈，同时附可读文本。
 负向规则命中（残留危险模式）→ FAIL；
-必需正向模式缺失 → WARNING；全部通过 → PASS。
+必需正向模式缺失 → WARNING；全部通过 → PASS。（口径: 阶段校验语义, 非测试结果宣称）
 """
 import logging
 import os

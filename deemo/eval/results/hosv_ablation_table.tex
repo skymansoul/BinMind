@@ -1,6 +1,6 @@
 \begin{table}[t]
 \centering
-\caption{HOSV Progressive Ablation — per-feature contribution to heap overflow detection.}
+\caption{HOSV Progressive Ablation — per-feature contribution to heap overflow detection. Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:hosv_ablation}
 \begin{tabular}{lrrrrrrrr}
 \toprule
@@ -8,11 +8,11 @@ Config & TP & FP & TN & FN & Precision & Recall & F1 & FPR \\
 \midrule
   A_PatternOnly & 19 & 4 & 23 & 14 & 0.8261 & 0.5758 & 0.6786 & 0.1481 \\
   B_PlusAllocator & 19 & 2 & 25 & 14 & 0.9048 & 0.5758 & 0.7037 & 0.0741 \\
-  C_PlusGuard & 21 & 0 & 27 & 12 & 1.0000 & 0.6364 & 0.7778 & 0.0000 \\
-  D_PlusConstraintGraph & 21 & 0 & 27 & 12 & 1.0000 & 0.6364 & 0.7778 & 0.0000 \\
-  E_PlusInterproc & 26 & 0 & 27 & 7 & 1.0000 & 0.7879 & 0.8814 & 0.0000 \\
-  F_PlusAccumulation & 27 & 0 & 27 & 6 & 1.0000 & 0.8182 & 0.9000 & 0.0000 \\
-  G_FullHOSV_PlusAPAS & 33 & 0 & 27 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+  C_PlusGuard & 21 & 0 & 27 & 12 & 1.0000 & 0.6364 & 0.7778 & 0.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
+  D_PlusConstraintGraph & 21 & 0 & 27 & 12 & 1.0000 & 0.6364 & 0.7778 & 0.0000 \\ % 同上, legacy 手写消融数据未核实
+  E_PlusInterproc & 26 & 0 & 27 & 7 & 1.0000 & 0.7879 & 0.8814 & 0.0000 \\ % 同上, legacy 手写消融数据未核实
+  F_PlusAccumulation & 27 & 0 & 27 & 6 & 1.0000 & 0.8182 & 0.9000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实
+  G_FullHOSV_PlusAPAS & 33 & 0 & 27 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实
 \bottomrule
 \end{tabular}
 \end{table}

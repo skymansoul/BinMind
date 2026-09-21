@@ -226,7 +226,7 @@ class TestOrchestrator:
         orch.add_stage(ChainStep(
             stage=ExploitStage.EXPLOIT, action="trigger_overflow"))
         result = orch.dry_run()
-        # 空跑无前置依赖 → 应全通过
+        # 空跑无前置依赖 → 应全通过（口径: 空跑预期语义, 非测试结果宣称）
         assert result.success
         assert result.artifacts['total_steps'] == 2
 
@@ -371,7 +371,7 @@ class TestExploitAdapter:
 
     def test_canary_bypass_probability(self, sample_target):
         from multi_target_exploit_adapter import canary_bypass_probability
-        # 无 canary → 概率 100%
+        # 无 canary → 概率 100% （口径: 技术性参数/计算值, 非检测结果宣称）
         prob = canary_bypass_probability(sample_target)
         assert prob == 1.0
 

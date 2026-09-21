@@ -1,13 +1,13 @@
-"""ACPE 样本扫描器 — 对每个样本运行 ACPE 与基线(DP-TVRA)双检测.
+"""分配容量溯源样本扫描器 — 对每个样本运行分配容量溯源与基线(DP-TVRA)双检测.
 
 创建: 2024-09-27
 对每个样本的编译产物:
-  ACPE:   acpe_analyze_binary → 逐写入判定 (SAFE/CONFIRMED/LIKELY/UNCERTAIN)
+  分配容量溯源:   acpe_analyze_binary → 逐写入判定 (SAFE/CONFIRMED/LIKELY/UNCERTAIN)
   基线:   reg_tracker + fp_filter_v2 (现有 DP-TVRA 三阶段管线)
 输出:    results/<sample_id>.json (双检测的逐写入结果与样本级判定)
 
 样本级判定:
-  detected = 存在任一保留的写入 (ACPE: verdict!=SAFE; 基线: kept)
+  detected = 存在任一保留的写入 (分配容量溯源: verdict!=SAFE; 基线: kept)
 用法:
   python scan_runner.py [样本根目录] [--objs-dir bin/plain]
 """

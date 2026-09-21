@@ -18,6 +18,69 @@ _FORMAT_FUNCTIONS = {
     'syslog', 'err', 'errx', 'warn', 'warnx',
 }
 
+# 各格式化函数的格式串参数位置 (0-based)
+_FORMAT_ARG_POS = {
+    'printf': 0, 'vprintf': 0,
+    'fprintf': 1, 'dprintf': 1, 'vfprintf': 1,
+    'sprintf': 1, 'vsprintf': 1,
+    'snprintf': 2, 'vsnprintf': 2,
+    'syslog': 1, 'err': 1, 'errx': 1, 'warn': 1, 'warnx': 1,
+}
+
+# CRT 基础设施调用 (反编译产物, 如 __acrt_iob_func(1)), 非用户可控格式串
+_RE_CRT_CALL = re.compile(r'^_\w+\s*\(')
+# 立即数/地址形参数 (0x140002000 / 7 / 0x40)
+_RE_ADDR_LITERAL = re.compile(r'^0[xX][0-9a-fA-F]+$|^\d+$')
+
+
+def _extract_call_args(text: str, start: int) -> str:
+    """从 text[start] 指向的 '(' 后提取完整括号参数串 (处理嵌套)。"""
+    depth, i = 1, start
+    while i < len(text) and depth > 0:
+        if text[i] == '(':
+            depth += 1
+        elif text[i] == ')':
+            depth -= 1
+        i += 1
+    return text[start:i - 1] if depth == 0 else text[start:]
+
+
+def _split_args(arg_str: str) -> List[str]:
+    """按逗号切分参数, 处理嵌套括号。"""
+    parts: List[str] = []
+    depth, cur = 0, []
+    for ch in arg_str:
+        if ch == '(':
+            depth += 1
+            cur.append(ch)
+        elif ch == ')':
+            depth -= 1
+            cur.append(ch)
+        elif ch == ',' and depth == 0:
+            parts.append(''.join(cur).strip())
+            cur = []
+        else:
+            cur.append(ch)
+    if cur:
+        parts.append(''.join(cur).strip())
+    return parts
+
+
+def _is_static_format_arg(arg: str) -> bool:
+    """判定格式串参数是否静态不可控, 是则跳过 (不构成格式串漏洞).
+
+    覆盖: C 字面量; 地址/立即数; CRT 基础设施调用; 纯符号引用.
+    """
+    if not arg:
+        return True
+    if arg.startswith('"') or arg.startswith("'"):
+        return True
+    if _RE_ADDR_LITERAL.match(arg):
+        return True
+    if _RE_CRT_CALL.match(arg):
+        return True
+    return False
+
 
 def list_user_functions(binary_path: str) -> List[str]:
     """列出用户定义的函数（排除库函数）。"""
@@ -81,12 +144,20 @@ def static_format_detect(
     findings = []
 
     for fmt_func in _FORMAT_FUNCTIONS:
-        for m in re.finditer(
-            rf'{fmt_func}\s*\(\s*([^,"\']+)\s*\)',
-            pseudocode,
-        ):
-            arg = m.group(1).strip()
-            if arg.startswith('"') or arg.startswith("'"):
+        # 词边界 + 参数位置感知: 旧正则无 \b 会把 __mingw_fprintf( 当作
+        # fprintf( 命中; 单参盲捕获会把 __acrt_iob_func(1 当作格式串变量.
+        # 现在先定位函数调用, 再按 _FORMAT_ARG_POS 取格式串实参, 并对静态
+        # 参数(字面量/地址/CRT调用)直接跳过.
+        for m in re.finditer(rf'\b{re.escape(fmt_func)}\s*\(', pseudocode):
+            args_str = _extract_call_args(pseudocode, m.end())
+            if not args_str:
+                continue
+            args = _split_args(args_str)
+            pos = _FORMAT_ARG_POS.get(fmt_func)
+            if pos is None or pos >= len(args):
+                continue
+            arg = args[pos].strip()
+            if _is_static_format_arg(arg):
                 continue
             if arg in ('format', 'fmt', '__fmt', '"%s"'):
                 continue

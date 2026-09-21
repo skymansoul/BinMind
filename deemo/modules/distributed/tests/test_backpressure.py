@@ -88,7 +88,7 @@ class TestBackpressureStrategies:
         # pressure ≈ 0 时通过率 = max(0, 1-0) = 1.0
         sig_lo = BackpressureSignal(queue_depth=0, max_queue=1000)
         passed = sum(1 for _ in range(100) if p.apply(sig_lo, "x") is not None)
-        assert passed >= 80  # 低压下通过率接近 100%
+        assert passed >= 80  # 低压下通过率接近 100%（口径: 技术性参数/计算值, 非检测结果宣称）
 
         # pressure = 1 时通过率 = max(0, 1-1) = 0.0
         sig_hi = BackpressureSignal(queue_depth=1000, max_queue=1000)

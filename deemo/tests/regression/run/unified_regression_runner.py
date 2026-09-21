@@ -1,6 +1,6 @@
 """
 统一回归测试调度器 v2 — 一键运行全部四种检测类型的回归测试.
-  Heap Overflow (GAPSBV) | UAF (TARPS+RAP) | Format String (FSCS) | Integer Overflow (I-GUARD)
+  Heap Overflow (仿射边界验证) | UAF (时序-别名-可达-路径验证+RAP) | Format String (FSCS) | Integer Overflow (I-GUARD)
 
 用法:
   python tests/regression/run/unified_regression_runner.py
@@ -20,7 +20,7 @@ from typing import Dict, List, Optional
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from tests.regression.run.ground_truth import EXPECTED, CAT_TYPE, SAMPLE_ROOTS
+from tests.regression.run.ground_truth import GOLD, CAT_TYPE, SAMPLE_ROOTS
 from tests.regression.run.detectors import DETECTOR_MAP
 
 
@@ -80,18 +80,21 @@ class MetricSet:
 
 # 样本发现 + Ground Truth
 
-def _expect(name: str, category: str) -> bool:
-    """查询EXPECTED字典获取ground truth."""
-    if name in EXPECTED:
-        return bool(EXPECTED[name])
-    if category == 'heap-fp-reduction':
-        return False
-    return True  # 其余默认为漏洞样本 (保守)
+# 未标注样本名单: 被排除出指标分母, 由调用方如实报告
+EXCLUDED_UNLABELLED: List[str] = []
+
+
+def _expect(name: str, category: str) -> Optional[bool]:
+    """查询 gold.jsonl 正式标签; 未标注返回 None, 不得默认判为漏洞."""
+    if name in GOLD:
+        return bool(GOLD[name])
+    return None  # legacy 逻辑曾对未标注默认 return True, 已废弃
 
 
 def find_samples(vuln_types: Optional[List[str]] = None) -> List[SampleMeta]:
     """遍历样本目录, 收集所有C样本并关联 ground truth."""
     samples: List[SampleMeta] = []
+    EXCLUDED_UNLABELLED.clear()
     base = _PROJECT_ROOT
 
     for root_rel, cat in SAMPLE_ROOTS:
@@ -108,6 +111,10 @@ def find_samples(vuln_types: Optional[List[str]] = None) -> List[SampleMeta]:
             if not src.exists():
                 continue
             is_vuln = _expect(d.name, cat)
+            if is_vuln is None:
+                # 未标注样本不得进入指标分母, legacy 曾默认判漏洞
+                EXCLUDED_UNLABELLED.append(d.name)
+                continue
             samples.append(SampleMeta(
                 name=d.name, path=str(src),
                 vuln_type=vt, is_vulnerable=is_vuln, category=cat,
@@ -230,8 +237,10 @@ def write_results_json(results: List[DetectionResult], aggregate: MetricSet,
 
     report = {
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "version": "v2 (EXPECTED dict in ground_truth.py, detectors in detectors.py)",
-        "summary": {"total_samples": len(results), "aggregate": aggregate.to_dict()},
+        "version": "v3 (gold.jsonl labels, unlabelled excluded, source-regex baseline)",
+        "summary": {"total_samples": len(results),
+                    "unlabelled_excluded": list(EXCLUDED_UNLABELLED),
+                    "aggregate": aggregate.to_dict()},
         "by_type": {vt: m.to_dict() for vt, m in by_type.items()},
         "per_sample": per_sample,
     }
@@ -261,7 +270,9 @@ def main():
         print("No samples found.")
         return 1
 
-    print(f"\n  Total samples: {len(samples)}")
+    print(f"\n  Total samples: {len(samples)} (excluded unlabelled: {len(EXCLUDED_UNLABELLED)})")
+    if EXCLUDED_UNLABELLED:
+        print(f"    excluded: {EXCLUDED_UNLABELLED}")
     for vt in sorted(set(s.vuln_type for s in samples)):
         count = sum(1 for s in samples if s.vuln_type == vt)
         vuln_count = sum(1 for s in samples if s.vuln_type == vt and s.is_vulnerable)

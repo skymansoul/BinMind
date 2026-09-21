@@ -785,6 +785,377 @@ if FASTAPI_AVAILABLE:
                 logger.error(f"[WebAPI] 外部漏洞查询失败: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
 
+        # ============ 前端契约路由: 轮询分析结果 ============
+
+        @app.get("/api/analyze/{task_id}")
+        async def get_analysis_result(task_id: str):
+            """
+            前端分析结果轮询端点。
+
+            前端提交 POST /api/analyze 后持 task_id 轮询本端点；
+            completed 时返回扁平化漏洞列表与精简二进制信息。
+            """
+            task = task_manager.get_task(task_id)
+            if not task:
+                raise HTTPException(status_code=404, detail=f"任务不存在: {task_id}")
+
+            status = task.get('status')
+            if status not in ('completed', 'failed'):
+                return APIResponse(
+                    success=True,
+                    message=task.get('message', ''),
+                    data={
+                        'analysis_id': task_id,
+                        'status': status,
+                        'progress': task.get('progress', 0),
+                        'message': task.get('message', '')
+                    }
+                )
+
+            if status == 'failed':
+                return APIResponse(
+                    success=True,
+                    message=task.get('message', '分析失败'),
+                    data={
+                        'analysis_id': task_id,
+                        'status': 'failed',
+                        'message': task.get('message', '')
+                    }
+                )
+
+            result = task.get('result', {}) or {}
+
+            # 从任务结果提取前端消费的字段
+            raw_binfo = result.get('binary_info', {}) or {}
+            binary_info = {
+                'format': raw_binfo.get('binary_format', 'unknown'),
+                'arch': raw_binfo.get('arch', 'unknown'),
+                'bits': raw_binfo.get('bits', 0),
+                'language': raw_binfo.get('language', ''),
+                'size': raw_binfo.get('size', 0),
+                'binary_path': raw_binfo.get('binary_path', ''),
+                'binary_name': raw_binfo.get('binary_name', '')
+            }
+
+            # 漏洞列表扁平化: function_analyses[].analysis.vulnerabilities[]
+            vulnerabilities = []
+            for fa in result.get('function_analyses', []):
+                analysis = fa.get('analysis', {}) or {}
+                for v in analysis.get('vulnerabilities', []):
+                    vulnerabilities.append({
+                        'type': v.get('type', v.get('vulnerability_type', 'unknown')),
+                        'severity': v.get('severity', 'Low'),
+                        'function_name': v.get('function_name', fa.get('function_name', '')),
+                        'description': str(v.get('description', v.get('message', '')))[:500],
+                        'cwe': v.get('cwe', ''),
+                        'exploitation': v.get('exploitation', '')
+                    })
+
+            report_paths = result.get('reports', {}) or {}
+            report_paths_norm = {
+                'markdown': report_paths.get('markdown', ''),
+                'json': report_paths.get('json', ''),
+                'html': report_paths.get('html', '')
+            }
+
+            return APIResponse(
+                success=True,
+                message='分析完成',
+                data={
+                    'analysis_id': task_id,
+                    'status': 'completed',
+                    'binary_info': binary_info,
+                    'vulnerabilities': vulnerabilities,
+                    'pseudocode': '',
+                    'report_paths': report_paths_norm,
+                    'created_at': task.get('created_at', '')
+                }
+            )
+
+        # ============ 前端契约路由: 模糊测试会话 ============
+
+        # 模块级会话表: session_id → FuzzManager 实例与元数据
+        FUZZ_SESSIONS: Dict[str, Dict[str, Any]] = {}
+
+        class FuzzStartRequest(BaseModel):
+            """前端模糊测试启动请求体"""
+            binary_path: str = Field(..., description="目标二进制路径")
+            fuzzer_type: str = Field("auto", description="Fuzzer 类型: libfuzzer, afl, afl++, auto")
+            duration: Optional[int] = Field(None, description="运行时长秒数(可选)")
+
+        @app.post("/api/fuzz/start")
+        async def start_fuzz_session(request: FuzzStartRequest):
+            """启动模糊测试会话，包装 FuzzManager 真实执行。"""
+            if not request.binary_path or not os.path.isfile(request.binary_path):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"二进制文件不存在: {request.binary_path}"
+                )
+
+            from modules.fuzzing.fuzz_integration import FuzzManager
+
+            try:
+                manager = FuzzManager(
+                    binary_path=request.binary_path,
+                    fuzzer_type=request.fuzzer_type or 'auto'
+                )
+            except (ValueError, OSError) as e:
+                raise HTTPException(status_code=400, detail=f"Fuzzer 初始化失败: {e}")
+
+            timeout = None
+            if request.duration:
+                timeout = max(1, int(request.duration))
+
+            try:
+                start_result = manager.start(timeout=timeout)
+            except Exception as e:
+                logger.error(f"[WebAPI] 启动模糊测试失败: {e}")
+                raise HTTPException(status_code=500, detail=f"启动失败: {e}")
+
+            if not start_result.get('success'):
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"启动失败: {start_result.get('status', 'unknown')}"
+                )
+
+            session_id = start_result.get('session_id', str(uuid.uuid4()))
+            FUZZ_SESSIONS[session_id] = {
+                'manager': manager,
+                'fuzzer_type': start_result.get('fuzzer_type', request.fuzzer_type),
+                'binary_path': request.binary_path,
+                'started_at': datetime.now().isoformat()
+            }
+
+            return APIResponse(
+                success=True,
+                message='模糊测试已启动',
+                data=_fuzz_status_payload(session_id)
+            )
+
+        def _fuzz_status_payload(session_id: str) -> Dict[str, Any]:
+            """组装 FuzzManager 状态为前端 FuzzSession 结构。"""
+            entry = FUZZ_SESSIONS.get(session_id)
+            if not entry:
+                raise HTTPException(status_code=404, detail=f"模糊测试会话不存在: {session_id}")
+
+            manager = entry['manager']
+            status_raw = manager.get_status()
+            return {
+                'session_id': session_id,
+                'fuzzer_type': entry.get('fuzzer_type', ''),
+                'binary_path': entry.get('binary_path', ''),
+                'status': status_raw.get('status', 'unknown'),
+                'started_at': entry.get('started_at', ''),
+                'coverage': status_raw.get('stats', {}).get('coverage', 0.0),
+                'crashes': status_raw.get('crashes_found', 0)
+            }
+
+        @app.get("/api/fuzz/status/{session_id}")
+        async def get_fuzz_session_status(session_id: str):
+            """查询模糊测试会话状态。"""
+            return APIResponse(
+                success=True,
+                message='会话状态',
+                data=_fuzz_status_payload(session_id)
+            )
+
+        @app.post("/api/fuzz/stop/{session_id}")
+        async def stop_fuzz_session(session_id: str):
+            """停止模糊测试会话并返回停止后状态。"""
+            entry = FUZZ_SESSIONS.get(session_id)
+            if not entry:
+                raise HTTPException(status_code=404, detail=f"模糊测试会话不存在: {session_id}")
+
+            manager = entry['manager']
+            try:
+                manager.stop()
+            except Exception as e:
+                logger.error(f"[WebAPI] 停止模糊测试失败: {e}")
+
+            return APIResponse(
+                success=True,
+                message='会话已停止',
+                data=_fuzz_status_payload(session_id)
+            )
+
+        # ============ 前端契约路由: 项目管理 ============
+
+        def _project_meta_to_item(meta: Dict[str, Any]) -> Dict[str, Any]:
+            """ProjectManager meta → 前端 ProjectItem 字段映射。"""
+            return {
+                'id': meta.get('project_id', ''),
+                'name': meta.get('name', ''),
+                'binary_path': meta.get('binary_path', ''),
+                'status': meta.get('state', 'active'),
+                'current_step': '',
+                'created_at': meta.get('created', ''),
+                'updated_at': meta.get('modified', '')
+            }
+
+        @app.get("/api/projects")
+        async def list_projects_for_frontend():
+            """列出全部项目，返回前端期望的裸数组。"""
+            try:
+                from modules.project.project_manager import ProjectManager
+
+                pm = ProjectManager()
+                metas = pm.list_projects()
+                items = [_project_meta_to_item(m) for m in (metas or [])]
+
+                return APIResponse(
+                    success=True,
+                    message=f"共 {len(items)} 个项目",
+                    data=items
+                )
+            except Exception as e:
+                logger.error(f"[WebAPI] 列出项目失败: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        class ProjectCreateRequest(BaseModel):
+            """前端项目创建请求体"""
+            name: str = Field(..., description="项目名称")
+            binary_path: str = Field("", description="关联二进制路径(可选)")
+
+        @app.post("/api/projects")
+        async def create_project_for_frontend(request: ProjectCreateRequest):
+            """创建项目，返回创建后的完整项目条目。"""
+            try:
+                from modules.project.project_manager import ProjectManager
+
+                pm = ProjectManager()
+                project_id = pm.create_project(
+                    name=request.name,
+                    binary_path=request.binary_path or ""
+                )
+
+                return APIResponse(
+                    success=True,
+                    message='项目已创建',
+                    data={'project_id': project_id, 'name': request.name}
+                )
+            except (ValueError, TypeError) as e:
+                raise HTTPException(status_code=400, detail=f"项目创建失败: {e}")
+            except Exception as e:
+                logger.error(f"[WebAPI] 创建项目失败: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        # ============ 前端契约路由: 漏洞检索 ============
+
+        class VulnSearchRequest(BaseModel):
+            """前端漏洞检索请求体"""
+            query: str = Field("", description="检索关键词")
+            limit: int = Field(20, ge=1, le=100, description="返回数量限制")
+
+        @app.post("/api/vuln/search")
+        async def search_vulnerabilities_for_frontend(request: VulnSearchRequest):
+            """关键词检索漏洞库: 非空关键词走综合模糊检索，空则回退全量。"""
+            try:
+                from modules.vuln.vuln_db import VulnerabilityDatabase
+
+                db = VulnerabilityDatabase()
+                keyword = (request.query or '').strip()
+
+                if not keyword:
+                    results = db.get_all(limit=request.limit, offset=0)
+                else:
+                    # 语义相似检索 + 函数名/类型精确检索并集去重
+                    results = db.search_similar(
+                        pseudocode=keyword,
+                        limit=request.limit,
+                        fuzzy_search=True
+                    )
+                    if not results:
+                        results = db.search_by_function(keyword, limit=request.limit)
+                    if not results:
+                        results = db.search_by_vulnerability_type(keyword, limit=request.limit)
+
+                return APIResponse(
+                    success=True,
+                    message=f"找到 {len(results)} 条记录",
+                    data={'vulnerabilities': results, 'count': len(results)}
+                )
+            except Exception as e:
+                logger.error(f"[WebAPI] 漏洞检索失败: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
+        # ============ 前端契约路由: 知识图谱 ============
+
+        @app.get("/api/knowledge/graph")
+        async def get_knowledge_graph(project_id: str = None):
+            """
+            基于漏洞库真实记录构建异构知识图谱。
+
+            漏洞记录 → findings → build_vuln_graph_from_findings
+            → 展平为前端 D3 消费的 nodes/links 结构。
+            """
+            try:
+                from modules.vuln.vuln_db import VulnerabilityDatabase
+                from modules.project.vuln_knowledge_graph import (
+                    build_vuln_graph_from_findings, GraphSerializer
+                )
+
+                db = VulnerabilityDatabase()
+                records = db.get_all(limit=100, offset=0)
+
+                # 数据库行 → 图构建器期望的 findings 结构
+                findings = []
+                for r in records:
+                    cwe = ''
+                    desc = str(r.get('description', ''))
+                    # 描述中的 CVE 编号用于命名节点
+                    title = f"{r.get('vulnerability_type', 'unknown')}@{r.get('function_name', '')}"
+                    findings.append({
+                        'rule_id': f"db-{r.get('id', len(findings))}",
+                        'title': title,
+                        'severity': str(r.get('severity', 'medium')).lower(),
+                        'file': r.get('binary_name', ''),
+                        'line': 0,
+                        'cwe': cwe,
+                        'description': desc,
+                        'function_name': r.get('function_name', '')
+                    })
+
+                component = project_id or 'vulnerability-database'
+                graph = build_vuln_graph_from_findings(findings, component=component)
+                serialized = GraphSerializer.to_dict(graph)
+
+                # 展平: {node_type: {id: {...}}} → [{id, name, type}]
+                nodes = []
+                for node_type, node_map in (serialized.get('nodes', {}) or {}).items():
+                    for node_id, node_info in node_map.items():
+                        props = node_info.get('properties', {}) or {}
+                        name = props.get('title') or props.get('name') or node_id
+                        nodes.append({
+                            'id': node_id,
+                            'name': name,
+                            'type': node_type,
+                            'properties': props
+                        })
+
+                # 展平: {edge_type: [{source, target, ...}]} → [{source, target, type}]
+                links = []
+                for edge_type, edge_list in (serialized.get('edges', {}) or {}).items():
+                    for e in edge_list:
+                        links.append({
+                            'source': e.get('source', ''),
+                            'target': e.get('target', ''),
+                            'type': edge_type,
+                            'weight': e.get('weight', 1.0)
+                        })
+
+                return APIResponse(
+                    success=True,
+                    message=f"图谱构建完成: {len(nodes)} 节点, {len(links)} 边",
+                    data={
+                        'nodes': nodes,
+                        'links': links,
+                        'stats': serialized.get('stats', {})
+                    }
+                )
+            except Exception as e:
+                logger.error(f"[WebAPI] 构建知识图谱失败: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
         logger.info("[WebAPI] API 应用创建完成")
         return app
 

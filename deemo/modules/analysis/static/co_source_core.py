@@ -1,4 +1,4 @@
-# AWSC 共享基础 - 根来源类型常量与 Root 数据结构
+# 分配-写关联 共享基础 - 根来源类型常量与 Root 数据结构
 #
 # 独立模块避免 co_source_engine 与 co_source_operands 循环导入.
 

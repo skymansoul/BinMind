@@ -1,6 +1,6 @@
 # tests/run_scanner — 扫描调度模块
 # 对每个编译好的样本运行检测器, 收集原始输出。
-# 支持: AC3 v1 (info_collect.py) 和 PSVR-HLM v2 (heap_overflow_v2.py)。
+# 支持: AC3 v1 (info_collect.py) 和 路径敏感值域推理-HLM v2 (heap_overflow_v2.py)。
 # 每个样本记录: 检出项数、置信度分布、耗时、内存峰值。
 
 import os, sys, json, time, tracemalloc
@@ -107,7 +107,7 @@ def scan_sample_v1(sample_name: str, elf_path: Path) -> dict:
 
 
 def scan_sample_v2(sample_name: str, elf_path: Path) -> dict:
-    """PSVR-HLM v2 扫描 (新算法)。"""
+    """路径敏感值域推理-HLM v2 扫描 (新算法)。"""
     start = time.time()
     tracemalloc.start()
     try:

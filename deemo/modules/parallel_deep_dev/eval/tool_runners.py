@@ -3,7 +3,7 @@
 每个 runner 返回: {tool, detected, detections, elapsed_ms, success,
 error, detail}。run_all 对单样本执行全部可用工具,
 二进制工具按顺序降级(skip 不抛错)。
-源码工具按漏洞类别选择: heap → CACBV, uaf → LCV。
+源码工具按漏洞类别选择: heap → 容量感知耦合边界验证, uaf → LCV。
 """
 
 import os

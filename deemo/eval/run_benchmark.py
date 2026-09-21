@@ -1,7 +1,7 @@
 """
 统一多工具对比实验 — 对全部CVE样本调用BinMind/Angr/Ghidra, 输出CSV/JSON/LaTeX.
-覆盖: 16 CVE堆溢出样本 + 15 GAPSBV样本 + FP测试样本.
-工具: BinMind-Full(源码级GAPSBV-CJ), BinMind-baseline(IR级), Angr, Ghidra.
+覆盖: 16 CVE堆溢出样本 + 15 cve_gapsbv 样本 + FP测试样本.
+工具: BinMind-Full(源码级仿射边界验证-约束求解), BinMind-baseline(IR级), Angr, Ghidra.
 输出: benchmark_full.csv, benchmark_summary.json, result_table.tex
 """
 from __future__ import annotations

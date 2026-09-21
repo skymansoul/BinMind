@@ -34,6 +34,39 @@ def _usage_signal(pseudocode: str) -> Optional[str]:
     return None
 
 
+# C 风格函数签名正则: 返回类型 函数名(参数列表)
+_C_SIG_RE = re.compile(
+    r"^\s*(?:int|char|void|size_t|unsigned|long|short|float|double)\s+"
+    r"\*?\s*\w+\s*\(([^)]*)\)"
+)
+
+
+def _c_sig_signal(pseudocode: str) -> Optional[tuple]:
+    """解析 C 风格函数签名, 返回 (abi, param_count)."""
+    for line in pseudocode.splitlines():
+        m = _C_SIG_RE.search(line)
+        if not m:
+            continue
+        params_str = m.group(1).strip()
+        if not params_str or params_str == "void":
+            return ("sysv", 0)
+        params = [p.strip() for p in params_str.split(",")]
+        count = len(params)
+        # 参数类型中包含指针则记为指针参数
+        has_ptr = any("*" in p for p in params)
+        has_scalar = any(
+            re.search(r"\bint\b|\bchar\b|\bsize_t\b|\bunsigned\b|\blong\b", p)
+            for p in params
+        )
+        # System V AMD64: 标量+指针混合且 <=6 参为候选
+        if count <= 6 and (has_ptr or has_scalar):
+            return ("sysv", count)
+        # >6 参为 partial
+        if count > 6:
+            return ("partial", count)
+    return None
+
+
 def run_abi_auto_detect(
     pseudocode: str,
     func_name: str,
@@ -49,7 +82,18 @@ def run_abi_auto_detect(
     elif sig1 is not None and sig2 is not None:
         abi, conf, verdict = sig1, 0.6, "abi_partial"
     else:
-        abi, conf, verdict = "unknown", 0.3, "abi_unknown"
+        # C 风格签名解析: 按参数个数/类型推断 ABI
+        c_sig = _c_sig_signal(pseudocode)
+        if c_sig is not None:
+            c_abi, param_count = c_sig
+            if c_abi == "sysv" and param_count <= 6:
+                abi, conf, verdict = "sysv", 0.9, "abi_confirmed"
+            elif c_abi == "partial":
+                abi, conf, verdict = "sysv", 0.6, "abi_partial"
+            else:
+                abi, conf, verdict = "unknown", 0.3, "abi_unknown"
+        else:
+            abi, conf, verdict = "unknown", 0.3, "abi_unknown"
     size_reg = {"sysv": "rdx", "win64": "r8"}.get(abi, "unknown")
     findings.append({
         "type": "heap_overflow",

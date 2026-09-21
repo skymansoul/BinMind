@@ -1,4 +1,4 @@
-"""ACPE 符号追踪共享类型与工具 — 供 SymSizeTracker 使用.
+"""分配容量溯源符号追踪共享类型与工具 — 供 SymSizeTracker 使用.
 
 内容:
   数据类型  SymAlloc / SymWrite / FuncSymResult

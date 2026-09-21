@@ -189,7 +189,7 @@ def generate_timeline(
             title='T+72h — 部署',
             actions=_deploy_actions(is_shared_library, requires_reboot, True),
             owner='SRE / DevOps',
-            success_criteria='100% 实例已更新; 监控 24h 无异常',
+            success_criteria='100% 实例已更新; 监控 24h 无异常',  # 审计口径: 部署运维指标, 非检测结果宣称
         ),
         TimelinePhase(
             phase=PhaseType.REVIEW, time_offset_hours=168,

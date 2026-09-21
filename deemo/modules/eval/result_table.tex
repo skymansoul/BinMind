@@ -1,12 +1,12 @@
 \begin{table}[t]
 \centering
-\caption{Heap Overflow Static Detection: 20-sample CVE Benchmark}
+\caption{Heap Overflow Static Detection: 20-sample CVE Benchmark. Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:cve_comparison}
 \begin{tabular}{lccccccc}
 \toprule
 Tool & TP & FP & FN & Recall(\%) & Precision(\%) & FPR(\%) & F1 \\
 \midrule
-BinMind-DDSSC & 15 & 0 & 0 & 100.0 & 100.0 & 0.0 & 1.0000 \\
+BinMind-DDSSC & 15 & 0 & 0 & 100.0 & 100.0 & 0.0 & 1.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
 BinMind-Baseline & 13 & 0 & 2 & 86.7 & 100.0 & 0.0 & 0.9286 \\
 angr & 15 & 5 & 0 & 100.0 & 75.0 & 100.0 & 0.8571 \\
 Ghidra & 15 & 5 & 0 & 100.0 & 75.0 & 100.0 & 0.8571 \\

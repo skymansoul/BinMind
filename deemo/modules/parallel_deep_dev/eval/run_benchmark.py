@@ -1,6 +1,6 @@
 """主实验脚本 — 全样本 × 全工具对比, 输出统一 CSV/JSON/LaTeX。
 
-工具: 主检测器(按类: CACBV/LCV), Baseline(朴素基线), Angr, Ghidra, QEMU-GT。
+工具: 主检测器(按类: 容量感知耦合边界验证/LCV), Baseline(朴素基线), Angr, Ghidra, QEMU-GT。
 CSV 列: tool, sample, group, is_vuln, detected, detections,
 false_positive, false_negative, elapsed_ms, peak_mb, cve, pattern,
 success, error。

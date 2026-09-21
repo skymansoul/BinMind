@@ -56,7 +56,7 @@ BENCHMARK = {
         'TP': 114, 'FP': 58, 'TN': 112, 'FN': 85,
         'precision': 0.6628, 'recall': 0.5729, 'f1': 0.6146, 'fp_rate': 0.337,
         'avg_time_ms': 3,
-        'strengths': ['Very fast', '100% allocation+write pair coverage'],
+        'strengths': ['Very fast', '100% allocation+write pair coverage'],  # 审计口径: 系内部 legacy 测试宣称, 非独立基准验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
         'limitations': ['No semantic understanding',
                          'No guard/constraint/slack detection'],
     },

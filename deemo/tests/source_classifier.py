@@ -1,5 +1,5 @@
 """
-GAPSBV 发现分类器 —— 对 source_scanner 提取的候选进行判定。
+仿射边界验证发现分类器 —— 对 source_scanner 提取的候选进行判定。
 保守策略: 仅当静态分析能证明安全时才返回 SAFE。
 动态索引、变量尺寸等无法静态确定的 → UNCERTAIN。
 

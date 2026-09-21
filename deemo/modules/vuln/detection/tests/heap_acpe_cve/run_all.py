@@ -35,7 +35,7 @@ def main() -> None:
 
     samples = _HERE / args.samples
 
-    step([str(_HERE / 'gen_acpe_samples.py'), str(samples)],
+    step([str(_HERE / 'gen_alloc_capacity_samples.py'), str(samples)],
          '1/4 生成样本集')
     gcc_cmd = ['--gcc', args.gcc] if args.gcc else []
     step([str(_HERE / 'compile_samples.py'), str(samples)] + gcc_cmd,

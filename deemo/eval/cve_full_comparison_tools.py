@@ -34,7 +34,7 @@ def c_to_ir(c_source: str) -> list:
 
 
 def _run_hosv_source(source: str, sample_name: str) -> dict:
-    """HOSV源级堆溢出检测 — 保留完整C语义, 绕过有损IR转换.
+    """堆写模式验证源级堆溢出检测 — 保留完整C语义, 绕过有损IR转换.
 
     strict判定: 仅VULN触发detected=True, UNCERTAIN保留为参考不触发检出.
     no_vuln: 无VULN判定 (可以有SAFE/UNCERTAIN), 用于跨通道否决.
@@ -74,7 +74,7 @@ def _run_hosv_source(source: str, sample_name: str) -> dict:
 def _run_csa_source(source: str, sample_name: str) -> dict:
     """源码直扫通道 — extract_heap_ops_c + classify_finding.
 
-    独立于HOSV, 提供互补的模式匹配能力:
+    独立于堆写模式验证, 提供互补的模式匹配能力:
     - 多行写入/指针解引用写入/跨函数分配/跨函数写入
     - 别名传播/数组索引写入/free检测
     strict判定: 仅hard overflow触发detected=True, UNCERTAIN保留为参考不触发检出.
@@ -106,13 +106,13 @@ def _run_csa_source(source: str, sample_name: str) -> dict:
 def run_binmind_pipeline(source: str, sample_name: str) -> dict:
     """SRC-IR Bridge: 三通道联合检测.
 
-    通道1 HOSV — 精确5阶段验证 (分配→写入→边界→约束→APAS)
+    通道1 堆写模式验证 — 精确5阶段验证 (分配→写入→边界→约束→APAS)
     通道2 CSA  — 源码直扫模式匹配 (多行写入/跨函数/别名)
     通道3 IR   — 二进制管线回退 (c_to_ir→detect_heap_overflows_full)
 
     strict联合判定:
-    - HOSV VULN → 检出
-    - CSA hard overflow → 检出, 但HOSV all_safe时否决CSA (跨通道否决)
+    - 堆写模式验证 VULN → 检出
+    - CSA hard overflow → 检出, 但堆写模式验证 all_safe时否决CSA (跨通道否决)
     - 前两者无检出时回退IR管线
     UNCERTAIN保留为参考不触发检出.
     """

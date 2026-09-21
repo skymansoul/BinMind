@@ -10,10 +10,6 @@
 \toprule
 \textbf{Tool} & \textbf{N} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{FPR} & \textbf{ms} \\
 \midrule
-BinMind-GAPSBV & 123 & 100.0% & 100.0% & 1.000 & 0.0% & 1 \\
-Objdump-Naive & 123 & 94.4% & 78.0% & 0.854 & 4.6% & 34 \\
-Nm-Symbol & 123 & 94.4% & 78.0% & 0.854 & 4.6% & 11 \\
-Regex-Baseline & 123 & 88.7% & 57.8% & 0.700 & 7.3% & 1 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -27,27 +23,9 @@ Regex-Baseline & 123 & 88.7% & 57.8% & 0.700 & 7.3% & 1 \\
 \toprule
 \textbf{Tool} & \textbf{TP} & \textbf{FN} & \textbf{F1} & \textbf{Avg ms} \\
 \midrule
-BinMind-Full & 16 & 0 & 1.000 & 0 \\
-Regex-Base & 4 & 12 & 0.400 & 0 \\
-Heuristic & 16 & 0 & 1.000 & 0 \\
-Angr-CFG & 16 & 0 & 1.000 & 0 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-% Table 3: GAPSBV-CJ 17 CVE benchmark
-\begin{table}[htbp]
-\centering
-\caption{GAPSBV-CJ Constraint-Join Detection (17 CVE + safe samples)}
-\label{tab:cj}
-\begin{tabular}{lrrrrr}
-\toprule
-\textbf{Tool} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{FPR} & \textbf{ms} \\
-\midrule
-BinMind-baseline & 80.0% & 92.3% & 0.857 & 75.0% & 0.5 \\
-BinMind-HOSV & 100.0% & 100.0% & 1.000 & 0.0% & 4.8 \\
-BinMind-GAPSBV-CJ & 100.0% & 100.0% & 1.000 & 0.0% & 0.1 \\
-Angr & 76.5% & 100.0% & 0.867 & 100.0% & 817.3 \\
-\bottomrule
-\end{tabular}
-\end{table}
+% Table 3: GAPSBV-CJ benchmark — [GAP] gapsbv_final_metrics.json missing;
+% legacy handwritten rows (incl. f1=1.000) deprecated 2026-09-16, table suppressed

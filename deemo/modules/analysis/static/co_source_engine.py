@@ -1,4 +1,4 @@
-# AWSC 分配-写入同源关联引擎 (Allocation-Write Size Co-Sourcing Engine)
+# 分配-写关联 分配-写入同源关联引擎 (Allocation-Write Size Co-Sourcing Engine)
 #
 # 核心问题:
 #   堆溢出静态检测最大的误报类: malloc(N) 与 memcpy(ptr, src, M)

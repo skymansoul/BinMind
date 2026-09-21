@@ -7,7 +7,7 @@
   3. 基于调用约定 (x86_64: rdi=fmt, rsi=a1, rdx=a2, rcx=a3, r8=a4, r9=a5, stack≥a6)
      估算 %n$ 位置参数的栈偏移
 
-误报削减策略 (FSCS — Format String Constraint System):
+误报削减策略 (格式说明符约束系统 — Format Specifier Constraint System):
   - 编译时常量格式串 → SAFE (不报告)
   - 不含 %n/%s 写/读原语 → LOW (仅信息泄露, 非任意写)
   - 位置参数不足 → UNCERTAIN (保守保留)

@@ -1,8 +1,8 @@
 """
-UAF 跨函数 CFG 构建器 — 为 TARPS 五阶段验证提供跨函数可达性分析.
+UAF 跨函数 CFG 构建器 — 为 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段验证提供跨函数可达性分析.
 
 动机:
-  现有 TARPS 只在单函数内做基本块可达性分析 (Stage R).
+  现有 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 只在单函数内做基本块可达性分析 (Stage R).
   但真实世界的 UAF 通常跨越多个函数:
     func_A: p = malloc(n)     ← alloc
     func_B: free(p)           ← free
@@ -16,7 +16,7 @@ UAF 跨函数 CFG 构建器 — 为 TARPS 五阶段验证提供跨函数可达�
   2. 构建 Call Graph (有向图, 边 = 调用关系)
   3. 标记 alloc/free/use 所在的函数节点
   4. BFS/DFS 判定 free→use 是否在 CG 中可达
-  5. 若不可达 → SAFE (过滤), 若可达 → 继续 TARPS 内部阶段
+  5. 若不可达 → SAFE (过滤), 若可达 → 继续 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 内部阶段
 
   - Reps, Horwitz, Sagiv: "Precise Interprocedural Dataflow Analysis"
   - Nanda et al.: "UAFSan: Inter-procedural Use-After-Free Detection"
@@ -37,7 +37,7 @@ class InterProcCFGBuilder:
     """跨函数调用图构建器.
 
     从C源码提取函数定义和调用关系, 构建 CallGraph.
-    与 UafTarpsVerifier 配合: CG 分析作为 TARPS 的前置筛选阶段.
+    与 UafTarpsVerifier 配合: CG 分析作为 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 的前置筛选阶段.
     """
 
     # 函数定义: type func_name(args) {
@@ -238,7 +238,7 @@ class InterProcCFGBuilder:
         """判定 alloc → free → use 的跨函数调用链是否可达.
 
         方法:
-          1. 同函数 → 单函数UAF, 由 TARPS 内部处理
+          1. 同函数 → 单函数UAF, 由 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 内部处理
           2. 直接CG路径: alloc_func 可调用 free_func, free_func 可调用 use_func
           3. 共同调用者模式: 存在函数 F 同时可到达三者 (经典场景: main调用三个wrapper)
              F → alloc_wrapper, F → free_wrapper, F → use_wrapper
@@ -248,7 +248,7 @@ class InterProcCFGBuilder:
         """
         cg = self._cg
 
-        # 三者同函数 → 单函数UAF, 由 TARPS 内部处理
+        # 三者同函数 → 单函数UAF, 由 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 内部处理
         if alloc_func == free_func == use_func:
             return True, "same function — deferred to intra-procedural TARPS"
 

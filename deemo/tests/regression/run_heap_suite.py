@@ -59,7 +59,7 @@ def read_sample_binary(name: str) -> Optional[str]:
 
 
 def run_source_verifier(source: str) -> List[Dict]:
-    """HOSV源级检测."""
+    """堆写模式验证源级检测."""
     from analysis.heap_overflow_src_verifier import HeapOverflowSrcVerifier
     v = HeapOverflowSrcVerifier()
     results = v.verify(source)
@@ -76,7 +76,7 @@ def run_source_verifier(source: str) -> List[Dict]:
 
 
 def run_binary_pipeline(name: str, binary_path: str) -> List[Dict]:
-    """二进制级GAPSBV+CJ管线检测.
+    """二进制级仿射边界验证+约束求解管线检测.
 
     修复: 不再将binary_path当源码传入, 而是:
     1. 读取同目录下的C源码

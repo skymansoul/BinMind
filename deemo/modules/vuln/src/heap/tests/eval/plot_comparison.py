@@ -1,4 +1,4 @@
-"""SHIELD 对比实验 — 可视化.
+"""堆区间证据消歧对比实验 — 可视化.
 
 从 benchmark_summary.json 读取多工具对比数据,
 生成: 柱状图 (findings对比), 散点图 (time vs recall), 混淆矩阵.
@@ -109,7 +109,7 @@ def plot_time_scatter(data: dict, output_path: str):
         if "error" in td:
             continue
         time_val = td.get("avg_time_ms", 0)
-        # recall 代理: 对于 SHIELD 用 filter_rate, 其他用 findings/samples
+        # recall 代理: 对于堆区间证据消歧用 filter_rate, 其他用 findings/samples
         if "avg_filter_rate" in td:
             y_val = td["avg_filter_rate"] * 100
         else:
@@ -187,7 +187,7 @@ def main():
     plot_bar_chart(data, str(OUTPUT_DIR / "findings_comparison.png"))
     plot_time_scatter(data, str(OUTPUT_DIR / "time_vs_detection.png"))
 
-    # 尝试加载 SHIELD metrics
+    # 尝试加载堆区间证据消歧 metrics
     metrics_path = RESULTS_DIR / "shield_metrics.json"
     # collect_results.py generates this; use scan_results as fallback
     scan_path = RESULTS_DIR / "scan_results.json"

@@ -1,7 +1,7 @@
 """
 统一误报削减积分器 — 七阶段级联FP削减 (论文主表消融研究基础).
 
-GAPSBV 完整管线:
+仿射边界验证 (Affine Bound Verification) 完整管线:
   S1: 分配器语义 (chunk_size ≥ request_size)  → 过滤对齐填充内的写入
   S2: 守卫感知写入 (idx < N → 安全)          → 过滤受保护store
   S3: 上游size约束 (size ≤ MAX → malloc安全) → 过滤受约束分配

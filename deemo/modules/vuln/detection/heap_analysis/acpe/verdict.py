@@ -1,4 +1,4 @@
-"""ACPE 判定引擎 — 汇总容量/溯源/守卫证据, 输出最终误报裁定.
+"""分配容量溯源判定引擎 — 汇总容量/溯源/守卫证据, 输出最终误报裁定.
 
 用途: 将 equivalence.classify_pair 的关系映射为可审计的判定:
       SAFE(滤除) / VULN_CONFIRMED / VULN_LIKELY / UNCERTAIN。
@@ -32,7 +32,7 @@ class Verdict(Enum):
 
 @dataclass
 class AcpeVerdict:
-    """一次写入的 ACPE 最终判定."""
+    """一次写入的分配容量溯源最终判定."""
     func_name: str
     write_addr: int
     write_func: str
@@ -60,7 +60,7 @@ def evaluate(alloc_expr: CapExpr, write_expr: CapExpr,
              write_func: str = 'memcpy',
              write_offset: int = 0,
              offset_unknown: bool = False) -> AcpeVerdict:
-    """对单次写入执行完整 ACPE 判定.
+    """对单次写入执行完整分配容量溯源判定.
 
     write_offset: 目标缓冲区内已知常量偏移 (memcpy(box+200, ...)=200)。
                   容量判定须以 size + offset ≤ usable 为准。

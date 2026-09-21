@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-UAF HOIG+PCOL 全量基准测试 — 40+样本验证PCOL在扩展CVE样本集上的效果.
+UAF 对象身份图 (Object Identity Graph)+路径条件对象生命周期 (Path-Conditioned Object Lifecycle) 全量基准测试 — 40+样本验证路径条件对象生命周期 (Path-Conditioned Object Lifecycle)在扩展CVE样本集上的效果.
 
 对比:
-  HOIG-only:  仅对象身份追踪 (无路径条件分析)
-  HOIG+PCOL:  对象身份 + 路径条件对象生命周期
+  对象身份图-only:  仅对象身份追踪 (无路径条件分析)
+  对象身份图+路径条件对象生命周期:  对象身份 + 路径条件对象生命周期
 
 输出: JSON + CSV + 控制台报告
 """
@@ -17,9 +17,9 @@ _DEEMO = Path(__file__).resolve().parent.parent
 if str(_DEEMO) not in sys.path:
     sys.path.insert(0, str(_DEEMO))
 
-from analysis.uaf_hoig_builder import HoigBuilder
-from analysis.uaf_pcol_bridge import verify_with_pcol
-from analysis.uaf_pcol_verifier import filter_uaf_by_pcol
+from analysis.uaf_obj_graph_builder import HoigBuilder
+from analysis.uaf_path_lifecycle_bridge import verify_with_pcol
+from analysis.uaf_path_lifecycle_verifier import filter_uaf_by_pcol
 from eval.uaf_cve_samples import (
     ALL_UAF_CVE_SAMPLES, get_sample_count, get_category_stats,
 )
@@ -29,7 +29,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_hoig_only(code: str, name: str) -> str:
-    """仅HOIG Builder判定."""
+    """仅对象身份图 Builder判定."""
     builder = HoigBuilder()
     _, _, verdicts = builder.build(code, name)
     if any(v.verdict == 'CONFIRMED' for v in verdicts):
@@ -38,7 +38,7 @@ def run_hoig_only(code: str, name: str) -> str:
 
 
 def run_hoig_pcol(code: str, name: str) -> str:
-    """HOIG + PCOL联合判定."""
+    """对象身份图 + 路径条件对象生命周期联合判定."""
     v = verify_with_pcol(code, name)
     return v.verdict
 

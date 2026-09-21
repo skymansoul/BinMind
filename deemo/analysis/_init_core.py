@@ -177,10 +177,10 @@ from analysis.selective_symexec import (
 from analysis.infeasible_path_pruner import (
     InfeasiblePathPruner, PruneResult, GuardPatternDetector,
 )
-from analysis.uaf_tarps_verifier import (
+from analysis.uaf_state_path_verifier import (
     UafTarpsVerifier, TarpsVerdict, TarpsResult,
 )
 try:
-    from analysis.uaf_tarps_verifier import batch_verify_uaf
+    from analysis.uaf_state_path_verifier import batch_verify_uaf
 except ImportError:
     batch_verify_uaf = None  # type: ignore

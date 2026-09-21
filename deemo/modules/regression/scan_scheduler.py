@@ -1,7 +1,7 @@
 """
 回归测试 — 扫描调度模块.
 
-负责: 对每个样本的反汇编文本调度 HFP 检测, 输出原始判定
+负责: 对每个样本的反汇编文本调度 分配器感知过滤 检测, 输出原始判定
 结果. 调度语义: 单进程顺序扫描, 每样本独立超时保护, 失败
 样本标记 error 而非中断整体.
 
@@ -19,8 +19,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from ..hfp.hfp_engine import detect_heap_overflow_hfp, suppress_and_report
-from ..hfp.hfp_verdict import Verdict
+from ..hfp.alloc_aware_engine import detect_heap_overflow_hfp, suppress_and_report
+from ..hfp.alloc_aware_verdict import Verdict
 
 SAFE_SAMPLES = {'safe_01_guard_narrow', 'safe_02_align_slack',
                 'safe_03_same_source'}
@@ -37,7 +37,7 @@ class ScanResult:
 
 
 class ScanScheduler:
-    """按样本调度 HFP 扫描, 支持 IR 文本与二进制两种输入."""
+    """按样本调度 分配器感知过滤 扫描, 支持 IR 文本与二进制两种输入."""
 
     def __init__(self, timeout_ms: int = 5000):
         self.timeout_ms = timeout_ms
@@ -48,7 +48,7 @@ class ScanScheduler:
         try:
             text = Path(asm_path).read_text(encoding='utf-8',
                                             errors='replace')
-            from ..hfp.hfp_scan import asm_to_pseudo_ir
+            from ..hfp.alloc_aware_scan import asm_to_pseudo_ir
             pseudo_ir = asm_to_pseudo_ir(text)
             findings = detect_heap_overflow_hfp(pseudo_ir)
             kept, stats = suppress_and_report(findings)

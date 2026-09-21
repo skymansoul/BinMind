@@ -272,7 +272,10 @@ def run_fp_reduction_benchmark(samples_dir: str = None,
 
     print(f"\n  Saturation Check:")
     for key, sc in summary['saturation_check'].items():
-        status = "SATURATED" if sc['saturated'] else "needs work"
+        # 展示标签为内部 FP 削减判据(削减>=40% 且剩余绝对值<20%)的达成标记,
+        # 非对外饱和宣称; 对外饱和判定以全管线真实口径 NOT_SATURATED 为准
+        # (binary_pipeline_full.json, F1=0.939, n=121), 原饱和英文标签已废置
+        status = "FP_BAR_MET" if sc['saturated'] else "below_bar"  # 口径: FP削减>=40%且剩余FP<20%, 仅限本基准集内部判定
         reduc_ok = "Y" if sc['fp_reduction_40pct'] else 'N'
         fp_ok = "Y" if sc['absolute_fp_below_20pct'] else 'N'
         print(f"    {key}: {status} (reduction>=40%: {reduc_ok}, FP<20%: {fp_ok})")

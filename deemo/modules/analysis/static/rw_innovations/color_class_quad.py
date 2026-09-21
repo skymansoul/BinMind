@@ -30,6 +30,14 @@ def _paint_colors(pseudocode: str) -> Dict[str, int]:
         if m:
             colors[m.group(1)] = _STACK
             continue
+        # C 风格栈数组声明: char local[N] / int arr[N]
+        m_stack_arr = re.search(
+            r"\b(?:char|int|long|short|unsigned)\s+(\w+)\s*\[\s*\d+\s*\]",
+            line,
+        )
+        if m_stack_arr:
+            colors[m_stack_arr.group(1)] = _STACK
+            continue
         m = re.search(r"\b(\w+)\s*=\s*(\w+)\s*;", line)
         if m and m.group(2) in colors:
             colors[m.group(1)] = colors[m.group(2)]
@@ -85,7 +93,20 @@ def _detect_cross_domain(pseudocode: str) -> List[dict]:
         # 赋值传播
         m_assign = re.search(r"\b(\w+)\s*=\s*(\w+)\s*;", line)
         if m_assign and m_assign.group(2) in colors:
-            colors[m_assign.group(1)] = colors[m_assign.group(2)]
+            dst = m_assign.group(1)
+            src_color = colors[m_assign.group(2)]
+            old = colors.get(dst)
+            # 赋值链跨域冲突: 目标变量已有颜色且与源颜色不同
+            # 颜色沿赋值链扩散时被另一域覆盖 -> 颜色归属不可判定, 按 unknown_color 注入
+            if old is not None and old != src_color:
+                cross_findings.append({
+                    "line": ln, "var": dst,
+                    "verdict": "unknown_color",
+                    "desc": f"line{ln} 变量 {dst} 颜色 "
+                            f"{_COLOR_NAME.get(old)} 被赋值链改为 "
+                            f"{_COLOR_NAME.get(src_color)}",
+                })
+            colors[dst] = src_color
         elif m_assign and m_assign.group(1) not in colors:
             colors[m_assign.group(1)] = _GLOBAL
     return cross_findings
@@ -112,9 +133,9 @@ def run_color_class_quad(
             "verdict": cf["verdict"],
             "source": "color_class_quad",
         })
-    # 四色分类写点审计
+    # 四色分类写点审计 (汇编风格)
     for ln, line in enumerate(pseudocode.splitlines(), 1):
-        m = re.search(r"\[\s*(\w+)\s*(\+\s*\w+)?\]\s*(?:,|=)", line)
+        m = re.search(r"(?<!\w)\[\s*(\w+)\s*(\+\s*\w+)?\]\s*(?:,|=)", line)
         if not m:
             continue
         base = m.group(1)
@@ -137,7 +158,51 @@ def run_color_class_quad(
                            f"color={_COLOR_NAME[color]}",
             "verdict": verdict,
             "source": "color_class_quad",
+            # UNKNOWN 色写点: 指针无来源记录无法判定域归属, 是线索不是判定
+            "rw_weak": color == _UNKNOWN,
         })
+
+    # C 风格写点审计: buf[expr]=val 基址着色
+    # 堆色 (HEAP) 不在降权白名单, 不注入不降权
+    # 栈色 → stack_write (target_type=heap_overflow 降权)
+    # 全局色 → global_write (target_type=heap_overflow 降权)
+    # 未知色 (指针参数无来源记录) → unknown_color
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        m_idx = re.search(r"(\w+)\s*\[([^\]]+)\]\s*=\s*(\S+)", line)
+        if not m_idx:
+            # 解引用写: *(int *)(ptr + off) = val
+            m_deref = re.search(
+                r"\*\s*\([^)]*\)\s*\(\s*(\w+)\s*(?:\+[^)]*)?\)\s*=\s*(\S+)",
+                line,
+            )
+            if not m_deref:
+                continue
+            base = m_deref.group(1)
+        else:
+            base = m_idx.group(1)
+        color = colors.get(base, _UNKNOWN)
+        if color == _HEAP:
+            # 堆域写不注入不降权
+            continue
+        elif color == _STACK:
+            verdict, conf = "stack_write", 0.3
+        elif color == _GLOBAL:
+            verdict, conf = "global_write", 0.3
+        else:
+            verdict, conf = "unknown_color", 0.4
+        findings.append({
+            "type": "memory_write",
+            "function": func_name or "unknown",
+            "severity": "medium",
+            "cwe": "CWE-787",
+            "confidence": conf,
+            "description": f"line{ln} base={base} "
+                           f"color={_COLOR_NAME[color]}",
+            "verdict": verdict,
+            "source": "color_class_quad",
+            "rw_weak": color == _UNKNOWN,
+        })
+
     return findings
 
 

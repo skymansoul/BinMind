@@ -1,5 +1,5 @@
 """
-UAF 多工具对比实验 — HOIG vs PTASM vs Temporal Path Verifier vs Infer vs CodeQL.
+UAF 多工具对比实验 — 对象身份图 (Object Identity Graph) vs 指针时序自动机 (Pointer Temporal Automaton State Machine) vs Temporal Path Verifier vs Infer vs CodeQL.
 
 对比维度:
   - Precision / Recall / F1
@@ -10,9 +10,9 @@ UAF 多工具对比实验 — HOIG vs PTASM vs Temporal Path Verifier vs Infer v
   - Realloc handling accuracy
 
 数据来源:
-  - HOIG (our method): 11-sample benchmark
-  - PTASM: 15-sample benchmark
-  - Temporal Path Verifier: 12-sample benchmark
+  - 对象身份图 (our method): binary_pipeline_full.json uaf 段
+    (n=13 真实二进制链路口径, TP=13, FP=0, FN=0, 95% Wilson CI [0.772, 1.0])
+  - HOIG-only / Temporal: legacy 手写示意值(消融变体, 无独立评测产物)
   - Infer (Facebook): literature estimate — pulse checker UAF
   - CodeQL (GitHub): literature estimate — cpp/use-after-free query
 """
@@ -32,7 +32,29 @@ sys.path.insert(0, BASE)
 
 
 def load_uaf_benchmark_data() -> Dict:
-    """加载 UAF benchmark 数据 (55样本 BinMind-UAF实测)."""
+    """加载 UAF benchmark 数据.
+
+    BinMind-UAF 行: 真实二进制链路口径实测值, 从 binary_pipeline_full.json
+    uaf 段动态读取 (n=13, TP=13, FP=0, FN=0, 95% Wilson CI [0.772, 1.0]);
+    源文件缺失时报错退出, 拒绝回落 legacy 手写满分值(宁缺毋假, 2026-09-16 审计废置).
+    其余行(HOIG-only/Temporal/Infer/CodeQL): legacy 手写或文献估计示意值,
+    无独立评测, 仅定性参照; cross_func/alias_acc 各维度同为示意值, 非实测.
+    """
+    full_path = os.path.join(BASE, 'test_reports', 'binary_pipeline_full.json')
+    if not os.path.exists(full_path):
+        raise FileNotFoundError(
+            f'真实口径数据源缺失: {full_path} — '
+            f'BinMind-UAF 行拒绝回落 legacy 手写满分值(2026-09-16 审计废置)')
+    with open(full_path, encoding='utf-8') as f:
+        full_json = json.load(f)
+    uaf = full_json['by_type']['uaf']
+    uaf_m = uaf['metrics']
+    uaf_c = uaf['confusion']
+    # 真实口径平均耗时: per_sample 中 uaf 样本的 elapsed_s 均值
+    uaf_samples = [s['elapsed_s'] for s in full_json['per_sample']
+                   if s['type'] == 'uaf' and 'elapsed_s' in s]
+    avg_ms = round(sum(uaf_samples) / len(uaf_samples) * 1000, 1) if uaf_samples else 0
+
     data = {
         'tools': [
             'BinMind-UAF\n(HOIG+PCOL+TPV)',
@@ -41,11 +63,13 @@ def load_uaf_benchmark_data() -> Dict:
             'Infer\n(Pulse)',
             'CodeQL\n(query)',
         ],
-        'precision': [1.000, 0.4348, 0.6216, 0.65, 0.55],
-        'recall':    [1.000, 0.8696, 1.000, 0.70, 0.80],
-        'f1':        [1.000, 0.5797, 0.7667, 0.674, 0.652],
-        'fp_rate':   [0.000, 0.8125, 0.4375, 0.350, 0.450],
-        'time_ms':   [0.10, 0.05, 1.8, 3500, 850],
+        # BinMind-UAF 行: 真实二进制链路口径实测 (n=13, TP=13, FP=0, FN=0)
+        'precision': [uaf_m['precision'], 0.4348, 0.6216, 0.65, 0.55],
+        'recall':    [uaf_m['recall'], 0.8696, 1.0, 0.70, 0.80],
+        'f1':        [uaf_m['f1'], 0.5797, 0.7667, 0.674, 0.652],
+        'fp_rate':   [uaf_c['fp'] / uaf_c['n'], 0.8125, 0.4375, 0.350, 0.450],
+        # BinMind-UAF 行耗时为真实口径均值(含反编译); 其余行为手写/文献估计, 跨口径不可直接比较
+        'time_ms':   [avg_ms, 0.05, 1.8, 3500, 850],
         'cross_func': [1.0, 0.8696, 1.0, 0.70, 0.40],
         'alias_acc':  [1.0, 0.67, 0.83, 0.55, 0.60],
         'colors':    ['#2ecc71', '#3498db', '#f39c12', '#e74c3c', '#9b59b6'],
@@ -68,7 +92,7 @@ def plot_uaf_pr_curve(data: Dict, out_dir: str):
     ax.set_xlabel('Recall', fontsize=13, fontweight='bold')
     ax.set_ylabel('Precision', fontsize=13, fontweight='bold')
     ax.set_title('UAF Detection: Precision vs Recall\n'
-                  '(BinMind-UAF achieves F1=1.000 on 55-sample benchmark)',
+                  '(BinMind-UAF: n=13 real binary pipeline caliber, TP=13, FP=0; others: legacy/literature estimates)',
                   fontsize=14, fontweight='bold')
     ax.set_xlim(0, 1.1)
     ax.set_ylim(0, 1.1)
@@ -116,8 +140,8 @@ def plot_uaf_capability_radar(data: Dict, out_dir: str):
     ax.set_yticks([0.25, 0.5, 0.75, 1.0])
     ax.set_yticklabels(['0.25', '0.50', '0.75', '1.00'], fontsize=8)
     ax.set_title('UAF Detection: Multi-Dimensional Capability Comparison\n'
-                 '(HOIG dominates all 5 dimensions on the benchmark)',
-                 fontsize=14, fontweight='bold', pad=20)
+                  '(BinMind-UAF P/R: real caliber n=13; other dimensions: illustrative, 2026-09-16审计)',
+                  fontsize=14, fontweight='bold', pad=20)
     ax.legend(loc='upper right', bbox_to_anchor=(1.35, 1.1), fontsize=10)
 
     path = os.path.join(out_dir, 'uaf_capability_radar.png')
@@ -149,8 +173,8 @@ def plot_uaf_fp_rate(data: Dict, out_dir: str):
     ax.set_xticklabels(data['tools'], fontsize=10)
     ax.set_ylabel('False Positive Rate', fontsize=13, fontweight='bold')
     ax.set_title('UAF Detection: False Positive Rate Comparison\n'
-                 '(HOIG: 0 FP — object-identity tracking eliminates alias FPs)',
-                 fontsize=14, fontweight='bold')
+                  '(BinMind-UAF: real caliber n=13, FP=0; others: legacy/literature estimates, 2026-09-16审计)',
+                  fontsize=14, fontweight='bold')
     ax.set_ylim(0, 0.6)
     ax.grid(axis='y', alpha=0.3)
     ax.legend(fontsize=9)
@@ -172,6 +196,7 @@ def plot_uaf_method_comparison(data: Dict, out_dir: str):
         'Field\nSensitivity',
     ]
 
+    #[DEPRECATED] 手写数据(2026-09-16审计)：非真实运行产物，指标不可作为验证结论
     capabilities = {
         'HOIG (obj-identity)': [1, 1, 1, 0, 1, 1],
         'PTASM (state-machine)': [0, 0, 0, 1, 1, 0],
@@ -208,10 +233,14 @@ def plot_uaf_method_comparison(data: Dict, out_dir: str):
 
 
 def plot_uaf_ablation(data: Dict, out_dir: str):
-    """UAF HOIG 消融实验 — 各组件贡献."""
+    """UAF 对象身份图 消融实验 — 各组件贡献."""
     components = ['Baseline\n(PTASM)', '+Object\nIdentity', '+Realloc\nTracking',
                   '+Cross-Func\nPropagate', '+Alias\nResolution']
-    f1_scores = [0.857, 0.909, 0.950, 0.975, 1.000]
+    # 消融序列中间组件为手写示意值(非真实逐组件运行产物, 2026-09-16审计标注);
+    # 终点(+Alias Resolution 完整检测器)锚定真实二进制链路口径实测:
+    # F1=1.0, FP=0, FN=0, n=13 (binary_pipeline_full.json uaf 段,
+    # 95% Wilson CI [0.772, 1.0], 小样本不可外推) — legacy 手写终值 1.000 已废置
+    f1_scores = [0.857, 0.909, 0.950, 0.975, 1.0]
     fp_counts = [2, 1, 0, 0, 0]
     fn_counts = [1, 1, 1, 0, 0]
 
@@ -252,8 +281,8 @@ def plot_uaf_ablation(data: Dict, out_dir: str):
     axes[1].grid(axis='y', alpha=0.3)
 
     fig.suptitle('HOIG Ablation Study: Component Contributions\n'
-                 '(Final: F1=1.000, 0 FP, 0 FN — each component adds unique value)',
-                 fontsize=14, fontweight='bold')
+                  '(中间组件为手写示意值; 终点为真实口径实测 F1=1.0, FP=0, n=13, Wilson CI [0.772,1.0] — 2026-09-16审计)',
+                  fontsize=14, fontweight='bold')
     fig.tight_layout()
 
     path = os.path.join(out_dir, 'uaf_hoig_ablation.png')
@@ -277,12 +306,16 @@ def print_uaf_comparison_table(data: Dict):
               f'{data["recall"][i]:>9.4f} {data["f1"][i]:>9.4f} '
               f'{data["fp_rate"][i]:>9.4f} {data["time_ms"][i]:>9.1f}')
     print('-'*75)
+    # 口径说明: BinMind-UAF 行为真实口径实测; 其余行为 legacy 手写/文献估计示意值
     print('\nKey Findings:')
-    print('  1. HOIG achieves F1=1.000 (0 FP, 0 FN) on 11-sample benchmark')
+    print(f'  1. BinMind-UAF: F1={data["f1"][0]:.3f} (TP=13, FP=0, FN=0) on n=13 real binary '
+          f'pipeline caliber; 95% Wilson CI [0.772, 1.0] — 小样本, 不可外推')
     print('  2. Object identity tracking uniquely eliminates alias-induced FPs')
     print('  3. Realloc tracking prevents false UAF on realloc old-ptr patterns')
     print('  4. Cross-function propagation finds callee-frees-arg UAF patterns')
-    print('  5. 0.05ms per sample — 70,000x faster than Infer (Pulse)')
+    print(f'  5. BinMind-UAF {data["time_ms"][0]:.0f}ms avg per sample (real pipeline caliber, '
+          f'incl. decompilation) — legacy "70,000x faster than Infer" claim deprecated '
+          f'(跨口径速度对比无效)')
 
 
 def run_uaf_comparison():

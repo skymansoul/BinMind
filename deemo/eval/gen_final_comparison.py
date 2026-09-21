@@ -1,6 +1,6 @@
 # 最终统一多工具对比报告生成器 — 汇总所有实验数据输出CSV/LaTeX/图表.
 # 聚合来源: final_multi_tool_comparison.json (123样本) + cve_multi_tool_20260809_150130.json (16 CVE)
-#          + regression_*.json (消融) + gapsbv_final_metrics.json (17 CVE CJ基准)
+#          + regression_*.json (消融) + gapsbv_final_metrics.json (17 CVE 约束求解基准)
 
 import json, os, csv
 from pathlib import Path
@@ -68,30 +68,31 @@ def gen_csv():
             'avg_time_ms': 0,
         })
 
-    # 17 CVE GAPSBV-CJ基准 — 从core_innovation.md Section 20.7的实验数据
-    cj_17_data = {
-        'BinMind-baseline': {'tp': 12, 'fp': 3, 'tn': 1, 'fn': 1,
-                             'precision': 0.800, 'recall': 0.923,
-                             'f1': 0.857, 'fpr': 0.750, 'avg_ms': 0.5},
-        'BinMind-HOSV': {'tp': 13, 'fp': 0, 'tn': 4, 'fn': 0,
-                         'precision': 1.000, 'recall': 1.000,
-                         'f1': 1.000, 'fpr': 0.000, 'avg_ms': 4.8},
-        'BinMind-GAPSBV-CJ': {'tp': 13, 'fp': 0, 'tn': 4, 'fn': 0,
-                              'precision': 1.000, 'recall': 1.000,
-                              'f1': 1.000, 'fpr': 0.000, 'avg_ms': 0.1},
-        'Angr': {'tp': 13, 'fp': 4, 'tn': 0, 'fn': 0,
-                 'precision': 0.765, 'recall': 1.000,
-                 'f1': 0.867, 'fpr': 1.000, 'avg_ms': 817.3},
-    }
-    for tool, d in cj_17_data.items():
-        rows.append({
-            'benchmark': 'gapsbv_cj_17',
-            'tool': tool,
-            'samples': 17,
-            'TP': d['tp'], 'FP': d['fp'], 'TN': d['tn'], 'FN': d['fn'],
-            'precision': d['precision'], 'recall': d['recall'],
-            'f1': d['f1'], 'fp_rate': d['fpr'], 'avg_time_ms': d['avg_ms'],
-        })
+    # 17 CVE 仿射边界验证-约束求解基准 — 真实数据源 gapsbv_final_metrics.json
+    # legacy 手写数据(含 BinMind-HOSV/GAPSBV-CJ precision/recall/f1=1.000 自证满分值)
+    # 于 2026-09-16 二次审计废置: 非真实运行产物, 17 样本小合成集源码正则口径,
+    # 未经 gold.jsonl/test_reports 统一口径复算; 真实产物缺失时本段跳过并记 gap,
+    # 宁缺毋假, 不再以手写值产出 CSV/LaTeX/TXT
+    cj_17_real = _load('gapsbv_cj_17')
+    if cj_17_real:
+        for tool, d in cj_17_real.items():
+            rows.append({
+                'benchmark': 'gapsbv_cj_17',
+                'tool': tool,
+                'samples': d.get('total', d.get('n', 17)),
+                'TP': d.get('tp', d.get('TP', 0)),
+                'FP': d.get('fp', d.get('FP', 0)),
+                'TN': d.get('tn', d.get('TN', 0)),
+                'FN': d.get('fn', d.get('FN', 0)),
+                'precision': d.get('precision', 0),
+                'recall': d.get('recall', 0),
+                'f1': d.get('f1', 0),
+                'fp_rate': d.get('fpr', d.get('fp_rate', 0)),
+                'avg_time_ms': d.get('avg_ms', d.get('avg_time_ms', 0)),
+            })
+    else:
+        print('[GAP] gapsbv_final_metrics.json 缺失 — gapsbv_cj_17 段跳过 '
+              '(legacy 手写满分值已废置, 不产出)')
 
     csv_path = OUT / 'unified_comparison.csv'
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
@@ -143,26 +144,34 @@ def gen_latex(rows):
             lines.append(
                 f"{r['tool']} & {r['TP']} & {r['FN']} & {r['f1']:.3f} & "
                 f"{r['avg_time_ms']:.0f} \\\\")
-    lines.extend([
-        r'\bottomrule', r'\end{tabular}', r'\end{table}', r'',
-        r'% Table 3: GAPSBV-CJ 17 CVE benchmark',
-        r'\begin{table}[htbp]',
-        r'\centering',
-        r'\caption{GAPSBV-CJ Constraint-Join Detection (17 CVE + safe samples)}',
-        r'\label{tab:cj}',
-        r'\begin{tabular}{lrrrrr}',
-        r'\toprule',
-        r'\textbf{Tool} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{FPR} & \textbf{ms} \\',
-        r'\midrule',
-    ])
-    for r in rows:
-        if r['benchmark'] == 'gapsbv_cj_17':
+    # Table 3 仅在真实数据存在时生成; 源数据缺失时记录 gap 注释, 不再输出手写值空表
+    cj_rows = [r for r in rows if r['benchmark'] == 'gapsbv_cj_17']
+    if cj_rows:
+        lines.extend([
+            r'\bottomrule', r'\end{tabular}', r'\end{table}', r'',
+            r'% Table 3: GAPSBV-CJ 17 CVE benchmark',
+            r'\begin{table}[htbp]',
+            r'\centering',
+            r'\caption{GAPSBV-CJ Constraint-Join Detection (17 CVE + safe samples)}',
+            r'\label{tab:cj}',
+            r'\begin{tabular}{lrrrrr}',
+            r'\toprule',
+            r'\textbf{Tool} & \textbf{P} & \textbf{R} & \textbf{F1} & \textbf{FPR} & \textbf{ms} \\',
+            r'\midrule',
+        ])
+        for r in cj_rows:
             lines.append(
                 f"{r['tool']} & {r['precision']:.1%} & {r['recall']:.1%} & "
                 f"{r['f1']:.3f} & {r['fp_rate']:.1%} & {r['avg_time_ms']:.1f} \\\\")
-    lines.extend([
-        r'\bottomrule', r'\end{tabular}', r'\end{table}',
-    ])
+        lines.extend([
+            r'\bottomrule', r'\end{tabular}', r'\end{table}',
+        ])
+    else:
+        lines.extend([
+            r'\bottomrule', r'\end{tabular}', r'\end{table}', r'',
+            r'% Table 3: GAPSBV-CJ benchmark — [GAP] gapsbv_final_metrics.json missing;',
+            r'% legacy handwritten rows (incl. f1=1.000) deprecated 2026-09-16, table suppressed',
+        ])
 
     tex_path = OUT / 'unified_comparison.tex'
     with open(tex_path, 'w', encoding='utf-8') as f:
@@ -216,13 +225,17 @@ def gen_chart_text(rows):
             lines.append(f"{r['tool']:<22} {r['TP']:>4} {r['FN']:>4} {r['f1']:>6.3f}")
 
     lines.append('')
-    lines.append('17 CVE GAPSBV-CJ Benchmark:')
-    lines.append(f'{"Tool":<25} {"P":>6} {"R":>6} {"F1":>6} {"FPR":>6} {"ms":>6}')
-    lines.append('-' * 55)
-    for r in rows:
-        if r['benchmark'] == 'gapsbv_cj_17':
-            lines.append(f"{r['tool']:<25} {r['precision']:>5.1%} {r['recall']:>5.1%} "
-                        f"{r['f1']:>6.3f} {r['fp_rate']:>5.1%} {r['avg_time_ms']:>6.1f}")
+    if any(r['benchmark'] == 'gapsbv_cj_17' for r in rows):
+        lines.append('17 CVE GAPSBV-CJ Benchmark:')
+        lines.append(f'{"Tool":<25} {"P":>6} {"R":>6} {"F1":>6} {"FPR":>6} {"ms":>6}')
+        lines.append('-' * 55)
+        for r in rows:
+            if r['benchmark'] == 'gapsbv_cj_17':
+                lines.append(f"{r['tool']:<25} {r['precision']:>5.1%} {r['recall']:>5.1%} "
+                             f"{r['f1']:>6.3f} {r['fp_rate']:>5.1%} {r['avg_time_ms']:>6.1f}")
+    else:
+        lines.append('17 CVE GAPSBV-CJ Benchmark: [GAP] gapsbv_final_metrics.json '
+                     'missing — legacy handwritten rows deprecated, no output')
 
     lines.append('')
     lines.append('=' * 72)

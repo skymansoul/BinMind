@@ -1,6 +1,6 @@
 """
 C 源码 → Ghidra 风格伪代码转换器: 将 malloc/calloc/realloc/memcpy/strcpy/memset 调用
-重写为 GAPSBV 管线期望的格式 (变量名带类型、赋值显式), 并检测数组/指针手动写入, 插入合成 memcpy 标注。
+重写为仿射边界验证 (Affine Bound Verification) 管线期望的格式 (变量名带类型、赋值显式), 并检测数组/指针手动写入, 插入合成 memcpy 标注。
 """
 
 from __future__ import annotations
@@ -148,5 +148,5 @@ def _inject_synthetic_writes(body: str) -> str:
 
 
 def simplify_for_detection(source: str) -> str:
-    """便捷入口: 产生 GAPSBV 管线可直接分析的伪代码。"""
+    """便捷入口: 产生仿射边界验证 (Affine Bound Verification) 管线可直接分析的伪代码。"""
     return convert(source)

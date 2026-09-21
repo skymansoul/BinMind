@@ -10,17 +10,17 @@
   - 任何模块异常都被捕获, 不影响主链路运行
 
 调用顺序 (106个创新模块):
-  HOFPR → HFP → ACFPC → DDSSC → AWSC → CJ-BVF → CJ-PCBVF →
-  GAPSBV → GASRI → UAF-HOIG → UAF-Enhanced → UAF-Lifecycle →
+  堆溢出误报抑制 → 分配器感知过滤 → 分配契约流保持 → 按需符号尺寸关联 → 分配-写关联 → 约束求解-后向值流 → 约束求解-路径条件后向值流 →
+  仿射边界验证 → GASRI → UAF-对象身份图 → UAF-Enhanced → UAF-Lifecycle →
   Double-Free → UAF-Lifetime-Tracker → Buffer-Underflow → Off-by-One →
   Uninitialized → FMTPROV → Int-Overflow-Enhance → Provenance →
   Cross-Domain → Cross-Pipeline →
-  BWR+PCST → DD-BVF → CACBV → 双向区间交汇 → ACPE → PSVR-HLM → DP-TVRA →
-  AWSC-ICF → HOFPR-APC → PcWBI-IRL → FC-VRA-PTA → CACBV-DSS →
-  BIV-CTC → SI-CTA → PG-WBV-LSA → ACPE-VRP → ACFPC-CMS →
-  PCFV → TOVS → MIVR → FSTP → INT-SHIFT → SHIELD → INT-RANGE →
-  DRIFT → FMT-SPEC → PcWBI原版 → FC-VRA原版 → CACBV-DSS原版 →
-  轻量符号+4-Filter → BWR原版 → PG-WBV原版 →
+  有界写恢复+路径条件敏感污点 → DD-后向值流 → 容量感知耦合边界验证 → 双向区间交汇 → 分配容量溯源 → 路径敏感值域推理-HLM → DP-TVRA →
+  分配-写关联-ICF → 堆溢出误报抑制-APC → 来源约束写界推断-IRL → FC-VRA-PTA → 容量感知耦合边界验证-DSS →
+  BIV-CTC → SI-CTA → PG-WBV-LSA → 分配容量溯源-VRP → 分配契约流保持-CMS →
+  PCFV → TOVS → 路径敏感约束传播 → 格式说明符语义污点传播 → INT-SHIFT → 堆区间证据消歧 → INT-RANGE →
+  DRIFT → FMT-SPEC → 来源约束写界推断原版 → FC-VRA原版 → 容量感知耦合边界验证-DSS原版 →
+  轻量符号+4-Filter → 有界写恢复原版 → PG-WBV原版 →
   RW-CallCtxSaturation → RW-LivenessRoleTemplate → RW-JccPolarityMap →
   RW-SpecDangerProfile → RW-CorrelatedWrapCheck → RW-DomFrontierWitness →
   RW-SevenStageFanout → RW-ScaledIndexLinear → RW-FreedAliasEpoch →
@@ -62,9 +62,9 @@ def _check_module(name: str, import_fn) -> bool:
     """惰性检测模块可导入性, 缓存结果.
 
     部分模块位于 deemo/ 下属子包 (analysis/ 等), 当其他 bridge
-    (如 ACFPC) 把 modules/vuln/src/heap 注入 sys.path 后,
+    (如 分配契约流保持) 把 modules/vuln/src/heap 注入 sys.path 后,
     该路径下的 analysis/ 子包会遮蔽顶层 deemo/analysis/, 导致
-    analysis.gapsbv_pipeline 等模块导入失败. 这里在每次检测前
+    analysis.affine_bound_pipeline 等模块导入失败. 这里在每次检测前
     把 deemo/ 重新插回 sys.path[0], 保证顶层包优先解析.
     """
     if name not in _module_available:
@@ -83,16 +83,16 @@ def _check_module(name: str, import_fn) -> bool:
     return _module_available[name]
 
 
-# -- HOFPR: C源码级堆溢出误报抑制器 --
+# -- 堆溢出误报抑制: C源码级堆溢出误报抑制器 --
 def run_hofpr_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """HOFPR 桥接: 将伪代码作为C源码输入, 产出HOFPR独立检测的堆溢出findings.
+    """堆溢出误报抑制 桥接: 将伪代码作为C源码输入, 产出堆溢出误报抑制独立检测的堆溢出findings.
 
-    HOFPR自含检测管线, 不依赖已有findings. 返回VULN判定的findings.
+    堆溢出误报抑制自含检测管线, 不依赖已有findings. 返回VULN判定的findings.
     existing_findings参数保留用于接口统一, 当前不参与过滤.
     """
     if not _check_module('hofpr', lambda: __import__(
@@ -103,7 +103,7 @@ def run_hofpr_bridge(
         from modules.exploit.src.analysis.hofpr import run_hofpr_pipeline
         report = run_hofpr_pipeline(pseudocode)
 
-        # HOFPR报告中的VULN finding转为pipeline格式
+        # 堆溢出误报抑制报告中的VULN finding转为pipeline格式
         new_findings = []
         for f in report.findings:
             if hasattr(f, 'verdict') and str(f.verdict) in ('HoFprVerdict.VULN', 'VULN'):
@@ -126,21 +126,21 @@ def run_hofpr_bridge(
         return []
 
 
-# -- HFP: IR级堆溢出三态判定引擎 --
+# -- 分配器感知过滤: IR级堆溢出三态判定引擎 --
 def run_hfp_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
 ) -> List[dict]:
-    """HFP 桥接: 伪代码→IR归一化→三态判定, 返回OVERFLOW/POTENTIAL的findings."""
+    """分配器感知过滤 桥接: 伪代码→IR归一化→三态判定, 返回OVERFLOW/POTENTIAL的findings."""
     if not _check_module('hfp', lambda: __import__(
-            'modules.hfp.hfp_engine', fromlist=['detect_heap_overflow_hfp'])):
+            'modules.hfp.alloc_aware_engine', fromlist=['detect_heap_overflow_hfp'])):
         return []
 
     try:
         from core.ir_normalizer import normalize_ir
-        from modules.hfp.hfp_engine import detect_heap_overflow_hfp
-        from modules.hfp.hfp_verdict import Verdict
+        from modules.hfp.alloc_aware_engine import detect_heap_overflow_hfp
+        from modules.hfp.alloc_aware_verdict import Verdict
 
         ir_lines = normalize_ir(pseudocode)
         hfp_findings = detect_heap_overflow_hfp(ir_lines)
@@ -170,7 +170,7 @@ def run_hfp_bridge(
         return []
 
 
-# -- ACFPC: 分配契约流保持压缩 --
+# -- 分配契约流保持: 分配契约流保持压缩 --
 
 def _pseudocode_to_acfpc_asm(
         pseudocode: str) -> Tuple[List[str], List[int]]:
@@ -468,21 +468,21 @@ def run_acfpc_bridge(
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """ACFPC 桥接: 分配契约流保持压缩.
+    """分配契约流保持 桥接: 分配契约流保持压缩.
 
     有 binary_path 时走完整管线 (反汇编→检测→压缩);
     无 binary_path 时从伪代码合成 x86-64 汇编, 直接调 FpCompressor
-    做契约提取+证据链压缩, 保证伪代码输入下 ACFPC 真实执行.
+    做契约提取+证据链压缩, 保证伪代码输入下 分配契约流保持 真实执行.
     """
     if not _check_module('acfpc', lambda: __import__(
-            'modules.vuln.src.heap.acfpc.acfpc_pipeline',
+            'modules.vuln.src.heap.acfpc.alloc_contract_pipeline',
             fromlist=['run_acfpc_pipeline'])):
         return existing_findings
 
     try:
         if binary_path:
             # 有二进制: 走完整管线 (反汇编 → 检测 → 压缩)
-            from modules.vuln.src.heap.acfpc.acfpc_pipeline import (
+            from modules.vuln.src.heap.acfpc.alloc_contract_pipeline import (
                 run_acfpc_pipeline)
             report = run_acfpc_pipeline(
                 binary_path, findings=existing_findings or None)
@@ -536,26 +536,26 @@ def run_acfpc_bridge(
         return existing_findings
 
 
-# -- DDSSC: 三层混合误报过滤协调器 --
+# -- 按需符号尺寸关联: 三层混合误报过滤协调器 --
 def run_ddssc_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """DDSSC 桥接: 对已有堆溢出findings执行三层级联过滤.
+    """按需符号尺寸关联 桥接: 对已有堆溢出findings执行三层级联过滤.
 
     Layer1: 区间推理 (常数 alloc/write 直接比较)
     Layer2: 符号尺寸关联 (从伪代码构建 SymExpr, 同变量判定等价/支配)
     Layer3: 按需 SMT (z3 可用时构建路径约束并求解, 不可用退化为区间窄化)
     """
     if not _check_module('ddssc', lambda: __import__(
-            'modules.analysis.static.ddssc_coordinator',
+            'modules.analysis.static.size_corr_coordinator',
             fromlist=['DDSSCCoordinator'])):
         return existing_findings
 
     try:
-        from modules.analysis.static.ddssc_coordinator import DDSSCCoordinator
+        from modules.analysis.static.size_corr_coordinator import DDSSCCoordinator
         from modules.analysis.static.heap_constraint import Interval
         from modules.analysis.static.sym_size_correlator import SymExpr
         from modules.analysis.static.value_range import ValueRange
@@ -629,7 +629,7 @@ def run_ddssc_bridge(
                     var_symexpr[dst] = SymExpr(var=src, coeff=1, const=0)
 
         # 构建指令列表供 Layer3 SMT 路径约束收集使用
-        # DDSSC 的 SMT 求解器 PathConstraintCollector 需要 x86-64 格式:
+        # 按需符号尺寸关联 的 SMT 求解器 PathConstraintCollector 需要 x86-64 格式:
         #   cmp reg, imm; jcc target — 只有这两类指令被识别为路径约束
         # 因此从伪代码的 if 守卫模式生成真实 cmp+jcc 指令对,
         # 使 Layer3 SMT 能收集到路径约束并交给 z3 求解
@@ -834,7 +834,7 @@ def run_ddssc_bridge(
                 write_addr=write_addr_val,
             )
             if result.verdict == 'safe':
-                continue  # DDSSC 判定安全, 过滤
+                continue  # 按需符号尺寸关联 判定安全, 过滤
             if result.verdict == 'overflow':
                 f.setdefault('ddssc_verdict', 'overflow')
                 f.setdefault('ddssc_layer', result.layer)
@@ -849,19 +849,19 @@ def run_ddssc_bridge(
         return existing_findings
 
 
-# -- AWSC: 分配-写入同源关联引擎 --
+# -- 分配-写关联: 分配-写入同源关联引擎 --
 def run_awsc_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """AWSC 桥接: 对已有堆溢出findings做同源关联过滤.
+    """分配-写关联 桥接: 对已有堆溢出findings做同源关联过滤.
 
-    AWSC原始接口需要指令序列做后向def-use根来源追踪,
+    分配-写关联原始接口需要指令序列做后向def-use根来源追踪,
     此处从finding中提取alloc_size/write_size构建Root对象,
     调用AWSCEngine.correlate()做同源判定.
-    两个立即数Root的同源判定等价于AWSC的Case 1常量比较路径.
+    两个立即数Root的同源判定等价于分配-写关联的Case 1常量比较路径.
     """
     if not _check_module('awsc', lambda: __import__(
             'modules.analysis.static.co_source_engine',
@@ -1144,7 +1144,7 @@ def run_awsc_bridge(
                     usable_size=alloc_size if isinstance(alloc_size, int) else 0,
                 )
                 if category == 'safe':
-                    # AWSC 判定分配=写入同源, 过滤误报
+                    # 分配-写关联 判定分配=写入同源, 过滤误报
                     continue
                 if category == 'overflow':
                     f.setdefault('awsc_verdict', 'overflow')
@@ -1165,24 +1165,24 @@ def run_awsc_bridge(
         return existing_findings
 
 
-# -- CJ-BVF: 约束联结+反向值流证明 --
+# -- 约束求解-后向值流: 约束联结+反向值流证明 --
 def run_cj_bvf_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """CJ-BVF 桥接: 对已有堆溢出findings做反向值流安全证明.
+    """约束求解-后向值流 桥接: 对已有堆溢出findings做反向值流安全证明.
 
-    CJ-BVF原始接口需要HeapOverflowCandidate对象+IR行,
+    约束求解-后向值流原始接口需要HeapOverflowCandidate对象+IR行,
     此处从dict findings构造简化candidate, 调用filter_by_bvf.
     """
     if not _check_module('cj_bvf', lambda: __import__(
-            'core.cj_bvf_filter', fromlist=['filter_by_bvf'])):
+            'core.constraint_value_flow_filter', fromlist=['filter_by_bvf'])):
         return existing_findings
 
     try:
-        from core.cj_bvf_filter import filter_by_bvf
+        from core.constraint_value_flow_filter import filter_by_bvf
         from core.heap_overflow_detector import HeapOverflowCandidate, HeapAllocSite, HeapStore
         from core.ir_normalizer import normalize_ir
 
@@ -1196,7 +1196,7 @@ def run_cj_bvf_bridge(
         ir_lines = normalize_ir(pseudocode)
 
         # 从 ir_lines 查找每个 finding 对应的分配行和写入行
-        # 用真实行号作为 pc, 使 BVF 反向追踪能正确定位指令
+        # 用真实行号作为 pc, 使 后向值流 反向追踪能正确定位指令
         import re as _re
         alloc_line_pat = _re.compile(r'(?:malloc|calloc|realloc)\s*\(')
         write_line_pat = _re.compile(
@@ -1273,20 +1273,20 @@ def run_cj_bvf_bridge(
         return existing_findings
 
 
-# -- CJ-PCBVF: 路径约束感知证明 --
+# -- 约束求解-路径条件后向值流: 路径约束感知证明 --
 def run_cj_pcbvf_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """CJ-PCBVF 桥接: 对BVF无法判定的findings做路径约束增强证明."""
+    """约束求解-路径条件后向值流 桥接: 对后向值流无法判定的findings做路径约束增强证明."""
     if not _check_module('cj_pcbvf', lambda: __import__(
-            'core.cj_pcbvf_filter', fromlist=['filter_by_pcbvf'])):
+            'core.constraint_pc_value_flow_filter', fromlist=['filter_by_pcbvf'])):
         return existing_findings
 
     try:
-        from core.cj_pcbvf_filter import filter_by_pcbvf
+        from core.constraint_pc_value_flow_filter import filter_by_pcbvf
         from core.heap_overflow_detector import HeapOverflowCandidate, HeapAllocSite, HeapStore
         from core.ir_normalizer import normalize_ir
 
@@ -1349,28 +1349,28 @@ def run_cj_pcbvf_bridge(
         return existing_findings
 
 
-# -- UAF-HOIG: UAF混合对象身份图 --
+# -- UAF-对象身份图: UAF混合对象身份图 --
 def run_uaf_hoig_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """UAF-HOIG 桥接: 对伪代码做对象身份追踪, 产出UAF findings.
+    """UAF-对象身份图 桥接: 对伪代码做对象身份追踪, 产出UAF findings.
 
-    HOIG独立检测UAF, 不依赖已有findings. 对已有UAF findings做误报过滤:
-    HOIG判定SAFE的UAF finding被过滤, HOIG CONFIRMED补充新findings.
+    对象身份图独立检测UAF, 不依赖已有findings. 对已有UAF findings做误报过滤:
+    对象身份图判定SAFE的UAF finding被过滤, 对象身份图 CONFIRMED补充新findings.
     """
     if not _check_module('uaf_hoig', lambda: __import__(
-            'analysis.uaf_hoig_pipeline', fromlist=['UafHoigPipeline'])):
+            'analysis.uaf_obj_graph_pipeline', fromlist=['UafHoigPipeline'])):
         return existing_findings
 
     try:
-        from analysis.uaf_hoig_pipeline import UafHoigPipeline
+        from analysis.uaf_obj_graph_pipeline import UafHoigPipeline
         pipeline = UafHoigPipeline()
         result = pipeline.analyze(pseudocode, func_name)
 
-        # HOIG CONFIRMED -> 补充新UAF findings
+        # 对象身份图 CONFIRMED -> 补充新UAF findings
         new_findings = []
         for v in result.get('intra_func_findings', []):
             new_findings.append({
@@ -1397,7 +1397,7 @@ def run_uaf_hoig_bridge(
                 'source': 'uaf_hoig',
             })
 
-        # HOIG SAFE -> 过滤已有UAF findings中的假阳性
+        # 对象身份图 SAFE -> 过滤已有UAF findings中的假阳性
         if result['verdict'] == 'SAFE':
             existing_findings = [f for f in existing_findings
                                  if f.get('type', '').lower() not in ('uaf', 'use-after-free')]
@@ -1408,22 +1408,22 @@ def run_uaf_hoig_bridge(
         return existing_findings
 
 
-# -- GAPSBV: 仿射关系堆溢出检测 --
+# -- 仿射边界验证: 仿射关系堆溢出检测 --
 def run_gapsbv_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
 ) -> List[dict]:
-    """GAPSBV 桥接: 7维度仿射关系堆溢出检测, 产出新findings.
+    """仿射边界验证 桥接: 7维度仿射关系堆溢出检测, 产出新findings.
 
-    GAPSBV独立检测堆溢出, 不依赖已有findings.
+    仿射边界验证独立检测堆溢出, 不依赖已有findings.
     """
     if not _check_module('gapsbv', lambda: __import__(
-            'analysis.gapsbv_pipeline', fromlist=['detect_heap_overflow_gapsbv'])):
+            'analysis.affine_bound_pipeline', fromlist=['detect_heap_overflow_gapsbv'])):
         return []
 
     try:
-        from analysis.gapsbv_pipeline import detect_heap_overflow_gapsbv
+        from analysis.affine_bound_pipeline import detect_heap_overflow_gapsbv
         report = detect_heap_overflow_gapsbv(pseudocode)
 
         results = []
@@ -1511,8 +1511,11 @@ def run_gasri_bridge(
         ir_lines = normalize_ir(pseudocode)
 
         # 从 ir_lines 查找每个 finding 对应的写入行号
+        # 匹配函数调用写 memcpy(dst,...) / 数组写 buf[idx]= / 解引用写 *(ptr+off)=
         write_patterns = re.compile(
-            r'(memcpy|memmove|strncpy|strcpy|sprintf|memset|fwrite)\s*\(')
+            r'(?:memcpy|memmove|strncpy|strcpy|sprintf|memset|fwrite)\s*\('
+            r'|\w+\s*\[\s*\w[\w.]*\s*\]\s*='
+            r'|\*\s*\([^)]*\+[^)]*\)\s*=')
 
         filtered = []
         for f in heap_findings:
@@ -1548,13 +1551,13 @@ def run_gasri_bridge(
         return existing_findings
 
 
-# -- UAF-Enhanced: TARPS五阶段UAF增强检测 --
+# -- UAF-Enhanced: 时序-别名-可达-路径验证五阶段UAF增强检测 --
 def run_uaf_enhanced_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
 ) -> List[dict]:
-    """UAF-Enhanced 桥接: TARPS五阶段UAF检测, 产出新findings.
+    """UAF-Enhanced 桥接: 时序-别名-可达-路径验证五阶段UAF检测, 产出新findings.
 
     A-NULL置零 / B-立即复用 / C-别名分析 / D-路径可行性 / E-置信度评分.
     """
@@ -2996,22 +2999,22 @@ def _norm_var_name(expr: str) -> str:
     return expr
 
 
-# -- D-1: BWR+PCST (有界写恢复+路径条件敏感污点) --
+# -- D-1: 有界写恢复+路径条件敏感污点 (有界写恢复+路径条件敏感污点) --
 def run_bwr_pcst_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """BWR+PCST 桥接: 双引擎协同的有界写验证.
+    """有界写恢复+路径条件敏感污点 桥接: 双引擎协同的有界写验证.
 
-    BWR 半边: 对已有堆溢出findings中涉及无界写入函数
+    有界写恢复 半边: 对已有堆溢出findings中涉及无界写入函数
     (strcpy/strcat/sprintf/gets)的告警, 恢复写尺寸上界做安全/溢出判定.
     将伪代码转为 x86-64 汇编指令序列, 变量映射到 callee-saved 寄存器,
-    使 BWR 的 _resolve_src 能正确做反向 def-use 追踪,
+    使 有界写恢复 的 _resolve_src 能正确做反向 def-use 追踪,
     _compare 能通过 alloc_tracker._ptr_to_alloc 找到分配信息.
 
-    PCST 半边: 按调用点参数语义表 (Per-Call Semantics Table) 对
+    路径条件敏感污点 半边: 按调用点参数语义表 (Per-Call Semantics Table) 对
     sized 写调用 (memcpy/read/snprintf/fread等) 做 (dst,size) 角色修正
     与分配配对判定 — 修正旧统一规则 dst恒index0/size恒index2 的
     系统性错位 (read的fd被当缓冲、snprintf的fmt指针被当size、
@@ -3238,7 +3241,7 @@ def run_bwr_pcst_bridge(
                 addr += 4
                 continue
 
-        # 对每条无界写调用做 BWR 判定
+        # 对每条无界写调用做 有界写恢复 判定
         bwr_results: Dict[str, object] = {}  # dst_var → verdict
         for call_idx, func, dst_reg, src_reg, dst_alloc in write_calls:
             verdict = bwr.recover(
@@ -3251,8 +3254,8 @@ def run_bwr_pcst_bridge(
                     bwr_results[var] = verdict
                     break
 
-        # ---- PCST 半边: 按调用点参数语义表对 sized 写调用做角色修正与配对判定 ----
-        # 与 BWR 分工: BWR 管无界写 (strcpy等, 写量=源长), PCST 管 sized 写
+        # ---- 路径条件敏感污点 半边: 按调用点参数语义表对 sized 写调用做角色修正与配对判定 ----
+        # 与 有界写恢复 分工: 有界写恢复 管无界写 (strcpy等, 写量=源长), 路径条件敏感污点 管 sized 写
         # (memcpy/read/snprintf/fread等, 写量=实参) — 修正旧规则
         # dst恒index0/size恒index2 的系统性错位.
         pcst_findings, pcst_stats = pcst_scan(pseudocode or '')
@@ -3273,12 +3276,12 @@ def run_bwr_pcst_bridge(
             pcst_stats.get('write_calls', 0), len(pcst_corrections),
             pcst_stats.get('unsized_writes_delegated_to_bwr', 0))
 
-        # 对已有 findings 做 BWR + PCST 双重判定
+        # 对已有 findings 做 有界写恢复 + 路径条件敏感污点 双重判定
         filtered = []
         for f in heap_findings:
             write_func = f.get('write_func', '')
 
-            # PCST 优先处理 sized 写: 用语义表修正后的 (dst,size) 复核告警
+            # 路径条件敏感污点 优先处理 sized 写: 用语义表修正后的 (dst,size) 复核告警
             if write_func and is_write_func(write_func) \
                     and not pcst_is_unsized(write_func):
                 # 候选键: finding 的缓冲变量及归一化形式
@@ -3294,7 +3297,7 @@ def run_bwr_pcst_bridge(
                         break
                 if pf is None:
                     # 变量名未直接命中时按 write_func 兜底: 旧规则若错取了
-                    # 参数 (如 read 的 fd), PCST 修正后的 dst 才是真实缓冲;
+                    # 参数 (如 read 的 fd), 路径条件敏感污点 修正后的 dst 才是真实缓冲;
                     # 仅当该函数调用点唯一时采用, 避免同函数多点误配
                     func_matches = [c for c in pcst_findings
                                     if c.get('write_func') == write_func]
@@ -3303,7 +3306,7 @@ def run_bwr_pcst_bridge(
                 if pf is not None:
                     verdict_kind = pf.get('verdict', '')
                     if verdict_kind == 'safe':
-                        # 双条件守卫: PCST 对齐判定 safe 且写量上界不超过
+                        # 双条件守卫: 路径条件敏感污点 对齐判定 safe 且写量上界不超过
                         # 分配请求量才过滤. usable 含 ptmalloc2 对齐余量,
                         # 仅凭 usable 过滤会把 "写量超出请求但未溢出 chunk"
                         # 的真实越界告警误杀, 与基础检测器的请求量基准
@@ -3334,14 +3337,14 @@ def run_bwr_pcst_bridge(
                             f['confidence'] = min(
                                 1.0,
                                 (f.get('confidence', 0.5) or 0.5) + boost)
-                # pf 为 None: PCST 无配对信息, 保留 finding 交由后续阶段
+                # pf 为 None: 路径条件敏感污点 无配对信息, 保留 finding 交由后续阶段
 
-            # BWR 处理无界写
+            # 有界写恢复 处理无界写
             if not write_func or not is_unsized_write(write_func):
                 filtered.append(f)
                 continue
 
-            # 用 finding 的 write_var 或 alloc_var 匹配 BWR 结果
+            # 用 finding 的 write_var 或 alloc_var 匹配 有界写恢复 结果
             match_var = f.get('write_var', f.get('alloc_var', ''))
             verdict = bwr_results.get(match_var)
 
@@ -3349,7 +3352,7 @@ def run_bwr_pcst_bridge(
                 if verdict.kind == 'safe':
                     f['bwr_verdict'] = 'safe'
                     f['bwr_reason'] = verdict.reason
-                    continue  # BWR 判定安全, 过滤
+                    continue  # 有界写恢复 判定安全, 过滤
                 if verdict.kind == 'overflow':
                     f['bwr_verdict'] = 'overflow'
                     f['bwr_reason'] = verdict.reason
@@ -3362,26 +3365,26 @@ def run_bwr_pcst_bridge(
         return existing_findings
 
 
-# -- D-2: DD-BVF (按需后向值流UAF检测) --
+# -- D-2: DD-后向值流 (按需后向值流UAF检测) --
 def run_dd_bvf_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """DD-BVF 桥接: 对 CJ 返回 INCONCLUSIVE 的堆溢出 findings,
+    """DD-后向值流 桥接: 对 约束求解 返回 INCONCLUSIVE 的堆溢出 findings,
     触发 try_bvf_proof() 做反向值流精确化判定.
 
-    BVF proven_safe 则过滤, proven_overflow 则提升置信度,
+    后向值流 proven_safe 则过滤, proven_overflow 则提升置信度,
     无法判定则保守保留.
     """
     if not _check_module('dd_bvf', lambda: __import__(
-            'core.cj_bvf_solver_bridge', fromlist=['try_bvf_proof'])):
+            'core.constraint_value_flow_solver_bridge', fromlist=['try_bvf_proof'])):
         return existing_findings
 
     try:
-        from core.cj_bvf_solver_bridge import try_bvf_proof
-        from core.cj_constraint_types import SolverVerdict
+        from core.constraint_value_flow_solver_bridge import try_bvf_proof
+        from core.constraint_constraint_types import SolverVerdict
         from core.heap_overflow_detector import (
             HeapOverflowCandidate, HeapAllocSite, HeapStore)
         from core.ir_normalizer import normalize_ir
@@ -3397,7 +3400,7 @@ def run_dd_bvf_bridge(
         platform = 'x86_64'
 
         # 从 ir_lines 预扫描真实行号, 替代 pc=0 假地址
-        # 使 BVF 的 trace_alloc_size/trace_write_size 能正确定位 IR 行
+        # 使 后向值流 的 trace_alloc_size/trace_write_size 能正确定位 IR 行
         import re as _re
         alloc_pc = 0
         write_pc = 0
@@ -3416,7 +3419,7 @@ def run_dd_bvf_bridge(
 
         filtered = []
         for f in heap_findings:
-            # 只对 CJ 模块返回 INCONCLUSIVE 的 findings 触发
+            # 只对 约束求解 模块返回 INCONCLUSIVE 的 findings 触发
             cj_verdict = f.get('verdict', '')
             if cj_verdict and 'INCONCLUSIVE' not in cj_verdict.upper():
                 filtered.append(f)
@@ -3461,18 +3464,18 @@ def run_dd_bvf_bridge(
             result = try_bvf_proof(candidate, ir_lines, platform)
 
             if result is None:
-                # BVF 无法判定, 保守保留
+                # 后向值流 无法判定, 保守保留
                 filtered.append(f)
                 continue
 
             if result.verdict == SolverVerdict.PROVEN_SAFE:
-                # BVF 证明安全, 过滤误报
+                # 后向值流 证明安全, 过滤误报
                 f['dd_bvf_verdict'] = 'proven_safe'
                 f['dd_bvf_reason'] = result.reason
                 continue
 
             if result.verdict == SolverVerdict.PROVEN_OVERFLOW:
-                # BVF 证明溢出, 提升置信度
+                # 后向值流 证明溢出, 提升置信度
                 f['dd_bvf_verdict'] = 'proven_overflow'
                 f['dd_bvf_reason'] = result.reason
                 f['confidence'] = min(1.0, f.get('confidence', 0.5)
@@ -3487,31 +3490,31 @@ def run_dd_bvf_bridge(
         return existing_findings
 
 
-# -- D-3: CACBV (容量感知耦合边界验证) --
+# -- D-3: 容量感知耦合边界验证 (容量感知耦合边界验证) --
 def run_cacbv_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """CACBV 桥接: 路径敏感的容量感知边界验证.
+    """容量感知耦合边界验证 桥接: 路径敏感的容量感知边界验证.
 
-    与 AWSC 的本质区别:
-      AWSC 做路径不敏感的后向 def-use 根来源追踪, 判定分配与写入
+    与 分配-写关联 的本质区别:
+      分配-写关联 做路径不敏感的后向 def-use 根来源追踪, 判定分配与写入
       是否同源 (同根 → 不可能溢出). 但真实程序常写
-      if (n > 64) return; memcpy(buf, src, n); — AWSC 无法利用路径约束,
+      if (n > 64) return; memcpy(buf, src, n); — 分配-写关联 无法利用路径约束,
       n 仍来自参数, 不判定同源.
 
-      CACBV 是路径敏感的: 从伪代码解析 if 守卫 (cmp + jcc 等价模式),
+      容量感知耦合边界验证 是路径敏感的: 从伪代码解析 if 守卫 (cmp + jcc 等价模式),
       调用 guard_dominance.analyze_guards_for_write 提取守卫证据,
       再用 verdict.evaluate 汇总容量 + 守卫, 得到 SAFE/CONFIRMED/UNCERTAIN.
-      AWSC 无此能力.
+      分配-写关联 无此能力.
 
     差异化实现:
       1. 从伪代码解析 if (n > C) return/break/continue 守卫模式,
          构建 GuardRecord + Instruction 对象
       2. 调用 analyze_guards_for_write 做路径敏感守卫聚合
-      3. 调用 verdict.evaluate 汇总容量/溯源/守卫, 输出完整 ACPE 判定
+      3. 调用 verdict.evaluate 汇总容量/溯源/守卫, 输出完整 分配容量溯源 判定
       4. verdict == SAFE 则过滤, CONFIRMED 则提升置信度, 其余保留
     """
     if not _check_module('cacbv', lambda: __import__(
@@ -3699,7 +3702,7 @@ def run_cacbv_bridge(
                     sym_name = var_sym_map.get(src, src)
                     var_capexpr[dst] = CapExpr.sym(sym_name)
 
-        # --- 阶段 3: 路径敏感 ACPE 判定 ---
+        # --- 阶段 3: 路径敏感 分配容量溯源 判定 ---
         # 对每个 finding 构建 alloc/write CapExpr, 提取守卫证据,
         # 调用 verdict.evaluate 输出完整判定
         filtered = []
@@ -3731,7 +3734,7 @@ def run_cacbv_bridge(
                 'strcpy', 'strcat', 'stpcpy', 'gets', 'sprintf',
                 'vsprintf')
 
-            # 提取守卫证据 — CACBV 独有的路径敏感分析
+            # 提取守卫证据 — 容量感知耦合边界验证 独有的路径敏感分析
             write_sym = write_ce.base if write_ce.is_symbolic() else ''
             guard_ev = None
             if guards and write_sym:
@@ -3793,7 +3796,7 @@ def run_bidir_range_bridge(
 
     前向: 用 pointer_tracker 提取堆指针+别名+写入绑定,
     用 value_range_analyzer 的 check_heap_overflow_by_range 做区间交汇.
-    后向: 用 AWSC 引擎的 trace_size_root 做根来源交叉验证.
+    后向: 用 分配-写关联 引擎的 trace_size_root 做根来源交叉验证.
     两个方向一致判定 safe 则过滤, 一致判定 overflow 则提升置信度.
     """
     if not _check_module('bidir_range', lambda: __import__(
@@ -3830,10 +3833,10 @@ def run_bidir_range_bridge(
         ranges = extract_value_ranges(pseudocode)
         alloc_range = ranges.get('__malloc_size__', ValueRange.top())
 
-        # 后向: AWSC 引擎 — 从伪代码构建指令字典列表做真实后向追踪
+        # 后向: 分配-写关联 引擎 — 从伪代码构建指令字典列表做真实后向追踪
         engine = AWSCEngine(use_win64_abi=True)
         ir_lines = normalize_ir(pseudocode)
-        # 伪代码转指令字典列表 (与 AWSC bridge 相同的方法)
+        # 伪代码转指令字典列表 (与 分配-写关联 bridge 相同的方法)
         _callee_saved = ['rbx', 'r12', 'r13', 'r14', 'r15']
         _var_to_reg: Dict[str, str] = {}
         _reg_idx = 0
@@ -4038,17 +4041,17 @@ def run_bidir_range_bridge(
         return existing_findings
 
 
-# -- D-5: ACPE (分配容量溯源等价分析) --
+# -- D-5: 分配容量溯源 (分配容量溯源等价分析) --
 def run_acpe_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """ACPE 桥接: 用 ACPE 的溯源链等价判定做独立过滤.
+    """分配容量溯源 桥接: 用 分配容量溯源 的溯源链等价判定做独立过滤.
 
-    与 AWSC 的区别: AWSC 做寄存器级后向 def-use 根来源追踪;
-    ACPE 用符号容量表达式 CapExpr 建模 alloc/write size,
+    与 分配-写关联 的区别: 分配-写关联 做寄存器级后向 def-use 根来源追踪;
+    分配容量溯源 用符号容量表达式 CapExpr 建模 alloc/write size,
     用 equivalence.classify_pair() 做溯源等价分类
     (EQUIV/CONST_LE/ARITH_LE/GUARDED → safe),
     用 verdict.evaluate() 输出最终判定.
@@ -4152,7 +4155,7 @@ def run_acpe_bridge(
                 else:
                     var_capexpr[dst] = CapExpr.sym(src)
 
-        # 对每条 heap finding 做 ACPE 判定
+        # 对每条 heap finding 做 分配容量溯源 判定
         filtered = []
         for f in heap_findings:
             alloc_size = f.get('alloc_size', -1)
@@ -4190,7 +4193,7 @@ def run_acpe_bridge(
             write_unbounded = bool(write_func and write_func in (
                 'strcpy', 'strcat', 'sprintf', 'vsprintf', 'gets', 'stpcpy'))
 
-            # ACPE 判定
+            # 分配容量溯源 判定
             acpe_verdict = evaluate(
                 alloc_expr=alloc_ce, write_expr=write_ce,
                 write_unbounded=write_unbounded,
@@ -4203,7 +4206,7 @@ def run_acpe_bridge(
             f.setdefault('acpe_reasoning', acpe_verdict.reasoning)
 
             if acpe_verdict.verdict == AcpeVerdictKind.SAFE:
-                # ACPE 判定安全, 过滤误报
+                # 分配容量溯源 判定安全, 过滤误报
                 continue
             if acpe_verdict.verdict == AcpeVerdictKind.VULN_CONFIRMED:
                 f.setdefault('acpe_confirmed', True)
@@ -4215,14 +4218,14 @@ def run_acpe_bridge(
         return existing_findings
 
 
-# -- D-6: PSVR-HLM (路径敏感值域推理分层模型) --
+# -- D-6: 路径敏感值域推理-HLM (路径敏感值域推理分层模型) --
 def run_psvr_hlm_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """PSVR-HLM 桥接: 三层级联过滤堆溢出 findings.
+    """路径敏感值域推理-HLM 桥接: 三层级联过滤堆溢出 findings.
 
     L2 (路径守卫): 用 path_feasibility_check 的 build_path_constraints
     窄化值域, 检查路径可行性.
@@ -4475,24 +4478,24 @@ def run_dp_tvra_bridge(
         return existing_findings
 
 
-# -- AWSC-ICF: 跨函数调用帧传播 (差异化: 原 AWSC 的后向 def-use 扩展到跨函数) --
+# -- 分配-写关联-ICF: 跨函数调用帧传播 (差异化: 原 分配-写关联 的后向 def-use 扩展到跨函数) --
 def run_awsc_icf_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """AWSC-ICF 桥接: 通过函数摘要追踪跨函数的 size 寄存器来源.
+    """分配-写关联-ICF 桥接: 通过函数摘要追踪跨函数的 size 寄存器来源.
 
-    与原 AWSC 的区别: 原 AWSC 在 call 指令处终止追踪,
-    AWSC-ICF 通过 InterprocSummary 继续追踪参数来源.
+    与原 分配-写关联 的区别: 原 分配-写关联 在 call 指令处终止追踪,
+    分配-写关联-ICF 通过 InterprocSummary 继续追踪参数来源.
     """
     if not _check_module('awsc_icf', lambda: __import__(
-            'modules.analysis.static.awsc_icf', fromlist=['InterproceduralCofluenceTracker'])):
+            'modules.analysis.static.alloc_write_icf', fromlist=['InterproceduralCofluenceTracker'])):
         return existing_findings
 
     try:
-        from modules.analysis.static.awsc_icf import InterproceduralCofluenceTracker
+        from modules.analysis.static.alloc_write_icf import InterproceduralCofluenceTracker
         tracker = InterproceduralCofluenceTracker()
         findings = tracker.analyze_findings(pseudocode, existing_findings)
         return findings
@@ -4501,23 +4504,23 @@ def run_awsc_icf_bridge(
         return existing_findings
 
 
-# -- HOFPR-APC: 自适应优先级级联 (差异化: 原 HOFPR 固定三阶段改为动态编排) --
+# -- 堆溢出误报抑制-APC: 自适应优先级级联 (差异化: 原 堆溢出误报抑制 固定三阶段改为动态编排) --
 def run_hofpr_apc_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """HOFPR-APC 桥接: 根据告警置信度动态调整过滤阶段顺序.
+    """堆溢出误报抑制-APC 桥接: 根据告警置信度动态调整过滤阶段顺序.
 
-    与原 HOFPR 的区别: 原固定 污点→大小→路径, APC 根据置信度动态编排.
+    与原 堆溢出误报抑制 的区别: 原固定 污点→大小→路径, APC 根据置信度动态编排.
     """
     if not _check_module('hofpr_apc', lambda: __import__(
-            'modules.analysis.static.hofpr_apc', fromlist=['AdaptivePriorityCascade'])):
+            'modules.analysis.static.heap_fp_apc', fromlist=['AdaptivePriorityCascade'])):
         return existing_findings
 
     try:
-        from modules.analysis.static.hofpr_apc import AdaptivePriorityCascade
+        from modules.analysis.static.heap_fp_apc import AdaptivePriorityCascade
         cascade = AdaptivePriorityCascade()
         return cascade.cascade_filter(existing_findings)
     except Exception as e:
@@ -4525,23 +4528,23 @@ def run_hofpr_apc_bridge(
         return existing_findings
 
 
-# -- PcWBI-IRL: 内联复制加载建模 (差异化: 原 PcWBI 不建模 rep movs/SSE) --
+# -- 来源约束写界推断-IRL: 内联复制加载建模 (差异化: 原 来源约束写界推断 不建模 rep movs/SSE) --
 def run_pcwbi_irl_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """PcWBI-IRL 桥接: 解析内联复制模式, 用 count_expr 增强 findings.
+    """来源约束写界推断-IRL 桥接: 解析内联复制模式, 用 count_expr 增强 findings.
 
-    与原 PcWBI 的区别: 原不建模编译器内联复制, IRL 解析 rep movs/SSE 块拷贝.
+    与原 来源约束写界推断 的区别: 原不建模编译器内联复制, IRL 解析 rep movs/SSE 块拷贝.
     """
     if not _check_module('pcwbi_irl', lambda: __import__(
-            'modules.analysis.static.pcwbi_irl', fromlist=['InlineRepLoadModeler'])):
+            'modules.analysis.static.wbound_prov_irl', fromlist=['InlineRepLoadModeler'])):
         return existing_findings
 
     try:
-        from modules.analysis.static.pcwbi_irl import InlineRepLoadModeler
+        from modules.analysis.static.wbound_prov_irl import InlineRepLoadModeler
         modeler = InlineRepLoadModeler()
         copies = modeler.detect_pseudo_inline_copy(pseudocode)
         if copies:
@@ -4591,24 +4594,24 @@ def run_fc_vra_pta_bridge(
         return existing_findings
 
 
-# -- CACBV-DSS: 动态slack减除 (差异化: 原 CACBV 用固定对齐公式) --
+# -- 容量感知耦合边界验证-DSS: 动态slack减除 (差异化: 原 容量感知耦合边界验证 用固定对齐公式) --
 def run_cacbv_dss_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """CACBV-DSS 桥接: 根据分配函数类型动态计算 chunk 几何.
+    """容量感知耦合边界验证-DSS 桥接: 根据分配函数类型动态计算 chunk 几何.
 
-    与原 CACBV 的区别: 原用固定 align_up(N,16), DSS 按 malloc/calloc/realloc 区分.
+    与原 容量感知耦合边界验证 的区别: 原用固定 align_up(N,16), DSS 按 malloc/calloc/realloc 区分.
     """
     if not _check_module('cacbv_dss', lambda: __import__(
-            'modules.vuln.detection.heap_analysis.acpe.cacbv_dss',
+            'modules.vuln.detection.heap_analysis.acpe.capacity_bound_dss',
             fromlist=['DynamicSlackSubtractor'])):
         return existing_findings
 
     try:
-        from modules.vuln.detection.heap_analysis.acpe.cacbv_dss import DynamicSlackSubtractor
+        from modules.vuln.detection.heap_analysis.acpe.capacity_bound_dss import DynamicSlackSubtractor
         subtractor = DynamicSlackSubtractor()
         return subtractor.analyze_findings(existing_findings, pseudocode)
     except Exception as e:
@@ -4707,24 +4710,24 @@ def run_pg_wbv_lsa_bridge(
         return existing_findings
 
 
-# -- ACPE-VRP: 值域传播增强 (差异化: 原 ACPE 只做常量提取) --
+# -- 分配容量溯源-VRP: 值域传播增强 (差异化: 原 分配容量溯源 只做常量提取) --
 def run_acpe_vrp_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """ACPE-VRP 桥接: 用区间传播在非常量场景提供区间估计.
+    """分配容量溯源-VRP 桥接: 用区间传播在非常量场景提供区间估计.
 
-    与原 ACPE 的区别: 原只做常量提取的容量比较, VRP 用区间传播处理非常量.
+    与原 分配容量溯源 的区别: 原只做常量提取的容量比较, VRP 用区间传播处理非常量.
     """
     if not _check_module('acpe_vrp', lambda: __import__(
-            'modules.vuln.detection.heap_analysis.acpe.acpe_vrp',
+            'modules.vuln.detection.heap_analysis.acpe.alloc_capacity_vrp',
             fromlist=['ValueRangePropagationEnhancer'])):
         return existing_findings
 
     try:
-        from modules.vuln.detection.heap_analysis.acpe.acpe_vrp import ValueRangePropagationEnhancer
+        from modules.vuln.detection.heap_analysis.acpe.alloc_capacity_vrp import ValueRangePropagationEnhancer
         enhancer = ValueRangePropagationEnhancer()
         return enhancer.enhance_findings(existing_findings, pseudocode)
     except Exception as e:
@@ -4732,16 +4735,16 @@ def run_acpe_vrp_bridge(
         return existing_findings
 
 
-# -- ACFPC-CMS: 冲突感知多源融合 (差异化: 原 ACFPC 用固定权重) --
+# -- 分配契约流保持-CMS: 冲突感知多源融合 (差异化: 原 分配契约流保持 用固定权重) --
 def run_acfpc_cms_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """ACFPC-CMS 桥接: 基于 D-S 证据理论检测证据冲突并动态调权.
+    """分配契约流保持-CMS 桥接: 基于 D-S 证据理论检测证据冲突并动态调权.
 
-    与原 ACFPC 的区别: 原用固定权重五模态融合, CMS 加入冲突检测动态调权.
+    与原 分配契约流保持 的区别: 原用固定权重五模态融合, CMS 加入冲突检测动态调权.
     """
     if not _check_module('acfpc_cms', lambda: __import__(
             'modules.vuln.detection.acfpc_cms', fromlist=['ConflictAwareMultiSourceFuser'])):
@@ -4765,7 +4768,7 @@ def run_pcfv_bridge(
 ) -> List[dict]:
     """PCFV 桥接: 反汇编→逐函数访问提取→守卫/常量/padding证明→五值判定.
 
-    与已有 AWSC/GASRI (伪代码正则守卫) 的区别:
+    与已有 分配-写关联/GASRI (伪代码正则守卫) 的区别:
       PCFV 在真实汇编上做指令级追踪, Verdict 五值而非三值,
       SAFE_FILTERED 需"证明安全+过滤依据充分"双条件.
     有 binary_path 时反汇编真实二进制; 无二进制时从伪代码
@@ -5077,30 +5080,30 @@ def _run_tovs_on_asm_text(asm_text: str, sample_id: str):
         return None
 
 
-# -- A-3: MIVR (多变量区间约束传播证明) --
+# -- A-3: 路径敏感约束传播 (多变量区间约束传播证明) --
 def run_mivr_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """MIVR 桥接: alloc-write 对的三层路径敏感约束传播证明.
+    """路径敏感约束传播 桥接: alloc-write 对的三层路径敏感约束传播证明.
 
-    与已有 GAPSBV (7维仿射) 的区别:
-      MIVR 专注守卫→写入约束传播的传递性解析,
+    与已有 仿射边界验证 (7维仿射) 的区别:
+      路径敏感约束传播 专注守卫→写入约束传播的传递性解析,
       L1 守卫硬证明 / L2 仿射传递 / L3 常量偏移语义, 逐级降级.
     仅当证明 SAFE 时过滤对应 heap findings.
     """
     if not _check_module('mivr', lambda: __import__(
-            'analysis.mivr_pipeline',
+            'analysis.path_proof_pipeline',
             fromlist=['detect_heap_overflow_mivr'])):
         return existing_findings
 
     try:
-        from analysis.mivr_pipeline import detect_heap_overflow_mivr
+        from analysis.path_proof_pipeline import detect_heap_overflow_mivr
         verdict, conf, proofs = detect_heap_overflow_mivr(pseudocode)
         if verdict == 'SAFE' and conf >= 0.70:
-            # MIVR 硬证明安全 → 过滤 heap findings
+            # 路径敏感约束传播 硬证明安全 → 过滤 heap findings
             heap = [f for f in existing_findings
                     if 'heap' in f.get('type', '').lower()]
             if heap:
@@ -5121,17 +5124,17 @@ def run_mivr_bridge(
         return existing_findings
 
 
-# -- A-4: FSTP (格式说明符语义污点传播) --
+# -- A-4: 格式说明符语义污点传播 (格式说明符语义污点传播) --
 def run_fstp_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """FSTP 桥接: 5级语义分类 (CLEAN→USER_WRITE) + 污点传播验证格式串告警.
+    """格式说明符语义污点传播 桥接: 5级语义分类 (CLEAN→USER_WRITE) + 污点传播验证格式串告警.
 
     与已有 FMTPROV (常量折叠) 的区别:
-      FSTP 区分语义类别: 用户输入+清理→SAFE, %n→写风险, %s→泄露.
+      格式说明符语义污点传播 区分语义类别: 用户输入+清理→SAFE, %n→写风险, %s→泄露.
     """
     if not _check_module('fstp', lambda: __import__(
             'analysis.fmt_semantic_taint',
@@ -5166,7 +5169,7 @@ def run_fstp_bridge(
                                    f'func={v.func_name} — {v.reason}',
                     'verdict': 'POSSIBLE', 'source': 'fstp'})
 
-        # 已有 format findings 被 FSTP 判定为安全时标记 fstp_clean
+        # 已有 format findings 被 格式说明符语义污点传播 判定为安全时标记 fstp_clean
         clean_lines = set()
         for v in verdicts:
             if v.sem_class in (SemClass.SEM_CLEAN, SemClass.SEM_CONST_FMT):
@@ -5307,26 +5310,26 @@ def _pseudocode_to_intx_asm(pseudocode: str) -> List[str]:
     return lines
 
 
-# -- A-6: SHIELD (三引擎堆溢出误报消减) --
+# -- A-6: 堆区间证据消歧 (三引擎堆溢出误报消减) --
 def run_shield_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """SHIELD 桥接: 指针溯源→不相交证明→尺寸约束关联 三引擎串联过滤.
+    """堆区间证据消歧 桥接: 指针溯源→不相交证明→尺寸约束关联 三引擎串联过滤.
 
-    与已有 BWR+PCST (伪代码合成 BWR 调用) 的区别:
-      SHIELD 的三引擎在指令序列上做全局 provenance 分析,
+    与已有 有界写恢复+路径条件敏感污点 (伪代码合成 有界写恢复 调用) 的区别:
+      堆区间证据消歧 的三引擎在指令序列上做全局 provenance 分析,
       任一引擎证明安全即滤除. findings 需带 insn_addr/access_offset.
     """
     if not _check_module('shield', lambda: __import__(
-            'modules.vuln.src.heap.shield_orchestrator',
+            'modules.vuln.src.heap.heap_shield_orchestrator',
             fromlist=['ShieldOrchestrator'])):
         return existing_findings
 
     try:
-        from modules.vuln.src.heap.shield_orchestrator import ShieldOrchestrator
+        from modules.vuln.src.heap.heap_shield_orchestrator import ShieldOrchestrator
         heap_findings = [f for f in existing_findings
                          if 'heap' in f.get('type', '').lower()]
         non_heap = [f for f in existing_findings
@@ -5334,12 +5337,12 @@ def run_shield_bridge(
         if not heap_findings:
             return existing_findings
 
-        # 用 PCFV 同款汇编合成器产指令列表 (SHIELD 期望 List[str])
+        # 用 PCFV 同款汇编合成器产指令列表 (堆区间证据消歧 期望 List[str])
         asm_lines = _pseudocode_to_intx_asm(pseudocode)
         if not asm_lines:
             return existing_findings
 
-        # findings 需转成 SHIELD 期望的 dict 字段
+        # findings 需转成 堆区间证据消歧 期望的 dict 字段
         shield_in = []
         for i, f in enumerate(heap_findings):
             alloc_size = f.get('alloc_size', 0)
@@ -5644,7 +5647,7 @@ def run_fmt_spec_bridge(
 ) -> List[dict]:
     """FMT-SPEC 桥接: POSIX 格式说明符解析 → 危险说明符检测.
 
-    与已有 FMTPROV/FSTP 的区别:
+    与已有 FMTPROV/格式说明符语义污点传播 的区别:
       FMT-SPEC 解析完整说明符语法 (flags/width/prec/length/posarg),
       检测 %n 写风险、%s 泄露、%N$pos 任意读, 与语义无关的纯语法层.
     """
@@ -5699,26 +5702,26 @@ def run_fmt_spec_bridge(
         return existing_findings
 
 
-# -- A-10: PcWBI 原版 (来源约束写界推断) --
+# -- A-10: 来源约束写界推断 原版 (来源约束写界推断) --
 def run_pcwbi_orig_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """PcWBI 原版桥接: 五级来源格 CONSTANT<GUARDED<ALLOC_LINKED<INPUT_TAINTED<UNKNOWN.
+    """来源约束写界推断 原版桥接: 五级来源格 CONSTANT<GUARDED<ALLOC_LINKED<INPUT_TAINTED<UNKNOWN.
 
-    与差异化版 PcWBI-IRL (内联复制建模) 的区别:
+    与差异化版 来源约束写界推断-IRL (内联复制建模) 的区别:
       原版做真实写界推断三值判定 CONFIRMED/BENIGN/SUSPECTED,
       守卫别名传播走 ProvValue 对象同一性.
     """
     if not _check_module('pcwbi_orig', lambda: __import__(
-            'analysis.pcwbi_impl',
+            'analysis.wbound_prov_impl',
             fromlist=['WriteBoundInferer'])):
         return existing_findings
 
     try:
-        from analysis.pcwbi_impl import WriteBoundInferer
+        from analysis.wbound_prov_impl import WriteBoundInferer
         heap_findings = [f for f in existing_findings
                          if 'heap' in f.get('type', '').lower()]
         non_heap = [f for f in existing_findings
@@ -5751,7 +5754,7 @@ def run_pcwbi_orig_bridge(
             pseudocode or ''))
 
         def get_write_prov(write_addr, size_reg):
-            from analysis.pcwbi_impl import ProvValue, ProvClass
+            from analysis.wbound_prov_impl import ProvValue, ProvClass
             if size_reg in guarded_bounds:
                 return ProvValue(cls=ProvClass.GUARDED,
                                  bound=guarded_bounds[size_reg])
@@ -5764,7 +5767,7 @@ def run_pcwbi_orig_bridge(
             return None
 
         def get_alloc_prov(alloc_addr):
-            from analysis.pcwbi_impl import ProvValue, ProvClass
+            from analysis.wbound_prov_impl import ProvValue, ProvClass
             return ProvValue(cls=ProvClass.UNKNOWN, bound=None)
 
         inferer = WriteBoundInferer()
@@ -5828,26 +5831,26 @@ def run_fc_vra_orig_bridge(
         return existing_findings
 
 
-# -- A-12: CACBV-DSS 原版 (动态slack减除) --
+# -- A-12: 容量感知耦合边界验证-DSS 原版 (动态slack减除) --
 def run_cacbv_dss_orig_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """CACBV-DSS 原版桥接: 按分配函数类型动态计算 chunk 几何.
+    """容量感知耦合边界验证-DSS 原版桥接: 按分配函数类型动态计算 chunk 几何.
 
-    与 stage 34 (差异化 CACBV-DSS via analyze_findings) 的区别:
+    与 stage 34 (差异化 容量感知耦合边界验证-DSS via analyze_findings) 的区别:
       原版直接调用 classify_overflow (SAFE/OVERFLOW/UNCERTAIN) 对
       逐条 finding 的 alloc_size/write_size 做分类判定.
     """
     if not _check_module('cacbv_dss_orig', lambda: __import__(
-            'modules.vuln.detection.heap_analysis.acpe.cacbv_dss',
+            'modules.vuln.detection.heap_analysis.acpe.capacity_bound_dss',
             fromlist=['DynamicSlackSubtractor'])):
         return existing_findings
 
     try:
-        from modules.vuln.detection.heap_analysis.acpe.cacbv_dss import (
+        from modules.vuln.detection.heap_analysis.acpe.capacity_bound_dss import (
             DynamicSlackSubtractor)
         import re
         # 提取分配函数类型映射 var → func
@@ -5897,7 +5900,7 @@ def run_symbolic_fp_filter_bridge(
 ) -> List[dict]:
     """轻量符号+4-Filter 桥接: alloc站点扫描→污点追踪→区间抽象→可满足性求解.
 
-    与 SHIELD (vuln侧三引擎) 的区别:
+    与 堆区间证据消歧 (vuln侧三引擎) 的区别:
       本模块来自 patching 侧, 用 IntervalAbstractor + OverflowSatisfiabilitySolver
       对 malloc+memcpy 对做 cannot_overflow 判定, FILTER 误报.
     """
@@ -5943,16 +5946,16 @@ def run_symbolic_fp_filter_bridge(
         return existing_findings
 
 
-# -- A-14: BWR 原版 (有界写恢复, 直接调用) --
+# -- A-14: 有界写恢复 原版 (有界写恢复, 直接调用) --
 def run_bwr_orig_bridge(
     pseudocode: str,
     func_name: str,
     binary_path: str,
     existing_findings: List[dict],
 ) -> List[dict]:
-    """BWR 原版桥接: 对无界写 (strcpy/strcat/sprintf/gets) 恢复写尺寸上界.
+    """有界写恢复 原版桥接: 对无界写 (strcpy/strcat/sprintf/gets) 恢复写尺寸上界.
 
-    与 stage 23 BWR+PCST 的区别:
+    与 stage 23 有界写恢复+路径条件敏感污点 的区别:
       stage 23 将伪代码合成汇编后调用 recover(); 原版桥接复用同一
       底层 BoundedWriteRecovery 但以不同编排: 逐 finding 按其
       write_func/write_var 定位, 输出 BWRVerdict 三值标注.
@@ -5974,7 +5977,7 @@ def run_bwr_orig_bridge(
         if not heap_findings:
             return existing_findings
 
-        # 构建最小汇编上下文 (从伪代码), 复用 BWR+PCST 的合成逻辑
+        # 构建最小汇编上下文 (从伪代码), 复用 有界写恢复+路径条件敏感污点 的合成逻辑
         instructions = _build_bwr_context(pseudocode)
         bwr = BoundedWriteRecovery()
 
@@ -6252,7 +6255,7 @@ def _pseudocode_to_giva_asm(pseudocode: str, func_name: str = '') -> str:
 
 
 def _build_bwr_context(pseudocode: str) -> List[dict]:
-    """为 BWR 原版桥接构建最小化汇编指令上下文."""
+    """为 有界写恢复 原版桥接构建最小化汇编指令上下文."""
     import re
     instructions: List[dict] = []
     addr = 0x1000
@@ -6315,23 +6318,38 @@ def _build_bwr_context(pseudocode: str) -> List[dict]:
 
 
 class _NullTracker:
-    """BWR 原版桥接用占位 alloc_tracker — 无分配信息时保守 unknown."""
+    """有界写恢复 原版桥接用占位 alloc_tracker — 无分配信息时保守 unknown."""
 
     _ptr_to_alloc: Dict[str, int] = {}
 
 
-def _rw_apply_fp_vote(findings: List[dict], evidence: dict) -> None:
+def _rw_norm_type(t: str) -> str:
+    """类型名规范化: 下划线转连字符.
+
+    基础检测器用连字符 (heap-overflow/use-after-free/format-string),
+    RW 文献模块用下划线 (heap_overflow/use_after_free/format_string),
+    子串匹配前统一为连字符, 保证降权证据真正命中目标 finding.
+    """
+    return (t or '').replace('_', '-')
+
+
+def _rw_apply_fp_vote(findings: List[dict], evidence: dict,
+                      target_type: str = '') -> None:
     """RW 安全证据温和降权: 同类型已有 findings conf*0.85 + fp_votes 计数.
 
-    与 SHIELD 硬过滤不同, RW 模块证据多为启发式判定, 采用保守的
+    与 堆区间证据消歧 硬过滤不同, RW 模块证据多为启发式判定, 采用保守的
     降权不删除策略, 累积 fp_votes/fp_sources 供下游融合阶段参考.
+    type 匹配前先归一化下划线/连字符命名差异.
+    target_type: 证据自身 type 无法表达"作用于哪类告警"时 (如
+    stack_write/global_write 属非堆域写), 由桥接显式指定目标类型.
     """
-    t = evidence.get('type', '')
+    t = _rw_norm_type(target_type or evidence.get('type', ''))
     src = evidence.get('source', '')
     if not t:
         return
     for f in findings:
-        if t in f.get('type', ''):
+        ft = _rw_norm_type(f.get('type', ''))
+        if t in ft:
             f['confidence'] = round(f.get('confidence', 0.5) * 0.85, 2)
             f['fp_votes'] = f.get('fp_votes', 0) + 1
             if src:
@@ -6819,7 +6837,9 @@ def run_rw_heap_stack_global_tri_bridge(
 ) -> List[dict]:
     """RW-HeapStackGlobalTri 桥接 (stage 70): 堆/栈/全局三分域分类.
 
-    domain_mismatch 告警注入; stack/global 域写作为安全证据温和降权堆类已有 findings.
+    unknown_domain 告警注入 (写点基址域不可判定); stack_write/
+    global_write 作为安全证据, 显式 target_type=heap_overflow 降权
+    同函数堆类已有 findings.
     """
     if not _check_module('rw_heap_stack_global_tri', lambda: __import__(
             'modules.analysis.static.rw_innovations.heap_stack_global_tri',
@@ -6833,10 +6853,10 @@ def run_rw_heap_stack_global_tri_bridge(
         findings = list(existing_findings)
         for r in results:
             v = r.get('verdict')
-            if v == 'domain_mismatch':
+            if v == 'unknown_domain':
                 findings.append(r)
             elif v in ('stack_write', 'global_write'):
-                _rw_apply_fp_vote(findings, r)
+                _rw_apply_fp_vote(findings, r, target_type='heap_overflow')
         return findings
     except Exception as e:
         logger.debug('RW heap_stack_global_tri bridge failed: %s', e)
@@ -7322,7 +7342,8 @@ def run_rw_color_class_quad_bridge(
 ) -> List[dict]:
     """RW-ColorClassQuad 桥接 (stage 86): 四色类域分类.
 
-    unknown_color 告警注入; stack/global 域写作为安全证据温和降权堆类已有 findings.
+    unknown_color 告警注入; stack/global 域写作为安全证据, 显式
+    target_type=heap_overflow 降权同函数堆类已有 findings.
     """
     if not _check_module('rw_color_class_quad', lambda: __import__(
             'modules.analysis.static.rw_innovations.color_class_quad',
@@ -7339,7 +7360,7 @@ def run_rw_color_class_quad_bridge(
             if v == 'unknown_color':
                 findings.append(r)
             elif v in ('stack_write', 'global_write'):
-                _rw_apply_fp_vote(findings, r)
+                _rw_apply_fp_vote(findings, r, target_type='heap_overflow')
         return findings
     except Exception as e:
         logger.debug('RW color_class_quad bridge failed: %s', e)
@@ -7995,18 +8016,18 @@ def run_innovation_pipeline(
 
     管线顺序 (106个创新模块):
       --- 原有7模块 (堆溢出聚焦) ---
-      1. HOFPR: C源码级误报抑制 (产出新findings)
-      2. HFP: IR级三态判定 (产出新findings)
-      3. ACFPC: 分配契约压缩 (对已有findings过滤)
-      4. DDSSC: 三层级联过滤 (对已有findings过滤)
-      5. AWSC: 同源关联过滤 (对已有findings过滤)
-      6. CJ-BVF: 反向值流证明 (对已有findings过滤)
-      7. CJ-PCBVF: 路径约束增强 (对已有findings过滤)
+      1. 堆溢出误报抑制: C源码级误报抑制 (产出新findings)
+      2. 分配器感知过滤: IR级三态判定 (产出新findings)
+      3. 分配契约流保持: 分配契约压缩 (对已有findings过滤)
+      4. 按需符号尺寸关联: 三层级联过滤 (对已有findings过滤)
+      5. 分配-写关联: 同源关联过滤 (对已有findings过滤)
+      6. 约束求解-后向值流: 反向值流证明 (对已有findings过滤)
+      7. 约束求解-路径条件后向值流: 路径约束增强 (对已有findings过滤)
       --- 新增15模块 (全漏洞类型覆盖) ---
-      8. GAPSBV: 仿射关系堆溢出检测 (产出新findings)
+      8. 仿射边界验证: 仿射关系堆溢出检测 (产出新findings)
       9. GASRI: 守卫感知值域推理 (对已有findings过滤)
-      10. UAF-HOIG: 混合对象身份图UAF检测 (产出+过滤)
-      11. UAF-Enhanced: TARPS五阶段UAF检测 (产出新findings)
+      10. UAF-对象身份图: 混合对象身份图UAF检测 (产出+过滤)
+      11. UAF-Enhanced: 时序-别名-可达-路径验证五阶段UAF检测 (产出新findings)
       12. UAF-Lifecycle: 指针生命周期状态机 (产出新findings)
       13. Double-Free: 四层DF检测 (产出新findings)
       14. UAF-Lifetime-Tracker: 着色分配追踪UAF (产出新findings)
@@ -8019,39 +8040,39 @@ def run_innovation_pipeline(
       21. Cross-Domain: 跨域稀疏值流精炼 (对已有findings过滤)
       22. Cross-Pipeline: 跨管线贝叶斯关联 (全局聚合)
       --- D类7模块 (深度创新补全) ---
-      23. BWR+PCST: BWR无界写恢复 + PCST按调用点参数语义表修正sized写角色与配对判定 (对已有findings过滤)
-      24. DD-BVF: 按需后向值流UAF检测 (对已有findings过滤)
-      25. CACBV: 容量感知耦合边界验证 (对已有findings过滤)
+      23. 有界写恢复+路径条件敏感污点: 有界写恢复无界写恢复 + 路径条件敏感污点按调用点参数语义表修正sized写角色与配对判定 (对已有findings过滤)
+      24. DD-后向值流: 按需后向值流UAF检测 (对已有findings过滤)
+      25. 容量感知耦合边界验证: 容量感知耦合边界验证 (对已有findings过滤)
       26. 双向区间交汇: 前向别名+后向根来源双向交汇 (对已有findings过滤)
-      27. ACPE: 分配容量溯源等价分析 (对已有findings过滤)
-      28. PSVR-HLM: 路径敏感值域推理分层模型 (对已有findings过滤)
+      27. 分配容量溯源: 分配容量溯源等价分析 (对已有findings过滤)
+      28. 路径敏感值域推理-HLM: 路径敏感值域推理分层模型 (对已有findings过滤)
       29. DP-TVRA: 需求驱动路径敏感污点-值域分析 (对已有findings过滤)
       --- 差异化创新10模块 (代码层面不同算法) ---
-      30. AWSC-ICF: 跨函数调用帧传播 (对已有findings增强)
-      31. HOFPR-APC: 自适应优先级级联 (对已有findings过滤)
-      32. PcWBI-IRL: 内联复制加载建模 (对已有findings增强)
+      30. 分配-写关联-ICF: 跨函数调用帧传播 (对已有findings增强)
+      31. 堆溢出误报抑制-APC: 自适应优先级级联 (对已有findings过滤)
+      32. 来源约束写界推断-IRL: 内联复制加载建模 (对已有findings增强)
       33. FC-VRA-PTA: 指针污点别名传播 (产出+增强)
-      34. CACBV-DSS: 动态slack减除 (对已有findings增强)
+      34. 容量感知耦合边界验证-DSS: 动态slack减除 (对已有findings增强)
       35. BIV-CTC: 跨类型约束传播 (对已有findings分类)
       36. SI-CTA: 跨类型别名追踪 (产出+过滤)
       37. PG-WBV-LSA: 循环结构感知写界 (对已有findings增强)
-      38. ACPE-VRP: 值域传播增强 (对已有findings增强)
-      39. ACFPC-CMS: 冲突感知多源融合 (对已有findings增强)
+      38. 分配容量溯源-VRP: 值域传播增强 (对已有findings增强)
+      39. 分配契约流保持-CMS: 冲突感知多源融合 (对已有findings增强)
       --- A类14模块 (原版独立模块接入) ---
       40. PCFV: 反汇编级指针流约束验证管线 (产出新findings)
       41. TOVS: 时间序验证UAF检测 (产出新findings)
-      42. MIVR: 多变量区间约束传播证明 (对已有findings过滤)
-      43. FSTP: 格式说明符语义污点传播 (产出+过滤)
+      42. 路径敏感约束传播: 多变量区间约束传播证明 (对已有findings过滤)
+      43. 格式说明符语义污点传播: 格式说明符语义污点传播 (产出+过滤)
       44. INT-SHIFT: 整数溢出8模式汇编检测 (产出新findings)
-      45. SHIELD: 三引擎堆溢出误报消减 (对已有findings过滤)
+      45. 堆区间证据消歧: 三引擎堆溢出误报消减 (对已有findings过滤)
       46. INT-RANGE: 整数溢出区间分析 (产出新findings)
       47. DRIFT: 对象身份感知UAF检测 (产出新findings)
       48. FMT-SPEC: 格式说明符解析器 (产出新findings)
-      49. PcWBI原版: 来源约束写界推断 (对已有findings过滤)
+      49. 来源约束写界推断原版: 来源约束写界推断 (对已有findings过滤)
       50. FC-VRA原版: 流相关值域分析 (产出新findings)
-      51. CACBV-DSS原版: 动态slack减除 (对已有findings增强)
+      51. 容量感知耦合边界验证-DSS原版: 动态slack减除 (对已有findings增强)
       52. 轻量符号+4-Filter: patching侧堆误报过滤 (对已有findings增强)
-      53. BWR原版: 有界写恢复 (对已有findings过滤)
+      53. 有界写恢复原版: 有界写恢复 (对已有findings过滤)
       54. PG-WBV原版: giva分配点感知写界验证 (产出+过滤)
 
     参数:
@@ -8066,33 +8087,33 @@ def run_innovation_pipeline(
     findings = list(base_findings)
 
     # === 阶段1-7: 原有堆溢出创新模块 ===
-    # 阶段1: HOFPR — 产出新findings
+    # 阶段1: 堆溢出误报抑制 — 产出新findings
     hofpr_results = run_hofpr_bridge(pseudocode, func_name, binary_path, findings)
     if hofpr_results:
         findings.extend(hofpr_results)
 
-    # 阶段2: HFP — 产出新findings
+    # 阶段2: 分配器感知过滤 — 产出新findings
     hfp_results = run_hfp_bridge(pseudocode, func_name, binary_path)
     if hfp_results:
         findings.extend(hfp_results)
 
-    # 阶段3: ACFPC — 对已有findings做契约压缩
+    # 阶段3: 分配契约流保持 — 对已有findings做契约压缩
     findings = run_acfpc_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段4: DDSSC — 三层级联过滤
+    # 阶段4: 按需符号尺寸关联 — 三层级联过滤
     findings = run_ddssc_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段5: AWSC — 同源关联过滤
+    # 阶段5: 分配-写关联 — 同源关联过滤
     findings = run_awsc_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段6: CJ-BVF — 反向值流安全证明
+    # 阶段6: 约束求解-后向值流 — 反向值流安全证明
     findings = run_cj_bvf_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段7: CJ-PCBVF — 路径约束增强证明
+    # 阶段7: 约束求解-路径条件后向值流 — 路径约束增强证明
     findings = run_cj_pcbvf_bridge(pseudocode, func_name, binary_path, findings)
 
     # === 阶段8-14: 新增检测模块 ===
-    # 阶段8: GAPSBV — 仿射关系堆溢出检测 (产出新findings)
+    # 阶段8: 仿射边界验证 — 仿射关系堆溢出检测 (产出新findings)
     gapsbv_results = run_gapsbv_bridge(pseudocode, func_name, binary_path)
     if gapsbv_results:
         findings.extend(gapsbv_results)
@@ -8100,10 +8121,10 @@ def run_innovation_pipeline(
     # 阶段9: GASRI — 守卫感知值域推理 (过滤已有堆findings)
     findings = run_gasri_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段10: UAF-HOIG — 混合对象身份图UAF (产出+过滤)
+    # 阶段10: UAF-对象身份图 — 混合对象身份图UAF (产出+过滤)
     findings = run_uaf_hoig_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段11: UAF-Enhanced — TARPS五阶段 (产出新findings)
+    # 阶段11: UAF-Enhanced — 时序-别名-可达-路径验证五阶段 (产出新findings)
     uaf_enh_results = run_uaf_enhanced_bridge(pseudocode, func_name, binary_path)
     if uaf_enh_results:
         findings.extend(uaf_enh_results)
@@ -8153,41 +8174,41 @@ def run_innovation_pipeline(
     findings = run_cross_pipeline_bridge(pseudocode, func_name, binary_path, findings)
 
     # === 阶段23-29: D类深度创新模块 ===
-    # 阶段23: BWR+PCST — BWR无界写恢复 + PCST语义表sized写配对判定 (过滤误报)
+    # 阶段23: 有界写恢复+路径条件敏感污点 — 有界写恢复无界写恢复 + 路径条件敏感污点语义表sized写配对判定 (过滤误报)
     findings = run_bwr_pcst_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段24: DD-BVF — 按需后向值流 (对 INCONCLUSIVE findings 精确化)
+    # 阶段24: DD-后向值流 — 按需后向值流 (对 INCONCLUSIVE findings 精确化)
     findings = run_dd_bvf_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段25: CACBV — 容量感知耦合边界验证
+    # 阶段25: 容量感知耦合边界验证 — 容量感知耦合边界验证
     findings = run_cacbv_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段26: 双向区间交汇 — 前向别名+后向根来源
     findings = run_bidir_range_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段27: ACPE — 分配容量溯源等价分析
+    # 阶段27: 分配容量溯源 — 分配容量溯源等价分析
     findings = run_acpe_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段28: PSVR-HLM — 路径敏感值域推理分层模型
+    # 阶段28: 路径敏感值域推理-HLM — 路径敏感值域推理分层模型
     findings = run_psvr_hlm_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段29: DP-TVRA — 需求驱动路径敏感污点-值域分析
     findings = run_dp_tvra_bridge(pseudocode, func_name, binary_path, findings)
 
     # === 阶段30-39: 差异化创新模块 (22个重复副本在代码层面实现为不同算法) ===
-    # 阶段30: AWSC-ICF — 跨函数调用帧传播 (对已有findings增强)
+    # 阶段30: 分配-写关联-ICF — 跨函数调用帧传播 (对已有findings增强)
     findings = run_awsc_icf_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段31: HOFPR-APC — 自适应优先级级联 (对已有findings过滤)
+    # 阶段31: 堆溢出误报抑制-APC — 自适应优先级级联 (对已有findings过滤)
     findings = run_hofpr_apc_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段32: PcWBI-IRL — 内联复制加载建模 (对已有findings增强)
+    # 阶段32: 来源约束写界推断-IRL — 内联复制加载建模 (对已有findings增强)
     findings = run_pcwbi_irl_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段33: FC-VRA-PTA — 指针污点别名传播 (产出+增强)
     findings = run_fc_vra_pta_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段34: CACBV-DSS — 动态slack减除 (对已有findings增强)
+    # 阶段34: 容量感知耦合边界验证-DSS — 动态slack减除 (对已有findings增强)
     findings = run_cacbv_dss_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段35: BIV-CTC — 跨类型约束传播 (对已有findings分类)
@@ -8199,10 +8220,10 @@ def run_innovation_pipeline(
     # 阶段37: PG-WBV-LSA — 循环结构感知写界 (对已有findings增强)
     findings = run_pg_wbv_lsa_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段38: ACPE-VRP — 值域传播增强 (对已有findings增强)
+    # 阶段38: 分配容量溯源-VRP — 值域传播增强 (对已有findings增强)
     findings = run_acpe_vrp_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段39: ACFPC-CMS — 冲突感知多源融合 (对已有findings增强)
+    # 阶段39: 分配契约流保持-CMS — 冲突感知多源融合 (对已有findings增强)
     findings = run_acfpc_cms_bridge(pseudocode, func_name, binary_path, findings)
 
     # === 阶段40-53: A类原版模块接入 (14个独立模块真实API调用) ===
@@ -8212,16 +8233,16 @@ def run_innovation_pipeline(
     # 阶段41: TOVS — 时间序验证UAF检测 (产出新findings)
     findings = run_tovs_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段42: MIVR — 多变量区间约束传播证明 (对已有findings过滤)
+    # 阶段42: 路径敏感约束传播 — 多变量区间约束传播证明 (对已有findings过滤)
     findings = run_mivr_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段43: FSTP — 格式说明符语义污点传播 (产出+过滤)
+    # 阶段43: 格式说明符语义污点传播 — 格式说明符语义污点传播 (产出+过滤)
     findings = run_fstp_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段44: INT-SHIFT — 整数溢出8模式汇编检测 (产出新findings)
     findings = run_int_shift_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段45: SHIELD — 三引擎堆溢出误报消减 (对已有findings过滤)
+    # 阶段45: 堆区间证据消歧 — 三引擎堆溢出误报消减 (对已有findings过滤)
     findings = run_shield_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段46: INT-RANGE — 整数溢出区间分析 (产出新findings)
@@ -8233,19 +8254,19 @@ def run_innovation_pipeline(
     # 阶段48: FMT-SPEC — 格式说明符解析器 (产出新findings)
     findings = run_fmt_spec_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段49: PcWBI原版 — 来源约束写界推断 (对已有findings过滤)
+    # 阶段49: 来源约束写界推断原版 — 来源约束写界推断 (对已有findings过滤)
     findings = run_pcwbi_orig_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段50: FC-VRA原版 — 流相关值域分析 (产出新findings)
     findings = run_fc_vra_orig_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段51: CACBV-DSS原版 — 动态slack减除 (对已有findings增强)
+    # 阶段51: 容量感知耦合边界验证-DSS原版 — 动态slack减除 (对已有findings增强)
     findings = run_cacbv_dss_orig_bridge(pseudocode, func_name, binary_path, findings)
 
     # 阶段52: 轻量符号+4-Filter — patching侧堆误报过滤 (对已有findings增强)
     findings = run_symbolic_fp_filter_bridge(pseudocode, func_name, binary_path, findings)
 
-    # 阶段53: BWR原版 — 有界写恢复 (对已有findings过滤)
+    # 阶段53: 有界写恢复原版 — 有界写恢复 (对已有findings过滤)
     findings = run_bwr_orig_bridge(pseudocode, func_name, binary_path, findings)
 
     # === 阶段54: PG-WBV原版 (giva 抽象解释引擎级) ===
@@ -8253,6 +8274,16 @@ def run_innovation_pipeline(
     findings = run_pg_wbv_orig_bridge(pseudocode, func_name, binary_path, findings)
 
     # === 阶段55-106: RW文献综述代码化模块 (52个, Related Work → 代码创新) ===
+    # 用字段标记区分基础告警与 RW 新注入弱告警.
+    # RW 弱告警在证据融合时标记为 rw_weak, 不参与一致性提升 (避免抬轿),
+    # 仍参与 evidence 汇总和 fp_votes 累积.
+    # 必须用字段标记而非对象身份或位置切片: RW 阶段多个模块
+    # (call_ctx_saturation/liveness_role_template 等) 以 dict(f) 重建
+    # 基础 findings 实现降权加工, 重建后对象身份改变, 按身份判定会把
+    # 基础检出误标为弱告警 (漏报); 按位置切片则受折叠删除导致的索引
+    # 漂移影响 (弱告警漏标成 FP). 字段标记随 dict 复制传递, 免疫重建.
+    for f in findings:
+        f['_rw_base'] = True
     # 阶段55: RW-CallCtxSaturation — 调用点饱和度计分 (对已有findings降权)
     findings = run_rw_call_ctx_saturation_bridge(pseudocode, func_name, binary_path, findings)
 
@@ -8409,6 +8440,14 @@ def run_innovation_pipeline(
     # 阶段106: RW-KarrAffineDiff — Karr仿射差判定 (产出+降权)
     findings = run_rw_karr_affine_diff_bridge(pseudocode, func_name, binary_path, findings)
 
+    # RW 阶段新注入的弱告警打标, 供证据融合阶段排除一致性提升.
+    # 仅标记带 source 字段的 (RW 模块统一带 source), 避免误标降权修改的原 findings.
+    # 按 _rw_base 字段判定新注入: 标记随 dict(f) 重建复制, 基础告警的
+    # 任何加工副本都携带标记不被误标, RW 新产出无标记正常打标.
+    for f in findings:
+        if not f.get('_rw_base') and f.get('source'):
+            f['rw_weak'] = True
+
     return findings
 
 
@@ -8419,24 +8458,24 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
     ('hofpr', lambda: __import__(
         'modules.exploit.src.analysis.hofpr', fromlist=['run_hofpr_pipeline'])),
     ('hfp', lambda: __import__(
-        'modules.hfp.hfp_engine', fromlist=['detect_heap_overflow_hfp'])),
+        'modules.hfp.alloc_aware_engine', fromlist=['detect_heap_overflow_hfp'])),
     ('acfpc', lambda: __import__(
-        'modules.vuln.src.heap.acfpc.acfpc_pipeline',
+        'modules.vuln.src.heap.acfpc.alloc_contract_pipeline',
         fromlist=['run_acfpc_pipeline'])),
     ('ddssc', lambda: __import__(
-        'modules.analysis.static.ddssc_coordinator',
+        'modules.analysis.static.size_corr_coordinator',
         fromlist=['DDSSCCoordinator'])),
     ('awsc', lambda: __import__(
         'modules.analysis.static.co_source_engine',
         fromlist=['AWSCEngine'])),
     ('cj_bvf', lambda: __import__(
-        'core.cj_bvf_filter', fromlist=['filter_by_bvf'])),
+        'core.constraint_value_flow_filter', fromlist=['filter_by_bvf'])),
     ('cj_pcbvf', lambda: __import__(
-        'core.cj_pcbvf_filter', fromlist=['filter_by_pcbvf'])),
+        'core.constraint_pc_value_flow_filter', fromlist=['filter_by_pcbvf'])),
     ('uaf_hoig', lambda: __import__(
-        'analysis.uaf_hoig_pipeline', fromlist=['UafHoigPipeline'])),
+        'analysis.uaf_obj_graph_pipeline', fromlist=['UafHoigPipeline'])),
     ('gapsbv', lambda: __import__(
-        'analysis.gapsbv_pipeline', fromlist=['detect_heap_overflow_gapsbv'])),
+        'analysis.affine_bound_pipeline', fromlist=['detect_heap_overflow_gapsbv'])),
     ('fmtprov', lambda: __import__(
         'analysis.fmt_verifier', fromlist=['verify_fmt_candidates'])),
     ('gasri', lambda: __import__(
@@ -8472,7 +8511,7 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
         'modules.analysis.static.bounded_write_recovery',
         fromlist=['BoundedWriteRecovery'])),
     ('dd_bvf', lambda: __import__(
-        'core.cj_bvf_solver_bridge', fromlist=['try_bvf_proof'])),
+        'core.constraint_value_flow_solver_bridge', fromlist=['try_bvf_proof'])),
     ('cacbv', lambda: __import__(
         'modules.vuln.detection.heap_analysis.acpe.verdict',
         fromlist=['evaluate', 'Verdict', 'AcpeVerdict'])),
@@ -8489,15 +8528,15 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
         'modules.vuln.detection.heap_analysis.fp_filter_v2',
         fromlist=['evaluate_finding'])),
     ('awsc_icf', lambda: __import__(
-        'modules.analysis.static.awsc_icf', fromlist=['InterproceduralCofluenceTracker'])),
+        'modules.analysis.static.alloc_write_icf', fromlist=['InterproceduralCofluenceTracker'])),
     ('hofpr_apc', lambda: __import__(
-        'modules.analysis.static.hofpr_apc', fromlist=['AdaptivePriorityCascade'])),
+        'modules.analysis.static.heap_fp_apc', fromlist=['AdaptivePriorityCascade'])),
     ('pcwbi_irl', lambda: __import__(
-        'modules.analysis.static.pcwbi_irl', fromlist=['InlineRepLoadModeler'])),
+        'modules.analysis.static.wbound_prov_irl', fromlist=['InlineRepLoadModeler'])),
     ('fc_vra_pta', lambda: __import__(
         'modules.info.analysis.fc_vra_pta', fromlist=['PointerTaintAliasTracker'])),
     ('cacbv_dss', lambda: __import__(
-        'modules.vuln.detection.heap_analysis.acpe.cacbv_dss',
+        'modules.vuln.detection.heap_analysis.acpe.capacity_bound_dss',
         fromlist=['DynamicSlackSubtractor'])),
     ('biv_ctc', lambda: __import__(
         'modules.patching.src.biv_ctc', fromlist=['CrossTypeConstraintPropagator'])),
@@ -8506,7 +8545,7 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
     ('pg_wbv_lsa', lambda: __import__(
         'modules.analysis.static.pg_wbv_lsa', fromlist=['LoopStructureAwareVerifier'])),
     ('acpe_vrp', lambda: __import__(
-        'modules.vuln.detection.heap_analysis.acpe.acpe_vrp',
+        'modules.vuln.detection.heap_analysis.acpe.alloc_capacity_vrp',
         fromlist=['ValueRangePropagationEnhancer'])),
     ('acfpc_cms', lambda: __import__(
         'modules.vuln.detection.acfpc_cms', fromlist=['ConflictAwareMultiSourceFuser'])),
@@ -8517,7 +8556,7 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
         'modules.vuln.src.heap.uaf_tovs.pipeline',
         fromlist=['analyze_uaf_tovs'])),
     ('mivr', lambda: __import__(
-        'analysis.mivr_pipeline',
+        'analysis.path_proof_pipeline',
         fromlist=['detect_heap_overflow_mivr'])),
     ('fstp', lambda: __import__(
         'analysis.fmt_semantic_taint',
@@ -8526,7 +8565,7 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
         'analysis.int_shift_impl',
         fromlist=['IntOverflowDetector'])),
     ('shield', lambda: __import__(
-        'modules.vuln.src.heap.shield_orchestrator',
+        'modules.vuln.src.heap.heap_shield_orchestrator',
         fromlist=['ShieldOrchestrator'])),
     ('int_range', _probe_int_range),
     ('drift', lambda: __import__(
@@ -8536,11 +8575,11 @@ _INNOVATION_PROBES: List[Tuple[str, Any]] = [
         'modules.vuln.src.format.fmt_spec_parser',
         fromlist=['parse_format_specs'])),
     ('pcwbi_orig', lambda: __import__(
-        'analysis.pcwbi_impl',
+        'analysis.wbound_prov_impl',
         fromlist=['WriteBoundInferer'])),
     ('fc_vra_orig', _probe_fc_vra_orig),
     ('cacbv_dss_orig', lambda: __import__(
-        'modules.vuln.detection.heap_analysis.acpe.cacbv_dss',
+        'modules.vuln.detection.heap_analysis.acpe.capacity_bound_dss',
         fromlist=['DynamicSlackSubtractor'])),
     ('sym_fp_filter', lambda: __import__(
         'modules.patching.src.heap_fp_filter',

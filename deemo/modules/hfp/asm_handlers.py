@@ -300,7 +300,7 @@ def handle_call(self, operands: str) -> None:
     if any(f in name for f in _FMT_FUNCS):
         # printf 族: 委托 hfp_fmt 的提取函数 (避免本模块超行数),
         # 生成 fmt(格式化串, 参数...) 伪 IR 行
-        from .hfp_fmt import fmt_extract_call
+        from .alloc_aware_fmt import fmt_extract_call
         fmt_extract_call(self, name)
         return
     if 'free' in name:

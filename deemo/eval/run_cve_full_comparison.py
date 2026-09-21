@@ -1,6 +1,6 @@
 """
 CVE堆溢出多工具对比实验 — 在14个编译成功的CVE样本上运行:
-  1. BinMind Full Pipeline (CJ+BVF+PC-BVF) — 源码分析
+  1. BinMind Full Pipeline (约束求解+后向值流+路径条件后向值流) — 源码分析
   2. Angr — CFG + 危险函数调用点
   3. Ghidra — headless分析
   4. QEMU — 用户模式执行

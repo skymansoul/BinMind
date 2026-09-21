@@ -1,6 +1,6 @@
-"""ACPE 分配容量模型 — ptmalloc2 可用容量 + 符号容量表达式.
+"""分配容量溯源模型 — ptmalloc2 可用容量 + 符号容量表达式.
 
-用途: ACPE(Allocator-Capacity Provenance Equivalence)的容量侧基础。
+用途: 分配容量溯源(Allocator-Capacity Provenance Equivalence)的容量侧基础。
       将 malloc 请求大小映射为分配器实际可用容量, 并区分三个概念:
         requested  用户请求字节数
         usable     分配器舍入后用户实际可用的字节数

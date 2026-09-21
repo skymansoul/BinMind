@@ -66,12 +66,12 @@ def run(verbose: bool = False) -> Dict[str, Any]:
         if not ir:
             continue
 
-        # Baseline: TARPS EnhancedUafDetector
+        # Baseline: Type-State Alias Reachability Verification EnhancedUafDetector
         base_cands = detector.detect(ir)
         base_detected = len(base_cands) > 0
 
-        # Ensemble: integrate temporal distance with TARPS confidence
-        # TARPS already does high-quality filtering (A-E stages).
+        # Ensemble: integrate temporal distance with Type-State Alias Reachability Verification confidence
+        # Type-State Alias Reachability Verification already does high-quality filtering (A-E stages).
         # Temporal distance MODULATES confidence rather than replacing.
         free_sites = []
         for c in base_cands:
@@ -86,7 +86,7 @@ def run(verbose: bool = False) -> Dict[str, Any]:
         # Build temporal lookup: ptr_name → exploitability
         ts_map = {td.ptr_name: td.exploitability for td in temporal_scores}
 
-        # Keep if: TARPS CONFIRMED with confidence > 0.50, OR
+        # Keep if: Type-State Alias Reachability Verification CONFIRMED with confidence > 0.50, OR
         #          temporal says high exploitability (> 0.60)
         kept = []
         for c in base_cands:
@@ -95,9 +95,9 @@ def run(verbose: bool = False) -> Dict[str, Any]:
             verdict = getattr(c, 'verdict', 'UNCERTAIN')
 
             if verdict == 'FILTERED':
-                continue  # Trust TARPS when it says filtered
+                continue  # Trust Type-State Alias Reachability Verification when it says filtered
 
-            # Combined: TARPS confidence weighted by temporal exploitability
+            # Combined: Type-State Alias Reachability Verification confidence weighted by temporal exploitability
             combined = tarps_conf * 0.60 + ts * 0.40
             if combined >= 0.40:
                 kept.append(c)

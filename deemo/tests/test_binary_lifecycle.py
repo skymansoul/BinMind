@@ -76,6 +76,7 @@ class TestTrendData(unittest.TestCase):
 
     def test_initialization(self):
         """increasing趋势: 5->8->10, 百分比100%"""
+        # 口径: 技术性参数/计算值, 非检测结果宣称
         trend = TrendData(
             metric_name="vulnerability_count",
             timestamps=[1000, 2000, 3000],

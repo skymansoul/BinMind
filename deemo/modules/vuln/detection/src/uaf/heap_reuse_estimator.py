@@ -5,7 +5,7 @@
       若同大小块频繁分配 (如 64B 的 HTTP header buffer), p 的 UAF 高度可利用。
       若该大小罕见, UAF 可能仅导致 crash 而非可控写。
 
-方法依据: UAFL 的 typestate 分析中,
+方法依据: UAF 生命周期验证的 typestate 分析中,
           "reallocation probability" 是评估 UAF 严重性的关键因子。
           本模块从反汇编中统计同大小 malloc 调用频率,
           估计 free 后窗口内的重用概率。

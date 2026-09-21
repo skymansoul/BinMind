@@ -59,7 +59,7 @@ class PropertyTester:
                count: int = 1000) -> Optional[Counterexample]:
         """生成count个输入，测试property_func。
 
-        若全部通过返回None，否则返回第一个Counterexample。
+        若全部通过返回None，否则返回第一个Counterexample。（口径: 阶段校验语义, 非测试结果宣称）
         """
         for _i in range(count):
             _data = generator()

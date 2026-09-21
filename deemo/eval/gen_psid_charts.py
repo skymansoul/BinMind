@@ -22,7 +22,7 @@ def load_results():
 
 
 def plot_micro_benchmark(micro):
-    """微基准: CJ vs CJ+Interval 对比柱状图."""
+    """微基准: 约束求解 vs 约束求解+Interval 对比柱状图."""
     if not micro:
         return
 

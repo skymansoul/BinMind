@@ -1,4 +1,4 @@
-"""GAPSBV 5阶段堆溢出检测: 区间-约束-循环-分配器-误报过滤, 附加仿射与污点追踪。"""
+"""仿射边界验证 (Affine Bound Verification) 5阶段堆溢出检测: 区间-约束-循环-分配器-误报过滤, 附加仿射与污点追踪。"""
 import re
 import time
 from dataclasses import dataclass, field

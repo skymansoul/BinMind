@@ -18,6 +18,117 @@ from typing import Dict, List, Optional
 
 _MODES = ["SAFE", "OVERFLOW", "UNKNOWN", "CONFLICT", "FILTERED"]
 
+# C 风格 if-clamp 守卫: if (x > K) x = K; / if (x >= K) x = K - 1;
+# 支持单行/多行/带块写法, re.DOTALL 允许空白跨行
+_CLAMP_RE = re.compile(
+    r"if\s*\(\s*(\w+)\s*(>|>=)\s*(\d+)\s*\)\s*\{?\s*"
+    r"\1\s*=\s*(\d+)(\s*-\s*1)?\s*;?\s*\}?",
+    re.DOTALL,
+)
+
+
+def _c_clamp_bounds(pseudocode: str) -> Dict[str, int]:
+    """识别 if-clamp 守卫并返回变量上界 {变量: 上界}.
+
+    形如 if (x > K) x = K; 把 x 上界收敛为 K; if (x >= K) x = K - 1;
+    上界为 K-1. 返回的上界供长度-分配相容比较使用, 避免把已钳制的
+    符号长度误判为越界.
+    """
+    bounds: Dict[str, int] = {}
+    for m in _CLAMP_RE.finditer(pseudocode):
+        var, op, imm_str, assign_str, minus1 = (
+            m.group(1), m.group(2), m.group(3), m.group(4), m.group(5))
+        upper = int(imm_str) - 1 if op == ">=" else int(imm_str)
+        assign_val = int(assign_str) - 1 if minus1 else int(assign_str)
+        bounds[var] = min(upper, assign_val)
+    return bounds
+
+
+def _c_parse_alloc(pseudocode: str):
+    """C 风格分配解析: 返回 (变量名, 常量大小或None, (符号变量, 乘数) 或None)."""
+    m = re.search(r"(\w+)\s*=\s*(?:\([^)]*\)\s*)?malloc\s*\(\s*(\d+)\s*\)", pseudocode)
+    if m:
+        return m.group(1), int(m.group(2)), None
+    m = re.search(r"(\w+)\s*=\s*(?:\([^)]*\)\s*)?malloc\s*\(\s*(\w+)\s*\*\s*(\d+)\s*\)", pseudocode)
+    if m:
+        return m.group(1), None, (m.group(2), int(m.group(3)))
+    m = re.search(r"(\w+)\s*=\s*(?:\([^)]*\)\s*)?malloc\s*\(\s*(\w+)\s*\)", pseudocode)
+    if m:
+        return m.group(1), None, (m.group(2), 1)
+    return None
+
+
+def _c_source_a(pseudocode: str, alloc_var) -> Dict[str, float]:
+    """C 风格证据源 A: 写模式与分配关系."""
+    mass: Dict[str, float] = {}
+    has_write = bool(re.search(r"\bmemcpy\s*\(\s*" + re.escape(alloc_var) + r"\b", pseudocode)) or bool(re.search(r"\b" + re.escape(alloc_var) + r"\[", pseudocode))
+    if has_write:
+        mass["OVERFLOW"] = 0.45
+    # 守卫存在
+    if re.search(r"if\s*\([^)]*\)", pseudocode):
+        mass["SAFE"] = mass.get("SAFE", 0.0) + 0.20
+    total = sum(mass.values())
+    if total < 1.0:
+        mass["UNKNOWN"] = 1.0 - total
+    return mass
+
+
+def _c_source_b(pseudocode: str, alloc_var, alloc_const, alloc_sym,
+                clamp_bounds: Dict[str, int] = None) -> Dict[str, float]:
+    """C 风格证据源 B: 写偏移/写大小 vs 分配边界.
+
+    clamp_bounds: if-clamp 守卫收敛后的变量上界, 用于把符号长度
+    (如 memcpy 第三参为变量) 与分配大小做相容比较.
+    """
+    mass: Dict[str, float] = {}
+    if clamp_bounds is None:
+        clamp_bounds = {}
+    # memcpy 写大小 vs 常量分配
+    m_mc = re.search(r"\bmemcpy\s*\(\s*" + re.escape(alloc_var) + r"\s*,\s*\w+\s*,\s*(\d+)\s*\)", pseudocode)
+    if m_mc and alloc_const is not None:
+        sz = int(m_mc.group(1))
+        if sz <= alloc_const:
+            mass["SAFE"] = mass.get("SAFE", 0.0) + 0.55
+        else:
+            mass["OVERFLOW"] = mass.get("OVERFLOW", 0.0) + 0.55
+    # memcpy 写大小为符号变量, 配合 if-clamp 守卫收敛后比较
+    m_mc_sym = re.search(
+        r"\bmemcpy\s*\(\s*" + re.escape(alloc_var) + r"\s*,\s*\w+\s*,\s*(\w+)\s*\)",
+        pseudocode)
+    if m_mc_sym and not m_mc:
+        size_var = m_mc_sym.group(1)
+        # 分配大小也是符号变量 (malloc(var) 形式)
+        if alloc_sym is not None and alloc_sym[0] == size_var:
+            # 写长度与分配长度同变量, 天然相容
+            mass["SAFE"] = mass.get("SAFE", 0.0) + 0.55
+        # 写长度被 if-clamp 钳到上界, 分配大小也用同变量或更小上界
+        elif size_var in clamp_bounds:
+            clamped = clamp_bounds[size_var]
+            if alloc_const is not None and clamped <= alloc_const:
+                # 钳制后长度 <= 常量分配 => 相容
+                mass["SAFE"] = mass.get("SAFE", 0.0) + 0.55
+            elif alloc_sym is not None and alloc_sym[0] == size_var:
+                mass["SAFE"] = mass.get("SAFE", 0.0) + 0.55
+            else:
+                mass["OVERFLOW"] = mass.get("OVERFLOW", 0.0) + 0.55
+    # 下标写偏移
+    m_idx = re.search(r"\b" + re.escape(alloc_var) + r"\[\s*(\w+)\s*\+\s*(\d+)\s*\]\s*=", pseudocode)
+    if m_idx and alloc_sym is not None:
+        if m_idx.group(1) == alloc_sym[0]:
+            mass["OVERFLOW"] = mass.get("OVERFLOW", 0.0) + 0.55
+    # 归纳变量直接下标 + n*mul 分配
+    m_loop = re.search(r"for\s*\(\s*(\w+)\s*=\s*\d+\s*;\s*\1\s*<\s*(\w+)\s*;", pseudocode)
+    m_direct = re.search(r"\b" + re.escape(alloc_var) + r"\[\s*(\w+)\s*\]\s*=", pseudocode)
+    if m_loop and m_direct and alloc_sym is not None:
+        if m_loop.group(2) == alloc_sym[0] and m_direct.group(1) == m_loop.group(1):
+            mass["SAFE"] = mass.get("SAFE", 0.0) + 0.55
+    if not mass:
+        mass["UNKNOWN"] = 0.6
+    total = sum(mass.values())
+    if total < 1.0:
+        mass["UNKNOWN"] = mass.get("UNKNOWN", 0.0) + (1.0 - total)
+    return mass
+
 
 def _evidence_source_a(pseudocode: str, line: str) -> Dict[str, float]:
     """证据源 A: 静态分析证据 (模式匹配构建 mass)."""
@@ -122,6 +233,34 @@ def run_five_modal_ds_theory(
     """双源五模态 D-S 证据组合. 返回 findings."""
     findings: List[dict] = []
 
+    # C 风格优先
+    c_alloc = _c_parse_alloc(pseudocode)
+    if c_alloc is not None:
+        alloc_var, alloc_const, alloc_sym = c_alloc
+        # 提取 if-clamp 守卫收敛的变量上界, 供 source_b 做长度-分配相容比较
+        clamp_bounds = _c_clamp_bounds(pseudocode)
+        source_a = _c_source_a(pseudocode, alloc_var)
+        source_b = _c_source_b(
+            pseudocode, alloc_var, alloc_const, alloc_sym, clamp_bounds)
+        if source_a or source_b:
+            combined = _combine(source_a, source_b)
+            dom = max(combined, key=combined.get)
+            conf = round(combined[dom], 2)
+            verdict = "ds_" + dom.lower()
+            findings.append({
+                "type": "heap_overflow",
+                "function": func_name or "unknown",
+                "severity": "medium",
+                "cwe": "CWE-122",
+                "confidence": conf,
+                "description": f"source_a={source_a} source_b={source_b} "
+                               f"combined={combined} dominant={dom} mode=c",
+                "verdict": verdict,
+                "source": "five_modal_ds_theory",
+            })
+            return findings
+
+    # 汇编风格回退
     # 分配大小
     alloc_size = None
     m_alloc = re.search(r"(?:malloc|calloc|realloc)\s*\(\s*(\d+)", pseudocode)
@@ -153,7 +292,7 @@ def run_five_modal_ds_theory(
             "cwe": "CWE-122",
             "confidence": conf,
             "description": f"line{ln} source_a={source_a} source_b={source_b} "
-                           f"combined={combined} dominant={dom}",
+                           f"combined={combined} dominant={dom} mode=asm",
             "verdict": verdict,
             "source": "five_modal_ds_theory",
         })

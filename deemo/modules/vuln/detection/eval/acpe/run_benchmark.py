@@ -1,4 +1,4 @@
-"""多工具对比主实验 — ACPE vs 基线 vs angr vs qemu vs ghidra.
+"""多工具对比主实验 — 分配容量溯源 vs 基线 vs angr vs qemu vs ghidra.
 
 对所有样本(plain/packed 两档)调用全部工具, 输出统一 CSV:
   tool, sample_id, detected, fp, fn, elapsed_sec, peak_mem_mb

@@ -37,6 +37,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
+import { ElMessage } from 'element-plus'
 import { listProjects, createProject } from '@/api'
 import type { ProjectItem } from '@/types'
 
@@ -49,7 +50,7 @@ const loadProjects = async () => {
     const r = await listProjects()
     if (r?.success) {
       const raw = r.data
-      if (raw) {
+      if (Array.isArray(raw)) {
         projects.value = raw as ProjectItem[]
       } else {
         projects.value = []
@@ -76,15 +77,22 @@ const onCreate = async () => {
   }
 
   try {
-    await createProject(create_data)
+    const resp = await createProject(create_data)
 
-    newProject.name = ''
-    newProject.binary_path = ''
-    showCreate.value = false
+    if (resp?.success) {
+      newProject.name = ''
+      newProject.binary_path = ''
+      showCreate.value = false
+      ElMessage.success('项目已创建')
 
-    await loadProjects()
-  } catch (err) {
-    // 保留用户输入
+      await loadProjects()
+    } else {
+      ElMessage.error(resp?.message || '创建项目失败')
+    }
+  } catch (err: any) {
+    // 创建失败: 保留用户输入以便修改重试
+    const detail = err?.response?.data?.detail
+    ElMessage.error(typeof detail === 'string' ? detail : (err?.message || '创建项目失败'))
   }
 }
 

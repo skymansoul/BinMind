@@ -1,7 +1,7 @@
 """
 回归测试 — 一键入口.
 
-执行链路: 编译全部样本 → HFP 扫描 → 基线对比 → 收集报告 →
+执行链路: 编译全部样本 → 分配器感知过滤 扫描 → 基线对比 → 收集报告 →
 输出 JSON/CSV 与汇总. 退出码: 0=成功, 1=存在编译失败.
 
   python -m regression.run_regression
@@ -28,7 +28,7 @@ def main() -> int:
     print(f"[compile] ok={manifest['ok']}/{manifest['total']} "
           f"failed={manifest['failed']}")
 
-    # 2. HFP 扫描
+    # 2. 分配器感知过滤 扫描
     sched = ScanScheduler()
     results = sched.scan_manifest(manifest)
     stats = summarize(results)

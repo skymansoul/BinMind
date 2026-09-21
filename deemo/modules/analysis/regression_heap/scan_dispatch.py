@@ -1,6 +1,6 @@
 # 扫描调度模块 - 单样本扫描执行器.
 # 对单个二进制执行反汇编 + 调用目标解析 + 堆溢出检测(finalize),
-# 支持 BWR/PCST 开/关的消融, 返回结构化结果与统计.
+# 支持 有界写恢复 (Bounded Write Recovery)/路径条件敏感污点 (Path-Condition Sensitive Taint) 开/关的消融, 返回结构化结果与统计.
 
 import sys
 import time

@@ -5,10 +5,10 @@ PTASM 引擎 — Pointer Temporal Automaton State Machine 核心.
 分支处 fork, 汇合处 join. 仅在全体路径证明安全时 FILTER.
 
 与现有UAF模块的关系:
-  - uaf_verifier.py (TARPS): 五阶段正则模式匹配 → 置信度调整
+  - uaf_verifier.py (时序-别名-可达-路径验证 (Type-State Alias Reachability Verification)): 五阶段正则模式匹配 → 置信度调整
   - uaf_path_verifier.py: CFG可达性 (free块→use块 BFS)
   - 本模块: 形式化状态机 + 路径敏感状态传播 + 别名等价类
-  - 三者互补: TARPS做粗筛 → path_verifier做CFG分析 → PTASM做精确判定
+  - 三者互补: 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 做粗筛 → path_verifier做CFG分析 → PTASM做精确判定
 
 方法:
   1. 从C/伪代码构建简化CFG (复用 uaf_cfg_builder 或自建)

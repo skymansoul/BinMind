@@ -57,25 +57,57 @@ def run_ptr_union_closure(
     alloc_vars = re.findall(
         r"\b(\w+)\s*=\s*(?:\([^)]*\)\s*)?(?:malloc|calloc|realloc)\s*\(",
         pseudocode)
+    # 无分配记录时, 所有写目标均无来源 -> cross_buffer_fp
     if not alloc_vars:
+        for ln, line in enumerate(pseudocode.splitlines(), 1):
+            write_var = None
+            m_c = re.search(r"(\w+)\[([^\]]*)\]\s*=", line)
+            if m_c:
+                write_var = m_c.group(1)
+            else:
+                m_asm = re.search(r"\[\s*(\w+)\s*(\+\s*\w+)?\]\s*=", line)
+                if m_asm:
+                    write_var = m_asm.group(1)
+            if not write_var:
+                continue
+            findings.append({
+                "type": "heap_overflow",
+                "function": func_name or "unknown",
+                "severity": "medium",
+                "cwe": "CWE-122",
+                "confidence": 0.2,
+                "description": f"line{ln} write={write_var} no_alloc -> cross_buffer_fp",
+                "verdict": "cross_buffer_fp",
+                "source": "ptr_union_closure",
+            })
         return findings
     root_alloc = uf.find(alloc_vars[0])
     for ln, line in enumerate(pseudocode.splitlines(), 1):
-        m = re.search(r"\[\s*(\w+)\s*(\+\s*\w+)?\]\s*=", line)
-        if not m:
+        write_var = None
+        # C 风格下标写: buf[expr] = val -> 写目标为 buf
+        m_c = re.search(r"(\w+)\[([^\]]*)\]\s*=", line)
+        if m_c:
+            write_var = m_c.group(1)
+        else:
+            # 汇编风格: [ptr+off] = val -> 写目标为 ptr
+            m_asm = re.search(r"\[\s*(\w+)\s*(\+\s*\w+)?\]\s*=", line)
+            if m_asm:
+                write_var = m_asm.group(1)
+        if not write_var:
             continue
-        write_var = m.group(1)
         same = uf.same(write_var, alloc_vars[0])
-        verdict = "same_set" if same else "cross_buffer_fp"
+        # same_set 不注入, 仅 cross_buffer_fp 降权产出
+        if same:
+            continue
         findings.append({
             "type": "heap_overflow",
             "function": func_name or "unknown",
             "severity": "medium",
             "cwe": "CWE-122",
-            "confidence": 0.2 if not same else 0.8,
+            "confidence": 0.2,
             "description": f"line{ln} write={write_var} root={root_alloc} "
                            f"same_set={same}",
-            "verdict": verdict,
+            "verdict": "cross_buffer_fp",
             "source": "ptr_union_closure",
         })
     return findings

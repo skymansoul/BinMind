@@ -1,6 +1,6 @@
 \begin{table}[htbp]
 \centering
-\caption{DFC-PV Ablation Study (31 samples)}
+\caption{DFC-PV Ablation Study (31 samples) Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:dfc_pv_ablation}
 \begin{tabular}{lrrrrrrrr}
 \toprule
@@ -8,8 +8,8 @@ Config & TP & FP & TN & FN & P & R & F1 & FPR \\
 \midrule
   A0_Baseline & 24 & 4 & 2 & 1 & 0.8571 & 0.9600 & 0.9057 & 0.6667 \\
   A1_AOI & 16 & 2 & 4 & 9 & 0.8889 & 0.6400 & 0.7442 & 0.3333 \\
-  A2_PathSafety & 15 & 0 & 6 & 10 & 1.0000 & 0.6000 & 0.7500 & 0.0000 \\
-  A3_Full & 25 & 0 & 6 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+  A2_PathSafety & 15 & 0 & 6 & 10 & 1.0000 & 0.6000 & 0.7500 & 0.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。
+  A3_Full & 25 & 0 & 6 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实。
 \bottomrule
 \end{tabular}
 \end{table}

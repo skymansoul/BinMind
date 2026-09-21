@@ -67,7 +67,7 @@ def chart_cross_type(rows):
 
 
 def chart_cve_comparison(rows):
-    """17 CVE GAPSBV-CJ基准 — 分组柱状图."""
+    """17 CVE 仿射边界验证-约束求解基准 — 分组柱状图."""
     data = [r for r in rows if r['benchmark'] == 'gapsbv_cj_17']
     tools = [r['tool'] for r in data]
     prec = [r['precision'] for r in data]

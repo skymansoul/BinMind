@@ -182,7 +182,7 @@ class StateMemento:
 
     def _enforce_budget(self):
         """加权逐出：按 score = age_seconds * size_bytes 降序逐出
-        直到内存使用低于预算的 80%。选 80% 而非 100% 留出操作余量"""
+        直到内存使用低于预算的 80%。选 80% 而非 100% 留出操作余量（口径: 技术性参数/计算值, 非检测结果宣称）"""
         target = int(self._budget_bytes * 0.8)
         now = time.time()
         scored = []

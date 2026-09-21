@@ -16,7 +16,7 @@ from config import (
     SUBPROCESS_TIMEOUT, ensure_dirs, _is_enabled, DB_PATH,
 )
 from core.binary_info import get_binary_info, validate_binary
-from core.decompiler import list_functions, decompile_function, ai_analyze_function
+from core.decompiler import list_functions, decompile_function, ai_analyze_function, get_callees
 from core.symexec import run_symbolic, check_angr, find_buffer_overflow
 from core.crash_analysis import load_crash_file, analyze_crash_for_exploit
 from core.exploit_gen import generate_exploit
@@ -269,6 +269,38 @@ def run_pipeline(
         _step_end(_sid_bp, 'failed', error_message=str(_e))
         logger.warning("Binary profile failed: %s", _e)
 
+    # LLM 可达性探测 — pipeline 启动时探测配置的 AI 后端, 显式标记降级状态
+    _llm_reachable = False
+    _sid_llm_probe = _step_begin(run_id, 'llm_probe')
+    try:
+        import urllib.request as _urllib_req
+        _ai_provider = os.environ.get('AI_PROVIDER', 'ollama')
+        if _ai_provider == 'ollama':
+            _ollama_base = os.environ.get('OLLAMA_BASE_URL',
+                                           'http://localhost:11434/v1')
+            # 健康检查端点: 去掉 /v1 后缀, 追加 /api/tags
+            _health_url = _ollama_base.rstrip('/').replace('/v1', '') + '/api/tags'
+            try:
+                _req = _urllib_req.Request(_health_url, method='GET')
+                _resp = _urllib_req.urlopen(_req, timeout=3)
+                _llm_reachable = _resp.status == 200
+            except Exception:
+                _llm_reachable = False
+        elif _ai_provider in ('openai', 'custom', 'deepseek'):
+            _llm_reachable = bool(
+                os.environ.get('OPENAI_API_KEY') or
+                os.environ.get('CUSTOM_API_KEY'))
+        binfo['llm_reachable'] = _llm_reachable
+        binfo['ai_provider'] = _ai_provider
+        _step_end(_sid_llm_probe, 'success',
+                  output_summary=f'provider={_ai_provider} reachable={_llm_reachable}')
+        if not _llm_reachable:
+            logger.warning("LLM backend unreachable (provider=%s), "
+                           "AI analysis will degrade to simulation", _ai_provider)
+    except Exception as _e:
+        _step_end(_sid_llm_probe, 'failed', error_message=str(_e))
+        logger.debug("LLM probe failed: %s", _e)
+
     # unpacking
     if ENABLE_UNPACK:
         ctx = hook_mgr.run('pre_decompile', ctx)
@@ -299,7 +331,35 @@ def run_pipeline(
                     'process', 'parse', 'handle', 'init')
         target_funcs = [f for f in priority if f in all_funcs]
         if not target_funcs:
+            # radare2 符号函数名带 sym. 前缀(如 sym.main), 裸名匹配
+            # 失败会回退到按地址序取前 N 个 — mingw 二进制前 N 个
+            # 全是 CRT 启动函数, 样本 main 永远不会被分析, 全量评测
+            # 的"检出"退化为 CRT 无差别启发式告警. 剥离一层符号前缀
+            # 后按 priority 顺序回配原始函数名.
+            by_stripped = {}
+            for f in all_funcs:
+                stripped = f.split('.')[-1] if '.' in f else f
+                by_stripped.setdefault(stripped, f)
+            target_funcs = [by_stripped[p] for p in priority
+                            if p in by_stripped]
+        if not target_funcs:
             target_funcs = all_funcs[:max_funcs]
+
+    # 扩展 target_funcs: 追加入口函数的直接被调用者
+    # 覆盖漏洞代码在 main 调用的子函数中的场景(如 multi_buffers, do_work)
+    if target_funcs and len(target_funcs) < max_funcs:
+        existing = set(target_funcs)
+        for tf in list(target_funcs):
+            callees = _run_with_timeout(get_callees, 60, binary_path, tf, all_funcs)
+            if callees:
+                for c in callees:
+                    if c not in existing and c in all_funcs:
+                        target_funcs.append(c)
+                        existing.add(c)
+                        if len(target_funcs) >= max_funcs:
+                            break
+            if len(target_funcs) >= max_funcs:
+                break
 
     target_funcs = target_funcs[:max_funcs]
     _project_state.current_step = 'function_discovery'
@@ -484,6 +544,16 @@ def run_pipeline(
                     _degraded_used = 'symexec.find_buffer_overflow'
             except Exception as _derr:
                 logger.debug("Degraded symexec (find_buffer_overflow) failed: %s", _derr)
+            if _degraded_used is None:
+                # Z3 轻量约束求解 — 比纯关键词匹配更接近真实符号执行
+                try:
+                    from core.symexec import z3_symbolic_check
+                    _z3_result = z3_symbolic_check(binary_path, decomp_results)
+                    if _z3_result and _z3_result.get('overflow_points'):
+                        sym_result = _z3_result
+                        _degraded_used = 'z3_symbolic_check'
+                except Exception as _z3_err:
+                    logger.debug("Z3 symbolic check failed: %s", _z3_err)
             if _degraded_used is None:
                 # 基于伪代码的规则化路径约束分析作为最终降级
                 _rule_constraints = []
@@ -705,12 +775,19 @@ def run_pipeline(
             logger.warning("Rule detectors failed: %s", err)
         finally:
             # 创新模块管线 — 在基础检测器产出rule_findings后,
-            # 调用HOFPR/HFP/ACFPC/DDSSC/AWSC/CJ-BVF/CJ-PCBVF七大创新模块
+            # 调用堆溢出误报抑制 (Heap Overflow False-Positive Reduction)/分配器感知过滤 (Allocator-Aware Filtering)/分配契约流保持 (Allocation Contract Flow Preservation)/按需符号尺寸关联 (Demand-Driven Symbolic Size Correlation)/同源分配-写关联 (Allocation-Write Co-Sourcing)/约束求解-后向值流 (Constraint Solving - Backward Value Flow)/约束求解-路径条件后向值流 (Constraint Solving - Path-Conditioned Backward Value Flow) 七大创新模块
             # 做增量检测与误报抑制. 各模块独立try/except, 互不影响.
             if rule_findings and _is_enabled('ENABLE_INNOVATION_PIPELINE',
                                              default='true'):
                 try:
                     from core.innovation_bridge import run_innovation_pipeline
+                    # 固化基础检测器的原始判定: 创新阶段(eval_harness_replica/
+                    # demand_trigger_budget 等二十余个)会把 verdict 改写为各种
+                    # 中间态(consistent/lightweight/downgraded...), 原始判定
+                    # 保存到 verdict_original, 供计数层按原语义豁免, 避免
+                    # 基础检出(intof LIKELY 等)被改写后误杀成漏报
+                    for _f in rule_findings:
+                        _f.setdefault('verdict_original', _f.get('verdict'))
                     # 对每个函数的伪代码执行创新模块管线
                     _innov_findings = []
                     for r in decomp_results:
@@ -754,6 +831,12 @@ def run_pipeline(
     for r in decomp_results:
         analysis = r.get('analysis', r)
         for v in analysis.get('vulnerabilities', []):
+            # 启发式模拟判定 (simulation=True, 来自 _DANGER_PATTERNS 的
+            # 危险函数模式提示) 不构成真实检出: 任何 malloc/memcpy 都会被
+            # 报"需检查整数溢出/长度参数", 与上下文无关, 会把 guard 保护
+            # 的 safe 样本判成漏洞. 模拟提示不进入 all_vulns 计数.
+            if v.get('simulation') or analysis.get('simulation'):
+                continue
             all_vulns.append(v)
             _seen.add((r.get('function_name', r.get('function', '?')),
                        v.get('type', '?')))
@@ -770,6 +853,45 @@ def run_pipeline(
         key = (v.get('function_name', '?'), v.get('type', '?'))
         if key in _seen:
             continue
+        # RW 弱告警 (rw_weak=True, 来自 color_class_quad/provenance_octagon
+        # 等创新模块的 UNKNOWN 域写提示) 是线索不是判定, 不计入漏洞检出
+        if v.get('rw_weak'):
+            continue
+        # UNCERTAIN 整数溢出 (区间分析无法确定 result_hi, 保守保留供人工
+        # 复核) 不是证据确凿的检出, 与 rw_weak 同性质, 不计入漏洞计数
+        if v.get('type') in ('integer-overflow', 'integer_overflow') \
+                and v.get('verdict') == 'UNCERTAIN':
+            continue
+        # 契约折叠摘要的计数语义已随身份继承修正: contract_preserve_fold
+        # 折叠时复用组内第一个成员的原对象并保留原 verdict, 组代表的
+        # 计数语义与组内成员一致 (基础检出照常计数, UNCERTAIN 仍由上一
+        # 条过滤). 仅当 verdict 被显式置为 folded (历史标记) 时不计数,
+        # 不再按 description 关键字匹配 — 描述含 folded 的代表条目可能
+        # 承载基础检出, 按关键字过滤会把它误杀成漏报.
+        if v.get('verdict') == 'folded':
+            continue
+        # 跨链别名分析的安全结论 (same_chain_safe, reason=alloc 和 write
+        # 同链判安全) 是安全性证明而非漏洞; 姊妹条目 cross_chain_alert
+        # 是可疑告警, 保留. 安全判定混入漏洞计数会造成纯虚增 TP.
+        if v.get('type') == 'same_chain_safe':
+            continue
+        # 创新模块 (contract_preserve_fold/INT-RANGE 编排器等) 注入的中间态
+        # 条目使用基础词表外的 verdict (lightweight/beyond_minsize/
+        # unknown_color 等)标记折叠或降级结论, 不构成确凿检出. 基础检测器
+        # 的 verdict (CONFIRMED/LIKELY/POSSIBLE/DEFINITE/UNCERTAIN) 与
+        # heap 分析的 SAFE/overflow 才有计数语义; 未设 verdict(None) 的
+        # 基础检测器条目不受影响.
+        _bv = v.get('verdict')
+        if _bv is not None and _bv not in (
+                'CONFIRMED', 'LIKELY', 'POSSIBLE', 'DEFINITE', 'UNCERTAIN',
+                'overflow', 'safe', 'FILTERED'):
+            # demand_trigger_budget 等阶段会把 verdict 改写为预算分类,
+            # 改写前的原始判定保留在 verdict_original: 原判定在词表内的
+            # 基础检出按原语义计数, 不因预算分类被误杀
+            if v.get('verdict_original') not in (
+                    'CONFIRMED', 'LIKELY', 'POSSIBLE', 'DEFINITE',
+                    'UNCERTAIN', 'overflow', 'safe', 'FILTERED'):
+                continue
         _seen.add(key)
         all_vulns.append(v)
         _ps = None
@@ -971,6 +1093,60 @@ if __name__ == "__main__":
         except Exception as err:
             logger.warning("PoC generation failed: %s", err)
 
+    # 远程交互利用 — ENABLE_POC_REMOTE=1 时通过 socket 向远程目标发送 PoC 载荷
+    # 纯 Python socket 实现, 不依赖 pwntools remote()
+    _remote_interaction_result = None
+    if _is_enabled('ENABLE_POC_REMOTE') and all_vulns:
+        _sid_remote = _step_begin(run_id, 'remote_interaction')
+        try:
+            from core.remote_interaction import (
+                probe_remote_target, execute_remote_payload,
+            )
+            _remote_host = os.environ.get('BINMIND_REMOTE_HOST', '')
+            _remote_port_raw = os.environ.get('BINMIND_REMOTE_PORT', '0')
+            try:
+                _remote_port = int(_remote_port_raw)
+            except (TypeError, ValueError):
+                _remote_port = 0
+            if _remote_host and _remote_port > 0:
+                _probe = probe_remote_target(_remote_host, _remote_port)
+                if _probe['reachable']:
+                    _remote_results = []
+                    for v in all_vulns[:5]:
+                        _payload = b'A' * 1000
+                        if v.get('type') == 'format-string':
+                            _payload = b'%p %p %x %n'.ljust(256, b'\x00')
+                        elif v.get('type') in ('heap-overflow', 'use-after-free'):
+                            _payload = b'\x00' * 64 + b'A' * 256
+                        _r = execute_remote_payload(
+                            _remote_host, _remote_port, _payload, timeout=5)
+                        _remote_results.append({
+                            'vuln_type': v.get('type', '?'),
+                            'success': _r['success'],
+                            'response_len': len(_r.get('response_data', b'')),
+                            'error': _r.get('error', ''),
+                        })
+                    _remote_interaction_result = _remote_results
+                    _step_end(_sid_remote, 'success',
+                              output_summary=f'{len(_remote_results)} payloads sent')
+                    logger.info("Remote interaction: %d payloads sent to %s:%d",
+                                len(_remote_results), _remote_host, _remote_port)
+                else:
+                    _step_end(_sid_remote, 'skipped',
+                              output_summary=f'target unreachable: {_remote_host}:{_remote_port} '
+                                             f'({ _probe.get("error", "")})')
+                    logger.info("Remote target unreachable: %s:%d",
+                                _remote_host, _remote_port)
+            else:
+                _step_end(_sid_remote, 'skipped',
+                          output_summary='no remote target configured')
+        except ImportError:
+            _step_end(_sid_remote, 'skipped',
+                      output_summary='remote_interaction module not available')
+        except Exception as _re_err:
+            _step_end(_sid_remote, 'failed', error_message=str(_re_err))
+            logger.warning("Remote interaction failed: %s", _re_err)
+
     # 钩子 B - 报告增强消费规则发现: ENABLE_REPORT_ENHANCEMENT=1 时
     # 生成 logs/report_enhance_<run_id>.json, 默认关闭
     if _is_enabled('ENABLE_REPORT_ENHANCEMENT'):
@@ -1104,10 +1280,76 @@ if __name__ == "__main__":
             _step_end(_sid, 'failed', error_message=str(err))
             raise
 
-    # fuzz harness 生成 - 默认尝试生成, 但不执行; --fuzz 显式关闭的除外
+    # 自动 exploit 生成 — 检测到高危漏洞时即使无 crash 数据也生成利用脚本草稿
+    # 申报书"漏洞检测→利用生成"闭环不依赖外部 --crash 参数
+    if not exploit_result and all_vulns:
+        _high_vulns = [v for v in all_vulns
+                       if v.get('severity') in ('High', 'Critical')]
+        if _high_vulns:
+            _sid_auto_exploit = _step_begin(run_id, 'auto_exploit_gen')
+            try:
+                _top_vuln = _high_vulns[0]
+                _auto_crash = {
+                    'crash_type': _top_vuln.get('type', 'stack-buffer-overflow'),
+                    'severity': _top_vuln.get('severity', 'High'),
+                    'offset': _top_vuln.get('offset'),
+                    'raw': _top_vuln.get('description', ''),
+                }
+                _exploit_output_dir = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    'exploits')
+                os.makedirs(_exploit_output_dir, exist_ok=True)
+                exploit_result = generate_exploit(
+                    binfo, _auto_crash, output_dir=_exploit_output_dir)
+                _step_end(_sid_auto_exploit, 'success',
+                          output_summary=f'auto-generated for {_top_vuln.get("type", "?")}')
+                logger.info("Auto exploit generated for high-severity finding: %s",
+                            _top_vuln.get('type', '?'))
+            except Exception as _ae:
+                _step_end(_sid_auto_exploit, 'failed', error_message=str(_ae))
+                logger.warning("Auto exploit generation failed: %s", _ae)
+
+    # LLM 反馈迭代环接入主流程 — 有 exploit 脚本时调用 run_feedback_loop
+    # 申报书"反馈给模型 + 人工复核"闭环在主 analyze 流程中执行, 不依赖 feedback 子命令
+    feedback_result = None
+    if exploit_result and exploit_result.get('success') and \
+            _is_enabled('ENABLE_FEEDBACK_LOOP', default='true'):
+        _sid_fb = _step_begin(run_id, 'feedback_loop')
+        try:
+            from core.feedback_loop import run_feedback_loop
+            _initial_script = exploit_result.get('script_content', '')
+            if _initial_script:
+                _fb_output_dir = os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                    'logs', 'feedback')
+                os.makedirs(_fb_output_dir, exist_ok=True)
+                # 主流程默认 dry-run 沙箱; ENABLE_FEEDBACK_LOOP_EXEC=1 时允许真实执行
+                _fb_sandbox = 'dry-run'
+                if _is_enabled('ENABLE_FEEDBACK_LOOP_EXEC'):
+                    _fb_sandbox = 'subprocess'
+                feedback_result = run_feedback_loop(
+                    binary_path, _initial_script, binfo=binfo,
+                    output_dir=_fb_output_dir,
+                    max_iterations=3,
+                    sandbox=_fb_sandbox,
+                    gate_timeout=30.0,
+                )
+                _fb_status = 'succeeded' if feedback_result.get('success') else 'exhausted'
+                _step_end(_sid_fb, 'success',
+                          output_summary=f'{_fb_status} iters={feedback_result.get("iterations", 0)}')
+                logger.info("Feedback loop: %s after %d iterations",
+                            _fb_status, feedback_result.get('iterations', 0))
+        except Exception as _fb_err:
+            _step_end(_sid_fb, 'failed', error_message=str(_fb_err))
+            logger.warning("Feedback loop failed: %s", _fb_err)
+
+    # fuzz harness 生成 - 显式 --fuzz 开启才执行
+    # 2026-09-16 审计修正: 原门控 fuzz or ENABLE_FUZZ_HARNESS_GEN(default true)
+    # 使签名默认 fuzz=False 也恒为真, 50 轮变异执行(每轮 timeout=10s)对
+    # 喂垃圾 stdin 不退出的交互样本(io_loop_counter)实测拖满 500s;
+    # 签名语义恢复为显式开启, CLI --fuzz 走原路径不受影响
     fuzz_result = None
-    if (fuzz or _is_enabled('ENABLE_FUZZ_HARNESS_GEN', default='true')) and \
-            _scheduler_decision.get('fuzz', True):
+    if fuzz and _scheduler_decision.get('fuzz', True):
         _sid_fuzz = _step_begin(run_id, 'fuzz_harness')
         try:
             from plugins.fuzz_harness import (
@@ -1143,9 +1385,20 @@ if __name__ == "__main__":
                         b'\x00\x01\x02\x03' * 16,
                         b'AAAA' + b'\x00' * 60,
                     ]
+                    # 覆盖率引导: 追踪唯一执行签名作为覆盖率代理
+                    # 无 libFuzzer/AFL++ 插桩时, 以 (exit_code, stderr_len_binned)
+                    # 作为轻量覆盖率信号 — 发现新签名即视为探索到新路径
+                    _coverage_edges = set()
+                    _seed_scores = {s: 0 for s in _seeds}
+                    _coverage_new_edges = 0
                     _max_rounds = 50
                     for _ri in range(_max_rounds):
-                        _seed = _fuzz_random.choice(_seeds)
+                        # 覆盖率引导种子选择: 70% 概率优先选发现过新边的种子
+                        _high_cov = [s for s, sc in _seed_scores.items() if sc > 0]
+                        if _high_cov and _fuzz_random.random() < 0.7:
+                            _seed = _fuzz_random.choice(_high_cov)
+                        else:
+                            _seed = _fuzz_random.choice(_seeds)
                         # 变异策略: 按轮次选择
                         _mut = _ri % 5
                         if _mut == 0:
@@ -1187,6 +1440,13 @@ if __name__ == "__main__":
                                 input=_payload,
                                 capture_output=True, timeout=10)
                             _rc = _fproc.returncode
+                            # 覆盖率追踪: 以退出码 + stderr 长度分桶作为执行签名
+                            _stderr_binned = len(_fproc.stderr or b'') // 64
+                            _exec_sig = (_rc, _stderr_binned)
+                            if _exec_sig not in _coverage_edges:
+                                _coverage_edges.add(_exec_sig)
+                                _seed_scores[_seed] = _seed_scores.get(_seed, 0) + 1
+                                _coverage_new_edges += 1
                             if _rc != 0 and _rc != 2:
                                 _crash_count += 1
                                 if len(_crash_payloads) < 10:
@@ -1198,15 +1458,19 @@ if __name__ == "__main__":
                             _fuzz_exec_detail = f'target not executable: {_foerr}'
                             break
                     else:
+                        fuzz_result['coverage_edges'] = len(_coverage_edges)
+                        fuzz_result['coverage_new_edges'] = _coverage_new_edges
                         if _crash_count > 0:
                             _fuzz_exec_status = 'crash_detected'
                             _fuzz_exec_detail = (f'{_crash_count}/{_total_runs} '
-                                                 f'runs crashed')
+                                                 f'runs crashed, '
+                                                 f'{len(_coverage_edges)} edges')
                             fuzz_result['crash_payloads'] = _crash_payloads
                         else:
                             _fuzz_exec_status = 'no_crash'
                             _fuzz_exec_detail = (f'{_total_runs} runs, '
-                                                 f'no crash detected')
+                                                 f'no crash, '
+                                                 f'{len(_coverage_edges)} edges')
             except Exception as _fuzz_err:
                 _fuzz_exec_status = 'skipped'
                 _fuzz_exec_detail = f'execution unavailable: {_fuzz_err}'
@@ -1294,6 +1558,8 @@ if __name__ == "__main__":
         'elapsed': None,
         'total_vulns': len(all_vulns),
         'ai_analysis': ai_result,
+        'feedback_result': feedback_result,
+        'remote_interaction': _remote_interaction_result,
     }
     # 增强族挂载 - pipeline_enh_1..8 挂回主流水线
     # ENABLE_PIPELINE_ENH 默认开启, 显式 =0 可关闭; ENABLE_ENHANCED_PIPELINE

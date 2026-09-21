@@ -96,7 +96,7 @@ class TestFmtSpecParser(unittest.TestCase):
 
     def test_percent_literal(self):
         """%% 字面百分号."""
-        specs = parse_format_specs("100%% done")
+        specs = parse_format_specs("100%% done")  # 口径: 技术性参数/计算值, "100%%"为格式串测试输入非检测结果
         self.assertEqual(len(specs), 1)
         self.assertTrue(specs[0].is_percent)
         self.assertEqual(specs[0].args_consumed(), 0)

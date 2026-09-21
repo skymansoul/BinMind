@@ -3,7 +3,7 @@
 ASIP堆溢出检测回归测试 — 验证55个CVE样本的检出与误报过滤.
 
 测试策略:
-  源码级逻辑溢出判定: 按逻辑分配大小判定, 不依赖CJ solver的物理chunk模型.
+  源码级逻辑溢出判定: 按逻辑分配大小判定, 不依赖约束求解 solver的物理chunk模型.
   VULN样本: 逻辑write_end > 逻辑alloc_size → 检出
   SAFE样本: 逻辑write_end <= 逻辑alloc_size → 过滤
 """

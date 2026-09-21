@@ -1,0 +1,15 @@
+========================================================================
+UNIFIED MULTI-TOOL COMPARISON
+========================================================================
+
+Cross-Type 123-Sample Benchmark:
+Tool                        P      R     F1    FPR     ms
+----------------------------------------------------
+
+16 CVE Multi-Tool Benchmark:
+Tool                     TP   FN     F1
+------------------------------------
+
+17 CVE GAPSBV-CJ Benchmark: [GAP] gapsbv_final_metrics.json missing — legacy handwritten rows deprecated, no output
+
+========================================================================

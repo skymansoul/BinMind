@@ -1,4 +1,4 @@
-"""格式化字符串检测模块导入 — Verifier/FSTP/DFA/Bridge."""
+"""格式化字符串检测模块导入 — Verifier/格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation)/DFA/Bridge."""
 from analysis.format_string_verifier import (
     FormatStringVerifier, FmtStringVerdict,
 )

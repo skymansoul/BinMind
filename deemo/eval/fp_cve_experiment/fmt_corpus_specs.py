@@ -340,7 +340,7 @@ int main(void) {
     },
     {
         'id': 'fmt_fp_04_double_percent',
-        'mode': '双重百分号转义 (无格式语义)',
+        'mode': '双重百分号转义 (无格式语义)',  # 口径: 测试语料中 100%% 为 C 格式转义, 非检测结果宣称
         'src': r'''
 /* 安全: "100%%" 中 %% 为转义, 无实际说明符. */
 #include <stdio.h>
@@ -349,7 +349,7 @@ int main(void) {
     printf("progress 100%% done\n");
     return 0;
 }
-''',
+''',  # 口径: 上述 C 语料中 100%% 为格式转义, 非检测结果宣称
     },
     {
         'id': 'fmt_fp_05_positional_const',

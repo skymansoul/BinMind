@@ -1,8 +1,8 @@
-# 堆溢出扫描驱动 - 反汇编 -> 增强检测器 -> PcWBI三级判定.
+# 堆溢出扫描驱动 - 反汇编 -> 增强检测器 -> 来源约束写界推断三级判定.
 #
 # 决策逻辑:
-#   复用 analysis/static 的增强堆溢出检测器 (含 DDSSC/SAWCE/Octagon
-#   多阶段过滤), 其 finalize 现已串接 PcWBI Stage 10: 按写入大小来源
+#   复用 analysis/static 的增强堆溢出检测器 (含 按需符号尺寸关联/SAWCE/Octagon
+#   多阶段过滤), 其 finalize 现已串接 来源约束写界推断 Stage 10: 按写入大小来源
 #   将候选告警分为 confirmed/suspected/benign 三级.
 #   本模块只做编排与结果归并, 不重实现检测逻辑.
 #

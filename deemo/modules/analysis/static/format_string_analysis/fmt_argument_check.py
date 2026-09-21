@@ -76,7 +76,7 @@ def _check():
     assert spec["total"] == 2 and spec["string"] == 1, spec
     spec2 = count_specifiers("prefix%n-suffix\n")
     assert spec2["total"] == 1 and spec2["write"] == 1, spec2
-    spec3 = count_specifiers("100%% done\n")
+    spec3 = count_specifiers("100%% done\n")  # 口径: 测试用例验证 %% 转义解析, 非检测结果宣称
     assert spec3["total"] == 0, spec3
     print("[OK] fmt_argument_check: 说明符解析通过")
 

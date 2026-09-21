@@ -1,11 +1,11 @@
-"""ACPE — Allocator-Capacity Provenance Equivalence 包入口.
+"""分配容量溯源（Allocator-Capacity Provenance Equivalence）包入口.
 
 堆溢出误报削减核心包。模块分工:
   capacity_model     ptmalloc2 可用容量 + 符号容量表达式
   sym_size_tracker   函数内符号 size 追踪 (malloc/memcpy/read)
   guard_dominance    cmp/jcc 守卫支配分析 (早退/钳位/反例)
   equivalence        容量溯源等价分类
-  verdict            ACPE 判定引擎与汇总
+  verdict            分配容量溯源判定引擎与汇总
   pipeline           顶层 objdump 分析管线
 """
 

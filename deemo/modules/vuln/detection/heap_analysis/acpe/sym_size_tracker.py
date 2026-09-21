@@ -1,11 +1,11 @@
 """符号 size 追踪器 — 函数内前向单遍扫描, 提取符号容量表达式.
 
-用途: ACPE 的数据流侧。对单个函数维护寄存器/栈槽的符号值
+用途: 分配容量溯源的数据流侧。对单个函数维护寄存器/栈槽的符号值
       (容量表达式), 在调用点捕获分配 size 与写入 size。
 
 与 reg_tracker.py 的关系:
   reg_tracker 用字符串标签 + 整数记录 size_val。
-  本模块保留整数能力并新增符号表达式(参数/地址派生), 使 ACPE
+  本模块保留整数能力并新增符号表达式(参数/地址派生), 使分配容量溯源
   能判定 malloc(n) 与 memcpy(...,n) 的容量等价关系。
 
 注: 指令处理逻辑与共享类型分别维护在独立模块, 与 heap_analysis
@@ -18,7 +18,7 @@ from modules.vuln.detection.heap_analysis.insn_parser import Instruction
 
 from modules.vuln.detection.heap_analysis.acpe.sym_types import (
     FuncSymResult, _detect_abi, _COND_JCC, match_write_alloc)
-from modules.vuln.detection.heap_analysis.acpe._insn_handlers_acpe import (
+from modules.vuln.detection.heap_analysis.acpe._insn_handlers_alloc_capacity import (
     TrackerState, reset,
     on_mov, on_lea, on_addsub, on_imul, on_xor, on_bitop,
     on_cmp, on_jcc, on_call)

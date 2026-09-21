@@ -2,9 +2,9 @@
 回归测试 — 结果收集与对比模块.
 
 负责: 汇总编译/扫描两阶段产物, 输出统一 JSON/CSV 报告,
-并与基线对比 (基线 = 无 HFP 过滤的机械比较). 对比口径:
+并与基线对比 (基线 = 无 分配器感知过滤的机械比较). 对比口径:
   基线: offset >= alloc_size 即告警 (未做对齐/守卫/污点分析)
-  HFP:  三态判定后仅保留 OVERFLOW/POTENTIAL
+  分配器感知过滤:  三态判定后仅保留 OVERFLOW/POTENTIAL
 输出字段: sample, ground_truth, baseline_detected, hfp_detected,
           verdicts, elapsed_ms, 用于 run_benchmark 绘制图表.
 """
@@ -49,7 +49,7 @@ def write_csv_report(rows: List[Dict], path: str = '') -> str:
 
 def build_comparison_rows(results: List[ScanResult],
                           baseline_map: Dict[str, bool]) -> List[Dict]:
-    """合并 HFP 结果与基线结果, 生成逐样本对比行."""
+    """合并 分配器感知过滤 结果与基线结果, 生成逐样本对比行."""
     rows = []
     for r in results:
         vuln = is_vuln_sample(r.sample)

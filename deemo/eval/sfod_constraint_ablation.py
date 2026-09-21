@@ -1,10 +1,10 @@
 """
-SFOD约束注入效果消融 — 直接测量SFOD对CJ约束系统的影响.
+SFOD约束注入效果消融 — 直接测量SFOD对约束求解 (Constraint Solving)约束系统的影响.
 
 对9个struct field样本:
-  1. 构建CJ约束系统(有/无SFOD注入)
+  1. 构建约束求解 (Constraint Solving)约束系统(有/无SFOD注入)
   2. 对比约束系统的offset_val/copy_size/constraints数量
-  3. 对比最终CJ求解器的verdict
+  3. 对比最终约束求解 (Constraint Solving)求解器的verdict
 
 方式: 手动构造HeapOverflowCandidate+调用collect_constraints,
      对比注入前后约束系统的差异.
@@ -66,7 +66,7 @@ def _extract_alloc_and_store(lines: List[str]):
             break
 
     # 尝试从SFOD的parse_struct_definition获取sizeof
-    from core.cj_struct_field import parse_struct_definition, find_struct_for_alloc
+    from core.constraint_struct_field import parse_struct_definition, find_struct_for_alloc
     struct_type = find_struct_for_alloc(lines, alloc_pc)
     structs = parse_struct_definition(lines, alloc_pc) if alloc_pc >= 0 else {}
 
@@ -114,10 +114,10 @@ def _extract_alloc_and_store(lines: List[str]):
 
 
 def run_constraint_ablation():
-    from core.cj_constraint_collector import collect_constraints
-    from core.cj_struct_field import inject_struct_field_constraints
-    from core.cj_solver import ConstraintJoinSolver
-    from core.cj_constraint_types import SolverVerdict
+    from core.constraint_constraint_collector import collect_constraints
+    from core.constraint_struct_field import inject_struct_field_constraints
+    from core.constraint_solver import ConstraintJoinSolver
+    from core.constraint_constraint_types import SolverVerdict
     from core.heap_overflow_detector import HeapOverflowCandidate
 
     solver = ConstraintJoinSolver()

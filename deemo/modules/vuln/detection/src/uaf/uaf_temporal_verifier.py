@@ -9,7 +9,7 @@
         DEFINITELY_SAFE — 可证明不存在 free→use (如 free 在 use 之后)
 
 方法依据:
-  - UAFL: typestate 分析追踪对象状态转移
+  - UAF 生命周期验证: typestate 分析追踪对象状态转移
   - UAFX: UAF 利用的路径条件分析
   - 本模块在二进制 IR 层面实现简化版时序安全证明
 

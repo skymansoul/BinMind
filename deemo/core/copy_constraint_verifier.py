@@ -8,7 +8,7 @@ import re
 from core.heap_overflow_detector import (
     HeapAllocSite, HeapStore, HeapOverflowCandidate,
 )
-from core.hovf_engine import _UNBOUNDED_COPY
+from core.heap_overflow_engine import _UNBOUNDED_COPY
 from core.copy_constraint_types import SizeVarOrigin, CopyVerifyResult
 from core.copy_value_flow import ValueFlowExtractor, GuardConditionExtractor
 

@@ -1,5 +1,5 @@
 """
-带集成误报过滤的堆溢出检测器 — 包装 GAPSBV 5阶段管线, 将候选经
+带集成误报过滤的堆溢出检测器 — 包装 仿射边界验证 (Affine Bound Verification) 5阶段管线, 将候选经
 3引擎集成过滤 (VFS + 守卫关联 + 污点传播) 后处理; ≥2引擎判 SUPPRESS
 的候选从 CONFIRMED/UNCERTAIN 重分类为 FILTERED。
 """
@@ -42,7 +42,7 @@ def _best_alloc_size(c) -> int:
 # integrated detector ──────────────────────────────────────────────────
 
 class HeapEnsembleDetector:
-    """GAPSBV 5阶段管线 + 3引擎集成误报过滤。"""
+    """仿射边界验证 (Affine Bound Verification) 5阶段管线 + 3引擎集成误报过滤。"""
 
     def __init__(self, platform: str = 'x86_64',
                  enable_ensemble: bool = True):
@@ -55,7 +55,7 @@ class HeapEnsembleDetector:
         binary_path: str = '', arch_bits: int = 64,
     ) -> Tuple[List[EnhancedHeapCandidate], List[EnsembleDecision], Dict]:
         """运行检测管线与可选的集成过滤, 返回 (候选, 集成判定, 统计)。"""
-        # 阶段1-5: 既有GAPSBV管线
+        # 阶段1-5: 既有仿射边界验证 (Affine Bound Verification) 管线
         candidates = self._pipeline.detect(ir_lines, binary_path, arch_bits)
         pipeline_stats = dict(self._pipeline.stats)
         ensemble_decisions: List[EnsembleDecision] = []

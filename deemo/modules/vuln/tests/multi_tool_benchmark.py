@@ -307,7 +307,7 @@ def main():
     print(f'JSON: {json_path}')
 
     print(f'\n[OK] Benchmark complete — {len(samples)} samples × 6 tools')
-    print(f'DP-TVRA advantage: 100% precision (0 FP) at <2ms/sample')
+    print(f'DP-TVRA advantage: 100% precision (0 FP) at <2ms/sample')  # 审计口径: 系内部 legacy 测试宣称, 非独立基准验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
 
 
 if __name__ == '__main__':

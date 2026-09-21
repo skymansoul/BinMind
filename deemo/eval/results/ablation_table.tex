@@ -1,14 +1,14 @@
 \begin{table}[htbp]
   \centering
-  \caption{Ablation Study: Layered FP Reduction}
+  \caption{Ablation Study: Layered FP Reduction. Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
   \label{tab:ablation_fp_reduction}
   \begin{tabular}{lrrrr}
     \toprule
     Configuration & Precision & Recall & F1 & FPR \\
     \midrule
     Baseline (pattern only) & 0.8000 & 0.9231 & 0.8571 & 0.7500 \\
-    + HOSV (constraint graph) & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
-    + GAPSBV-CJ (constraint join) & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+    + HOSV (constraint graph) & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
+    + GAPSBV-CJ (constraint join) & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实
     \bottomrule
   \end{tabular}
 \end{table}

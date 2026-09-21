@@ -1,4 +1,5 @@
 {
+  "audit_note": "口径审计 2026-09-16：本文件各值为小合成集结果。同批数据中 heap tp_retention=80%、uaf fp_filter=67%、format_string detection=40-100%、integer_overflow detection=67% 与 100% 并列，对外引用不得只挑 100%；全量 260 样本 UAF 召回 67.3%（deemo/.temp/gen_audit_report.py 口径）。",
   "innovation_points": {
     "heap_overflow": {
       "fp_reduction": "100%",

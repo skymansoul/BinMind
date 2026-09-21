@@ -2,9 +2,9 @@
 UAF 扩展样本集 — 40+样本覆盖路径条件/CVE模拟/工程模式.
 
 样本分类:
-  CATEGORY_MUTEX (14): 路径条件互斥 → PCOL应过滤为SAFE
+  CATEGORY_MUTEX (14): 路径条件互斥 → 路径条件对象生命周期 (Path-Conditioned Object Lifecycle)应过滤为SAFE
   CATEGORY_EARLY (8):  free后early-return → use不可达 → SAFE
-  CATEGORY_REAL  (12): 真实UAF, PCOL应保持CONFIRMED
+  CATEGORY_REAL  (12): 真实UAF, 路径条件对象生命周期 (Path-Conditioned Object Lifecycle)应保持CONFIRMED
   CATEGORY_SAFE  (6):  其他安全模式 (nullify/reassign/different-object)
 
 每个样本: (name, pseudocode, expected_verdict, category)
@@ -13,7 +13,7 @@ from typing import List, Tuple
 
 from eval.uaf_cve_samples_part2 import MUTEX_SAMPLES, EARLY_SAMPLES
 
-# REAL_UAF — 真实UAF, PCOL应保持CONFIRMED
+# REAL_UAF — 真实UAF, 路径条件对象生命周期 (Path-Conditioned Object Lifecycle)应保持CONFIRMED
 
 REAL_UAF_SAMPLES: List[Tuple[str, str, str, str]] = [
     ('cve_real_01', """char *p = malloc(64);

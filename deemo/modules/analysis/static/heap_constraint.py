@@ -135,7 +135,7 @@ class HeapConstraintTracker:
         malloc(X) 和 memcpy(ptr, src, X) 的 X 为同一数据流根来源
         (同栈槽/同参数/同返回值) → 返回 True 表示安全.
 
-        实现: 委托 AWSC 引擎做寄存器级后向 def-use 根来源追踪.
+        实现: 委托 分配-写关联 引擎做寄存器级后向 def-use 根来源追踪.
         instructions 缺失时返回 False (保守, 不冒险过滤).
         """
         if not instructions or not write_size_reg:

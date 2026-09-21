@@ -1,5 +1,5 @@
 """
-堆溢出源级检测类型定义 — HOSV (Heap Overflow Source Verifier) 共用类型.
+堆溢出源级检测类型定义 — 堆写模式验证 (Heap Write Verification) 共用类型.
 """
 
 from dataclasses import dataclass, field
@@ -38,7 +38,7 @@ class HeapWriteSite:
 
 @dataclass
 class HoResult:
-    """HOSV判定结果."""
+    """堆写模式验证 (Heap Write Verification) 判定结果."""
     verdict: HoVerdict
     alloc_line: int = 0
     write_line: int = 0

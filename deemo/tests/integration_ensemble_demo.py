@@ -1,5 +1,5 @@
 """
-Integration demo: ensemble FP filter on relaxed-mode GAPSBV pipeline.
+Integration demo: ensemble FP filter on relaxed-mode affine bound verification pipeline.
 Shows FP reduction when pipeline runs in review mode (CONFIRMED+UNCERTAIN).
 
 This demonstrates the ensemble's value: the relaxed pipeline has higher recall

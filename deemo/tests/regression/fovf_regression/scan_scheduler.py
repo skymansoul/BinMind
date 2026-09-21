@@ -1,8 +1,8 @@
 """
-FOVF 扫描调度模块.
+格式串溢出验证扫描调度模块.
 
 对单样本同时运行 既有格式化字符串检测器 (format_string_enhanced)
-与 FOVF 复核通道, 记录检出数与判定.
+与格式串溢出验证复核通道, 记录检出数与判定.
 """
 
 from __future__ import annotations
@@ -40,11 +40,11 @@ def _run_existing(src: str) -> Dict:
 
 
 def _run_fovf(src: str) -> Dict:
-    """FOVF 复核通道."""
+    """格式串溢出验证复核通道."""
     _ensure()
     t0 = time.perf_counter()
     try:
-        from core.fovf_engine import detect_fmt_fovf, kept_evidence
+        from core.fmt_overflow_engine import detect_fmt_fovf, kept_evidence
         evidence, stats = detect_fmt_fovf(src.splitlines())
         kept = kept_evidence(evidence)
         return {'detections': len(kept),

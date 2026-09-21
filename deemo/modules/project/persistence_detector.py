@@ -15,7 +15,7 @@
 #   9. PAM模块: /etc/pam.d 劫持
 # 每路径输出检测命令、隐蔽性评分 (1-10)、清理方法
 # 技术效果: 比rkhunter多检测4类LOTL持久化机制,
-#   符号链接/环境变量劫持类持久化检出率100%
+#   符号链接/环境变量劫持类持久化检出率100%（审计口径: 内部 legacy 测试宣称, 无独立真值验证）
 #
 #   MITRE ATT&CK TA0003 (Persistence) — 持久化技术分类
 #   GTFObin/LOLBAS项目 — Living-off-the-Land二进制

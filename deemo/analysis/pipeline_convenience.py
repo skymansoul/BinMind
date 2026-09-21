@@ -30,9 +30,9 @@ def run_heap_overflow_pipeline(decompiled_text: str, func_name: str = "",
 def run_uaf_pipeline(alloc_sites: List[Tuple[int, int, int]],
                      insns: List[Tuple[int, str]],
                      ir_text: str = "") -> List[Any]:
-    """运行 UAF TARPS 五阶段验证."""
+    """运行 UAF 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段验证."""
     try:
-        from .uaf_tarps_verifier import batch_verify_uaf
+        from .uaf_state_path_verifier import batch_verify_uaf
         return batch_verify_uaf(alloc_sites, insns, ir_text)
     except ImportError:
         return []

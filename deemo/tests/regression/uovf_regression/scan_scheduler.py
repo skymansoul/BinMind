@@ -1,7 +1,7 @@
 """
 UAF 扫描调度模块.
 
-对单样本同时运行 既有 UAF 检测器 (uaf_enhanced) 与 UOVF 复核通道,
+对单样本同时运行 既有 UAF 检测器 (uaf_enhanced) 与 UAF 使用点验证复核通道,
 记录逐样本检出数与判定. 既有检测器接口不稳定时降级为安全失败.
 """
 
@@ -42,11 +42,11 @@ def _run_existing(src: str) -> Dict:
 
 
 def _run_uovf(src: str) -> Dict:
-    """UOVF 复核通道."""
+    """UAF 使用点验证复核通道."""
     _ensure()
     t0 = time.perf_counter()
     try:
-        from core.uovf_engine import detect_uaf_uovf
+        from core.uaf_use_engine import detect_uaf_uovf
         kept, stats = detect_uaf_uovf(src.splitlines())
         return {'detections': len(kept),
                 'elapsed_ms': round((time.perf_counter() - t0) * 1000, 1),

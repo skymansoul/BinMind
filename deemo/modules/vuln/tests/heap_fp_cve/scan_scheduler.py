@@ -1,6 +1,6 @@
-"""扫描调度模块 — 对样本批量执行 ACFPC 管线.
+"""扫描调度模块 — 对样本批量执行分配契约流保持管线.
 
-  - 每个样本: analyze_heap 得基线 findings → ACFPC 压缩得 kept.
+  - 每个样本: analyze_heap 得基线 findings → 分配契约流保持压缩得 kept.
     基线 vs 压缩后的指标差即误报压缩效果.
   - 线程池并发, 单样本超时保护, 单线程失败不影响整体.
   - 产物: 每样本 {base, kept, suppressed, confirmed, contracts,
@@ -34,7 +34,7 @@ def _binary_of(sample_dir: Path) -> Path:
 
 
 def scan_one(sample_dir: Path, timeout_s: int = 60) -> dict:
-    from acfpc.acfpc_pipeline import run_acfpc_pipeline
+    from acfpc.alloc_contract_pipeline import run_acfpc_pipeline
     binary = _binary_of(sample_dir)
     result = {'sample': sample_dir.name}
     if not binary.exists():

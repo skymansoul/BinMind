@@ -1,4 +1,4 @@
-# .rdata/.rodata 节字节提取 - 供BWR从RIP相对地址读取字符串字面量.
+# .rdata/.rodata 节字节提取 - 供有界写恢复 (Bounded Write Recovery)从RIP相对地址读取字符串字面量.
 # objdump -s 输出的数据行格式: <va> 4×32bit hex  ASCII
 
 import subprocess
@@ -7,7 +7,7 @@ from typing import Dict
 def extract_rodata_bytes(binary: str) -> Dict[int, bytes]:
     """提取二进制只读数据节的 {虚拟地址: 字节串} 映射.
 
-    供BWR解析 lea reg,[rip+X] 指向的字符串字面量长度.
+    供有界写恢复 (Bounded Write Recovery)解析 lea reg,[rip+X] 指向的字符串字面量长度.
     """
     rodata: Dict[int, bytes] = {}
     try:

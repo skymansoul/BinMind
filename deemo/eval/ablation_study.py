@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-CJ消融实验 — 量化各阶段对最终判定的独立贡献.
+约束求解消融实验 — 量化各阶段对最终判定的独立贡献.
 
 消融配置:
-  A0: 禁用全部CJ (baseline, 纯pattern匹配)
+  A0: 禁用全部约束求解 (baseline, 纯pattern匹配)
   A1: 仅Step1常量代换 (无FM消元, 无安全性证明)
   A2: Step1+Step2安全性证明 (无溢出确认, 无FM边界)
   A3: Step1+Step2+Step3溢出确认 (无FM边界推理)
-  A4: 全部Step1-4 (完整GAPSBV-CJ, 含FM边界推理)
+  A4: 全部Step1-4 (完整仿射边界验证-约束求解, 含FM边界推理)
 
 输出: 每个配置在测试用例集上的TP/FP/TN/FN/P/R/F1/FPR.
 """
@@ -20,20 +20,20 @@ _DEEMO_ROOT = Path(__file__).parent.parent
 if str(_DEEMO_ROOT) not in sys.path:
     sys.path.insert(0, str(_DEEMO_ROOT))
 
-from core.cj_constraint_types import (
+from core.constraint_constraint_types import (
     ConstraintType, SolverVerdict, LinearConstraint,
     ConstraintSystem, SolverResult,
 )
-from core.cj_fourier_motzkin import (
+from core.constraint_fourier_motzkin import (
     fourier_motzkin_eliminate, check_feasibility, substitute_constant,
 )
-from core.cj_safety_prover import (
+from core.constraint_safety_prover import (
     _compute_usable_size, _compute_write_end,
 )
 
 
 class AblationSolver:
-    """可配置消融的CJ求解器."""
+    """可配置消融的约束求解器."""
 
     def __init__(self, enable_safety=True, enable_overflow=True,
                  enable_fm_boundary=True, const_only=False):
@@ -57,7 +57,7 @@ class AblationSolver:
                 return result
 
         if self.enable_safety:
-            from core.cj_safety_prover import prove_write_safety
+            from core.constraint_safety_prover import prove_write_safety
             safety = prove_write_safety(simplified, "x86_64")
             if safety is not None:
                 result.verdict = SolverVerdict.PROVEN_SAFE
@@ -66,7 +66,7 @@ class AblationSolver:
                 return result
 
         if self.enable_overflow:
-            from core.cj_safety_prover import prove_overflow
+            from core.constraint_safety_prover import prove_overflow
             overflow = prove_overflow(simplified, "x86_64")
             if overflow is not None:
                 result.verdict = SolverVerdict.PROVEN_OVERFLOW
@@ -117,7 +117,7 @@ class AblationSolver:
         write_end_expr, _ = _compute_write_end(sys_obj)
         if write_end_expr is None:
             return None
-        from core.cj_fm_boundary import fm_bound_refine
+        from core.constraint_fm_boundary import fm_bound_refine
         return fm_bound_refine(sys_obj, write_end_expr, alloc_usable)
 
     def _try_constant_eval(self, sys_obj):
@@ -130,7 +130,7 @@ class AblationSolver:
             return None
         if write_end_expr:
             return None
-        from core.cj_safety_prover import _evaluate_constant_write_end
+        from core.constraint_safety_prover import _evaluate_constant_write_end
         val = _evaluate_constant_write_end(sys_obj)
         if val is None:
             return None
@@ -156,7 +156,7 @@ CONFIGS = {
 def load_ablation_cases() -> List[Dict]:
     """构建消融测试用例集 — 覆盖各判定路径."""
     cases = []
-    from core.cj_constraint_types import ConstraintSystem
+    from core.constraint_constraint_types import ConstraintSystem
 
     def add(name, sys_obj, is_vuln):
         cases.append({"name": name, "sys": sys_obj, "is_vuln": is_vuln})

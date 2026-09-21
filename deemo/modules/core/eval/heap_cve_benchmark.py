@@ -1,7 +1,9 @@
 # coding: utf-8
 """
-堆溢出 CVE 基准测试 — 基于真实 CVE 样本的结构化 IR 评估.
-16 样本 (12 TP + 4 FP) 穿越 7 层过滤管线, 逐层统计 FP 削减.
+堆溢出 CVE 基准测试 — 基于手工构造 CVE IR 的基准评估.
+样本清单由 benchmarks/cve_manifest.yaml 驱动 (20 条: 14TP+6FP, 2026-09-16 审计统一口径).
+legacy 口径纠错: 本 docstring 曾宣称 16 样本(12TP+4FP), 与内联数据 20 条矛盾, 已废弃.
+样本为源码级手工构造 IR, 非编译二进制, 指标不可作为真实二进制链路结果.
 每个样本的 IR 由其 C 源码中的 malloc/memcpy 数据流构造.
 """
 
@@ -17,9 +19,12 @@ sys.path.insert(0, str(_CORE_DIR.parent))
 from eval.heap_cve_data_a import SAMPLE_IR_A
 from eval.heap_cve_data_b import SAMPLE_IR_B
 
-SAMPLE_IR = {**SAMPLE_IR_A, **SAMPLE_IR_B}
+#[DEPRECATED] legacy 手工构造数据(历史保留): data_a/b 版本(13TP+7FP)自 import 时即被
+# 下方内联版覆盖, 从未生效且口径不一致; 内联版 20 条(14TP+6FP)已于 2026-09-16
+# 迁移至 benchmarks/cve_manifest.yaml, 正式口径以 manifest 为准.
+_LEGACY_MERGED_IR = {**SAMPLE_IR_A, **SAMPLE_IR_B}
 
-SAMPLE_IR = {
+_LEGACY_INLINE_IR = {
 # TP: 真阳性 (真实堆溢出)
     'cve_sample_01': {
         'is_vuln': True, 'cve': 'CVE-2020-29370',
@@ -377,6 +382,32 @@ SAMPLE_IR = {
 }
 
 
+def load_manifest(path: Optional[Path] = None) -> Dict[str, Dict]:
+    """从 benchmarks/cve_manifest.yaml 读取唯一基准清单.
+
+    manifest 承载正式口径(id/cve/label/desc), 7 层管线所需的 IR 细节字段
+    (ir_chain/def_use/expected_filter 等)沿用 legacy 内联版, 保持管线输入不变.
+    """
+    import yaml
+    if path is None:
+        path = Path(__file__).resolve().parents[3] / 'benchmarks' / 'cve_manifest.yaml'
+    with open(path, encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+    ir: Dict[str, Dict] = {}
+    for s in data['samples']:
+        legacy = _LEGACY_INLINE_IR.get(s['id'], {})
+        ir[s['id']] = {
+            'is_vuln': bool(s['label']), 'cve': s['cve'], 'desc': s['desc'],
+            **{k: v for k, v in legacy.items()
+               if k not in ('is_vuln', 'cve', 'desc')},
+        }
+    return ir
+
+
+# 正式样本清单: manifest 驱动, 样本数由实际数据计算, 禁止手写 16/20
+SAMPLE_IR = load_manifest()
+
+
 @dataclass
 class HeapCveResult:
     sample_id: str; cve: str; is_vuln: bool
@@ -539,7 +570,9 @@ def run_heap_cve_benchmark() -> Tuple[List[HeapCveResult], Dict]:
 
 def print_heap_cve_report(results, stats):
     print(f"\n{'='*65}")
-    print(f"HEAP OVERFLOW CVE BENCHMARK — 20 Real CVE Samples (14TP+6FP)")
+    n_total = len(results)
+    n_tp = sum(1 for r in results if r.is_vuln)
+    print(f"HEAP OVERFLOW CVE BENCHMARK — {n_total} samples ({n_tp}TP+{n_total-n_tp}FP, manifest 口径)")
     print(f"{'='*65}")
     for r in results:
         status = '[OK]' if r.is_correct else '[ERR]'
@@ -555,7 +588,7 @@ def print_heap_cve_report(results, stats):
           f"F1={stats['f1']:.4f}")
     print(f"  FP Rate={stats['fp_rate']:.1%}  FP Reduction={stats['fp_reduction']:.1%}")
     print(f"  Layer filtered: {stats['layer_filtered']}")
-    print(f"  Samples: {stats['total']} (14 TP + 6 FP ground truth)")
+    print(f"  Samples: {stats['total']} ({n_tp} TP + {stats['total'] - n_tp} FP ground truth)")
 
 
 if __name__ == '__main__':

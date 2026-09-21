@@ -34,6 +34,12 @@ _GUARD_VERDICT = {
     ">=0": "guard_upper_bound",
 }
 
+# C 风格守卫模式: if (var OP const) 后接 clamp 赋值 / return / 块
+_C_GUARD_RE = re.compile(
+    r"if\s*\(\s*(\w+)\s*(>=|<=|>|<|==|!=)\s*(\d+)\s*\)\s*"
+    r"(?:\1\s*=\s*\d+|return\b|\{)"
+)
+
 
 def _guard_verdict(jcc: str) -> str:
     """根据 jcc 算子语义动态生成 verdict."""
@@ -85,6 +91,26 @@ def run_guard_op_enum(
             "confidence": 0.8,
             "description": f"line{ln} jcc={jcc} guard={guard} neg={neg}",
             "verdict": verdict,
+            "source": "guard_op_enum",
+        })
+
+    # C 风格守卫识别: if (x > C) x = C; / if (x >= C) return; 等
+    for ln, line in enumerate(lines, 1):
+        m = _C_GUARD_RE.search(line)
+        if not m:
+            continue
+        var, op, imm = m.group(1), m.group(2), m.group(3)
+        # C 风格守卫统一产 guard_found (bridge 白名单消费值),
+        # 守卫语义(上界/下界/等值)保留在 description 中
+        c_detail = _GUARD_VERDICT.get(op, "guard_unknown")
+        findings.append({
+            "type": "heap_overflow",
+            "function": func_name or "unknown",
+            "severity": "medium",
+            "cwe": "CWE-122",
+            "confidence": 0.8,
+            "description": f"line{ln} c_guard if({var} {op} {imm}) {c_detail}",
+            "verdict": "guard_found",
             "source": "guard_op_enum",
         })
     return findings

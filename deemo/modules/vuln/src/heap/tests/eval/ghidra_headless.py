@@ -1,7 +1,7 @@
-"""SHIELD 对比实验 — Ghidra 无头模式批量反编译 + 堆溢出检测.
+"""堆区间证据消歧对比实验 — Ghidra 无头模式批量反编译 + 堆溢出检测.
 
 用 Ghidra headless analyzer 反编译每个样本, 提取 malloc/memcpy
-调用点的参数, 对比 SHIELD 的约束关联结果.
+调用点的参数, 对比堆区间证据消歧的约束关联结果.
 
 依赖: Ghidra 10.4+ 安装, GHIDRA_INSTALL_DIR 环境变量
 

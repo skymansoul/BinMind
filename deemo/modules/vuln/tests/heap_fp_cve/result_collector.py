@@ -3,7 +3,7 @@
   - ground truth 来源: 样本目录 truth.json {"class": "TP"|"TN"}.
   - TP 判定: 检出 (kept>0) 且样本为 TP → TP; 未检出 → FN.
     TN 判定: 未检出且样本为 TN → TN; 检出 → FP.
-  - 输出两组指标: BASE (压缩前) 与 ACFPC (压缩后), 对比出
+  - 输出两组指标: BASE (压缩前) 与 分配契约流保持 (压缩后), 对比出
     误报降低率与召回保持率.
 """
 

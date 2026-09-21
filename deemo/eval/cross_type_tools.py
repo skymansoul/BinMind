@@ -1,6 +1,6 @@
 """
 
-包含4种工具的检测逻辑: BinMind-GAPSBV / Objdump-Naive / Nm-Symbol / Regex-Baseline.
+包含4种工具的检测逻辑: BinMind-仿射边界验证 / Objdump-Naive / Nm-Symbol / Regex-Baseline.
 """
 import os, sys, re, time, subprocess
 from pathlib import Path
@@ -43,7 +43,7 @@ def _extract_var_lower_bound(alloc_expr: str, source: str) -> int:
 
 
 def _run_heap_detector(source: str, t0: float) -> dict:
-    """LPVRA 堆溢出检测 (GAPSBV): 分配-写入配对 + 约束过滤.
+    """仿射边界验证堆溢出检测: 分配-写入配对 + 约束过滤.
 
     三层过滤: source_scanner + classify_finding, guard约束, calloc回填.
     """

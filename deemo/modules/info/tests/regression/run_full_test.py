@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """tests/regression/run_full_test.py — 跨平台完整验证
-对 Windows PE 和 Linux ELF 均支持, 直接比较 AC3 和 PSVR-HLM 的检测效果。
+对 Windows PE 和 Linux ELF 均支持, 直接比较 AC3 和 路径敏感值域推理-HLM 的检测效果。
 从 modules/info 目录运行。"""
 
 import sys, os, json, time, subprocess, re
@@ -164,7 +164,7 @@ def run_baseline(imports: dict, strings: list, checksec: dict, code: str) -> dic
 
 
 def run_psvr_hlm(imports: dict, strings: list, checksec: dict, code: str) -> dict:
-    """PSVR-HLM v2: 值范围+布局模型+路径检查。"""
+    """路径敏感值域推理-HLM v2: 值范围+布局模型+路径检查。"""
     try:
         from heap_overflow_v2 import detect_heap_overflow_v2
         result = detect_heap_overflow_v2(
@@ -258,7 +258,7 @@ def main():
 
         print(f"  BASELINE:  findings={base_findings}  status={base_status}  {base_ms}ms")
 
-# PSVR-HLM v2
+# 路径敏感值域推理-HLM v2
         t0 = time.time()
         r_v2 = run_psvr_hlm(imports, strings, checksec, code)
         v2_ms = round((time.time() - t0) * 1000, 1)
@@ -330,6 +330,7 @@ def main():
     print(f"\n  Saturation check:")
     print(f"    FP_rate < 20%: {'OK' if sat_fp else 'NO'} (actual: {fpr2*100:.1f}%)")
     print(f"    FP_reduction > 40%: {'OK' if sat_reduction else 'NO'} (actual: {fp_reduction_pct:.1f}%)")
+    # 审计口径: SATURATED 为本运行小集的饱和判定输出, 非对外指标宣称
     print(f"    -> {'SATURATED' if saturated else 'MORE ITERATION NEEDED'}")
 
     # 导出

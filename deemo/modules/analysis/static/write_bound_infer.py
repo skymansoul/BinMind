@@ -1,4 +1,4 @@
-# 写界推断器 (Write-Bound Inferer) - PcWBI来源约束写界推断.
+# 写界推断器 (Write-Bound Inferer) - 来源约束写界推断.
 #
 # 决策逻辑:
 #   将检测器产生的原始堆写入告警按来源重新分级, 输出三级判定:
@@ -214,7 +214,7 @@ class WriteBoundInferer:
         if a_expr.is_const() and w_expr.is_const():
             return None
         verdict, overflow = correlate_sizes(a_expr, w_expr)
-        # AWSC 已确认溢出 (含目标偏移) 时, 符号等价不可覆盖该结论.
+        # 分配-写关联 已确认溢出 (含目标偏移) 时, 符号等价不可覆盖该结论.
         # 符号比较忽略目标指针偏移 (memcpy(buf+0x10,...)), 等价判定
         # 在存在正向偏移时并不安全, 必须交由数值/偏移路径裁决.
         if f.get("awsc_confirmed"):

@@ -1,4 +1,4 @@
-# [DEPRECATED] 本模块从未被任何管线导入或调用, GAPSBV FP过滤实际使用 fp_filter_stages.py (IR级).
+# [DEPRECATED] 本模块从未被任何管线导入或调用, 仿射边界验证 (Affine Bound Verification) FP过滤实际使用 fp_filter_stages.py (IR级).
 """C源码级FP过滤阶段 — C源码行 (if/for/malloc 等模式) 的模式匹配.
 
 与 fp_filter_stages.py 语义等价但消费不同输入: IR行 vs C源码行.

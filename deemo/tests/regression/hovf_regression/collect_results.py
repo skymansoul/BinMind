@@ -1,7 +1,7 @@
 """
 结果收集与对比模块.
 
-汇总扫描结果, 计算基线与 HOVF 两档的 TP/FP/TN/FN 及
+汇总扫描结果, 计算基线与堆溢出验证两档的 TP/FP/TN/FN 及
 precision/recall/F1/FPR, 输出 CSV 明细与 JSON 汇总.
 指标对比聚焦两类结论:
   1. FP 削减: hovf_fp < baseline_fp 的幅度

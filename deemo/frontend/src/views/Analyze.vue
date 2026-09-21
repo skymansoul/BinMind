@@ -21,6 +21,14 @@
       </el-form-item>
     </el-form>
 
+    <el-alert
+      v-if="progressMessage"
+      :title="progressMessage"
+      type="info"
+      :closable="false"
+      style="margin-bottom: 12px"
+    />
+
     <el-divider v-if="result" />
 
     <div v-if="result">
@@ -48,8 +56,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { analyzeBinary } from '@/api'
+import { reactive, ref, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { analyzeBinary, getAnalysisResult } from '@/api'
 import type { AnalysisResult } from '@/types'
 
 const form = reactive({
@@ -60,13 +69,83 @@ const form = reactive({
 const functionsInput = ref('')
 const analyzing = ref(false)
 const result = ref<AnalysisResult | null>(null)
+const progressMessage = ref('')
+
+// 轮询控制: 间隔与超时上限
+const POLL_INTERVAL_MS = 2000
+const POLL_TIMEOUT_MS = 300000
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+const stopPolling = () => {
+  if (pollTimer !== null) {
+    clearTimeout(pollTimer)
+    pollTimer = null
+  }
+}
+
+onUnmounted(() => {
+  stopPolling()
+})
+
+const pollResult = (taskId: string, startedAt: number) => {
+  const doPoll = async () => {
+    try {
+      const resp = await getAnalysisResult(taskId)
+      const payload: any = resp?.data
+
+      if (!resp?.success || payload == null) {
+        throw new Error(resp?.message || '查询分析状态失败')
+      }
+
+      if (payload.status === 'completed') {
+        result.value = payload as AnalysisResult
+        progressMessage.value = ''
+        analyzing.value = false
+        ElMessage.success('分析完成')
+        return
+      }
+
+      if (payload.status === 'failed') {
+        analyzing.value = false
+        progressMessage.value = ''
+        ElMessage.error(payload.message || '分析失败')
+        return
+      }
+
+      // pending/running → 继续轮询
+      const progress_hint = payload.progress != null
+        ? ' (进度 ' + payload.progress + '%)'
+        : ''
+      progressMessage.value = (payload.message || '分析进行中') + progress_hint
+
+      if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+        analyzing.value = false
+        progressMessage.value = ''
+        ElMessage.error('分析超时，请稍后在任务列表中查看')
+        return
+      }
+
+      pollTimer = setTimeout(doPoll, POLL_INTERVAL_MS)
+    } catch (err: any) {
+      analyzing.value = false
+      progressMessage.value = ''
+      ElMessage.error(err?.message || '轮询分析结果失败')
+    }
+  }
+
+  pollTimer = setTimeout(doPoll, POLL_INTERVAL_MS)
+}
 
 const onAnalyze = async () => {
   if (!form.binary_path) {
+    ElMessage.warning('请先填写二进制路径')
     return
   }
 
+  stopPolling()
   analyzing.value = true
+  result.value = null
+  progressMessage.value = '任务提交中...'
 
   try {
     let func_list: string[] | undefined = undefined
@@ -99,10 +178,30 @@ const onAnalyze = async () => {
 
     const resp = await analyzeBinary(request_body)
     if (resp?.success) {
-      result.value = resp.data as AnalysisResult
+      const submit_data: any = resp.data
+      // 后端异步契约: 返回 task_id 后进入轮询
+      if (submit_data && typeof submit_data.task_id === 'string') {
+        progressMessage.value = '任务已提交，等待分析结果...'
+        pollResult(submit_data.task_id, Date.now())
+      } else if (submit_data && submit_data.status === 'completed') {
+        // 兼容同步返回结果的后端
+        result.value = submit_data as AnalysisResult
+        analyzing.value = false
+        progressMessage.value = ''
+      } else {
+        analyzing.value = false
+        progressMessage.value = ''
+        ElMessage.warning(resp?.message || '提交成功但未返回任务 ID')
+      }
+    } else {
+      analyzing.value = false
+      progressMessage.value = ''
+      ElMessage.error(resp?.message || '提交分析任务失败')
     }
-  } finally {
+  } catch (err: any) {
     analyzing.value = false
+    progressMessage.value = ''
+    ElMessage.error(err?.message || '提交分析任务失败')
   }
 }
 

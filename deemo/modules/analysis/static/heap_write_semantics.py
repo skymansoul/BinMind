@@ -38,7 +38,7 @@ _WRITE_DST_ARG: Dict[str, int] = {
 }
 
 # 无界写入: 写尺寸由源字符串长度决定, 无法从参数直接提取.
-# 交由BWR模块恢复有界上界.
+# 交由有界写恢复 (Bounded Write Recovery)模块恢复有界上界.
 _UNSIZED_WRITES: Dict[str, int] = {
     "strcpy": 1, "stpcpy": 1, "strcat": 1, "sprintf": 1,
     "vsprintf": 1, "gets": 0,

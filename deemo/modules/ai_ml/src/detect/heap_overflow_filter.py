@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class FilterVerdict(Enum):
-    CONFIRMED = 'confirmed'       # 三层验证全部通过-确定漏洞
+    CONFIRMED = 'confirmed'       # 三层验证全部通过-确定漏洞（口径: 验证层校验语义, 非测试结果宣称）
     LIKELY = 'likely'             # 两层通过-高概率漏洞
     UNCERTAIN = 'uncertain'       # 仅一层通过-需人工审查
     FILTERED = 'filtered'         # 全部未通过-误报已排除

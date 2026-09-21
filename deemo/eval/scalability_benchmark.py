@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-可扩展性基准 — 合成大文件测量HOSV管线时间复杂度.
+可扩展性基准 — 合成大文件测量堆写模式验证 (Heap Write Verification)管线时间复杂度.
 生成100/500/1000/2000/5000行合成C源码, 逐级测量分析耗时,
 验证理论O(N)线性复杂度假设.
 """
@@ -91,7 +91,7 @@ def gen_alias_heavy(n_chains: int) -> str:
 
 
 def bench_single(source: str) -> Dict:
-    """单次基准: 运行HOSV并测量耗时和结果数."""
+    """单次基准: 运行堆写模式验证并测量耗时和结果数."""
     verifier = HeapOverflowSrcVerifier()
     t0 = time.perf_counter()
     results = verifier.verify(source)

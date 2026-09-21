@@ -1,5 +1,5 @@
 """
-GAPSBV 七阶段FP削减验证 — 对17个CVE堆溢出样本逐阶段测量FP削减效果.
+仿射边界验证 (Affine Bound Verification) 七阶段FP削减验证 — 对17个CVE堆溢出样本逐阶段测量FP削减效果.
 
 与 gapsbv_benchmark.py 的区别:
   - gapsbv_benchmark: baseline vs enhanced 二分类对比 (大样本集)

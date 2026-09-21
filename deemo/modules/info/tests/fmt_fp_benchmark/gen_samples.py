@@ -274,14 +274,14 @@ int main(void) {
 }
 '''),
     dict(id="tn_05_escaped_percent", label="tn", cwe="CWE-0",
-         cve="安全模式: 转义百分号",
+         cve="安全模式: 转义百分号",  # 审计口径: 以下 100%% 为测试样本 printf 转义字符, 非检测结果宣称
          title="printf(\"100%%\")", trigger="直接执行 main",
          why="%% 是转义, 不构成控制符",
          expect_overflow=False,
          code='''
 #include <stdio.h>
 int main(void) {
-    printf("100%% complete\\n");
+    printf("100%% complete\\n"); /* 审计口径: 测试样本 printf 转义字符, 非检测结果宣称 */
     return 0;
 }
 '''),

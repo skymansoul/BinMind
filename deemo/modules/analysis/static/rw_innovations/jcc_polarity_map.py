@@ -99,11 +99,74 @@ def run_jcc_polarity_map(
             "verdict": verdict,
             "source": "jcc_polarity_map",
         })
+
+    # C 风格 if 条件块写点可达性判断
+    c_findings = _c_if_reachability(lines)
+    for cf in c_findings:
+        cf["function"] = func_name or "unknown"
+        findings.append(cf)
     return findings
 
 
 def _build_polarity_graph(lines: List[str]) -> Dict[int, List[Tuple[int, int]]]:
     return _build_graph(lines)
+
+
+# C 风格 if 条件块写点可达性判断
+_C_IF_RE = re.compile(r"if\s*\(\s*(.+?)\s*\)\s*\{?")
+
+
+def _c_if_reachability(lines: List[str]) -> List[dict]:
+    """分析 C 风格 if 条件块内写点的可达性.
+
+    if (0) 内的写点不可达 -> filtered;
+    if (非零常量/变量) 内的写点可达 -> reachable;
+    无 if 包裹的写点 -> reachable.
+    """
+    findings: List[dict] = []
+    write_pat = re.compile(r"\[[^\]]+\]\s*(?:\[[^\]]*\]\s*)?=\s*")
+    in_block: Optional[bool] = None  # True=可达块, False=不可达块
+    brace_depth = 0
+    for i, line in enumerate(lines):
+        # 检测 if 条件进入块
+        m = _C_IF_RE.search(line)
+        if m:
+            cond = m.group(1).strip()
+            # 条件为常量 0 -> 块不可达
+            if cond == "0":
+                in_block = False
+            else:
+                in_block = True
+            # 判断同行是否有 {
+            if "{" in line:
+                brace_depth = line.count("{") - line.count("}")
+        # 追踪大括号深度退出块
+        if in_block is not None and brace_depth > 0:
+            brace_depth += line.count("{") - line.count("}")
+            if brace_depth <= 0:
+                in_block = None
+                brace_depth = 0
+        # 单行 if 无大括号: 只影响本行
+        if m and "{" not in line:
+            # 单行 if: 写点判断只针对本行
+            pass
+        # 检测写点
+        if write_pat.search(line):
+            if in_block is False:
+                verdict, conf = "filtered", 0.2
+            else:
+                verdict, conf = "reachable", 0.9
+            findings.append({
+                "type": "heap_overflow",
+                "function": "",
+                "severity": "medium",
+                "cwe": "CWE-122",
+                "confidence": conf,
+                "description": f"c_write@line{i + 1} reach={in_block}",
+                "verdict": verdict,
+                "source": "jcc_polarity_map",
+            })
+    return findings
 
 
 if __name__ == "__main__":

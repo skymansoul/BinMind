@@ -49,7 +49,7 @@ def detect_heap_overflows_full(
             pass
 
     if not candidates:
-        # 基础与源码级通道均无候选时, 仍须运行 HOVF 追加通道,
+        # 基础与源码级通道均无候选时, 仍须运行 堆溢出验证 (Heap Overflow Verification) 追加通道,
         # 该通道独立检测强类型解引用与带偏移库写入, 可单独产出候选.
         pass
     else:
@@ -111,11 +111,11 @@ def detect_heap_overflows_full(
     except ImportError:
         pass
 
-    # 阶段3.5: HOVF 追加通道 + 分配器宽松核验 (附加阶段, 不改动既有结果)
+    # 阶段3.5: 堆溢出验证 (Heap Overflow Verification) 追加通道 + 分配器宽松核验 (附加阶段, 不改动既有结果)
     if enable_hovf:
         try:
-            from core.hovf_engine import refine_heap_candidates
-            from core.hovf_write_extract import extract_hovf_alloc_sites
+            from core.heap_overflow_engine import refine_heap_candidates
+            from core.heap_overflow_write_extract import extract_hovf_alloc_sites
             alloc_sites = extract_hovf_alloc_sites(ir_lines)
             before = len(candidates)
             candidates, hovf_stats = refine_heap_candidates(

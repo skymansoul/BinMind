@@ -8,7 +8,7 @@
   - cve_heap_overflow: 14 VULN (编译成功的)
 
 工具:
-  1. BinMind Full Pipeline (CJ+BVF+PC-BVF)
+  1. BinMind Full Pipeline (约束求解+后向值流+路径条件后向值流)
   2. Angr (仅CVE样本, 需二进制)
   3. Regex-Baseline (所有样本)
 

@@ -64,29 +64,36 @@ def run_exit_dominance_check(
     existing_findings: Optional[List[dict]] = None,
 ) -> List[dict]:
     """出口支配检查. 返回 findings."""
-    lines = pseudocode.splitlines()
-    if not lines:
+    # 按分号拆分子语句构建 CFG, 使单行多语句可正确处理可达性
+    stmts = []
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        for stmt in line.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                stmts.append((ln, stmt))
+    if not stmts:
         return []
-    cfg = _build_cfg(lines)
+    stmt_lines = [s for _, s in stmts]
+    cfg = _build_cfg(stmt_lines)
     dom = _compute_domin(cfg, 0)
     findings: List[dict] = []
     # return 块
-    ret_blocks = [i for i, l in enumerate(lines)
-                  if re.search(r"\b(ret|return)\b", l)]
-    free_blocks = [i for i, l in enumerate(lines)
-                   if re.search(r"\bfree\s*\(", l)]
+    ret_blocks = [i for i, s in enumerate(stmt_lines)
+                  if re.search(r"\b(ret|return)\b", s)]
+    free_blocks = [i for i, s in enumerate(stmt_lines)
+                   if re.search(r"\bfree\s*\(", s)]
     for r in ret_blocks:
         for f in free_blocks:
-            # 若 return 支配 free -> free 不可达
-            if r in dom.get(f, set()):
+            # 若 return 支配 free 且 return 在 free 之前 -> free 不可达
+            if r < f and r in dom.get(f, set()):
                 findings.append({
                     "type": "use_after_free",
                     "function": func_name or "unknown",
                     "severity": "medium",
                     "cwe": "CWE-416",
                     "confidence": 0.85,
-                    "description": f"ret@line{r + 1} dominates "
-                                   f"free@line{f + 1} -> unreachable",
+                    "description": f"ret@stmt{r} dominates "
+                                   f"free@stmt{f} -> unreachable",
                     "verdict": "false_positive",
                     "source": "exit_dominance_check",
                 })

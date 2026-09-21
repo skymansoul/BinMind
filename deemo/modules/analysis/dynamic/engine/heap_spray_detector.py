@@ -5,7 +5,7 @@
 
 堆喷射 (heap spray) 是浏览器和脚本引擎利用的核心技术:
   攻击者在堆上分配大量相同结构的对象 (如 0x41414141 填充的 ArrayBuffer)
-  配合漏洞控制 EIP/RIP 时, 跳转到喷射区域的概率接近 100%
+  配合漏洞控制 EIP/RIP 时, 跳转到喷射区域的概率接近 100%（审计口径: 描述攻击机制非检测结果; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json）
 
 传统检测 (pattern-based) 扫描已知喷射模式 (NOP sled, 0x0c0c0c0c)
 但攻击者可以用非标准模式绕过多项式匹配

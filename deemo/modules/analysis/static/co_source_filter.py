@@ -1,7 +1,7 @@
-# AWSC 同源关联过滤器 (Co-Source FP Filter) - finalize 管线 Stage 10.
+# 分配-写关联 同源关联过滤器 (Co-Source FP Filter) - finalize 管线 Stage 10.
 #
 # 决策:
-#   在 Stage9 SAWCE 之后追加 AWSC 同源过滤, 专门消除
+#   在 Stage9 SAWCE 之后追加 分配-写关联 同源过滤, 专门消除
 #   "分配大小 = 写入大小" 且同根来源的误报. 该误报类区间分析
 #   无法识别 (两区间均宽化), 需寄存器级根来源等价判定.
 #
@@ -18,7 +18,7 @@ from .disasm_util import norm_reg
 
 
 class AWSCFPFilter:
-    """AWSC 同源关联过滤器."""
+    """分配-写关联 同源关联过滤器."""
 
     def __init__(self, use_win64_abi: bool = False,
                  alloc_model=None):
@@ -33,7 +33,7 @@ class AWSCFPFilter:
                alloc_tracker: HeapConstraintTracker,
                func_ranges: Optional[List[Tuple[int, int]]] = None
                ) -> List[dict]:
-        """对 Stage1-9 存活告警执行 AWSC 同源过滤."""
+        """对 Stage1-9 存活告警执行 分配-写关联 同源过滤."""
         survivors = []
         for finding in findings:
             if "heap" not in finding.get("type", "").lower():

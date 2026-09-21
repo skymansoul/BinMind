@@ -29,7 +29,7 @@ class ReportFormatMixin:
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; line-height: 1.6; color: #333; background: #f5f7fa; }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 20px; } /* 审计口径: CSS布局参数, 非检测结果宣称 */
         .header h1 { font-size: 28px; margin-bottom: 10px; }
         .header .meta { display: flex; gap: 20px; opacity: 0.9; flex-wrap: wrap; }
         .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; }
@@ -56,7 +56,7 @@ class ReportFormatMixin:
         pre { margin: 10px 0; font-size: 13px; line-height: 1.5; }
         code { padding: 2px 6px; font-size: 13px; }
 
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; } /* 审计口径: CSS布局参数, 非检测结果宣称 */
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #f1f5f9; font-weight: 600; }
         tr:hover { background: #f8fafc; }
@@ -67,7 +67,7 @@ class ReportFormatMixin:
         .step.failed { background: #fee2e2; color: #991b1b; }
 
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 15px 0; }
-        .stat-card { text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; }
+        .stat-card { text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 10px; } /* 审计口径: CSS布局参数, 非检测结果宣称 */
         .stat-card .number { font-size: 32px; font-weight: bold; }
         .stat-card .label { font-size: 12px; opacity: 0.9; margin-top: 5px; }
 

@@ -4,7 +4,7 @@ ASIP受提示延迟拓宽 — 解决区间域widen过激进丢失上界.
 根因: heap_abstract_domain.py的Interval.widen在上界增长时
 直接跳到+∞, 循环一次迭代就丢失有用边界信息.
 如 malloc(n) where n<=100, 循环一次后n变为[-∞, +∞],
-CJ求解器收到宽松约束无法证明安全.
+约束求解器收到宽松约束无法证明安全.
 
 本模块实现threshold widening with guard hints:
   1. 延迟拓宽: 前N次迭代用join替代widen, 保留精确边界

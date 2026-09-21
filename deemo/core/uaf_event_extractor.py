@@ -1,6 +1,6 @@
 """
 UAF事件提取器 — 从伪代码IR提取指针生命周期事件 (ALLOC/FREE/USE/ALIAS)。
-事件提取独立于TARPS评估管道, 仅依赖 PtrEvent dataclass 和正则模式。
+事件提取独立于时序-别名-状态机 (Type-State Alias Reachability Path-Scope) 评估管道, 仅依赖 PtrEvent dataclass 和正则模式。
 设计要点: 数组索引指针支持, 跨函数call跟踪, 数组基名USE传播, 别名闭包。
 """
 

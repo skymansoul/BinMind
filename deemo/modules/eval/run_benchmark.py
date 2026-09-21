@@ -2,22 +2,22 @@
 多工具对比实验主脚本 — 统一基准测试框架.
 
 合并说明 (BinMind/eval ↔ deemo/modules/eval 两个版本功能合并):
-  - deemo/modules/eval 版: HFP 管线 — 遍历 samples/heap_overflow,
-    运行 HFP 引擎 (hfp.hfp_scan + hfp.hfp_engine) + angr/qemu/ghidra
+  - deemo/modules/eval 版: 分配器感知过滤 管线 — 遍历 samples/heap_overflow,
+    运行 分配器感知过滤 引擎 (hfp.hfp_scan + hfp.hfp_engine) + angr/qemu/ghidra
     外部脚本 (subprocess, 缺失标记 UNAVAILABLE), 输出
     results/benchmark_hfp.csv + results/benchmark_summary.json;
     CLI: --out.
-  - BinMind/eval 版: DDSSSC 管线 — 通过 regression_heap 注册表
+  - BinMind/eval 版: 按需符号尺寸关联 管线 — 通过 regression_heap 注册表
     运行 BinMind-DDSSC/BinMind-Baseline (scan_sample) + angr/ghidra/
     qemu (模块内加载), 输出 benchmark_results.csv +
     benchmark_summary.json (脚本目录); CLI: --output/-o, --tools/-t.
   - 新增 ToolAdapter 基类与 VULN_SAMPLES 常量, 供同目录
     angr_adapter.py / ghidra_adapter.py (import run_benchmark) 使用.
-  - main() 调度: 仅给 --out → HFP 管线; 仅给 --output/-t → DDSSSC
-    管线; 都不给 → 两条管线顺序执行.
+  - main() 调度: 仅给 --out → 分配器感知过滤 管线; 仅给 --output/-t → 按需符号尺寸关联
+     管线; 都不给 → 两条管线顺序执行.
 
-  python run_benchmark.py --out results/benchmark_hfp.csv   # HFP 管线
-  python run_benchmark.py --output benchmark_results.csv    # DDSSSC 管线
+  python run_benchmark.py --out results/benchmark_hfp.csv   # 分配器感知过滤 管线
+  python run_benchmark.py --output benchmark_results.csv    # 按需符号尺寸关联 管线
 """
 
 from __future__ import annotations
@@ -40,8 +40,8 @@ RESULTS = BASE / 'results'
 
 sys.path.insert(0, str(BASE))
 
-from hfp.hfp_scan import asm_to_pseudo_ir  # noqa: E402
-from hfp.hfp_engine import detect_heap_overflow_hfp, suppress_and_report  # noqa: E402
+from hfp.alloc_aware_scan import asm_to_pseudo_ir  # noqa: E402
+from hfp.alloc_aware_engine import detect_heap_overflow_hfp, suppress_and_report  # noqa: E402
 
 _BINMIND = Path(r"C:\Users\Administrator\Desktop\BinMind")
 for p in (str(_BINMIND), str(_BINMIND / "deemo"), str(ROOT),
@@ -80,11 +80,11 @@ VULN_SAMPLES = _vuln_sample_names()
 
 
 # ---------------------------------------------------------------------------
-# deemo/modules/eval 版: HFP 管线
+# deemo/modules/eval 版: 分配器感知过滤 管线
 # ---------------------------------------------------------------------------
 
 def run_hfp(binary: str, asm: str) -> Dict:
-    """[deemo 版] HFP 引擎扫描, 统计检出与耗时."""
+    """[deemo 版] 分配器感知过滤 引擎扫描, 统计检出与耗时."""
     t0 = time.perf_counter()
     text = Path(asm).read_text(encoding='utf-8', errors='replace')
     ir = asm_to_pseudo_ir(text)
@@ -171,7 +171,7 @@ def _summarize(rows: List[Dict]) -> Dict:
 
 
 def _benchmark_hfp(out_path: str) -> int:
-    """[deemo 版] HFP 多工具基准管线."""
+    """[deemo 版] 分配器感知过滤 多工具基准管线."""
     rows: List[Dict] = []
     samples = sorted(
         d for d in SAMPLE_ROOT.iterdir()
@@ -188,7 +188,7 @@ def _benchmark_hfp(out_path: str) -> int:
             Path(asm).write_text(proc.stdout, encoding='utf-8',
                                  errors='replace')
 
-        # HFP (含峰值内存)
+        # 分配器感知过滤 (含峰值内存)
         tracemalloc.start()
         hfp = run_hfp(binary, asm)
         _, peak = tracemalloc.get_traced_memory()
@@ -245,7 +245,7 @@ def _benchmark_hfp(out_path: str) -> int:
 
 
 # ---------------------------------------------------------------------------
-# BinMind/eval 版: DDSSSC 管线
+# BinMind/eval 版: 按需符号尺寸关联 管线
 # ---------------------------------------------------------------------------
 
 def _load_module(name: str, path: Path):
@@ -308,7 +308,7 @@ def measure(fn):
 
 
 def _benchmark_ddssc(output_path: str, tool_names: List[str]) -> int:
-    """[eval 版] DDSSSC 多工具基准管线."""
+    """[eval 版] 按需符号尺寸关联 多工具基准管线."""
     registry = build_registry()
     print(f"[benchmark] {len(registry)} samples, tools={tool_names}")
 
@@ -380,9 +380,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument('--out', default=None,
                     help='HFP 管线输出 CSV (默认 results/benchmark_hfp.csv)')
     ap.add_argument('--output', '-o', default=None,
-                    help='DDSSSC 管线输出 CSV (默认 benchmark_results.csv)')
+                    help='按需符号尺寸关联 管线输出 CSV (默认 benchmark_results.csv)')
     ap.add_argument('--tools', '-t', nargs='*', default=None,
-                    help='DDSSSC 管线工具列表')
+                    help='按需符号尺寸关联 管线工具列表')
     args = ap.parse_args(argv)
 
     hfp_out = args.out or str(RESULTS / 'benchmark_hfp.csv')

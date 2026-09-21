@@ -6,7 +6,7 @@
   - 本模块: 保守分析, 产生所有堆分配+写入对作为候选 (高召回 → 供FP削减管线消费)
 
 策略: 提取真实偏移/大小信息, 但不基于比较结果过滤.
-      GAPSBV阶段负责全部过滤决策.
+      仿射边界验证 (Affine Bound Verification)阶段负责全部过滤决策.
 """
 
 
@@ -142,7 +142,7 @@ def analyze_c_source_conservative(source: str) -> List[HeapOverflowCandidate]:
     """保守分析C源码 — 所有 malloc+write 对都是候选.
 
     提取真实偏移/大小信息供阶段使用, 但不做任何过滤.
-    返回的候选 confidence=0.50 (中性), 由 GAPSBV 阶段调整.
+    返回的候选 confidence=0.50 (中性), 由 仿射边界验证 (Affine Bound Verification) 阶段调整.
 
     v2: 使用 CSourceVarResolver 解析变量大小, 使 malloc(sz) 和
     memcpy(buf, src, len) 能提取实际常量值, 提升 S1 过滤能力.

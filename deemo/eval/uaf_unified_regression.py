@@ -9,22 +9,22 @@ if str(_DEEMO) not in sys.path:
     sys.path.insert(0, str(_DEEMO))
 
 from eval.uaf_cve_samples import ALL_UAF_CVE_SAMPLES, get_sample_count
-from eval.uaf_hoig_ablation_samples import (
+from eval.uaf_obj_graph_ablation_samples import (
     INTRA_SAMPLES, PATH_SAMPLES, CROSS_SAMPLES, CVE_SAMPLES)
-from analysis.uaf_hoig_builder import HoigBuilder
-from analysis.uaf_hoig_propagator import HoigPropagator
-from analysis.uaf_hoig_cross_func import HoigCrossFuncVerifier
-from analysis.uaf_hoig_path_sensitive import PathSensitiveHOIG
-from analysis.uaf_pcol_bridge import verify_with_pcol
+from analysis.uaf_obj_graph_builder import HoigBuilder
+from analysis.uaf_obj_graph_propagator import HoigPropagator
+from analysis.uaf_obj_graph_cross_func import HoigCrossFuncVerifier
+from analysis.uaf_obj_graph_path_sensitive import PathSensitiveHOIG
+from analysis.uaf_path_lifecycle_bridge import verify_with_pcol
 from analysis.uaf_temporal_path_verifier import TemporalPathVerifier
-from analysis.uaf_hoig_pipeline import UafHoigPipeline
+from analysis.uaf_obj_graph_pipeline import UafHoigPipeline
 
 OUTPUT_DIR = _DEEMO / "eval" / "results"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# 1. HOIG+PCOL 40样本基准
+# 1. 对象身份图 (Object Identity Graph)+路径条件对象生命周期 (Path-Conditioned Object Lifecycle) 40样本基准
 def _run_pcol_benchmark() -> Dict:
-    """HOIG-only vs HOIG+PCOL 全量基准."""
+    """仅对象身份图 vs 对象身份图+路径条件对象生命周期 全量基准."""
     records = []
     for name, code, expected, category in ALL_UAF_CVE_SAMPLES:
         builder = HoigBuilder()
@@ -36,7 +36,7 @@ def _run_pcol_benchmark() -> Dict:
                         'hoig': hoig_r, 'pcol': pcol_r})
     return records
 
-# 2. 挑战样本 TPV+HOIG 并集
+# 2. 挑战样本 TPV+对象身份图 并集
 _CHALLENGE_DIR = _DEEMO / "tests" / "cve_samples" / "uaf"
 CHALLENGE_SAMPLES = [
     ('uaf_16', 'TP'), ('uaf_17', 'TP'), ('uaf_18', 'TN'), ('uaf_19', 'TP'),
@@ -46,7 +46,7 @@ CHALLENGE_SAMPLES = [
 ]
 
 def _run_challenge() -> List[Dict]:
-    """15个挑战样本 TPV+HOIG 并集检测."""
+    """15个挑战样本 TPV+对象身份图 并集检测."""
     if not _CHALLENGE_DIR.exists():
         return []
     results = []
@@ -88,7 +88,7 @@ def _run_challenge() -> List[Dict]:
                         'detected': detected, 'correct': detected == expected_uaf})
     return results
 
-# 3. HOIG消融 5配置
+# 3. 对象身份图消融 5配置
 def _run_ablation() -> Dict:
     """A0~A4 五配置消融."""
     all_samples = ([(n, c, e) for n, c, e in INTRA_SAMPLES]
@@ -132,7 +132,7 @@ def run_all():
     print("=" * 70)
     report = {}
 
-    # 1. HOIG+PCOL 40样本
+    # 1. 对象身份图+路径条件对象生命周期 40样本
     print("\n[1/3] HOIG+PCOL 40-sample benchmark ...")
     t0 = time.perf_counter()
     pcol_records = _run_pcol_benchmark()

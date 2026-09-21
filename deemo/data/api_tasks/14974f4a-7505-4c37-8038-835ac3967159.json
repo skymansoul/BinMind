@@ -1,0 +1,24 @@
+{
+  "task_id": "14974f4a-7505-4c37-8038-835ac3967159",
+  "status": "running",
+  "created_at": "2026-09-14T20:34:52.814557",
+  "updated_at": "2026-09-14T20:34:52.822111",
+  "progress": 20,
+  "message": "正在收集二进制信息...",
+  "request": {
+    "binary_name": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\samples\\teaching\\01_stack_overflow\\01_stack_overflow.exe",
+    "binary_hash": null,
+    "binary_format": null,
+    "architecture": null,
+    "function_names": null,
+    "enable_symbolic": false,
+    "enable_exploit_gen": false,
+    "fuzzer_type": null,
+    "expert_mode": false,
+    "report_formats": [
+      "md",
+      "html"
+    ]
+  },
+  "result": null
+}

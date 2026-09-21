@@ -1,0 +1,88 @@
+{
+  "benchmark": "binary_pipeline_teaching",
+  "timestamp": "2026-09-16 08:50:13",
+  "caliber": {
+    "detector": "binary pipeline (core.pipeline.run_pipeline, ai_analysis=False, symbolic=False)",
+    "decompiler": "radare2 (auto)",
+    "llm": "ollama unreachable -> per-function heuristic fallback (simulation=True)",
+    "labels": "deemo/labels/gold_teaching.jsonl (project_manifest_expected, 6 条全为应检出)",
+    "note": "真实二进制链路轨; n=6 极小样本, 点估计不可单独引用, 必须连同下方置信区间; 教学样本为预编译自制 exe, 非真实 CVE 项目二进制."
+  },
+  "aggregate": {
+    "confusion": {
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0,
+      "n": 6
+    },
+    "metrics": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "recall_ci_wilson_95": [
+      0.6097,
+      1.0
+    ],
+    "saturation": {
+      "status": "NOT_EVALUABLE",
+      "reason": "n=6 < 100, 小样本禁止宣称饱和"
+    },
+    "claim": "F1=1.000 (n=6, TP=6, FP=0, FN=0, TN=0); 错误率 0/6 的 95% Wilson CI [0.000, 0.390]"
+  },
+  "per_sample": [
+    {
+      "sample_id": "01_stack_overflow",
+      "path": "teaching/01_stack_overflow/01_stack_overflow.exe",
+      "expected_result": "应检出 CWE-121 栈溢出（gets 无边界检查，buf[64] 可覆盖返回地址；保护：NX✓ PIE✗ Canary✗）",
+      "predicted": 1,
+      "detail": "total_vulns=22, elapsed=388.6s",
+      "elapsed_s": 390.0
+    },
+    {
+      "sample_id": "02_format_string",
+      "path": "teaching/02_format_string/02_format_string.exe",
+      "expected_result": "应检出 CWE-134 格式化字符串漏洞（printf(buf) 用户输入直接作为格式化字符串；保护：NX✓ PIE✓ Canary✓ Full RELRO）",
+      "predicted": 1,
+      "detail": "total_vulns=52, elapsed=890.3s",
+      "elapsed_s": 890.3
+    },
+    {
+      "sample_id": "03_heap_uaf",
+      "path": "teaching/03_heap_uaf/03_heap_uaf.exe",
+      "expected_result": "应检出 CWE-416 Use-After-Free（free(obj) 后指针未置 NULL，通过悬空指针调用被覆盖的 callback 函数指针）",
+      "predicted": 1,
+      "detail": "total_vulns=27, elapsed=396.1s",
+      "elapsed_s": 396.1
+    },
+    {
+      "sample_id": "04_integer_overflow",
+      "path": "teaching/04_integer_overflow/04_integer_overflow.exe",
+      "expected_result": "应检出 CWE-190 整数溢出（unsigned short size=65535，size+1 回绕至 0 导致 malloc(0)，memcpy 堆溢出）",
+      "predicted": 1,
+      "detail": "total_vulns=35, elapsed=874.7s",
+      "elapsed_s": 874.7
+    },
+    {
+      "sample_id": "05_command_injection",
+      "path": "teaching/05_command_injection/05_command_injection.exe",
+      "expected_result": "应检出 CWE-78 命令注入（用户输入直接拼接至 snprintf 后传入 system() 执行）",
+      "predicted": 1,
+      "detail": "total_vulns=32, elapsed=893.8s",
+      "elapsed_s": 893.9
+    },
+    {
+      "sample_id": "06_stack_overflow_canary",
+      "path": "teaching/06_stack_overflow_canary/06_stack_overflow_canary.exe",
+      "expected_result": "应检出 CWE-121 栈溢出（gets 无边界检查）及 CWE-134 格式化字符串泄露（printf(buf) 泄露 canary；保护：NX✓ PIE✗ Canary✓ Partial RELRO）",
+      "predicted": 1,
+      "detail": "total_vulns=34, elapsed=885.2s",
+      "elapsed_s": 885.3
+    }
+  ],
+  "toolchain": {
+    "command": "tests/regression/run/detectors_binary.py::run_binary_pipeline_detector",
+    "python": "3.14.6"
+  }
+}

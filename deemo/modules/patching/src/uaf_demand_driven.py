@@ -380,7 +380,7 @@ class DemandDrivenUAFAnalyzer:
     def _in_user_code(self, line: int) -> bool:
         """判断行是否在用户代码(非CRT函数)中。无函数边界时默认通过。"""
         if not self._func_ranges:
-            return True  # 无边界信息 → 全部通过
+            return True  # 无边界信息 → 全部通过（口径: 阶段校验语义, 非测试结果宣称）
         return line not in self._crt_line_set
 
 # 位置索引 (过滤CRT噪音)

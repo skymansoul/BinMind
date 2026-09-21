@@ -1,15 +1,15 @@
 """
 
-Format string batch scanner — FCPV+PCFC (source-level) as primary,
+Format string batch scanner — path constraint collection verification + path feasibility verification (source-level) as primary,
 EnhancedFmtDetector (IR-level) as UNCERTAIN fallback.
 
 Architecture:
   1. Read C source
-  2. FCPV collects 4 constraint types, solves on 3-valued safety lattice
-  3. PCFC filters path-unreachable VULN (function-boundary aware)
-  4. FCPV VULN (surviving PCFC) → CONFIRMED
-  5. FCPV SAFE → FILTERED
-  6. FCPV UNCERTAIN → fallback to EnhancedFmtDetector (IR-level)
+  2. Path constraint collection verification collects 4 constraint types, solves on 3-valued safety lattice
+  3. Path feasibility verification filters path-unreachable VULN (function-boundary aware)
+  4. Path constraint collection verification VULN (surviving path feasibility verification) → CONFIRMED
+  5. Path constraint collection verification SAFE → FILTERED
+  6. Path constraint collection verification UNCERTAIN → fallback to EnhancedFmtDetector (IR-level)
   7. Compare against ground truth labels
   8. Output per-sample JSON + aggregate metrics
 
@@ -38,9 +38,9 @@ sys.path.insert(0, PROJECT_DIR)
 
 from core.source_ir_extractor import extract_from_file as extract_ir
 from core.format_string_enhanced import EnhancedFmtDetector, FmtCandidate
-from core.fcpv_pipeline import fcpv_filter
-from core.pcfc_verifier import filter_fmt_by_pcfc
-from core.fcpv_constraint_types import SafetyLabel
+from core.path_constraint_pipeline import fcpv_filter
+from core.path_feasibility_verifier import filter_fmt_by_pcfc
+from core.path_constraint_constraint_types import SafetyLabel
 
 
 # ground truth
@@ -108,16 +108,16 @@ def classify_verdict(candidate: FmtCandidate, label: str) -> Tuple[str, bool]:
 
 
 """
-Format string batch scanner — FCPV+PCFC (source-level) as primary,
+Format string batch scanner — path constraint collection verification + path feasibility verification (source-level) as primary,
 EnhancedFmtDetector (IR-level) as UNCERTAIN fallback.
 
 Architecture:
   1. Read C source
-  2. FCPV collects 4 constraint types, solves on 3-valued safety lattice
-  3. PCFC filters path-unreachable VULN (function-boundary aware)
-  4. FCPV VULN (surviving PCFC) → CONFIRMED
-  5. FCPV SAFE → FILTERED
-  6. FCPV UNCERTAIN → fallback to EnhancedFmtDetector (IR-level)
+  2. Path constraint collection verification collects 4 constraint types, solves on 3-valued safety lattice
+  3. Path feasibility verification filters path-unreachable VULN (function-boundary aware)
+  4. Path constraint collection verification VULN (surviving path feasibility verification) → CONFIRMED
+  5. Path constraint collection verification SAFE → FILTERED
+  6. Path constraint collection verification UNCERTAIN → fallback to EnhancedFmtDetector (IR-level)
   7. Compare against ground truth labels
   8. Output per-sample JSON + aggregate metrics
 
@@ -132,7 +132,7 @@ SAMPLES_DIR = os.path.join(PROJECT_DIR, 'samples', 'format_string')
 OUTPUT_DIR = os.path.join(PROJECT_DIR, 'eval')
 
 def run_sample(sample_dir: str, verbose: bool = False) -> Dict[str, Any]:
-    """对单个格式字符串样本运行FCPV+PCFC检测(EnhancedFmtDetector回退)."""
+    """对单个格式字符串样本运行路径约束收集验证+路径可行性验证检测(EnhancedFmtDetector回退)."""
     label = FMT_GROUND_TRUTH.get(sample_dir, 'TP')
     c_file = get_c_source(sample_dir)
 
@@ -148,13 +148,13 @@ def run_sample(sample_dir: str, verbose: bool = False) -> Dict[str, Any]:
     try:
         source = Path(c_file).read_text(encoding='utf-8', errors='replace')
 
-        # FCPV源码级约束传播求解
+        # 路径约束收集验证源码级约束传播求解
         fcpv_result = fcpv_filter(source)
         fcpv_vuln = fcpv_result.get('vuln', [])
         fcpv_safe = fcpv_result.get('safe', [])
         fcpv_uncertain = fcpv_result.get('uncertain', [])
 
-        # PCFC路径条件过滤VULN
+        # 路径可行性验证过滤VULN
         if fcpv_vuln:
             pcfc_candidates, pcfc_stats = filter_fmt_by_pcfc(
                 source, fcpv_vuln)

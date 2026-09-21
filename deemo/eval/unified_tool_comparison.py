@@ -3,7 +3,7 @@
 统一多工具对比实验 — 堆溢出检测.
 
 对17个CVE样本执行多工具检测, 统一CSV/JSON输出.
-工具: BinMind-HOSV(源级), BinMind-GAPSBV-CJ(pipeline), BinMind-baseline(无CJ),
+工具: BinMind-HOSV(源级), BinMind-GAPSBV-CJ(pipeline), BinMind-baseline(无约束求解),
       Angr(符号执行), Ghidra(静态), QEMU(动态)
 
 用法:

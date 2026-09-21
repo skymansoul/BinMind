@@ -38,7 +38,7 @@ class BayesianFusionEngine:
     """
 
     # 管道可靠性权重 (基于消融研究)
-    # GAPSBV 和 TARPS 有最高的可靠性
+    # 仿射边界验证 (Affine Bound Verification) 和 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 有最高的可靠性
     DEFAULT_WEIGHTS: Dict[str, float] = {
         'heap_overflow': 0.35,
         'uaf': 0.25,

@@ -1,11 +1,11 @@
-"""ACPE 回归结果收集与指标计算 — 汇总扫描结果为可量化指标.
+"""分配容量溯源回归结果收集与指标计算 — 汇总扫描结果为可量化指标.
 
 创建: 2025-03-03
 输入: scan_runner 生成的 results/*.json (含 manifest 期望标签)
 输出:
   report.json         汇总指标 (recall/precision/F1/FP率/削减率)
   report.csv          逐样本行
-  reduction.json      ACPE vs 基线 的误报削减对照
+  reduction.json      分配容量溯源 vs 基线 的误报削减对照
 
 指标定义 (以"样本级检测"计):
   TP   vuln 样本被检出

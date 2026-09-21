@@ -1,7 +1,7 @@
 """
 扫描调度模块.
 
-对全部堆溢出样本依次执行基线管线与 HOVF 管线, 记录逐样本
+对全部堆溢出样本依次执行基线管线与堆溢出验证管线, 记录逐样本
 检出数/耗时/判定. 判定阈值按置信度 0.40, 与管线输出语义一致.
 逐样本并行调度由外层 run_regression 控制, 本模块仅负责单样本扫描.
 """
@@ -46,7 +46,7 @@ def _run_pipeline(src_text: str, enable_hovf: bool) -> Dict:
 
 
 def scan_sample(source_path: str) -> Dict:
-    """对单样本同时运行基线与 HOVF 两档, 返回合并结果."""
+    """对单样本同时运行基线与堆溢出验证两档, 返回合并结果."""
     with open(source_path, encoding='utf-8', errors='replace') as f:
         src = f.read()
     base = _run_pipeline(src, enable_hovf=False)

@@ -1,4 +1,4 @@
-# analysis/v2_safety_filter — PSVR-HLM v2 的 P4 安全性见证过滤
+# analysis/v2_safety_filter — 路径敏感值域推理-HLM v2 的 P4 安全性见证过滤
 # 基于二进制导入表的安全变体与 FORTIFY 证据, 对发现做置信度压制。
 # 仅在存在 checksec/imports 证据时生效, 无证据时原样返回。
 # 与 FC-VRA 的关系: v2 的 P4 与 FC-VRA 的 C1-C4 相互独立,

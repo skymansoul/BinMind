@@ -1,6 +1,6 @@
 """
 
-包含: BinMind-HOSV/GAPSBV-CJ/baseline/Angr/Ghidra/QEMU + 模拟 + 分类.
+包含: BinMind-堆写模式验证 (Heap Write Verification)/仿射边界验证 (Affine Bound Verification)-约束求解 (Constraint Solving)/baseline/Angr/Ghidra/QEMU + 模拟 + 分类.
 """
 from __future__ import annotations
 
@@ -30,12 +30,12 @@ def run_hosv(source: str) -> Tuple[int, float, str]:
 
 
 def run_gapsbv_cj(source: str) -> Tuple[int, float, str]:
-    """HOSV源级检测 + CJ约束联结增强判定."""
+    """堆写模式验证源级检测 + 约束求解约束联结增强判定."""
     t0 = time.time()
     try:
         from analysis.heap_overflow_src_verifier import HeapOverflowSrcVerifier
-        from core.cj_solver import solve_candidate
-        from core.cj_constraint_types import SolverVerdict
+        from core.constraint_solver import solve_candidate
+        from core.constraint_constraint_types import SolverVerdict
         from core.heap_overflow_detector import (
             HeapAllocSite as IrAlloc, HeapStore, HeapOverflowCandidate)
 

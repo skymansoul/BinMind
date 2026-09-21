@@ -1,6 +1,6 @@
 """
 Automated regression test for heap overflow ensemble detection.
-Tests all CVE samples through the GAPSBV + Ensemble pipeline and reports
+Tests all CVE samples through the affine bound verification + Ensemble pipeline and reports
 per-sample metrics: TP/FP/TN/FN, precision, recall, F1, FP rate.
 
 Usage:

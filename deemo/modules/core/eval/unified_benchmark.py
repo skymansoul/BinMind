@@ -17,7 +17,7 @@ def run_unified_benchmark() -> Dict:
     t0 = time.perf_counter()
     results = {}
 
-    # ── Heap (16-sample CVE benchmark: 7-layer pipeline, F1=1.0000) ──
+    # ── Heap (legacy 16-sample 口径已废弃; 现由 cve_manifest.yaml 驱动 20 样本, F1 由 heap_cve_benchmark 实算) ──
     try:
         from eval.heap_cve_benchmark import run_heap_cve_benchmark
         _, heap_stats = run_heap_cve_benchmark()

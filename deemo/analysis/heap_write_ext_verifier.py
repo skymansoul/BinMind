@@ -1,0 +1,241 @@
+"""
+堆溢出写模式扩展验证器 — 编排各写模式检测模块, 输出兼容堆写模式验证的判定.
+
+作为 HeapOverflowSrcVerifier 的补充阶段运行, 只增加写模式覆盖,
+不改动原验证器行为.
+
+流程:
+  1. 复用堆写模式验证的 find_allocs 提取分配点 (含 size 解析)
+  2. 构建 ExtAlloc (别名根 + usable)
+  3. 运行各写模式模块:
+     - heap_write_walk_write / heap_write_array_walk: *p++ 与 buf[idx++] 游走写
+     - heap_write_struct_idx:                   b[i].field 结构体数组索引写
+     - heap_write_unbounded_io:                 scanf %s / gets
+     - heap_write_factory_bind:                 工厂函数返回指针 + calloc 回绕
+     - heap_write_null_terminator:               d[l]=0 终止符 off-by-one
+  4. 工厂绑定: 将调用点 target 的后续写入关联到工厂分配
+   5. 合并 ExtResult → 兼容堆写模式验证结果形状
+
+各写模式模块的 UNCERTAIN 结果保留堆写模式验证判定, 不重复报告.
+"""
+
+
+import re
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
+
+from analysis.heap_write_ext_types import ExtAlloc, ExtResult
+from analysis.heap_write_walk_write import (
+    collect_walk_writes,
+)
+from analysis.heap_write_walk_verify import (
+    verify_walk,
+)
+from analysis.heap_write_array_walk import (
+    collect_array_walks, verify_array_walk,
+)
+from analysis.heap_write_struct_collect import (
+    collect_struct_idx_writes,
+)
+from analysis.heap_write_struct_verify import (
+    verify_struct_idx,
+)
+from analysis.heap_write_unbounded_io import (
+    collect_unbounded_io, verify_unbounded_io,
+)
+from analysis.heap_write_factory_bind import (
+    FactorySummary, build_factory_summaries,
+    collect_factory_binds, verify_factory,
+)
+from analysis.heap_write_factory_cross import (
+    bind_cross_writes,
+)
+from analysis.heap_write_null_terminator import (
+    collect_terminator_writes, verify_terminator,
+)
+from analysis.heap_write_memcpy_corr import (
+    collect_memcpy_writes, verify_memcpy,
+)
+from analysis.heap_overflow_src_phases import find_allocs
+from analysis.heap_overflow_src_patterns import (
+    _ptmalloc2_usable, _skip_block_comments,
+)
+
+
+@dataclass
+class HosvExtOutput:
+    """扩展模块输出 — 与堆写模式验证结果形状兼容的轻量结果."""
+    verdict: str = "UNCERTAIN"
+    alloc_line: int = 0
+    write_line: int = 0
+    var_name: str = ""
+    alloc_size: int = -1
+    write_size: int = -1
+    overflow_bytes: int = 0
+    confidence: float = 0.5
+    reason: str = ""
+    kind: str = ""
+    source: str = "heap_write_ext"
+
+    @classmethod
+    def from_result(cls, r: ExtResult, source: str) -> "HosvExtOutput":
+        return cls(
+            verdict=r.verdict, alloc_line=r.alloc_line,
+            write_line=r.write_line, var_name=r.var_name,
+            alloc_size=r.alloc_size, write_size=r.write_size,
+            overflow_bytes=r.overflow_bytes,
+            confidence=r.confidence, reason=r.reason,
+            kind=r.kind, source=source)
+
+
+class HosvExtVerifier:
+    """写模式扩展验证器 — 覆盖堆写模式验证漏检的写模式."""
+
+    def __init__(self) -> None:
+        self._factory = FactorySummary()
+
+    def verify(self, source: str) -> List[HosvExtOutput]:
+        """主入口: 对 C 源码运行全部写模式检测模块."""
+        raw = source.splitlines()
+        valid = {ln for ln, _ in _skip_block_comments(raw)}
+        lines = raw
+
+        allocs = find_allocs(lines, valid)
+
+        ext_allocs = [ExtAlloc(
+            line=a.line, func=a.func, var=a.var,
+            size_expr=a.size_expr, size_const=a.size_const,
+            root=a.var,
+            usable=_ptmalloc2_usable(a.size_const) if a.size_const > 0 else -1,
+        ) for a in allocs]
+        alloc_var_set = {a.var for a in allocs}
+        alloc_by_var = {a.var: a for a in ext_allocs}
+
+        out: List[HosvExtOutput] = []
+
+        # 模块 4 前置: 工厂摘要独立于 find_allocs — `return calloc(...)`
+        # 不产生分配点, 但仍是工厂分配. 先构建摘要供跨函数绑定使用.
+        self._factory = build_factory_summaries(lines, valid)
+
+        if not allocs:
+            # 无同函数分配点: 工厂模块可能产出 (return-calloc/return-malloc 形态)
+            binds = collect_factory_binds(lines, self._factory, valid)
+            for (call_line, target, factory, args) in binds:
+                finfo = self._factory.get(factory)
+                if finfo is None:
+                    continue
+                alloc_func, size_expr, alloc_var = finfo
+                syn_alloc = ExtAlloc(
+                    line=call_line, func=alloc_func, var=target,
+                    size_expr=size_expr, size_const=-1, root=target,
+                    usable=-1)
+                r = verify_factory(syn_alloc, call_line, args, lines)
+                if r and r.verdict != "UNCERTAIN":
+                    out.append(HosvExtOutput.from_result(r, "factory_bind"))
+                # 跨函数写入关联同样适用于 return-malloc 工厂
+                out.extend(bind_cross_writes(
+                    target, factory, finfo, call_line, args, lines, valid))
+            return self._dedup(out)
+        walks = collect_walk_writes(alloc_var_set, lines, valid)
+        for w in walks:
+            alloc = alloc_by_var.get(w.base)
+            r = verify_walk(w, alloc, lines)
+            if r and r.verdict != "UNCERTAIN":
+                out.append(HosvExtOutput.from_result(r, "walk_write"))
+
+        # 数组索引游走写: buf[idx++] = ... — 与指针游走等价
+        array_walks = collect_array_walks(alloc_var_set, lines, valid)
+        for (line, arr, idx, bound) in array_walks:
+            alloc = alloc_by_var.get(arr)
+            if alloc is None:
+                continue
+            r = verify_array_walk(alloc, line, idx, bound, lines)
+            if r and r.verdict != "UNCERTAIN":
+                out.append(HosvExtOutput.from_result(r, "array_walk"))
+
+        # 结构体数组索引写
+        struct_writes = collect_struct_idx_writes(lines, valid)
+        for (line, arr, idx) in struct_writes:
+            alloc = alloc_by_var.get(arr)
+            if alloc is None:
+                continue
+            r = verify_struct_idx(alloc, line, idx, lines)
+            if r and r.verdict != "UNCERTAIN":
+                out.append(HosvExtOutput.from_result(r, "struct_idx"))
+
+        # 模块 3: 无界输入
+        io_writes = collect_unbounded_io(lines, valid)
+        for (line, target, max_io, kind) in io_writes:
+            alloc = alloc_by_var.get(target)
+            if alloc is None:
+                continue
+            r = verify_unbounded_io(alloc, line, max_io, kind, lines)
+            if r and r.verdict != "UNCERTAIN":
+                out.append(HosvExtOutput.from_result(r, "unbounded_io"))
+
+        # memcpy/memset 变量长度符号关联
+        mc_writes = collect_memcpy_writes(alloc_var_set, lines, valid)
+        for (line, dst, size_arg, offset) in mc_writes:
+            alloc = alloc_by_var.get(dst)
+            if alloc is None:
+                continue
+            r = verify_memcpy(alloc, line, dst, size_arg, lines, offset)
+            if r and r.verdict != "UNCERTAIN":
+                out.append(HosvExtOutput.from_result(r, "memcpy_corr"))
+
+        # null 终止符 off-by-one
+        term_writes = collect_terminator_writes(lines, valid)
+        for (line, target, idx_var) in term_writes:
+            alloc = alloc_by_var.get(target)
+            if alloc is None:
+                continue
+            r = verify_terminator(alloc, line, idx_var, lines)
+            if r and r.verdict != "UNCERTAIN":
+                out.append(HosvExtOutput.from_result(r, "null_terminator"))
+
+        # 模块 4: 工厂函数绑定 (摘要已前置构建, 不重复)
+        binds = collect_factory_binds(lines, self._factory, valid)
+        for (call_line, target, factory, args) in binds:
+            finfo = self._factory.get(factory)
+            if finfo is None:
+                continue
+            alloc_func, size_expr, alloc_var = finfo
+            # 构造合成分配点用于回绕检查
+            syn_alloc = ExtAlloc(
+                line=call_line, func=alloc_func, var=target,
+                size_expr=size_expr, size_const=-1, root=target,
+                usable=-1)
+            r = verify_factory(syn_alloc, call_line, args, lines)
+            if r and r.verdict != "UNCERTAIN":
+                out.append(HosvExtOutput.from_result(r, "factory_bind"))
+            # 跨函数写入关联: 调用点之后的 target 写入绑定到工厂分配
+            out.extend(bind_cross_writes(
+                target, factory, finfo, call_line, args, lines, valid))
+
+        return self._dedup(out)
+
+    def _dedup(self, results: List[HosvExtOutput]) -> List[HosvExtOutput]:
+        """去重: 同 (alloc_line, write_line, var) 保留最严重 verdict."""
+        sev = {'VULN': 0, 'UNCERTAIN': 1, 'SAFE': 2}
+        seen = set()
+        out = []
+        for r in sorted(results, key=lambda x: (sev.get(x.verdict, 9), -x.confidence)):
+            k = (r.alloc_line, r.write_line, r.var_name)
+            if k in seen:
+                continue
+            seen.add(k)
+            out.append(r)
+        return out
+
+
+def _const_var(name: str, lines: List[str], around_line: int) -> int:
+    """解析变量名 → 常量赋值 (仅搜索前文简单赋值)."""
+    for j in range(max(0, around_line - 2), -1, -1):
+        import re as _re
+        m = _re.search(rf'\b{name}\s*=\s*(\d+)\s*;', lines[j].strip())
+        if m:
+            return int(m.group(1))
+    return -1
+
+
+__all__ = ['HosvExtVerifier', 'HosvExtOutput']

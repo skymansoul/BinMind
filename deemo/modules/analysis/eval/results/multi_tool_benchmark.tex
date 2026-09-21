@@ -1,12 +1,12 @@
 \begin{table}[ht]
 \centering
-\caption{Multi-Tool Benchmark Comparison}
+\caption{Multi-Tool Benchmark Comparison. Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:multitool}
 \begin{tabular}{lrrrrr}
 \toprule
 Tool & TP & FP & TN & FN & F1 \\
 \midrule
-binmind & 42 & 0 & 39 & 0 & 1.0000 \\
+binmind & 42 & 0 & 39 & 0 & 1.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
 \bottomrule
 \end{tabular}
 \end{table}

@@ -1,17 +1,17 @@
 \begin{table}[htbp]
   \centering
-  \caption{Heap Overflow Detection: Multi-Tool Comparison (17 CVE Samples)}
+  \caption{Heap Overflow Detection: Multi-Tool Comparison (17 CVE Samples). Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
   \label{tab:heap_overflow_comparison}
   \begin{tabular}{lrrrrrrr}
     \toprule
     Tool & P & R & F1 & FPR & TP & FP & Time(ms) \\
     \midrule
     BinMind-baseline & 0.8000 & 0.9231 & 0.8571 & 0.7500 & 12 & 3 & 0.5 \\
-    BinMind-HOSV & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 4.8 \\
-    BinMind-GAPSBV-CJ & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 0.1 \\
-    Angr & 0.7647 & 1.0000 & 0.8667 & 1.0000 & 13 & 4 & 817.3 \\
-    Ghidra & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 124.7 \\
-    QEMU & 0.7647 & 1.0000 & 0.8667 & 1.0000 & 13 & 4 & 3212.4 \\
+    BinMind-HOSV & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 4.8 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
+    BinMind-GAPSBV-CJ & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 0.1 \\ % 同上, legacy 手写消融数据未核实
+    Angr & 0.7647 & 1.0000 & 0.8667 & 1.0000 & 13 & 4 & 817.3 \\ % 同上, legacy 手写消融数据未核实
+    Ghidra & 1.0000 & 1.0000 & 1.0000 & 0.0000 & 13 & 0 & 124.7 \\ % 同上, legacy 手写消融数据未核实
+    QEMU & 0.7647 & 1.0000 & 0.8667 & 1.0000 & 13 & 4 & 3212.4 \\ % 同上, legacy 手写消融数据未核实
     \bottomrule
   \end{tabular}
 \end{table}

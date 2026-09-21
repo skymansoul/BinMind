@@ -27,6 +27,7 @@ class IntOverflowFinding:
     is_user_controlled: bool = False
     is_smt_verified: bool = False
     reachable: bool = True
+    smt_error: str = ""        # SMT 轨验证失败原因(未验证≠证伪)
     verdict: str = "UNCERTAIN"  # CONFIRMED / LIKELY / FILTERED / UNCERTAIN
 
 
@@ -83,11 +84,11 @@ class IntOverflowPipeline:
         lines = pseudocode.splitlines()
 
         mul_alloc = re.compile(
-            r'(?:malloc|calloc|realloc)\s*\(\s*(\w[\w\d_]*)\s*\*\s*(\w[\w\d_]*)\s*\)')
+            r'(?:malloc|calloc|realloc)\s*\(\s*(\w[\w\d_]*)(?:\([^()]*\))?\s*\*\s*(\w[\w\d_]*)(?:\([^()]*\))?\s*\)')
         add_alloc = re.compile(
-            r'(?:malloc|calloc|realloc)\s*\(\s*(\w[\w\d_]*)\s*\+\s*(\w[\w\d_]*)\s*\)')
+            r'(?:malloc|calloc|realloc)\s*\(\s*(\w[\w\d_]*)(?:\([^()]*\))?\s*\+\s*(\w[\w\d_]*)(?:\([^()]*\))?\s*\)')
         shl_alloc = re.compile(
-            r'(?:malloc|calloc|realloc)\s*\(\s*(\w[\w\d_]*)\s*<<\s*(\d+)\s*\)')
+            r'(?:malloc|calloc|realloc)\s*\(\s*(\w[\w\d_]*)(?:\([^()]*\))?\s*<<\s*((?:0[xX][0-9a-fA-F]+|\d+))\s*\)')
 
         for i, line in enumerate(lines):
             for pat, etype in [(mul_alloc, 'mul'), (add_alloc, 'add'), (shl_alloc, 'shl')]:
@@ -100,7 +101,7 @@ class IntOverflowPipeline:
                 a_hi = a_range[1] if a_range else None
 
                 if etype == 'shl':
-                    b_val = int(b_raw)
+                    b_val = int(b_raw, 0)  # 兼容十进制与 0x 十六进制
                     result_hi = (a_hi << b_val) if a_hi is not None else None
                 elif etype == 'mul':
                     b_range = ranges.get(b_raw)
@@ -120,6 +121,10 @@ class IntOverflowPipeline:
                 confidence = 0.50
                 if result_hi is not None and result_hi > INT32_MAX:
                     confidence = 0.75
+                elif result_hi is not None and result_hi <= INT32_MAX:
+                    # 区间可算且不溢出 — 边界检查成立的证明, 降置信
+                    # 避免 safe 样本(有界+污点)越过 LIKELY 线造成误报
+                    confidence = 0.30
                 elif result_hi is None:
                     confidence = 0.40  # 无法确定 - 保守告警
 
@@ -158,11 +163,19 @@ class IntOverflowPipeline:
                         f.confidence = min(0.95, f.confidence + 0.20)
                         f.is_smt_verified = True
                         f.reachable = True
-                    else:
-                        # SMT证明不可达 - 降低置信度
+                    elif result.get('error') is None:
+                        # SMT 真正执行并证明不可达 - 降低置信度
                         f.confidence *= 0.30
                         f.reachable = False
                         f.is_smt_verified = True
+                    else:
+                        # 验证基础设施失败(函数定位失败/angr 不可用/
+                        # 溢出地址缺失等 error)是"未验证"而非"证伪",
+                        # 不改变区间+污点轨的判定, 避免验证器参数缺失
+                        # 把 LIKELY 检出错杀成 FILTERED
+                        f.reachable = False
+                        f.is_smt_verified = False
+                        f.smt_error = result.get('error', '')
         except ImportError:
             pass
         except Exception:
@@ -184,9 +197,18 @@ class IntOverflowPipeline:
                 # 检查操作数是否来自已知输入源
                 for sf in source_funcs:
                     pat = re.compile(rf'{op_lower}\s*=\s*{sf}\s*\(')
-                    if pat.search(lines_lower):
+                    # 二进制轨: normalize 后 malloc 参数可直接内联调用返回值
+                    # (malloc(atoi(?) << 2)), 操作数本身就是源函数名
+                    inline_pat = re.compile(rf'\b{sf}\s*\(')
+                    if pat.search(lines_lower) or (
+                            op_lower == sf.lower()
+                            and f.line_text
+                            and inline_pat.search(f.line_text.lower())):
                         f.is_user_controlled = True
-                        f.confidence = min(0.90, f.confidence + 0.15)
+                        # 无界路径(0.40)加更多: 无法证明安全 + 用户可控
+                        # 是最需报告的组合; 有界安全(0.30)保持低置信被滤
+                        bonus = 0.25 if f.confidence <= 0.45 else 0.15
+                        f.confidence = min(0.90, f.confidence + bonus)
                         if f.source == "interval":
                             f.source = "interval+taint"
                         break

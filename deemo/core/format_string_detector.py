@@ -51,6 +51,16 @@ def detect_format_string_vulns(
     if not os.path.isfile(binary_path):
         return findings
 
+    # 反编译结果函数内备忘: 同一函数在 L1/L1.5/L1.6/L1.7 四个循环被重复
+    # 反编译, r2 对病态循环函数单次 pdc 可挂满超时, 重复调用成倍放大耗时
+    _decomp_memo: Dict[tuple, str] = {}
+
+    def _memo_decompile(fname: str) -> str:
+        key = (binary_path, fname)
+        if key not in _decomp_memo:
+            _decomp_memo[key] = _decompile_function(binary_path, fname) or ''
+        return _decomp_memo[key]
+
     # Level 0: 汇编级回退检测
     try:
         from core.asm_detector import detect_from_assembly
@@ -70,7 +80,7 @@ def detect_format_string_vulns(
 
     # Level 1: 静态模式匹配
     for fname in target_funcs[:50]:
-        decompiled = _decompile_function(binary_path, fname)
+        decompiled = _memo_decompile(fname)
         if not decompiled:
             continue
         # r2 对 PE 文件可能反编译 CRT 启动代码而非真正 main, 尝试 angr 回退
@@ -101,7 +111,7 @@ def detect_format_string_vulns(
             for f in static_findings:
                 if f.get('confidence', 0) < 0.4:
                     continue
-                disasm = _decompile_function(binary_path, fname)
+                disasm = _memo_decompile(fname)
                 if not disasm:
                     continue
                 lines = disasm.split('\n')
@@ -145,7 +155,7 @@ def detect_format_string_vulns(
 
     # Level 1.5: 污点分析增强
     for fname in target_funcs[:50]:
-        decompiled = _decompile_function(binary_path, fname)
+        decompiled = _memo_decompile(fname)
         if not decompiled:
             continue
         try:
@@ -170,7 +180,7 @@ def detect_format_string_vulns(
 
     # Level 1.6: 间接调用检测
     for fname in target_funcs[:50]:
-        decompiled = _decompile_function(binary_path, fname)
+        decompiled = _memo_decompile(fname)
         if not decompiled:
             continue
         indirect_findings = _detect_indirect_format_call(fname, decompiled)
@@ -180,29 +190,66 @@ def detect_format_string_vulns(
     return findings
 
 
-def _angr_decompile_main(binary_path: str) -> str:
-    """angr 反编译 main 函数, 用于 r2 对 PE 文件反编译失败时的回退。
+def _angr_worker(binary_path, q):
+    """子进程内执行 angr 反编译, 结果文本经队列返回.
 
-    使用模块级缓存避免重复构建 Project+CFG, 同一二进制只反编译一次。
+    angr 的 Project/CFGFast/Decompiler 均为纯 Python 计算, Windows 下
+    无法用线程中断, 只能以子进程硬超时兜底.
     """
     try:
         import angr
-        # 模块级缓存: 同二进制复用 Project + CFG
+        proj = angr.Project(binary_path, auto_load_libs=False)
+        cfg = proj.analyses.CFGFast(normalize=True)
+        main_func = cfg.functions.get('main')
+        if not main_func:
+            q.put('')
+            return
+        decomp = proj.analyses.Decompiler(main_func)
+        q.put(decomp.codegen.text if (decomp and decomp.codegen) else '')
+    except Exception:
+        q.put('')
+
+
+def _angr_decompile_main(binary_path: str) -> str:
+    """angr 反编译 main 函数, 用于 r2 对 PE 文件反编译失败时的回退.
+
+    2026-09-16 全量评测实锤: angr Decompiler 对含循环复杂度的 main
+    (样本 io_loop_counter)不收敛, 死循环拖死整批管线; 故整段移入子进程
+    并加 60s 硬超时, 超时按回退失败处理(返回空串, r2 伪代码照旧使用).
+    结果文本缓存: 同一二进制只反编译一次, 命中直接复用.
+    """
+    try:
+        import multiprocessing
+    except ImportError:
+        return ''
+    try:
         if not hasattr(_angr_decompile_main, '_cache'):
             _angr_decompile_main._cache = {}
         cache = _angr_decompile_main._cache
         if binary_path in cache:
-            proj, cfg = cache[binary_path]
+            return cache[binary_path]
+
+        q = multiprocessing.Queue()
+        p = multiprocessing.Process(target=_angr_worker, args=(binary_path, q))
+        p.start()
+        p.join(60)
+        if p.is_alive():
+            # angr 反编译不收敛, 终止并按回退失败处理
+            p.terminate()
+            p.join(5)
+            text = ''
         else:
-            proj = angr.Project(binary_path, auto_load_libs=False)
-            cfg = proj.analyses.CFGFast(normalize=True)
-            cache[binary_path] = (proj, cfg)
-            # 缓存上限 4 个二进制, 防止内存溢出
-            if len(cache) > 4:
-                cache.pop(next(iter(cache)))
-        main_func = cfg.functions.get('main')
-        if not main_func:
-            return ''
+            try:
+                text = q.get(timeout=5)
+            except Exception:
+                text = ''
+        cache[binary_path] = text or ''
+        # 缓存上限 4 个二进制, 防止内存溢出
+        if len(cache) > 4:
+            cache.pop(next(iter(cache)))
+        return cache[binary_path]
+    except Exception:
+        return ''
         decomp = proj.analyses.Decompiler(main_func)
         if decomp and decomp.codegen:
             return decomp.codegen.text

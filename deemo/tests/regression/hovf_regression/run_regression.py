@@ -1,7 +1,7 @@
 """
 一键回归入口.
 
-执行流程: 发现样本 → 编译 → 扫描(基线 vs HOVF) → 收集对比 → 输出
+执行流程: 发现样本 → 编译 → 扫描(基线 vs 堆溢出验证) → 收集对比 → 输出
 CSV/JSON 到 tests/regression/hovf_regression/results/. 打印摘要表.
 
 返回码: 0 正常完成, 1 存在失败样本.

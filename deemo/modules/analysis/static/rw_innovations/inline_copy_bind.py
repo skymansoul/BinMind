@@ -73,6 +73,59 @@ def run_inline_copy_bind(
             "verdict": "bound",
             "source": "inline_copy_bind",
         })
+
+    # C 风格伪代码: memcpy/memmove/strcpy 计数绑定
+    # 检测变量是否被守卫钳制 (if(n>MAX) n=MAX 形式)
+    _guarded_vars: set = set()
+    for line in pseudocode.splitlines():
+        m_clamp = re.search(
+            r"if\s*\(\s*(\w+)\s*[><=]+\s*\d+\s*\)\s*\1\s*=\s*\d+",
+            line,
+        )
+        if m_clamp:
+            _guarded_vars.add(m_clamp.group(1))
+
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        m_copy = re.search(
+            r"\b(?:memcpy|memmove|strcpy)\s*\(\s*\w+\s*,\s*\w+\s*,\s*(\w+)\s*\)",
+            line,
+        )
+        if not m_copy:
+            # strcpy 无第三参数, 单独匹配
+            m_copy = re.search(r"\bstrcpy\s*\(\s*\w+\s*,\s*\w+\s*\)", line)
+            if m_copy:
+                # strcpy 长度未知, 视为无界复制
+                findings.append({
+                    "type": "memory_copy",
+                    "function": func_name or "unknown",
+                    "severity": "medium",
+                    "cwe": "CWE-787",
+                    "confidence": 0.6,
+                    "description": f"line{ln} strcpy unbounded copy",
+                    "verdict": "count_unbound",
+                    "source": "inline_copy_bind",
+                })
+            continue
+        len_tok = m_copy.group(1)
+        if len_tok.isdigit():
+            # 常量长度, 可绑定, 不注入
+            continue
+        # 变量长度: 检查是否被守卫钳制
+        if len_tok in _guarded_vars:
+            # 有守卫, 可绑定, 不注入 (安全场景不得注入弱告警)
+            continue
+        # 变量长度且无守卫 → 注入 count_unbound
+        findings.append({
+            "type": "memory_copy",
+            "function": func_name or "unknown",
+            "severity": "medium",
+            "cwe": "CWE-787",
+            "confidence": 0.6,
+            "description": f"line{ln} memcpy len={len_tok} unbound (no guard)",
+            "verdict": "count_unbound",
+            "source": "inline_copy_bind",
+        })
+
     return findings
 
 

@@ -23,6 +23,7 @@ OUTPUT = {
         "papers": [
             {"id": "", "title": "RAVEN: Retrieval-Augmented Vulnerability Exploration Network",
              "venue": "arXiv 2026", "key_idea": "4-agent RAG框架 → Google Project Zero RCA模板报告，15种CWE评估"},
+            # 审计口径: 下方 key_idea 中"零误报"系所引论文 Veritas 的宣称, 非BinMind独立基准验证结果
             {"id": "", "title": "Veritas: Grounding LLM Agents for Reliable Vulnerability Reasoning over Stripped Binaries",
              "venue": "arXiv 2026", "key_idea": "证据驱动三段式验证: 静态切片+LLM发现+多代理验证 → 90%召回,零误报"},
         ],

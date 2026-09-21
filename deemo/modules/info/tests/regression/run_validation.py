@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""tests/regression/run_validation.py — 一键验证管线: 对所有编译样本运行 AC3 v1 和 PSVR-HLM v2。
+"""tests/regression/run_validation.py — 一键验证管线: 对所有编译样本运行 AC3 v1 和 路径敏感值域推理-HLM v2。
 从 modules/info 目录运行: python tests/regression/run_validation.py"""
 
 import sys, os, json, time, subprocess, csv, tracemalloc
@@ -96,7 +96,7 @@ def run_ac3_v1(target: str, sample_dir: Path):
 
 
 def run_v2(target: str, sample_dir: Path):
-    """PSVR-HLM v2"""
+    """路径敏感值域推理-HLM v2"""
     t0 = time.time()
     try:
         from heap_overflow_v2 import detect_heap_overflow_v2
@@ -204,7 +204,7 @@ def main():
         print(f"  AC3-v1:        findings={findings1}, status={r1['status']}, "
               f"{r1.get('elapsed_ms', 0):.0f}ms")
 
-# PSVR-HLM v2
+# 路径敏感值域推理-HLM v2
         r2 = run_v2(str(elf), d)
         findings2 = r2.get("findings", 0)
         detected2 = findings2 > 0
@@ -250,6 +250,7 @@ def main():
     print(f"\n>>> FP Reduction: {fp_reduction:.1f}%  "
           f"(target: >40%, actual FP_rate: {fpr2*100:.1f}%, "
           f"target: <20%)")
+    # 审计口径: SATURATED 为本运行小集的饱和判定输出, 非对外指标宣称
     print(f">>> {'SATURATED ✓' if fpr2 < 0.20 and fp_reduction > 40 else 'NEED ITERATION →'}")
 
     # 导出

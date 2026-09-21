@@ -333,10 +333,19 @@ def call_llm_simple(
                     max_tokens=max_tokens, use_cache=use_cache)
 
 
-def is_ai_configured() -> bool:
-    """检查是否配置了可用的 AI 后端"""
+# 探测结果缓存: 成功和失败都进程内缓存, 避免逐函数探测都等满超时;
+# 需要强制重探时调用 refresh_ai_config_cache()
+_AI_CONFIGURED_CACHE: dict = {}
+
+
+def refresh_ai_config_cache() -> None:
+    """清除探测缓存, 供需要强制重探的场景."""
+    _AI_CONFIGURED_CACHE.clear()
+
+
+def _probe_ai_backend(provider: str) -> bool:
+    """实际探测后端可达性(原 is_ai_configured 逻辑整体保留)."""
     from config import Config
-    provider = Config.AI_PROVIDER
 
     if provider == 'ollama':
         base_url = Config.OLLAMA_BASE_URL or f"{Config.OLLAMA_HOST}/v1"
@@ -357,3 +366,19 @@ def is_ai_configured() -> bool:
         return bool(Config.AZURE_API_KEY and Config.AZURE_ENDPOINT)
 
     return False
+
+
+def is_ai_configured() -> bool:
+    """检查是否配置了可用的 AI 后端(带进程内缓存).
+
+    pipeline 对每个函数调用一次本探测, 后端不可达时逐函数等满
+    3 秒超时会拖死批量评测; 探测结果(成功/失败)均进程内缓存.
+    需要强制重探时调用 refresh_ai_config_cache().
+    """
+    from config import Config
+    provider = Config.AI_PROVIDER
+    if provider in _AI_CONFIGURED_CACHE:
+        return _AI_CONFIGURED_CACHE[provider]
+    ok = _probe_ai_backend(provider)
+    _AI_CONFIGURED_CACHE[provider] = ok
+    return ok

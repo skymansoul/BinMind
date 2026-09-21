@@ -11,6 +11,10 @@ _RE_MEMCPY = re.compile(
     r'(memcpy|memmove|strcpy|strncpy|strcat|strncat|sprintf|snprintf|memset|'
     r'read|fread|recv|scanf|fscanf|sscanf|gets|fgets|bcopy)\s*\(')
 _RE_ARRAY_WRITE = re.compile(r'(\w+)\s*\[([^\]]+)\]\s*=(?!=)\s*')
+# r2 反编译伪代码中的类型限定符(内存访问前缀), 匹配到这些前缀时
+# "qword [var_8h] = rax" 实为栈/寄存器存储, 并非数组写入, 应跳过
+_TYPE_QUALIFIERS = {'qword', 'dword', 'word', 'byte', 'qbyte', 'half',
+                    'udword', 'uw', 'u64', 'u32', 'u16', 'u8'}
 
 
 def detect_array_writes(
@@ -26,6 +30,9 @@ def detect_array_writes(
     for line in block.lines:
         for aw in _RE_ARRAY_WRITE.finditer(line):
             dst = aw.group(1)
+            # 跳过 r2 类型限定符前缀: qword [var_8h] = ... 是栈/寄存器存储
+            if dst.lower() in _TYPE_QUALIFIERS:
+                continue
             idx_expr = aw.group(2).strip()
             if _RE_MEMCPY.search(line):
                 continue

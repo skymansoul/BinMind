@@ -3,7 +3,7 @@
 
 输出:
   eval/full_metrics.json     — 所有管道的完整指标
-  eval/ablation_study.json   — GAPSBV逐阶段消融数据
+  eval/ablation_study.json   — 仿射边界验证逐阶段消融数据
   eval/multi_tool_comparison.csv — 多工具对比
   eval/pipeline_latency.csv  — 延迟分析
 
@@ -41,7 +41,7 @@ def compute_standard_metrics(tp: int, fp: int, tn: int, fn: int) -> dict:
 
 
 def generate_gapsbv_ablation() -> dict:
-    """生成GAPSBV消融研究数据 — 7维逐阶段累积."""
+    """生成仿射边界验证消融研究数据 — 7维逐阶段累积."""
     stages = [
         ('Baseline (regex-only)', 112, 54, 55, 0),
         ('+ dim4 Allocator Semantics', 112, 38, 71, 0),
@@ -62,7 +62,8 @@ def generate_gapsbv_ablation() -> dict:
 
 
 def generate_multi_tool_comparison() -> list:
-    """生成多工具对比数据."""
+    """生成多工具对比数据(legacy 手写基线, 声明小合成集口径, 非编译二进制链路)."""
+    #[DEPRECATED] legacy: 下方数值为文档手写宣称的搬运, 非本次可复现评测产物
     return [
         {'tool': 'GAPSBV (7-dim)', 'precision': 1.000, 'recall': 1.000,
          'f1': 1.000, 'time_ms_per_sample': 12, 'deterministic': True,

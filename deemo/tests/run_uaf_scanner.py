@@ -3,7 +3,7 @@ UAF batch scanner — compile→extract→detect→collect for 15 UAF samples.
 
 Architecture mirrors tests/run_scanner.py (heap overflow batch runner):
   1. Read C source via source_ir_extractor
-  2. Run EnhancedUafDetector (TARPS pipeline)
+  2. Run EnhancedUafDetector (Type-State Alias Reachability Verification pipeline)
   3. Compare against ground truth labels
   4. Output per-sample JSON + aggregate metrics
 
@@ -37,7 +37,7 @@ from core.uaf_enhanced import EnhancedUafDetector, UafCandidate
 
 # ground truth
 # 标签: TP=真漏洞, FP=安全代码(误报应被过滤)
-# TARPS期望: TP样本 → CONFIRMED; FP样本 → FILTERED
+# 时序-别名-可达-路径验证期望: TP样本 → CONFIRMED; FP样本 → FILTERED
 
 UAF_GROUND_TRUTH: Dict[str, str] = {
     'sample_uaf_01': 'TP',   # 基础UAF: malloc→free→use
@@ -103,7 +103,7 @@ def classify_verdict(candidate: UafCandidate, label: str) -> Tuple[str, bool]:
 
 
 def run_sample(sample_dir: str, verbose: bool = False) -> Dict[str, Any]:
-    """对单个UAF样本运行TARPS检测。"""
+    """对单个UAF样本运行时序-别名-可达-路径验证检测。"""
     label = UAF_GROUND_TRUTH.get(sample_dir, 'TP')
     c_file = get_c_source(sample_dir)
 
@@ -129,7 +129,7 @@ def run_sample(sample_dir: str, verbose: bool = False) -> Dict[str, Any]:
                 'elapsed': round(time.time() - t0, 4),
             }
 
-        # TARPS检测
+        # 时序-别名-可达-路径验证检测
         detector = EnhancedUafDetector()
         candidates = detector.detect(ir_lines)
 

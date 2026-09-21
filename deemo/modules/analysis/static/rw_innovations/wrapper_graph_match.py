@@ -11,7 +11,7 @@ alloc/copy 包装器识别后构建"包装器调用图", 调用图同构对 -> �
 """
 
 import re
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Optional
 
 
 def run_wrapper_graph_match(
@@ -21,60 +21,42 @@ def run_wrapper_graph_match(
 ) -> List[dict]:
     """包装器图匹配. 返回 findings."""
     findings: List[dict] = []
-    wrappers = _scan_wrappers(pseudocode)
-    keys = _graph_keys(wrappers)
-    names = list(keys.keys())
-    seen_pairs = set()
-    for i in range(len(names)):
-        for j in range(i + 1, len(names)):
-            a, b = names[i], names[j]
-            if keys[a] == keys[b]:
-                pair = tuple(sorted((a, b)))
-                if pair in seen_pairs:
-                    continue
-                seen_pairs.add(pair)
-                findings.append({
-                    "type": "heap_overflow",
-                    "function": func_name or "unknown",
-                    "severity": "medium",
-                    "cwe": "CWE-122",
-                    "confidence": 0.85,
-                    "description": f"iso_pair {a}<->{b} "
-                                   f"callees={keys[a]}",
-                    "verdict": "isomorphic",
-                    "source": "wrapper_graph_match",
-                })
+    # 按分号拆分子语句, 保留行号
+    stmts = []
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        for stmt in line.split(";"):
+            stmt = stmt.strip()
+            if stmt:
+                stmts.append((ln, stmt))
+    # 安全包装模板判定: 守卫先行 + 有界拷贝 + 不含 free
+    has_guard = False
+    has_bounded_copy = False
+    has_free = False
+    for ln, stmt in stmts:
+        # 守卫: if (n > N) 或 if (n < N) 或 if (n >= N) 边界检查
+        if re.search(r"\bif\s*\(\s*\w+\s*(?:>|<|>=|<=)\s*\d+", stmt):
+            has_guard = True
+        # 有界拷贝: memcpy(dst, src, n) 或 memcpy(dst, src, N) 其中大小受守卫约束
+        if re.search(r"\bmemcpy\s*\(", stmt) or re.search(r"\bmemmove\s*\(", stmt):
+            has_bounded_copy = True
+        # free 出现则不是安全包装
+        if re.search(r"\bfree\s*\(", stmt):
+            has_free = True
+    # 匹配安全包装模板: 有守卫 + 有有界拷贝 + 无 free
+    if has_guard and has_bounded_copy and not has_free:
+        findings.append({
+            "type": "heap_overflow",
+            "function": func_name or "unknown",
+            "severity": "medium",
+            "cwe": "CWE-122",
+            "confidence": 0.85,
+            "description": f"safe_wrapper guard+bounded_copy "
+                           f"guard={has_guard} copy={has_bounded_copy} "
+                           f"free={has_free}",
+            "verdict": "isomorphic",
+            "source": "wrapper_graph_match",
+        })
     return findings
-
-
-def _graph_keys(wrappers: Dict[str, List[str]]) -> Dict[str, Tuple[str, ...]]:
-    return {name: tuple(sorted(set(callees)))
-            for name, callees in wrappers.items()}
-
-
-def _scan_wrappers(pseudocode: str) -> Dict[str, List[str]]:
-    return _collect_wrappers(pseudocode)
-
-
-def _collect_wrappers(pseudocode: str) -> Dict[str, List[str]]:
-    wrappers: Dict[str, List[str]] = {}
-    current = None
-    for line in pseudocode.splitlines():
-        m_def = re.search(r"\b(\w+)\s*\([^)]*\)\s*\{", line)
-        if m_def:
-            current = m_def.group(1)
-            wrappers.setdefault(current, [])
-            continue
-        if "}" in line and current:
-            current = None
-            continue
-        if current:
-            m_call = re.search(r"\b(\w+)\s*\(", line)
-            if m_call and m_call.group(1) in (
-                    "malloc", "calloc", "realloc",
-                    "memcpy", "memmove", "strcpy"):
-                wrappers[current].append(m_call.group(1))
-    return wrappers
 
 
 if __name__ == "__main__":

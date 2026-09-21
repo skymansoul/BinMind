@@ -1,4 +1,4 @@
-"""ACFPC — Allocation-Contract Flow-Preserving Compression.
+"""分配契约流保持 — Allocation-Contract Flow-Preserving Compression.
 
 堆溢出检测误报压缩包. 三证据链: 双常量几何, 守卫支配, 写-分配耦合.
 仅新增, 不改动既有检测器.

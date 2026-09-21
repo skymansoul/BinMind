@@ -41,7 +41,7 @@ class SourceInfo:
 
 
 class BWRVerdict:
-    """BWR判定结果."""
+    """有界写恢复 (Bounded Write Recovery)判定结果."""
     __slots__ = ("kind", "bound", "reason", "src")
 
     def __init__(self, kind: str, bound: int = 0,
@@ -94,7 +94,7 @@ class BoundedWriteRecovery:
         if func == "gets":
             self._stats["unknown"] += 1
             return BWRVerdict("unknown", reason="gets unbounded")
-        from .bwr_helpers import (recover_sprintf, recover_strcpy,
+        from .bounded_write_helpers import (recover_sprintf, recover_strcpy,
                                   recover_strcat)
         if func in ("sprintf", "vsprintf"):
             return recover_sprintf(self, instructions, call_idx,
@@ -248,7 +248,7 @@ class BoundedWriteRecovery:
         return SourceInfo(BWRSrcKind.UNKNOWN, detail=f"undef {reg}")
 
     def _resolve_lea(self, src_op: str, instructions, idx: int) -> SourceInfo:
-        from .bwr_helpers import rip_abs, read_rodata_string
+        from .bounded_write_helpers import rip_abs, read_rodata_string
         src_lower = src_op.lower()
         lit = self._literal_in_comment(src_op)
         if lit is not None:
@@ -263,7 +263,7 @@ class BoundedWriteRecovery:
                                       detail=s)
             return SourceInfo(BWRSrcKind.UNKNOWN, detail="rodata_noliteral")
         if "[rbp" in src_lower or "[rsp" in src_lower:
-            from .bwr_helpers import stack_buffer_size
+            from .bounded_write_helpers import stack_buffer_size
             size = stack_buffer_size(instructions, src_op, idx)
             if size is not None:
                 return SourceInfo(BWRSrcKind.STACK, size=size,
@@ -272,7 +272,7 @@ class BoundedWriteRecovery:
 
     def _resolve_mem_load(self, src_op, instructions, call_idx,
                           alloc_tracker, depth, up_to=None) -> SourceInfo:
-        from .bwr_helpers import find_slot_store
+        from .bounded_write_helpers import find_slot_store
         slot = extract_stack_slot(src_op)
         if slot:
             store = find_slot_store(instructions, up_to or call_idx, slot,
@@ -421,7 +421,7 @@ class BoundedWriteRecovery:
 
     def _format_max_len(self, fmt: str, instructions, call_idx) -> Optional[int]:
         """格式串最大输出长度上界; 含无界 %s 返回 None."""
-        from .bwr_helpers import format_max_len
+        from .bounded_write_helpers import format_max_len
         return format_max_len(fmt)
 
     @staticmethod

@@ -1,6 +1,6 @@
 \begin{table}[htbp]
 \centering
-\caption{ASIP源码级消融实验: 五引擎增量贡献 (55样本)}
+\caption{ASIP源码级消融实验: 五引擎增量贡献 (55样本) Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:asip_ablation}
 \begin{tabular}{lrrrrrr}
 \toprule
@@ -10,9 +10,9 @@ B0_NoEngine & 20 & 17 & 0 & 18 & 0.7018 & 0.4857 \\
 B1_PlusE1Guard & 20 & 7 & 0 & 28 & 0.8511 & 0.2000 \\
 B2_PlusE2Clamp & 20 & 3 & 0 & 32 & 0.9302 & 0.0857 \\
 B3_PlusE3Path & 20 & 2 & 0 & 33 & 0.9524 & 0.0571 \\
-B4_PlusE4AllocWrite & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\
-B5_PlusE5Modulo & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\
-B6_FullAllEngines & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\
+B4_PlusE4AllocWrite & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。
+B5_PlusE5Modulo & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实。
+B6_FullAllEngines & 20 & 0 & 0 & 35 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实。
 \bottomrule
 \end{tabular}
 \end{table}

@@ -20,7 +20,7 @@ def detect_uaf_with_aliases(code: str, func_name: str = '') -> List[dict]:
     """别名感知的UAF检测 — detect_uaf.
 
     层级:
-      L0: 基础 free→use 检测 (同 detect_uaf, 保留100%原有逻辑)
+      L0: 基础 free→use 检测 (同 detect_uaf, 保留100%原有逻辑)（口径: 技术性参数/计算值, 非检测结果宣称）
       L1: 别名追踪: free(p)后检查p的别名是否被使用
       L2: struct字段: free(obj)后检查obj->field的别名
       L3: 跨函数全局变量: if(g) use(g) after free(g)

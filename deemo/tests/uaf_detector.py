@@ -1,5 +1,5 @@
 """
-TARPS UAF检测器 — 分析 free/use 模式, 判定释放后使用 (CWE-416)。
+时序-别名-可达-路径验证 UAF检测器 — 分析 free/use 模式, 判定释放后使用 (CWE-416)。
 
 识别: free(p) 后存在 *p / p->field / p[...] / printf("..", p) 使用,
      且无 p=NULL / p=malloc() 保护。
@@ -48,7 +48,7 @@ _ALIAS_RE = re.compile(
 )
 
 def detect_uaf(source: str) -> Dict[str, Any]:
-    """对 C 源码执行 TARPS UAF 检测。
+    """对 C 源码执行时序-别名-可达-路径验证 UAF 检测。
 
     检测链路: free(p) → use(p) 无 NULLify 保护。
     支持: 别名追踪、数组索引、结构体字段访问、条件释放路径、

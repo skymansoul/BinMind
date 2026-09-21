@@ -85,7 +85,7 @@ class TriageReporter:
 body {{ font-family: system-ui, sans-serif; max-width: 960px; margin: 0 auto;
        padding: 20px; background: #0d1117; color: #c9d1d9; }}
 h1 {{ border-bottom: 2px solid #30363d; padding-bottom: 8px; }}
-table {{ width: 100%; border-collapse: collapse; margin: 12px 0; }}
+table {{ width: 100%; border-collapse: collapse; margin: 12px 0; }} /* 口径: CSS 布局参数, 非检测结果宣称 */
 th, td {{ text-align: left; padding: 8px 12px; border-bottom: 1px solid #21262d; }}
 th {{ background: #161b22; }}
 .sev-critical {{ color: #ff7b72; font-weight: bold; }}

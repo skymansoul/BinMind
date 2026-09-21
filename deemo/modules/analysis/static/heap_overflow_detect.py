@@ -18,8 +18,8 @@ from .sym_propagator import SymbolicPropagator
 from .sym_size_correlator import SymbolicSizeTracker as _SymCorrTracker
 from .symbolic_size_expr import SymbolicSizeTracker
 from .symbolic_correlator import SymbolicCorrelator
-from .ddssc_coordinator import DDSSCCoordinator
-from .ddssc_fp_filter import DDSSCFPFilter
+from .size_corr_coordinator import DDSSCCoordinator
+from .size_corr_fp_filter import DDSSCFPFilter
 from .octagon_filter import OctagonFPFilter
 from .co_source_filter import AWSCFPFilter
 from .loop_write_accumulator import LoopWriteAccumulator
@@ -465,7 +465,7 @@ class HeapCallHandlerMixin:
             size_reg, self._known_constants)
 
 # 堆溢出检测器finalize阶段.
-# 包含多阶段FP过滤管线: 去重→Stage4路径敏感→Stage5结构推断→Stage3.5 Octagon→Stage1-3→DDSSC→SAWCE.
+# 包含多阶段FP过滤管线: 去重→Stage4路径敏感→Stage5结构推断→Stage3.5 Octagon→Stage1-3→按需符号尺寸关联→SAWCE.
 
 # 插入Stage 3.5 Octagon关系型域过滤
 class HeapFinalizeMixin:
@@ -551,16 +551,16 @@ class HeapFinalizeMixin:
                 stage9_survivors.append(lf)
                 existing_keys.add(key)
 
-        # Stage 10: AWSC 同源关联过滤
+        # Stage 10: 分配-写关联 同源关联过滤
         # 消除"分配=写入且同根来源"类误报 (区间分析无法识别)
         stage10_survivors = self._awsc_filter.filter(
             stage9_survivors, instructions, self._alloc_tracker,
             self._user_func_ranges)
 
-        # Stage 11: PcWBI 来源约束写界推断
+        # Stage 11: 来源约束写界推断
         # 按写入大小来源将候选分级为 confirmed/suspected/benign,
         # 仅 confirmed 计入最终检出, suspected 归入疑似列表供复核.
-        # enable_pcwbi=False 时跳过, 返回 AWSC 存活集 (消融基线).
+        # enable_pcwbi=False 时跳过, 返回 分配-写关联 存活集 (消融基线).
         self._filtered_findings = stage10_survivors
         if getattr(self, "_pcwbi_enabled", True):
             self._filtered_findings = self.prov_run(instructions)
@@ -616,7 +616,7 @@ class HeapFinalizeMixin:
             return False
         return True
 
-# 堆检测器 PcWBI 集成 mixin - 来源约束写界推断作为 finalize Stage 10.
+# 堆检测器 集成 mixin - 来源约束写界推断作为 finalize Stage 10.
 #
 # 决策逻辑:
 #   Stage 1-9 输出经多阶段过滤的候选告警 (self._filtered_findings).
@@ -734,10 +734,10 @@ class HeapProvenanceMixin:
 # 堆溢出精度增强阶段 (Heap Precision Stages Mixin)
 #
 # 核心决策:
-#   在既有DDSSC/SAWCE/octagon过滤之上, 修正三个系统性精度缺陷:
-#     A. PCST: 按调用点参数语义表提取size/dst, 修复snprintf/fread/read
+#   在既有按需符号尺寸关联/SAWCE/octagon过滤之上, 修正三个系统性精度缺陷:
+#     A. 路径条件敏感污点: 按调用点参数语义表提取size/dst, 修复snprintf/fread/read
 #        等函数参数索引错误导致的错误数据流.
-#     B. BWR: 对无界写入(strcpy/strcat/sprintf/gets)恢复有界写尺寸,
+#     B. 有界写恢复: 对无界写入(strcpy/strcat/sprintf/gets)恢复有界写尺寸,
 #        安全即抑制(降误报), 确定溢出即报(保召回).
 #     C. 栈槽/32位寄存器符号解析: 分配与写入同栈槽时符号关联可用,
 #        消除区间重叠类误报.
@@ -745,9 +745,9 @@ class HeapProvenanceMixin:
 #
 
 class HeapPrecisionStagesMixin:
-    """PCST+BWR+栈槽符号解析, 由HeapOverflowDetector最先继承."""
+    """路径条件敏感污点+有界写恢复+栈槽符号解析, 由HeapOverflowDetector最先继承."""
 
-    # 扩展写入函数全集: 覆盖PCST支持的sized/unsized写.
+    # 扩展写入函数全集: 覆盖路径条件敏感污点支持的sized/unsized写.
     WRITE_FUNCS = {
         "memcpy", "memmove", "strcpy", "strncpy", "strcat",
         "sprintf", "snprintf", "read", "fread", "recv",
@@ -773,7 +773,7 @@ class HeapPrecisionStagesMixin:
                            ops: List[str], addr: int):
         super()._handle_alloc_call(func, ins, ops, addr)
         # 重写符号快照: 分配尺寸若源自栈槽/32位寄存器, 解析为符号表达式,
-        # 使DDSSC符号关联能够匹配分配与写入的等价性.
+        # 使按需符号尺寸关联符号关联能够匹配分配与写入的等价性.
         size_reg = self._get_arg_reg(
             ops, 1, self._args[1] if len(self._args) > 1 else self._args[0]) \
             if func == "realloc" else self._get_arg_reg(ops, 0, self._args[0])
@@ -1051,7 +1051,7 @@ class HeapOverflowDetector(
         self._awsc_filter = AWSCFPFilter(
             use_win64_abi=use_win64_abi, alloc_model=self._alloc_model)
 
-        # PCST+BWR精度阶段
+        # 路径条件敏感污点+有界写恢复精度阶段
         self._enable_pcst = enable_pcst
         self._bwr_enabled = enable_bwr and enable_pcst
         self._bwr = BoundedWriteRecovery(self._alloc_model)
@@ -1066,7 +1066,7 @@ class HeapOverflowDetector(
         self._min_user_addr = addr
 
     def set_rodata_bytes(self, rodata: dict):
-        """注入 .rdata/.rodata 节字节映射, 供BWR读取字符串字面量."""
+        """注入 .rdata/.rodata 节字节映射, 供有界写恢复读取字符串字面量."""
         if rodata:
             self._bwr.set_rodata(rodata)
 

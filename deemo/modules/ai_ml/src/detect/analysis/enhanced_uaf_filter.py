@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class UafVerdict(Enum):
-    CONFIRMED = 'confirmed'     # 三阶段全部通过
+    CONFIRMED = 'confirmed'     # 三阶段全部通过（口径: 阶段校验语义, 非测试结果宣称）
     LIKELY = 'likely'           # 两阶段通过
     UNCERTAIN = 'uncertain'     # 一阶段通过
     FILTERED = 'filtered'       # 全部未通过

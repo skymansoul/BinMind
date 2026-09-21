@@ -6,7 +6,7 @@
       → intra/cross UAF检测 → DT-HSA时间验证 → confirmed/possible/safe分类
 
 方法依据: DT-HSA (原创, ptmalloc2 bin模拟用于二进制UAF验证)
-         + UAFL typestate + Lancet 所有权语义
+         + UAF 生命周期验证 typestate + Lancet 所有权语义
 """
 
 import os, sys, subprocess, time

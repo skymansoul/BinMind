@@ -7,7 +7,7 @@
   2. 按 检出/漏报/误报/真负 分类聚合
   3. 计算 Precision/Recall/F1/FPR
   4. 输出逐样本明细 (CSV + 控制台)
-  5. 提供 HOSV-only 与 HOSV+写模式扩展的对比
+  5. 提供堆写模式验证-only 与堆写模式验证+写模式扩展的对比
 """
 
 import csv
@@ -73,7 +73,7 @@ def run(out_path: str = None) -> Dict:
     metrics = _compute_metrics(outcomes)
     _print_table(outcomes)
 
-    # HOSV-only vs HOSV+写模式扩展对比
+    # 堆写模式验证-only vs 堆写模式验证+写模式扩展对比
     hosv_only = []
     for o in outcomes:
         o2 = _copy_skip_ext(o)
@@ -108,7 +108,7 @@ def run(out_path: str = None) -> Dict:
 
 
 def _copy_skip_ext(o) -> "ScanOutcome":
-    """构造仅含 HOSV 判定的副本."""
+    """构造仅含堆写模式验证判定的副本."""
     from _scan import ScanOutcome
     return ScanOutcome(
         sample_id=o.sample_id, expected=o.expected,

@@ -1,16 +1,16 @@
 """
-多工具对比实验 — BinMind MIVR vs Angr vs QEMU vs Ghidra 堆溢出检测.
+多工具对比实验 — BinMind 多条区间约束传播 vs Angr vs QEMU vs Ghidra 堆溢出检测.
 
 实验设计:
   - 统一基准: 68 CVE+合成堆溢出样本, 同一伪代码输入
-  - 工具: BinMind GAPSBV (baseline), BinMind MIVR (our), Angr (symbex),
+  - 工具: BinMind 仿射边界验证 (baseline), BinMind 多条区间约束传播 (our), Angr (symbex),
           QEMU (taint), Ghidra (static)
   - 指标: Precision, Recall, F1, FP Rate, Time per sample (ms)
   - 可信度: 每工具在相同硬件上运行3次取平均
 
 方法论:
   1. 所有工具使用统一输入 (伪代码或 IR)
-  2. BinMind/MIVR 结果来自实测 benchmark
+  2. BinMind/多条区间约束传播 结果来自实测 benchmark
   3. Angr/QEMU/Ghidra 结果为文献估计 + 基于已知能力的保守估算
   4. 结果经卡方检验验证统计显著性 (p < 0.05)
 """
@@ -30,7 +30,7 @@ sys.path.insert(0, BASE)
 
 
 def load_mivr_results() -> Dict:
-    """加载 MIVR benchmark 结果."""
+    """加载 多条区间约束传播 benchmark 结果."""
     path = os.path.join(BASE, 'eval', 'mivr_benchmark_results.json')
     if os.path.exists(path):
         with open(path, 'r') as f:
@@ -42,7 +42,7 @@ def build_comparison_data() -> Dict:
     """构建多工具对比数据.
 
     数据来源:
-      - BinMind/MIVR: 实测
+      - BinMind/多条区间约束传播: 实测
       - Angr: 文献估计, precision~0.55, recall~0.70
       - QEMU: 动态污点追踪, precision~0.75, recall~0.45
       - Ghidra: 静态反编译+模式匹配, precision~0.45, recall~0.65
@@ -183,7 +183,7 @@ def plot_radar(data: Dict, out_dir: str):
 
 
 def plot_ablation(data: Dict, out_dir: str):
-    """消融研究: MIVR 贡献分解 (GAPSBV → +MIVR → MIVR+)."""
+    """消融研究: 多条区间约束传播 贡献分解 (仿射边界验证 → +多条区间约束传播 → 多条区间约束传播+)."""
     mivr = load_mivr_results()
     stages = ['GAPSBV\n(baseline)', '+MIVR\nstandalone', '+GAPSBV\nfallback\n(MIVR+)']
     precision = [0.7209, 0.7500, 0.8400]

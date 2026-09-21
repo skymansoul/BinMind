@@ -117,7 +117,7 @@ def find_all_samples() -> List[Dict[str, Any]]:
 
 
 def detect_heap_overflow(source_path: str) -> Tuple[bool, float, str]:
-    """堆溢出检测 (GAPSBV)."""
+    """堆溢出检测 (仿射边界验证)."""
     try:
         with open(source_path, 'r', encoding='utf-8', errors='replace') as f:
             source = f.read().lower()
@@ -160,7 +160,7 @@ def detect_heap_overflow(source_path: str) -> Tuple[bool, float, str]:
 
 
 def detect_uaf(source_path: str) -> Tuple[bool, float, str]:
-    """UAF检测 (TARPS)."""
+    """UAF检测 (时序-别名-可达-路径验证)."""
     try:
         with open(source_path, 'r', encoding='utf-8', errors='replace') as f:
             source = f.read()

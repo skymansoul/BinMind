@@ -41,8 +41,8 @@ def asip_filter_by_path(
     source: str,
     candidates: List,
 ) -> List:
-    """路径条件感知过滤, 复用 PCOL 约束提取器。对 CJ 判定 VULN 的候选检查 alloc 路径与 write 路径是否互斥, 仅处理源码级候选。"""
-    from analysis.uaf_pcol_constraints import (
+    """路径条件感知过滤, 复用路径条件对象生命周期 (Path-Conditioned Object Lifecycle) 约束提取器。对 约束求解 (Constraint Solving) 判定 VULN 的候选检查 alloc 路径与 write 路径是否互斥, 仅处理源码级候选。"""
+    from analysis.uaf_path_lifecycle_constraints import (
         extract_path_conditions, check_path_mutex,
     )
     lines = source.split('\n')

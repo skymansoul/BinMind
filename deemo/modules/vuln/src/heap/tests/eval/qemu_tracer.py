@@ -1,4 +1,4 @@
-"""SHIELD 对比实验 — QEMU user-mode 动态追踪.
+"""堆区间证据消歧对比实验 — QEMU user-mode 动态追踪.
 
 用 qemu-x86_64 -trace 追踪 heap 操作 (malloc/free/memcpy),
 收集运行时分配大小和访问大小, 对比静态分析结果.

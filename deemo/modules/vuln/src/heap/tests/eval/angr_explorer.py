@@ -1,7 +1,7 @@
-"""SHIELD 对比实验 — Angr 符号执行.
+"""堆区间证据消歧对比实验 — Angr 符号执行.
 
 对编译好的 .exe 样本运行 Angr explorer, 检测堆溢出路径.
-对比 SHIELD 的静态分析结果.
+对比堆区间证据消歧的静态分析结果.
 
 依赖: pip install angr
 

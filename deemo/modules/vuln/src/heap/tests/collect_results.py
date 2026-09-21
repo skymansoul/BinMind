@@ -1,4 +1,4 @@
-"""SHIELD 回归测试 — 结果汇总与指标计算.
+"""堆区间证据消歧回归测试 — 结果汇总与指标计算.
 
 读取 run_scanner.py 生成的 scan_results.json,
 按样本类型分组计算 TP/FP/TN/FN, 输出 LaTeX 表格和 CSV.

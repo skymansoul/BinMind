@@ -4,7 +4,7 @@
 整合三层检测:
   Level 0: Baseline 正则模式匹配 (printf(var) 直接匹配)
   Level 1: FSCS 评分 (格式说明符 + 用户可控性 + 输出目标)
-  Level 2: FCPV 约束传播验证 (三值安全格 + cross-func)
+  Level 2: 路径约束收集验证 约束传播验证 (三值安全格 + cross-func)
 
 样本集:
   - samples/format_string/sample_fmt_* (15个源码样本, 有 [VULN]/[SAFE] 标注)
@@ -21,8 +21,8 @@ from typing import Dict, List, Tuple
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from core.fcpv_pipeline import fcpv_filter
-from core.fcpv_constraint_types import SafetyLabel
+from core.path_constraint_pipeline import fcpv_filter
+from core.path_constraint_constraint_types import SafetyLabel
 
 
 # Ground Truth 提取
@@ -98,7 +98,7 @@ def detect_fscs(source: str) -> bool:
 
 
 def detect_fcpv(source: str) -> Tuple[bool, float, str]:
-    """Level 2: FCPV 约束传播验证.
+    """Level 2: 路径约束收集验证 约束传播验证.
 
     返回 (has_vuln, confidence, reason).
     """

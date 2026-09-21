@@ -152,10 +152,12 @@ def run_provenance_octagon(
             "description": pf["desc"],
             "verdict": pf["verdict"],
             "source": "provenance_octagon",
+            # 精度传播是元信息追踪, 不是漏洞判定
+            "rw_weak": True,
         })
-    # 写点溯源审计
+    # 写点溯源审计 (汇编风格)
     for ln, line in enumerate(pseudocode.splitlines(), 1):
-        m = re.search(r"\[\s*(\w+)\s*(\+\s*\w+)?\]\s*(?:,|=)", line)
+        m = re.search(r"(?<!\w)\[\s*(\w+)\s*(\+\s*\w+)?\]\s*(?:,|=)", line)
         if not m:
             continue
         var = m.group(1)
@@ -171,7 +173,130 @@ def run_provenance_octagon(
             "description": f"line{ln} var={var} prov={p}",
             "verdict": verdict,
             "source": "provenance_octagon",
+            # UNKNOWN 溯源: 变量无来源记录无法判定域归属, 是线索不是判定
+            "rw_weak": p == _UNKNOWN,
         })
+
+    # C 风格写点溯源审计: buf[expr]=val 基址溯源
+    # 收集 malloc 容量 (常量和表达式)
+    alloc_caps: dict = {}
+    for line in pseudocode.splitlines():
+        m_a = re.search(
+            r"(\w+)\s*=\s*(?:\([^)]*\)\s*)?malloc\s*\(\s*(\d+)\s*\)",
+            line,
+        )
+        if m_a:
+            alloc_caps[m_a.group(1)] = int(m_a.group(2))
+        m_av = re.search(
+            r"(\w+)\s*=\s*(?:\([^)]*\)\s*)?malloc\s*\(\s*([^)]+)\s*\)",
+            line,
+        )
+        if m_av and not m_av.group(2).strip().isdigit():
+            alloc_caps[m_av.group(1)] = None
+
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        m_idx = re.search(r"(\w+)\s*\[([^\]]+)\]\s*=\s*(\S+)", line)
+        if not m_idx:
+            continue
+        buf_var = m_idx.group(1)
+        idx_expr = m_idx.group(2).strip()
+        p = prov.get(buf_var, _UNKNOWN)
+        is_heap = p in (_MALLOC, _CALLOC, _REALLOC, _DERIVED)
+        if not is_heap:
+            # 非堆基址 (如栈数组 local[32]) → non_heap_prov
+            findings.append({
+                "type": "memory_write",
+                "function": func_name or "unknown",
+                "severity": "medium",
+                "cwe": "CWE-787",
+                "confidence": 0.3,
+                "description": f"line{ln} var={buf_var} prov={p}",
+                "verdict": "non_heap_prov",
+                "source": "provenance_octagon",
+                "rw_weak": p == _UNKNOWN,
+            })
+            continue
+        # 堆基址: 检查写偏移与容量是否相容
+        cap = alloc_caps.get(buf_var)
+        if cap is None:
+            # malloc(变量) 容量未知, 偏移含变量算术 → 无法证明相容 → 不产出
+            if not idx_expr.isdigit():
+                continue
+        else:
+            # 常量容量, 偏移含变量算术 → 无法证明相容 → 不产出
+            if not idx_expr.isdigit():
+                continue
+            # 常量偏移 vs 常量容量
+            off = int(idx_expr, 0)
+            if off > cap:
+                # 偏移超容量 → 不产出 heap_prov (避免压真)
+                continue
+        # 偏移与容量相容或容量未知 → heap_prov (降权)
+        findings.append({
+            "type": "heap_overflow",
+            "function": func_name or "unknown",
+            "severity": "medium",
+            "cwe": "CWE-122",
+            "confidence": 0.6,
+            "description": f"line{ln} var={buf_var} prov={p} idx={idx_expr}",
+            "verdict": "heap_prov",
+            "source": "provenance_octagon",
+        })
+
+    # C 风格 memcpy 写点溯源: dst 基址为堆且长度相容 → heap_prov
+    # 先扫描全部下标写点, 若任一明确越界则不产 heap_prov (避免压真)
+    alloc_size_var = None
+    m_asv = re.search(
+        r"(\w+)\s*=\s*(?:\([^)]*\)\s*)?malloc\s*\(\s*(\w+)\s*\)", pseudocode)
+    if m_asv and not m_asv.group(2).isdigit():
+        alloc_size_var = m_asv.group(2)
+    has_clear_oob = False
+    if alloc_size_var:
+        for line in pseudocode.splitlines():
+            m_oo = re.search(
+                r"(\w+)\s*\[\s*" + re.escape(alloc_size_var)
+                + r"\s*\+\s*\d+\s*\]", line)
+            if m_oo:
+                has_clear_oob = True
+                break
+            m_stride = re.search(
+                r"(\w+)\s*\[\s*(\w+)\s*\*\s*(\d+)\s*\]", line)
+            if m_stride and m_stride.group(2) == alloc_size_var:
+                has_clear_oob = True
+                break
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        m_copy = re.search(
+            r"\b(?:memcpy|memmove)\s*\(\s*(\w+)\s*,\s*\w+\s*,\s*(\w+)\s*\)",
+            line,
+        )
+        if not m_copy:
+            continue
+        dst_var = m_copy.group(1)
+        len_tok = m_copy.group(2)
+        p = prov.get(dst_var, _UNKNOWN)
+        is_heap = p in (_MALLOC, _CALLOC, _REALLOC, _DERIVED)
+        if not is_heap:
+            continue
+        # 存在明确越界下标写时, memcpy 安全结论不可信, 不产 heap_prov
+        if has_clear_oob:
+            continue
+        cap = alloc_caps.get(dst_var)
+        if cap is not None and len_tok.isdigit():
+            if int(len_tok) > cap:
+                # 长度超容量 → 不产出 heap_prov (避免压真)
+                continue
+        # 长度相容或容量未知 → heap_prov
+        findings.append({
+            "type": "heap_overflow",
+            "function": func_name or "unknown",
+            "severity": "medium",
+            "cwe": "CWE-122",
+            "confidence": 0.6,
+            "description": f"line{ln} var={dst_var} prov={p} copy_len={len_tok}",
+            "verdict": "heap_prov",
+            "source": "provenance_octagon",
+        })
+
     return findings
 
 

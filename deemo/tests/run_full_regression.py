@@ -93,11 +93,11 @@ def run_baseline(ir_text: str) -> tuple:
 
 
 def run_enhanced_pipeline(ir_text: str, source_code: str = '') -> tuple:
-    """运行CJ+BVF+PC-BVF约束联结管线."""
+    """运行约束求解+后向值流+路径条件后向值流约束联结管线."""
     try:
-        from core.cj_solver import solve_candidate
-        from core.cj_constraint_types import SolverVerdict
-        from tests.bvf_candidate_extractor import extract_candidates_from_code
+        from core.constraint_solver import solve_candidate
+        from core.constraint_constraint_types import SolverVerdict
+        from tests.value_flow_candidate_extractor import extract_candidates_from_code
         candidates, ir_lines = extract_candidates_from_code(
             source_code if source_code else ir_text)
         detected = False
@@ -147,7 +147,7 @@ def main():
         # 基线检测
         sr.baseline_detected, sr.baseline_conf = run_baseline(ir_text)
 
-        # 增强管线 (传入源码而非IR, 因CJ管线需要源码提取候选)
+        # 增强管线 (传入源码而非IR, 因约束求解管线需要源码提取候选)
         detected, conf, tiers = run_enhanced_pipeline(ir_text, source)
         sr.pipeline_detected = detected
         sr.pipeline_conf = conf

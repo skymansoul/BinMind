@@ -10,7 +10,7 @@ PROJECT_ROOT = os.path.dirname(EVAL_DIR)
 
 
 def run_binmind_full(source_path: str, binary_path: str) -> Dict:
-    """BinMind完整管线: GAPSBV-CJ + BVF + PC-BVF."""
+    """BinMind完整管线: 仿射边界验证-约束求解 + 后向值流 + 路径条件后向值流."""
     t0 = time.perf_counter()
     try:
         sys.path.insert(0, PROJECT_ROOT)
@@ -32,7 +32,7 @@ def run_binmind_full(source_path: str, binary_path: str) -> Dict:
 
 
 def run_binmind_hosv(source_path: str) -> Dict:
-    """BinMind HOSV: 源码级验证器."""
+    """BinMind 堆写模式验证: 源码级验证器."""
     t0 = time.perf_counter()
     try:
         sys.path.insert(0, PROJECT_ROOT)
@@ -53,7 +53,7 @@ def run_binmind_hosv(source_path: str) -> Dict:
 
 
 def run_binmind_baseline(source_path: str) -> Dict:
-    """BinMind基线: 仅基础边界检测, 无GAPSBV/BVF过滤."""
+    """BinMind基线: 仅基础边界检测, 无仿射边界验证/后向值流过滤."""
     t0 = time.perf_counter()
     try:
         sys.path.insert(0, PROJECT_ROOT)

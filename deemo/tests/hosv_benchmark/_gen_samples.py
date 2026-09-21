@@ -14,7 +14,7 @@ SAFE 对照: 有守卫边界/有界输入/正确 +1 分配的变体, 用于验�
 import json
 import os
 
-from .hosv_sample_defs import (
+from .heap_write_sample_defs import (
     SAMPLES_DEF, README_TMPL, TRUTHS, LABEL_TO_VERDICT,
 )
 

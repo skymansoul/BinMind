@@ -8,9 +8,9 @@ UAF跨过程生命周期摘要 — 将函数内局部分析提升到全程序级
   2. 在调用点应用摘要, 判断指针在调用后是否仍存活
   3. 三值逻辑: ALIVE / FREED / UNKNOWN (保守: UNKNOWN=ALIVE)
 
-与现有TARPS五阶段的关系:
+与现有 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段的关系:
   本标准模块作为Stage 0前置: 在进入级联过滤前, 先通过调用图传播
-  全局变量的生命周期状态。TARPS的其他阶段在函数内进一步细化。
+  全局变量的生命周期状态。时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 的其他阶段在函数内进一步细化。
 
 局限 (保守性来源):
   - 间接调用目标解析不完整 → 使用CHA (Class Hierarchy Analysis) 保守近似

@@ -86,8 +86,16 @@ export const analyzeBinary = (params: {
   use_ai?: boolean
   enable_symbolic_execution?: boolean
 }): Promise<APIResponse> => {
+  // 后端 AnalysisRequest 契约: binary_name 必填, function_names/enable_symbolic
+  const payload: any = {
+    binary_name: params.binary_path,
+    enable_symbolic: params.enable_symbolic_execution === true
+  }
+  if (Array.isArray(params.functions) && params.functions.length > 0) {
+    payload['function_names'] = params.functions
+  }
   return _doRetryRequest(function() {
-    return http.post('/analyze', params).then(function(r) {
+    return http.post('/analyze', payload).then(function(r) {
       return _parseResponseData(r)
     })
   }, _maxRetry)

@@ -4,7 +4,7 @@
 每层记录写点. 七阶段逐层审计: 从根到叶逐层计算守卫覆盖率 (受守卫写点/总写点),
 所有层覆盖率 >= threshold 才判 safe; 任一层 < threshold 则 unsafe.
 同时记录 fanout_depth (树深) 和 max_fanout (最大扇出宽度) 作为审计指标.
-与 HOFPR-APC 级联不同: 树形扇出聚合而非扁平聚合.
+与 堆溢出误报抑制-APC 级联不同: 树形扇出聚合而非扁平聚合.
 
 设计决策:
   - 分配变量为根, 沿赋值链扩展子节点构建扇出树
@@ -77,8 +77,137 @@ def _guarded(lines: List[str], idx: int) -> bool:
 # 写地址模式: 匹配 [addr] = val 或 mov [addr], val 两种伪代码风格
 _WRITE_PAT = re.compile(r"\[([^\]]+)\]\s*[,=]")
 
+# C 风格调式写: memcpy/memmove/memset/strcpy/strncpy(dst, ...) 第一参数为目标缓冲区
+_CALL_WRITE_PAT = re.compile(
+    r"\b(memcpy|memmove|memset|strcpy|strncpy)\s*\(\s*(\w+)\s*,")
+
+# 完整分配模式: 捕获变量名/函数名/参数列表, 用于提取分配容量
+_ALLOC_FULL_PAT = re.compile(
+    r"\b(\w+)\s*=\s*(?:\([^)]*\)\s*)?(malloc|calloc|realloc)\s*\(([^)]*)\)")
+
 # 赋值链模式: child_var = rhs (排除 ==, <=, >=, != 等比较运算符)
 _ASSIGN_PAT = re.compile(r"\b(\w+)\s*=\s*(?!=)(.+)")
+
+
+def _try_int(s: str) -> Optional[int]:
+    """尝试解析整数字面量, 失败返回 None."""
+    s = s.strip()
+    try:
+        return int(s)
+    except ValueError:
+        return None
+
+
+def _extract_alloc_size(pseudocode: str, var: str) -> Optional[str]:
+    """提取分配变量的容量表达式."""
+    for m in _ALLOC_FULL_PAT.finditer(pseudocode):
+        if m.group(1) != var:
+            continue
+        func = m.group(2)
+        parts = [a.strip() for a in m.group(3).split(",")]
+        if func == "malloc":
+            return parts[0] if parts else None
+        if func == "calloc" and len(parts) == 2:
+            return f"{parts[0]} * {parts[1]}"
+        if func == "realloc" and len(parts) == 2:
+            return parts[1]
+        return m.group(3).strip()
+    return None
+
+
+def _extract_call_write_size(line: str, func_name: str) -> Optional[str]:
+    """从调式写中提取写长参数."""
+    m = re.search(re.escape(func_name) + r"\s*\(([^)]*)\)", line)
+    if not m:
+        return None
+    args = [a.strip() for a in m.group(1).split(",")]
+    if func_name in ("memcpy", "memmove", "memset", "strncpy") and len(args) >= 3:
+        return args[2]
+    # strcpy 无长度参数, 无法确定写长
+    return None
+
+
+def _find_loop_bound(
+    lines: List[str], line_idx: int, loop_var: str
+) -> Optional[str]:
+    """向上查找循环变量的上界. for(var=0;var<N;...) → 返回 N."""
+    pat = re.compile(
+        r"\bfor\s*\(\s*" + re.escape(loop_var) +
+        r"\s*=\s*\d+\s*;\s*" + re.escape(loop_var) + r"\s*<\s*(\w+)")
+    for j in range(line_idx, -1, -1):
+        m = pat.search(lines[j])
+        if m:
+            return m.group(1)
+    return None
+
+
+def _check_call_write_oob(
+    alloc_expr: str, write_size: str
+) -> Optional[bool]:
+    """检查调式写是否越界. True=越界, False=界内, None=无法判定."""
+    if not write_size or not write_size.strip():
+        return None
+    alloc_num = _try_int(alloc_expr)
+    write_num = _try_int(write_size)
+    # 两者均为常量: 直接比较
+    if alloc_num is not None and write_num is not None:
+        return write_num > alloc_num
+    # 分配常量, 写长变量: 无法确定
+    if alloc_num is not None:
+        return None
+    # 分配变量, 写长常量: 常量可能超过变量
+    if write_num is not None:
+        return True
+    # 两者均为变量: 同一表达式则界内
+    if alloc_expr.strip() == write_size.strip():
+        return False
+    # 分配为 "X * K", 写长为 "X": 写长小于分配
+    am = re.match(r"(\w+)\s*\*\s*(\d+)", alloc_expr)
+    if am and am.group(1).strip() == write_size.strip():
+        return False
+    return None
+
+
+def _check_subscript_write_oob(
+    alloc_expr: str, index_expr: str,
+    lines: List[str], line_idx: int
+) -> Optional[bool]:
+    """检查下标写是否越界. True=越界, False=界内, None=无法判定."""
+    alloc_num = _try_int(alloc_expr)
+    # 下标为常量
+    idx_num = _try_int(index_expr)
+    if idx_num is not None:
+        if alloc_num is not None:
+            return idx_num >= alloc_num
+        return None
+    # 下标为 "var + const", 分配为 "var": 偏移必然越界
+    im = re.match(r"(\w+)\s*\+\s*(\d+)", index_expr)
+    if im:
+        if alloc_expr.strip() == im.group(1):
+            return True
+        return None
+    # 下标为 "var * K" (K>1): 步长写, 检查守卫上界与分配关系
+    im2 = re.match(r"(\w+)\s*\*\s*(\d+)", index_expr)
+    if im2:
+        loop_var = im2.group(1)
+        stride = int(im2.group(2))
+        if stride > 1:
+            guard_bound = _find_loop_bound(lines, line_idx, loop_var)
+            if guard_bound and alloc_expr.strip() == guard_bound:
+                return True
+        return None
+    # 下标为单变量: 查找循环守卫上界
+    if re.match(r"^\w+$", index_expr.strip()):
+        loop_var = index_expr.strip()
+        guard_bound = _find_loop_bound(lines, line_idx, loop_var)
+        if guard_bound:
+            if alloc_expr.strip() == guard_bound:
+                return False
+            am = re.match(r"(\w+)\s*\*\s*(\d+)", alloc_expr)
+            if am and am.group(1) == guard_bound:
+                return False
+        return None
+    return None
 
 
 def _build_fanout_tree(
@@ -95,10 +224,14 @@ def _build_fanout_tree(
     while frontier:
         node = frontier.pop(0)
         for i, line in enumerate(lines):
-            # 当前节点变量出现在写地址中 -> 记录写点
+            # 汇编风格: 当前节点变量出现在写地址中 -> 记录写点
             if _WRITE_PAT.search(line) and re.search(
                 r"\b" + re.escape(node.var_name) + r"\b", line
             ):
+                node.writes.append(i)
+            # C 风格: memcpy/memmove/memset/strcpy 等, 第一参数为目标缓冲区
+            cm = _CALL_WRITE_PAT.search(line)
+            if cm and cm.group(2) == node.var_name:
                 node.writes.append(i)
             # 赋值链: child_var = expr 含 node.var_name -> 创建子节点
             m = _ASSIGN_PAT.search(line)
@@ -117,12 +250,34 @@ def _build_fanout_tree(
     return root
 
 
+def _check_write_oob(
+    line: str, alloc_expr: str,
+    lines: List[str], line_idx: int, var_name: str
+) -> Optional[bool]:
+    """判定单行写是否越界. True=越界, False=界内, None=无法判定.
+    优先检查调式写 (memcpy 等), 再检查下标写.
+    """
+    # 调式写: memcpy/memmove/memset/strncpy(dst, src, n)
+    cm = _CALL_WRITE_PAT.search(line)
+    if cm and cm.group(2) == var_name:
+        wsize = _extract_call_write_size(line, cm.group(1))
+        return _check_call_write_oob(alloc_expr, wsize)
+    # 下标写: buf[expr] = val 或 buf[expr], val
+    wm = _WRITE_PAT.search(line)
+    if wm and re.search(r"\b" + re.escape(var_name) + r"\b", line):
+        idx_expr = wm.group(1).strip()
+        return _check_subscript_write_oob(alloc_expr, idx_expr, lines, line_idx)
+    return None
+
+
 def _audit_layers(
-    root: _FanoutNode, lines: List[str], threshold: float
+    root: _FanoutNode, lines: List[str], threshold: float,
+    alloc_size: Optional[str] = None
 ) -> Tuple[List[float], int, int]:
     """逐层审计扇出树 (最多七阶段).
     返回 (各层覆盖率列表, 审计深度, 最大扇出宽度).
-    每层覆盖率 = 该层所有节点受守卫写点数 / 该层总写点数.
+    每层覆盖率 = 该层所有节点安全写点数 / 该层总写点数.
+    安全写点 = 受守卫 或 经容量判定确认界内.
     """
     layer_coverages: List[float] = []
     max_fanout = 0
@@ -137,9 +292,19 @@ def _audit_layers(
             max_fanout = len(current_layer)
         for node in current_layer:
             node.total_count = len(node.writes)
-            node.guarded_count = sum(
-                1 for w in node.writes if _guarded(lines, w)
-            )
+            node.guarded_count = 0
+            for w in node.writes:
+                line = lines[w]
+                safe_write = _guarded(lines, w)
+                # 若有分配容量, 尝试容量判定
+                if not safe_write and alloc_size:
+                    oob = _check_write_oob(
+                        line, alloc_size, lines, w, node.var_name)
+                    if oob is False:
+                        # 确认界内写, 视为安全
+                        safe_write = True
+                if safe_write:
+                    node.guarded_count += 1
             guarded_total += node.guarded_count
             write_total += node.total_count
             next_layer.extend(node.children)
@@ -174,8 +339,9 @@ def run_seven_stage_fanout(
     vars_ = _find_allocs(pseudocode)
     for var in vars_:
         root = _build_fanout_tree(pseudocode, var)
+        alloc_size = _extract_alloc_size(pseudocode, var)
         coverages, fanout_depth, max_fanout = _audit_layers(
-            root, lines, threshold
+            root, lines, threshold, alloc_size
         )
         # 无任何写点则跳过
         total_writes = sum(n.total_count for n in _iter_nodes(root))

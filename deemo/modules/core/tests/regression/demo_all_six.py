@@ -228,7 +228,7 @@ def print_nine_demo_table(all_results: dict, elapsed_ms: float):
     rows = [
         ('Heap Overflow', '6L', '91.7%', '91.7%', '0.917',
          f'{len(all_results["heap"])} cases'),
-        ('Use-After-Free', '6L', '100%', '100%', '1.000',
+        ('Use-After-Free', '6L', '100%', '100%', '1.000',  # 审计口径: 系内部 legacy 测试宣称, 非独立基准验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
          f'{all_results["uaf"]["uaf_candidates"]} candidates'),
         ('UAF Enhanced', 'L5+L6', '—', '—', '—',
          f'calib={all_results["uaf_enhanced"]["L6_calibrated"]}'),

@@ -1,4 +1,4 @@
-"""分析增强模块高阶导入: HOIG/PTASM/GAPSBV/MIVR 管道."""
+"""分析增强模块高阶导入: 对象身份图 (Object Identity Graph)/PTASM/仿射边界验证 (Affine Bound Verification)/路径敏感约束传播 (Path-Sensitive Constraint Propagation) 管道."""
 
 
 # PTASM UAF检测
@@ -27,36 +27,36 @@ from analysis.int_overflow_c_source import (
     detect_int_overflow_quick,
 )
 
-# GAPSBV端到端检测管道
-from analysis.gapsbv_pipeline import (
+# 仿射边界验证 (Affine Bound Verification) 端到端检测管道
+from analysis.affine_bound_pipeline import (
     GapsbvVerdict, DimensionResult, GapsbvReport,
     detect_heap_overflow_gapsbv, detect_heap_gapsbv_quick,
 )
-from analysis.gapsbv_dimensions import (
+from analysis.affine_bound_dimensions import (
     _resolve_macros,
     dim1_affine_relations, dim2_guard_analysis,
     dim3_strided_interval, dim4_allocator_semantics,
 )
-from analysis.gapsbv_dimensions_late import (  # noqa: F401
+from analysis.affine_bound_dimensions_late import (  # noqa: F401
     _extract_size_interval, _estimate_sizeof,
 )
-from analysis.gapsbv_dimension5 import dim5_completeness_check  # noqa: F401
+from analysis.affine_bound_dimension5 import dim5_completeness_check  # noqa: F401
 
-# MIVR 路径敏感约束传播
-from analysis.mivr_constraint_graph import (  # noqa: F401
+# 路径敏感约束传播 (Path-Sensitive Constraint Propagation)
+from analysis.path_proof_constraint_graph import (  # noqa: F401
     VarConstraint, GuardSite, ConstraintEdge, MIVRConstraintGraph,
 )
-from analysis.mivr_path_propagator import (  # noqa: F401
+from analysis.path_proof_path_propagator import (  # noqa: F401
     PropagatedState, WriteSafetyVerdict, MIVRPathPropagator,
 )
-from analysis.mivr_pair_prover import PairProof, MIVRPairProver  # noqa: F401
-from analysis.mivr_pipeline import (  # noqa: F401
+from analysis.path_proof_pair_prover import PairProof, MIVRPairProver  # noqa: F401
+from analysis.path_proof_pipeline import (  # noqa: F401
     dim6_mivr_constraint_proof,
     detect_heap_overflow_mivr,
     run_gapsbv_with_mivr,
 )
 
-# GAPSBV: 证明义务引擎 + 约束收集 + FP削减积分器
+# 仿射边界验证 (Affine Bound Verification): 证明义务引擎 + 约束收集 + FP削减积分器
 try:
     from analysis.heap_proof_types import (
         ProofVerdict, ProofObligation, SizeConstraint,

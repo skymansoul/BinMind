@@ -142,6 +142,22 @@ def _explore_paths(
             elif op == "==":
                 env_t[cv] = env_t[cv].refine_lo(val).refine_hi(val)
                 pc_t.add_eq(cv, val)
+        else:
+            # 外部输入变量 (atoi/scanf/argv 等未入 env): 反编译伪代码无
+            # 赋值链可查时, 仍要把分支约束纳入 path_cond 并绑定占位区间,
+            # 否则 if(idx<64) 守卫下的 buf[idx] 写会因 idx 值域未知而误报.
+            # 下界按非负索引保守取 0; 负索引 C 语义下同样越界, 不在此收紧.
+            if op in ("<", "<="):
+                adj = 0 if op == "<=" else 1
+                env_t[cv] = AffineInterval.symbolic(cv, lo=0, hi=val - adj)
+                pc_t.add_le(cv, val - adj)
+            elif op in (">", ">="):
+                adj = 0 if op == ">=" else 1
+                env_t[cv] = AffineInterval.symbolic(cv, lo=val + adj)
+                pc_t.add_ge(cv, val + adj)
+            elif op == "==":
+                env_t[cv] = AffineInterval.constant(val)
+                pc_t.add_eq(cv, val)
         _process_block(blocks, bid, env_t, pc_t, alloc_sites, write_sites, func_name)
         for succ in block.successors[:1] if block.successors else []:
             _explore_paths(blocks, succ, env_t, pc_t, alloc_sites, write_sites,
@@ -154,6 +170,13 @@ def _explore_paths(
                 env_f[cv] = env_f[cv].refine_lo(val); pc_f.add_ge(cv, val)
             elif op in (">", ">="):
                 env_f[cv] = env_f[cv].refine_hi(val); pc_f.add_le(cv, val)
+        else:
+            if op in ("<", "<="):
+                env_f[cv] = AffineInterval.symbolic(cv, lo=val, hi=2**31 - 1)
+                pc_f.add_ge(cv, val)
+            elif op in (">", ">="):
+                env_f[cv] = AffineInterval.symbolic(cv, lo=-1, hi=val)
+                pc_f.add_le(cv, val)
         _process_block(blocks, bid, env_f, pc_f, alloc_sites, write_sites, func_name)
         for succ in block.successors[1:2] if len(block.successors) > 1 else []:
             _explore_paths(blocks, succ, env_f, pc_f, alloc_sites, write_sites,

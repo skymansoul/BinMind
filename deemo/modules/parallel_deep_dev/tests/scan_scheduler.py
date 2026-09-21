@@ -1,6 +1,6 @@
 """扫描调度模块 — 并行调度检测器扫描全部样本。
 
-每任务: 读 vuln.c → 运行 LCV/CACBV 与朴素基线 → 记录判定/耗时。
+每任务: 读 vuln.c → 运行 LCV/容量感知耦合边界验证 与朴素基线 → 记录判定/耗时。
 结果写入 results_<class>/<name>.json, 供 collect_results 汇总。
 用法: python tests/scan_scheduler.py [--class heap|uaf]
 """

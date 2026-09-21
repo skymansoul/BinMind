@@ -19,35 +19,43 @@ from typing import Dict, List
 SAMPLE_DIR = Path(__file__).resolve().parent
 
 # 基线对比 (来自多工具对比)
+# BinMind 行: 真实二进制链路口径实测值 (binary_pipeline_full.json, 2026-09-16,
+#   n=121, TP=107, FP=14, FN=0, TN=0; 95% Wilson recall CI [0.965, 1.0])
+# 其余各行为 legacy 手写对比数据，非实测计算，口径不明不可作为实测依据，仅作历史记录
+# 历史: 原 BinMind (AVHO-G v3.2.1) 行 f1=1.000 系源码正则小集与手写标签同源互洽的
+#   自证结果，2026-09-16 审计废置，由上述真实口径值替换
 BASELINE = {
-    'BinMind (AVHO-G v3.2.1)': {'precision': 1.00, 'recall': 1.00, 'f1': 1.000},
-    'BinMind (AVHO v3.2)':     {'precision': 0.94, 'recall': 0.88, 'f1': 0.91},
-    'Naive Regex':             {'precision': 0.85, 'recall': 0.40, 'f1': 0.54},
-    'angr (symbolic exec)':    {'precision': 0.35, 'recall': 0.85, 'f1': 0.50},
-    'Ghidra (pattern)':        {'precision': 0.25, 'recall': 0.75, 'f1': 0.38},
-    'QEMU (dynamic trace)':    {'precision': 0.90, 'recall': 0.70, 'f1': 0.79},
+    'BinMind (binary_pipeline_full, n=121)': {'precision': 0.884, 'recall': 1.00, 'f1': 0.939},
+    'BinMind (AVHO v3.2, legacy)':     {'precision': 0.94, 'recall': 0.88, 'f1': 0.91},
+    'Naive Regex (legacy)':            {'precision': 0.85, 'recall': 0.40, 'f1': 0.54},
+    'angr (symbolic exec, legacy)':    {'precision': 0.35, 'recall': 0.85, 'f1': 0.50},
+    'Ghidra (pattern, legacy)':        {'precision': 0.25, 'recall': 0.75, 'f1': 0.38},
+    'QEMU (dynamic trace, legacy)':    {'precision': 0.90, 'recall': 0.70, 'f1': 0.79},
 }
 
-# 已知样本的 CVE 映射
+# 合成样本的模拟漏洞模式编号 (SIM-xx)
+# 2026-09-16 审计修正: 原映射使用编造的连号 CVE-2024-0001/0003/0004... 及冒用
+# 真实 CVE 编号 (如 CVE-2016-2208), 会误导读者以为样本对应真实 CVE, 已废置;
+# 本批样本为团队自制场景构造代码, 编号仅描述漏洞模式, 非真实 CVE 对应
 CVE_MAP = {
-    'sample01_direct_overflow': 'CVE-2024-0001',
-    'sample02_int_overflow_to_heap': 'CVE-2016-2208',
-    'sample03_insufficient_guard': 'CVE-2024-0003',
-    'sample04_cross_function_overflow': 'CVE-2024-0004',
-    'sample05_loop_cumulative_overflow': 'CVE-2024-0005',
-    'sample06_sprintf_overflow': 'CVE-2024-0006',
-    'sample07_memcpy_computed_size': 'CVE-2024-0007',
+    'sample01_direct_overflow': 'SIM-01-direct-overflow',
+    'sample02_int_overflow_to_heap': 'SIM-02-int-overflow-to-heap',
+    'sample03_insufficient_guard': 'SIM-03-insufficient-guard',
+    'sample04_cross_function_overflow': 'SIM-04-cross-function-overflow',
+    'sample05_loop_cumulative_overflow': 'SIM-05-loop-cumulative-overflow',
+    'sample06_sprintf_overflow': 'SIM-06-sprintf-overflow',
+    'sample07_memcpy_computed_size': 'SIM-07-memcpy-computed-size',
     'sample08_alignment_padding_safe': 'SAFE',
-    'sample09_strncpy_truncation_overflow': 'CVE-2024-0009',
-    'sample10_realloc_shrink_overflow': 'CVE-2024-0010',
-    'sample11_calloc_wraparound': 'CVE-2024-0011',
-    'sample12_conditional_overflow': 'CVE-2024-0012',
-    'sample13_multi_alloc_pointer_confusion': 'CVE-2024-0013',
-    'sample14_nested_struct_overflow': 'CVE-2024-0014',
+    'sample09_strncpy_truncation_overflow': 'SIM-09-strncpy-truncation-overflow',
+    'sample10_realloc_shrink_overflow': 'SIM-10-realloc-shrink-overflow',
+    'sample11_calloc_wraparound': 'SIM-11-calloc-wraparound',
+    'sample12_conditional_overflow': 'SIM-12-conditional-overflow',
+    'sample13_multi_alloc_pointer_confusion': 'SIM-13-multi-alloc-pointer-confusion',
+    'sample14_nested_struct_overflow': 'SIM-14-nested-struct-overflow',
     'sample15_properly_guarded_safe': 'SAFE',
     'sample16_exact_boundary_safe': 'SAFE',
     'sample17_large_offset_small_write': 'SAFE',
-    'sample18_16bit_overflow_to_heap': 'CVE-2024-0018',
+    'sample18_16bit_overflow_to_heap': 'SIM-18-16bit-overflow-to-heap',
 }
 
 

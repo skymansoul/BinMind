@@ -1,5 +1,5 @@
 """
-格式串约束引擎 — 将FSCS从正则分类提升到约束传播+抽象解释.
+格式串约束引擎 — 将格式说明符约束系统 (Format Spec Constraint System) 从正则分类提升到约束传播+抽象解释.
 
 与 fmt_constraint_solver.py 的纯正则方法对照:
   1. CallingConventionModel: 基于Microsoft x64 ABI计算%n$→实际参数栈槽
@@ -7,7 +7,7 @@
   3. AttackSurfaceComputer: 三层评分分解 (格式串可控×写入原语×地址可控)
   4. L1/L2/L3 分层架构: 参数建模→污点传播→攻击面量化
 
-与FSCS关系: 正则级classify + 本引擎约束精化 → 最终综合评分.
+与格式说明符约束系统 (Format Spec Constraint System) 关系: 正则级classify + 本引擎约束精化 → 最终综合评分.
 """
 
 import re

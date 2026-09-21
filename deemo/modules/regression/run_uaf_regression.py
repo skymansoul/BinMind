@@ -1,5 +1,5 @@
 """
-UAF 回归测试 — 复用 HFP 编译/调度框架, 检测器换用 core.uaf_detector.
+UAF 回归测试 — 复用 分配器感知过滤 编译/调度框架, 检测器换用 core.uaf_detector.
 
 UAF 检测输入是反编译伪代码文本 (core.uaf_detector 接口),
 而非伪 IR. 本模块把 objdump 反汇编经 asm_translator 翻译的
@@ -29,7 +29,7 @@ UAF_SAFE = {'safe_01_null_after_free', 'safe_02_refcount',
 
 def detect_uaf(asm_path: str) -> list:
     """经伪 IR 调用 hfp_uaf 检测器 (二进制级生命周期分析)."""
-    from hfp.hfp_uaf import detect_from_asm
+    from hfp.alloc_aware_uaf import detect_from_asm
     text = Path(asm_path).read_text(encoding='utf-8', errors='replace')
     return detect_from_asm(text)
 

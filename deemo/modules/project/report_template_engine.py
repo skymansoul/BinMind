@@ -208,6 +208,7 @@ class ReportTemplateEngine:
         body = report.content
         body = re.sub(r"^# (.+)$", r"<h1>\1</h1>", body, flags=re.MULTILINE); body = re.sub(r"^## (.+)$", r"<h2>\1</h2>", body, flags=re.MULTILINE); body = re.sub(r"^### (.+)$", r"<h3>\1</h3>", body, flags=re.MULTILINE)
         body = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", body); body = re.sub(r"`([^`]+)`", r"<code>\1</code>", body); body = re.sub(r"^\|(.+)\|$", r"<tr>\1</tr>", body, flags=re.MULTILINE); body = body.replace("\n", "<br>\n")
+        # 口径: 下行 width:100% 为 CSS 表格宽度布局参数, 非检测结果宣称
         if full: return f"""<!DOCTYPE html>\n<html><head><meta charset="utf-8"><title>{report.title}</title>\n<style>body{{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;line-height:1.6;color:#1a1a1a}}h1{{border-bottom:2px solid #2563eb;padding-bottom:.5rem}}h2{{color:#2563eb}}table{{border-collapse:collapse;width:100%}}td,th{{border:1px solid #e2e8f0;padding:.5rem .75rem}}</style></head>\n<body>{body}</body></html>"""
         return body
 

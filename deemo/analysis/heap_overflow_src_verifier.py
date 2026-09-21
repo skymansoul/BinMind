@@ -1,5 +1,5 @@
 """
-堆溢出源级验证器 (HOSV). 5阶段管线 — 分配→写入→边界检查→约束闭包→APAS增强.
+堆溢出源级验证器 (堆写模式验证 (Heap Write Verification)). 5阶段管线 — 分配→写入→边界检查→约束闭包→APAS增强.
 
 ▎正则模式+分配器模型 → analysis.heap_overflow_src_patterns
 ▎Phase 1+2 → analysis.heap_overflow_src_phases

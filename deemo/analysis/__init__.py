@@ -6,7 +6,7 @@ Tier 2 (选择性符号执行): selective_symexec — 仅符号化size参数, �
 Tier 3 (不可行路径剪枝): infeasible_path_pruner — 区间代数约束一致性检测(无SMT)
 
 多漏洞类型深度验证:
-  - uaf_tarps_verifier: TARPS 五阶段误报削减
+  - uaf_state_path_verifier: 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification) 五阶段误报削减
   - format_string_verifier: 三阶段常量折叠+污点传播+路径守卫
   - int_overflow_verifier: 值范围传播+守卫精化
 """
@@ -187,11 +187,11 @@ from analysis.selective_symexec import (
 from analysis.infeasible_path_pruner import (
     InfeasiblePathPruner, PruneResult, GuardPatternDetector,
 )
-from analysis.uaf_tarps_verifier import (
+from analysis.uaf_state_path_verifier import (
     UafTarpsVerifier, TarpsVerdict, TarpsResult,
 )
 try:
-    from analysis.uaf_tarps_verifier import batch_verify_uaf
+    from analysis.uaf_state_path_verifier import batch_verify_uaf
 except ImportError:
     batch_verify_uaf = None  # type: ignore
 
@@ -324,14 +324,14 @@ from analysis.alloc_write_extractor import (
 from analysis.fmt_semantic_taint import (
     SemClass, FstpVerdict, FmtSemanticTaintPropagator,
 )
-from analysis.uaf_hoig_types import (
+from analysis.uaf_obj_graph_types import (
     ObjState, ObjectID, ObjStateAtPoint,
     IdentityEdge, FuncObjSummary, UafHoigVerdict,
 )
-from analysis.uaf_hoig_builder import HoigBuilder
-from analysis.uaf_hoig_propagator import HoigPropagator
-from analysis.uaf_hoig_cross_func import HoigCrossFuncVerifier
-from analysis.uaf_hoig_verifier import HoigVerifier, HoigReallocTracker
+from analysis.uaf_obj_graph_builder import HoigBuilder
+from analysis.uaf_obj_graph_propagator import HoigPropagator
+from analysis.uaf_obj_graph_cross_func import HoigCrossFuncVerifier
+from analysis.uaf_obj_graph_verifier import HoigVerifier, HoigReallocTracker
 
 # PTASM UAF检测
 from analysis.ptasm_engine import (
@@ -359,36 +359,36 @@ from analysis.int_overflow_c_source import (
     detect_int_overflow_quick,
 )
 
-# GAPSBV端到端检测管道
-from analysis.gapsbv_pipeline import (
+# 仿射边界验证 (Affine Bound Verification) 端到端检测管道
+from analysis.affine_bound_pipeline import (
     GapsbvVerdict, DimensionResult, GapsbvReport,
     detect_heap_overflow_gapsbv, detect_heap_gapsbv_quick,
 )
-from analysis.gapsbv_dimensions import (
+from analysis.affine_bound_dimensions import (
     _resolve_macros,
     dim1_affine_relations, dim2_guard_analysis,
     dim3_strided_interval, dim4_allocator_semantics,
 )
-from analysis.gapsbv_dimensions_late import (  # noqa: F401
+from analysis.affine_bound_dimensions_late import (  # noqa: F401
     _extract_size_interval, _estimate_sizeof,
 )
-from analysis.gapsbv_dimension5 import dim5_completeness_check  # noqa: F401
+from analysis.affine_bound_dimension5 import dim5_completeness_check  # noqa: F401
 
-# MIVR 路径敏感约束传播
-from analysis.mivr_constraint_graph import (  # noqa: F401
+# 路径敏感约束传播 (Path-Sensitive Constraint Propagation)
+from analysis.path_proof_constraint_graph import (  # noqa: F401
     VarConstraint, GuardSite, ConstraintEdge, MIVRConstraintGraph,
 )
-from analysis.mivr_path_propagator import (  # noqa: F401
+from analysis.path_proof_path_propagator import (  # noqa: F401
     PropagatedState, WriteSafetyVerdict, MIVRPathPropagator,
 )
-from analysis.mivr_pair_prover import PairProof, MIVRPairProver  # noqa: F401
-from analysis.mivr_pipeline import (  # noqa: F401
+from analysis.path_proof_pair_prover import PairProof, MIVRPairProver  # noqa: F401
+from analysis.path_proof_pipeline import (  # noqa: F401
     dim6_mivr_constraint_proof,
     detect_heap_overflow_mivr,
     run_gapsbv_with_mivr,
 )
 
-# GAPSBV: 证明义务引擎 + 约束收集 + FP削减积分器
+# 仿射边界验证 (Affine Bound Verification): 证明义务引擎 + 约束收集 + FP削减积分器
 try:
     from analysis.heap_proof_types import (
         ProofVerdict, ProofObligation, SizeConstraint,

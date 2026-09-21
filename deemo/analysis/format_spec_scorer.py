@@ -164,7 +164,7 @@ class FormatSpecAnalyzer:
         # 计算影响分数 (0-10)
         impact = cls._compute_impact(specs, format_func)
 
-        # CVSS-style overall — FCPV 修正: 当格式串用户可控但无静态内容时,
+        # CVSS-style overall — 路径约束收集验证 (Path Constraint Collection Verification) 修正: 当格式串用户可控但无静态内容时,
         # impact 默认值 2.5 会导致 overall = 10*2.5/10 = 2.5 < 3.0 → FN.
         # 修正: 用户可控时 overall 取 max(exploit, exploit*impact/10).
         if not specs and is_user_controlled:

@@ -38,32 +38,98 @@ def _tier_to_review(tier: str) -> str:
     return 'confirmed' if tier == 'verified' else 'pending'
 
 
+# 基础检测器的 verdict 标准词表, 与 pipeline.py all_vulns 过滤一致
+_STD_VERDICTS = frozenset({
+    'CONFIRMED', 'LIKELY', 'POSSIBLE', 'DEFINITE', 'UNCERTAIN',
+    'overflow', 'safe', 'FILTERED',
+})
+
+# severity 大小写归一: 不同检测器混用 HIGH/high/High, 统一成首字母大写
+_SEV_UP_MAP = {
+    'CRITICAL': 'Critical',
+    'HIGH': 'High',
+    'MEDIUM': 'Medium',
+    'LOW': 'Low',
+    'INFO': 'Unknown',
+    'UNKNOWN': 'Unknown',
+}
+
+_SEV_ORDER = {'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Unknown': 4}
+
+
+def _normalize_severity(sev: str) -> str:
+    """severity 归一: CRITICAL→Critical, high→High 等, 保证报告分档不丢项。"""
+    if not sev:
+        return 'Unknown'
+    return _SEV_UP_MAP.get(str(sev).strip().upper(), 'Unknown')
+
+
+def _should_skip_finding(v: Dict) -> bool:
+    """与 pipeline.py all_vulns 构建过滤条件一致: 弱信号/中间态/安全判定不计入。
+
+    simulation: 启发式模拟提示 (任何 malloc/memcpy 都报), 与上下文无关;
+    rw_weak: 创新模块 UNKNOWN 域写提示, 是线索不是判定;
+    integer-overflow UNCERTAIN: 区间分析无法确定的保守保留;
+    folded: 契约折叠历史标记;
+    same_chain_safe: 安全性证明而非漏洞;
+    非标准 verdict: 创新模块中间态 (unknown_color/heap_prov/beyond_minsize 等)。
+    """
+    if v.get('simulation'):
+        return True
+    if v.get('rw_weak'):
+        return True
+    vtype = v.get('type', '')
+    if vtype in ('integer-overflow', 'integer_overflow') \
+            and v.get('verdict') == 'UNCERTAIN':
+        return True
+    if v.get('verdict') == 'folded':
+        return True
+    if vtype == 'same_chain_safe':
+        return True
+    bv = v.get('verdict')
+    if bv is not None and bv not in _STD_VERDICTS:
+        # verdict_original 保留预算改写前的原始判定, 在词表内仍按原语义计数
+        if v.get('verdict_original') not in _STD_VERDICTS:
+            return True
+    return False
+
+
 def _collect_vulns(findings: List[Dict], rule_findings: List[Dict],
                    symbolic_result: Dict = None) -> List[Dict]:
     """合并逐函数漏洞与规则检测 finding, 附排序键后返回。
 
-    逐函数结果的漏洞在 analysis.vulnerabilities 内;
-    规则 finding 为扁平的 {type, severity, function_name, ...} 结构。
-    三档分级在此统一设置, 避免 generate_* 重复 setdefault。
+    过滤条件与 pipeline.py all_vulns 构建一致, 确保报告计数与 CLI 口径统一;
+    severity 归一大小写, 确保分档合计 = Total; 按 (function, type) 去重,
+    同一写点被多个子分析器各报一次时只保留首个。
     """
     all_vulns = []
+    _seen = set()
+    # 逐函数分析漏洞: 跳过 simulation, 归一 severity
     for f in findings:
         analysis = f.get('analysis', f)
         for v in analysis.get('vulnerabilities', []):
+            if _should_skip_finding(v) or analysis.get('simulation'):
+                continue
             v['_source'] = 'analysis'
             v['_function'] = f.get('function_name', f.get('function', '?'))
-            v['_severity_val'] = {'Critical': 0, 'High': 1, 'Medium': 2,
-                                  'Low': 3, 'Unknown': 4}.get(
-                                      v.get('severity', 'Unknown'), 5)
+            v['severity'] = _normalize_severity(v.get('severity'))
+            v['_severity_val'] = _SEV_ORDER.get(v['severity'], 5)
+            _seen.add((v['_function'], v.get('type', '?')))
             all_vulns.append(v)
+    # 规则检测 finding: 过滤 + 去重 + 归一 severity
     for v in (rule_findings or []):
         if not isinstance(v, dict):
             continue
+        if _should_skip_finding(v):
+            continue
         v['_source'] = 'rule'
         v['_function'] = v.get('function_name', v.get('function', '?'))
-        v['_severity_val'] = {'Critical': 0, 'High': 1, 'Medium': 2,
-                              'Low': 3, 'Unknown': 4}.get(
-                                  v.get('severity', 'Unknown'), 5)
+        v['severity'] = _normalize_severity(v.get('severity'))
+        v['_severity_val'] = _SEV_ORDER.get(v['severity'], 5)
+        key = (v['_function'], v.get('type', '?'))
+        if key in _seen:
+            continue
+        _seen.add(key)
         all_vulns.append(v)
     # 三档分级集中设置: verified/candidate/lead + review_status
     has_symbolic = bool(symbolic_result and symbolic_result.get('success'))

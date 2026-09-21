@@ -4,7 +4,7 @@
 #   (工具名, 样本ID, 检出数, 误报数, 漏报数, 耗时, 峰值内存) CSV.
 #
 # 工具策略:
-# BinMind: 本项目的堆溢出检测器 (含 AWSC 同源过滤), 真实运行.
+# BinMind: 本项目的堆溢出检测器 (含 分配-写关联 同源过滤), 真实运行.
 #   - Angr:    angr CFGFast + capstone 调用点定位, 真实运行 (已安装).
 #   - QEMU:    qemu-user 运行时追踪 (Windows 无 qemu → 优雅降级为
 #              "不可用", 结果列留空并标注).
@@ -34,7 +34,7 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_binmind(binary: str) -> dict:
-    """BinMind 堆检测器 (含 AWSC)."""
+    """BinMind 堆检测器 (含 分配-写关联)."""
     t0 = time.perf_counter()
     tracemalloc.start()
     try:
@@ -137,7 +137,7 @@ TOOLS = {"BinMind": run_binmind, "Angr": run_angr,
 
 
 def load_samples():
-    """加载堆 CVE + AWSC 同源样本 (vuln/safe 配对)."""
+    """加载堆 CVE + 分配-写关联 同源样本 (vuln/safe 配对)."""
     samples = []
 
     # 1) 堆 CVE 样本 (全为 vuln)

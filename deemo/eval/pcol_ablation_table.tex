@@ -1,15 +1,15 @@
 \begin{table}[htbp]
 \centering
-\caption{PCOL Ablation Study --- Incremental Contribution of Path-Condition Filtering Submodules}
+\caption{PCOL Ablation Study --- Incremental Contribution of Path-Condition Filtering Submodules Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:pcol_ablation}
 \begin{tabular}{lrrrrrrrr}
 \toprule
 Config & TP & FP & TN & FN & P & R & F1 & FPR \\
 \midrule
-  B0_HOIG_Only & 7 & 13 & 1 & 0 & 0.3500 & 1.0000 & 0.5185 & 0.9286 \\
-  B1_Mutex & 7 & 5 & 9 & 0 & 0.5833 & 1.0000 & 0.7368 & 0.3571 \\
-  B2_Mutex_EarlyRet & 7 & 1 & 13 & 0 & 0.8750 & 1.0000 & 0.9333 & 0.0714 \\
-  B3_Full_PCOL & 7 & 0 & 14 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+  B0_HOIG_Only & 7 & 13 & 1 & 0 & 0.3500 & 1.0000 & 0.5185 & 0.9286 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。
+  B1_Mutex & 7 & 5 & 9 & 0 & 0.5833 & 1.0000 & 0.7368 & 0.3571 \\ % 同上, legacy 手写消融数据未核实。
+  B2_Mutex_EarlyRet & 7 & 1 & 13 & 0 & 0.8750 & 1.0000 & 0.9333 & 0.0714 \\ % 同上, legacy 手写消融数据未核实。
+  B3_Full_PCOL & 7 & 0 & 14 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实。
 \bottomrule
 \end{tabular}
 \end{table}

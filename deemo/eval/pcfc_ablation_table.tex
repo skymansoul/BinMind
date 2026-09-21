@@ -1,15 +1,15 @@
 \begin{table}[htbp]
 \centering
-\caption{PCFC Ablation Study --- Incremental Contribution of Path-Condition Filtering for Format String Detection}
+\caption{PCFC Ablation Study --- Incremental Contribution of Path-Condition Filtering for Format String Detection Audited qualifier: legacy handwritten ablation table (self-labeled synthetic samples), not the verified binary pipeline; verified caliber: F1=0.939, n=121, FP=14, TN=0 (see deemo/test_reports/binary_pipeline_full.json).}
 \label{tab:pcfc_ablation}
 \begin{tabular}{lrrrrrrrr}
 \toprule
 Config & TP & FP & TN & FN & P & R & F1 & FPR \\
 \midrule
-  B0_FCPV_Only & 10 & 11 & 2 & 0 & 0.4762 & 1.0000 & 0.6452 & 0.8462 \\
-  B1_Mutex & 10 & 4 & 9 & 0 & 0.7143 & 1.0000 & 0.8333 & 0.3077 \\
-  B2_Mutex_EarlyRet & 10 & 1 & 12 & 0 & 0.9091 & 1.0000 & 0.9524 & 0.0769 \\
-  B3_Full_PCFC & 10 & 0 & 13 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\
+  B0_FCPV_Only & 10 & 11 & 2 & 0 & 0.4762 & 1.0000 & 0.6452 & 0.8462 \\ % 审计口径: legacy 手写消融数据, 自证小集未经验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json。
+  B1_Mutex & 10 & 4 & 9 & 0 & 0.7143 & 1.0000 & 0.8333 & 0.3077 \\ % 同上, legacy 手写消融数据未核实。
+  B2_Mutex_EarlyRet & 10 & 1 & 12 & 0 & 0.9091 & 1.0000 & 0.9524 & 0.0769 \\ % 同上, legacy 手写消融数据未核实。
+  B3_Full_PCFC & 10 & 0 & 13 & 0 & 1.0000 & 1.0000 & 1.0000 & 0.0000 \\ % 同上, legacy 手写消融数据未核实。
 \bottomrule
 \end{tabular}
 \end{table}

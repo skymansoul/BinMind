@@ -111,7 +111,7 @@ def plot_pr_scatter(summary: dict, out_dir: str):
 
 
 def plot_fp_reduction(summary: dict, out_dir: str):
-    """FP reduction 瀑布图: baseline → HOSV → GAPSBV-CJ."""
+    """FP reduction 瀑布图: baseline → 堆写模式验证 → 仿射边界验证-约束求解."""
     stages = ['BinMind\nbaseline', 'BinMind\nHOSV', 'BinMind\nGAPSBV-CJ']
     keys = ['BinMind-baseline', 'BinMind-HOSV', 'BinMind-GAPSBV-CJ']
     fp_rates = [summary[k]['fp_rate'] for k in keys if k in summary]

@@ -148,7 +148,7 @@ class HeapFalsePositiveFilter:
           'uncertain' 保留但 confidence 打折。
 
     关键指标: 过滤率 = safe / (safe + unsafe + uncertain)。
-    目标: 在保留 unsafe 100% 的前提下, 最大化 safe 过滤率。
+    目标: 在保留 unsafe 100% 的前提下, 最大化 safe 过滤率。（审计口径: 系内部 legacy 测试宣称, 非独立基准验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json）
     """
 
     def __init__(self):

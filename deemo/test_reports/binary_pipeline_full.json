@@ -1,0 +1,1301 @@
+{
+  "benchmark": "binary_pipeline_full",
+  "timestamp": "2026-09-16 11:09:51",
+  "caliber": {
+    "detector": "binary pipeline (core.pipeline.run_pipeline)",
+    "run_config": "max_funcs=8, ai_analysis=False, symbolic=False, fuzz=False, r2=auto, ai_probe_neg_cached, per_sample_timeout=150s; 2026-09-16 修复: r2 pdc/pdf 30s 快速放弃 + fmt 反编译 memo 缓存 + angr 回退子进程 60s 超时 + fuzz 门控语义修正 + rop gadget 搜索单次 30s/总预算 60s (MSVC 大样本)",
+    "labels": "deemo/labels/gold.jsonl (legacy 手写标签迁移)",
+    "eligible": "121 正常完成; 0 超时; 3 平台不可编译(POSIX 专用 API: sys/mman.h, SIGUSR1, syslog.h)",
+    "binary_provenance": "106 个历史 MinGW vuln.exe + 15 个 MSVC(VS2022) 补编译 intof_* 样本 + 1 个 MSVC 补编译 io_loop_counter, 编译器异构如实记录",
+    "note": "真实二进制链路全量轨; timeout 与平台不可编译样本列于 data_gaps 不进指标分母; 样本为团队自制合成 C 编译产物, 非真实 CVE 项目二进制, 指标外推需谨慎."
+  },
+  "aggregate": {
+    "confusion": {
+      "tp": 107,
+      "fp": 14,
+      "fn": 0,
+      "tn": 0,
+      "n": 121
+    },
+    "metrics": {
+      "precision": 0.884298,
+      "recall": 1.0,
+      "f1": 0.938596
+    },
+    "error_rate_ci_95": {
+      "wilson": [
+        0.0702,
+        0.1849
+      ],
+      "clopper_pearson": [
+        0.1767,
+        1.0
+      ]
+    },
+    "recall_ci_wilson_95": [
+      0.9653,
+      1.0
+    ],
+    "precision_ci_wilson_95": [
+      0.8151,
+      0.9298
+    ],
+    "saturation": {
+      "status": "NOT_SATURATED",
+      "reason": "f1=0.9386 < 0.95"
+    },
+    "claim": "F1=0.939 (n=121, TP=107, FP=14, FN=0, TN=0); 错误率 14/121 的 95% Wilson CI [0.070, 0.185]"
+  },
+  "by_type": {
+    "format_string": {
+      "confusion": {
+        "tp": 25,
+        "fp": 4,
+        "fn": 0,
+        "tn": 0,
+        "n": 29
+      },
+      "metrics": {
+        "precision": 0.862069,
+        "recall": 1.0,
+        "f1": 0.925926
+      },
+      "recall_ci_wilson_95": [
+        0.8668,
+        1.0
+      ],
+      "precision_ci_wilson_95": [
+        0.6944,
+        0.945
+      ]
+    },
+    "heap_overflow": {
+      "confusion": {
+        "tp": 39,
+        "fp": 10,
+        "fn": 0,
+        "tn": 0,
+        "n": 49
+      },
+      "metrics": {
+        "precision": 0.795918,
+        "recall": 1.0,
+        "f1": 0.886364
+      },
+      "recall_ci_wilson_95": [
+        0.9103,
+        1.0
+      ],
+      "precision_ci_wilson_95": [
+        0.6636,
+        0.8852
+      ]
+    },
+    "integer_overflow": {
+      "confusion": {
+        "tp": 30,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "n": 30
+      },
+      "metrics": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "recall_ci_wilson_95": [
+        0.8865,
+        1.0
+      ],
+      "precision_ci_wilson_95": [
+        0.8865,
+        1.0
+      ]
+    },
+    "uaf": {
+      "confusion": {
+        "tp": 13,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "n": 13
+      },
+      "metrics": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "recall_ci_wilson_95": [
+        0.7719,
+        1.0
+      ],
+      "precision_ci_wilson_95": [
+        0.7719,
+        1.0
+      ]
+    }
+  },
+  "per_sample": [
+    {
+      "sample_id": "cross_func_write",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\cross_func_write\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 16.2
+    },
+    {
+      "sample_id": "CVE-2014-0160",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2014-0160\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 50.2
+    },
+    {
+      "sample_id": "CVE-2016-6301",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2016-6301\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 34.8
+    },
+    {
+      "sample_id": "CVE-2017-11176",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2017-11176\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 36.2
+    },
+    {
+      "sample_id": "CVE-2018-6552",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2018-6552\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.5
+    },
+    {
+      "sample_id": "CVE-2019-1010298",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2019-1010298\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 34.1
+    },
+    {
+      "sample_id": "CVE-2020-10711",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2020-10711\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.4
+    },
+    {
+      "sample_id": "CVE-2021-3156",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2021-3156\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.4
+    },
+    {
+      "sample_id": "CVE-2022-0185",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2022-0185\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 50.7
+    },
+    {
+      "sample_id": "CVE-2022-23222",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2022-23222\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 33.4
+    },
+    {
+      "sample_id": "CVE-2023-0461",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2023-0461\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 63.5
+    },
+    {
+      "sample_id": "CVE-2024-21894",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\CVE-2024-21894\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.2
+    },
+    {
+      "sample_id": "cve_2021_3156_sudoedit",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\cve_2021_3156_sudoedit\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.2
+    },
+    {
+      "sample_id": "cve_2022_0185_kernel_heap",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\cve_2022_0185_kernel_heap\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 64.9
+    },
+    {
+      "sample_id": "cve_2023_23001_custom",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\cve_2023_23001_custom\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 33.6
+    },
+    {
+      "sample_id": "HEAP-OVERFLOW-ALIGN-05",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\HEAP-OVERFLOW-ALIGN-05\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.4
+    },
+    {
+      "sample_id": "HEAP-OVERFLOW-BASIC-01",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\HEAP-OVERFLOW-BASIC-01\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 20.0
+    },
+    {
+      "sample_id": "HEAP-OVERFLOW-COND-03",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\HEAP-OVERFLOW-COND-03\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 27.5
+    },
+    {
+      "sample_id": "HEAP-OVERFLOW-FP-04",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\HEAP-OVERFLOW-FP-04\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.6
+    },
+    {
+      "sample_id": "HEAP-OVERFLOW-LOOP-02",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\HEAP-OVERFLOW-LOOP-02\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.3
+    },
+    {
+      "sample_id": "HEAP-OVERFLOW-MULTI-06",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\HEAP-OVERFLOW-MULTI-06\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.5
+    },
+    {
+      "sample_id": "HEAP-OVERFLOW-REALLOC-07",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\HEAP-OVERFLOW-REALLOC-07\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.7
+    },
+    {
+      "sample_id": "heap_aliased_ptr",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_aliased_ptr\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.8
+    },
+    {
+      "sample_id": "heap_dynamic_index",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_dynamic_index\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 39.2
+    },
+    {
+      "sample_id": "heap_guard_protected",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_guard_protected\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 54.6
+    },
+    {
+      "sample_id": "heap_int_overflow_to_heap",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_int_overflow_to_heap\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 21.2
+    },
+    {
+      "sample_id": "heap_loop_overflow",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_loop_overflow\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 20.4
+    },
+    {
+      "sample_id": "heap_no_guard_check",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_no_guard_check\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 20.7
+    },
+    {
+      "sample_id": "heap_off_by_one",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_off_by_one\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 20.5
+    },
+    {
+      "sample_id": "heap_realloc_misuse",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_realloc_misuse\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.6
+    },
+    {
+      "sample_id": "heap_simple_overflow",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_simple_overflow\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.2
+    },
+    {
+      "sample_id": "heap_slack_space",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_slack_space\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 33.8
+    },
+    {
+      "sample_id": "heap_strcpy_overflow",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_strcpy_overflow\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 34.1
+    },
+    {
+      "sample_id": "heap_struct_write",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_overflow\\heap_struct_write\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 34.3
+    },
+    {
+      "sample_id": "fp_01_alignment_safe",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_01_alignment_safe\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.6
+    },
+    {
+      "sample_id": "fp_02_path_constrained",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_02_path_constrained\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.0
+    },
+    {
+      "sample_id": "fp_03_struct_field",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_03_struct_field\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.3
+    },
+    {
+      "sample_id": "fp_04_realloc_shrink",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_04_realloc_shrink\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.7
+    },
+    {
+      "sample_id": "fp_05_min_constrained",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_05_min_constrained\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.0
+    },
+    {
+      "sample_id": "fp_06_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_06_sample\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.2
+    },
+    {
+      "sample_id": "fp_07_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_07_sample\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 17.8
+    },
+    {
+      "sample_id": "fp_08_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_08_sample\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 9.4
+    },
+    {
+      "sample_id": "fp_09_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_09_sample\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 9.6
+    },
+    {
+      "sample_id": "fp_10_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_10_sample\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 20.6
+    },
+    {
+      "sample_id": "fp_11_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_11_sample\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.7
+    },
+    {
+      "sample_id": "fp_12_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_12_sample\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.8
+    },
+    {
+      "sample_id": "fp_13_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_13_sample\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.7
+    },
+    {
+      "sample_id": "fp_14_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_14_sample\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.5
+    },
+    {
+      "sample_id": "fp_15_sample",
+      "type": "heap_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\heap_fp_reduction\\fp_15_sample\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.2
+    },
+    {
+      "sample_id": "uaf_alias_ptr",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_alias_ptr\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.1
+    },
+    {
+      "sample_id": "uaf_array_index",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_array_index\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.6
+    },
+    {
+      "sample_id": "uaf_callback_free",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_callback_free\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.7
+    },
+    {
+      "sample_id": "uaf_cond_free",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_cond_free\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.5
+    },
+    {
+      "sample_id": "uaf_interproc_sim",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_interproc_sim\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.6
+    },
+    {
+      "sample_id": "uaf_list_node",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_list_node\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.2
+    },
+    {
+      "sample_id": "uaf_loop_free",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_loop_free\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.5
+    },
+    {
+      "sample_id": "uaf_nested_free",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_nested_free\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 33.1
+    },
+    {
+      "sample_id": "uaf_queue_pop",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_queue_pop\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 17.9
+    },
+    {
+      "sample_id": "uaf_realloc_free",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_realloc_free\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.0
+    },
+    {
+      "sample_id": "uaf_simple_double_free",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_simple_double_free\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 17.9
+    },
+    {
+      "sample_id": "uaf_struct_field",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_struct_field\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.8
+    },
+    {
+      "sample_id": "uaf_thread_race_sim",
+      "type": "uaf",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\uaf\\uaf_thread_race_sim\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.0
+    },
+    {
+      "sample_id": "io_add_wrap",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_add_wrap\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 9.3
+    },
+    {
+      "sample_id": "io_alloc_size",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_alloc_size\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 18.9
+    },
+    {
+      "sample_id": "io_array_index",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_array_index\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 19.8
+    },
+    {
+      "sample_id": "io_crypto_nonce",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_crypto_nonce\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 20.7
+    },
+    {
+      "sample_id": "io_length_field",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_length_field\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 17.6
+    },
+    {
+      "sample_id": "io_mixed_types",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_mixed_types\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 16.6,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_mul_overflow",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_mul_overflow\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.8,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_narrow_cast",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_narrow_cast\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 15.9,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_offset_wrap",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_offset_wrap\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.1,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_parse_len",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_parse_len\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 15.7,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_shift_wrap",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_shift_wrap\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 33.1,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_sign_mismatch",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_sign_mismatch\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 16.2,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_size_calc",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_size_calc\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 15.7,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_truncation",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_truncation\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 15.8,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_basic_direct",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_basic_direct\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=11",
+      "elapsed_s": 25.4,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_conditional_fmtstr",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_conditional_fmtstr\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.9,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_constant_safe",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_constant_safe\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.5,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_direct_user",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_direct_user\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=11",
+      "elapsed_s": 26.1,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_double_percent",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_double_percent\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 26.1,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_double_printf",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_double_printf\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 34.2,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_external_input",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_external_input\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 27.0,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_got_overwrite",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_got_overwrite\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.6,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_heap_fmt",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_heap_fmt\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.3,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_heap_fmtstr",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_heap_fmtstr\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.4,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_indirect_arg",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_indirect_arg\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 33.2,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_indirect_fmt",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_indirect_fmt\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.6,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_inline_const",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_inline_const\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 40.2,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_loop_printf",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_loop_printf\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 33.0,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_loop_write",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_loop_write\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 40.9,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_n_bytes_written",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_n_bytes_written\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=11",
+      "elapsed_s": 25.4,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_n_write",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_n_write\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.2,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_nested_call",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_nested_call\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.5,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_offset_leak",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_offset_leak\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.1,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_positional",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_positional\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.3,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_positional_arg",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_positional_arg\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=13",
+      "elapsed_s": 32.4,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_snprintf_safe",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_snprintf_safe\\vuln.exe",
+      "label": 0,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 24.5,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_snprintf_trunc",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_snprintf_trunc\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=11",
+      "elapsed_s": 24.9,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_stack_leak",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_stack_leak\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 24.6,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_stack_write",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_stack_write\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=11",
+      "elapsed_s": 25.1,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_vprintf_proxy",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_vprintf_proxy\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.5,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_vprintf_wrap",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_vprintf_wrap\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.1,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_width_leak",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_width_leak\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 25.0,
+      "status": "ok"
+    },
+    {
+      "sample_id": "fmt_wrapper_func",
+      "type": "format_string",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\format_string\\fmt_wrapper_func\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 24.7,
+      "status": "ok"
+    },
+    {
+      "sample_id": "io_loop_counter",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\int_overflow\\io_loop_counter\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=9",
+      "elapsed_s": 15.0,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_add_overflow",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_add_overflow\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.7,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_alloc_size",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_alloc_size\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 99.2,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_api_return",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_api_return\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 102.7,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_array_index",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_array_index\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 91.3,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_basic_mul",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_basic_mul\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 97.3,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_bitfield_extract",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_bitfield_extract\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.8,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_cond_narrow",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_cond_narrow\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.5,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_loop_counter",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_loop_counter\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 97.8,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_memcpy_len",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_memcpy_len\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.3,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_recursive_call",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_recursive_call\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.4,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_shift_op",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_shift_op\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.2,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_signed_cast",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_signed_cast\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.7,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_struct_field",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_struct_field\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 99.4,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_ternary_size",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_ternary_size\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 98.3,
+      "status": "ok"
+    },
+    {
+      "sample_id": "intof_widen_cast",
+      "type": "integer_overflow",
+      "binary": "C:\\Users\\Administrator\\Desktop\\BinMind\\deemo\\tests\\samples\\integer_overflow\\intof_widen_cast\\vuln.exe",
+      "label": 1,
+      "predicted": 1,
+      "detail": "total_vulns=3",
+      "elapsed_s": 97.1,
+      "status": "ok"
+    }
+  ],
+  "data_gaps": {
+    "timeout_or_error": [],
+    "platform_not_compilable": [
+      {
+        "sample_id": "uaf_mmap_free",
+        "reason": "POSIX-only API, Windows 不可编译"
+      },
+      {
+        "sample_id": "uaf_signal_handler",
+        "reason": "POSIX-only API, Windows 不可编译"
+      },
+      {
+        "sample_id": "fmt_syslog_direct",
+        "reason": "POSIX-only API, Windows 不可编译"
+      }
+    ]
+  }
+}

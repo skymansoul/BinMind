@@ -1,7 +1,7 @@
 # 多创新点精度汇总报告
 #
 # 汇总三个深挖创新点的实测指标:
-#   1. 堆溢出 (AWSC 同源关联) - 主打创新点
+#   1. 堆溢出 (分配-写关联 同源关联) - 主打创新点
 #   2. UAF 生命周期追踪
 #   3. 格式化字符串
 #
@@ -61,7 +61,7 @@ def main():
         lines.append(f"| FPR | {m.get('fpr')*100:.1f}% |")
     lines.append("")
 
-    # 2) AWSC 消融
+    # 2) 分配-写关联 消融
     awsc = load(RESULTS_DIR / "awsc_ablation.json", ANALYSIS_RESULTS)
     lines.append("### AWSC 消融实验 (同源样本误报抑制)")
     lines.append("")

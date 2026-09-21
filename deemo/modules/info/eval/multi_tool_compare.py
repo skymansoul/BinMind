@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """eval/multi_tool_compare.py — 多工具对比集成脚本
-编排 Angr / Ghidra / QEMU 三工具分析, 并与 CB-HOD / PSVR-HLM 结果做横向对比。
+编排 Angr / Ghidra / QEMU 三工具分析, 并与 CB-HOD / 路径敏感值域推理-HLM 结果做横向对比。
 
 输出: JSON 对比结果 + 雷达图 PNG + LaTeX 多工具对比表。
 若外部工具未安装则输出 SKIP 标记, 不中断流程。

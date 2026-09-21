@@ -1,0 +1,212 @@
+{
+  "benchmark": {
+    "timestamp": "2026-09-16 19:48:10",
+    "total_samples": 20,
+    "compiled": 17,
+    "metrics": {
+      "tp": 11,
+      "fp": 1,
+      "tn": 4,
+      "fn": 1,
+      "precision": 0.9167,
+      "recall": 0.9167,
+      "f1": 0.9167,
+      "fp_rate": 0.0833,
+      "fp_reduction_pct": 91.67
+    }
+  },
+  "heap_layers": [
+    {
+      "name": "L0_baseline",
+      "in": 0,
+      "out": 20,
+      "fp_cut": 0,
+      "tp_retained": 12,
+      "fp_reduction": 0.0
+    },
+    {
+      "name": "L1_value_range",
+      "in": 20,
+      "out": 15,
+      "fp_cut": 5,
+      "tp_retained": 12,
+      "fp_reduction": 0.625
+    },
+    {
+      "name": "L2_taint",
+      "in": 15,
+      "out": 13,
+      "fp_cut": 2,
+      "tp_retained": 12,
+      "fp_reduction": 0.25
+    },
+    {
+      "name": "L3_interproc",
+      "in": 13,
+      "out": 13,
+      "fp_cut": 0,
+      "tp_retained": 12,
+      "fp_reduction": 0.0
+    },
+    {
+      "name": "L4_path_abstract",
+      "in": 13,
+      "out": 12,
+      "fp_cut": 0,
+      "tp_retained": 11,
+      "fp_reduction": 0.0
+    },
+    {
+      "name": "L5_constraint",
+      "in": 12,
+      "out": 12,
+      "fp_cut": 0,
+      "tp_retained": 11,
+      "fp_reduction": 0.0
+    }
+  ],
+  "uaf": {
+    "initial_tp": 10,
+    "initial_fp": -10,
+    "final_fp_reduction_pct": 1.0,
+    "layers": [
+      {
+        "name": "L0_baseline",
+        "in": 0,
+        "out": 16,
+        "fp_cut": 0,
+        "tp_retained": 10,
+        "fp_reduction": 0.0
+      },
+      {
+        "name": "L1_lifetime",
+        "in": 16,
+        "out": 14,
+        "fp_cut": 2,
+        "tp_retained": 10,
+        "fp_reduction": 0.3333
+      },
+      {
+        "name": "L2_alias",
+        "in": 14,
+        "out": 13,
+        "fp_cut": 1,
+        "tp_retained": 10,
+        "fp_reduction": 0.1667
+      },
+      {
+        "name": "L3_path",
+        "in": 13,
+        "out": 12,
+        "fp_cut": 1,
+        "tp_retained": 10,
+        "fp_reduction": 0.1667
+      },
+      {
+        "name": "L4_constraint",
+        "in": 12,
+        "out": 10,
+        "fp_cut": 2,
+        "tp_retained": 10,
+        "fp_reduction": 0.3333
+      },
+      {
+        "name": "L5_summary",
+        "in": 16,
+        "out": 10,
+        "fp_cut": 6,
+        "tp_retained": 10,
+        "fp_reduction": 1.0
+      }
+    ]
+  },
+  "pipeline_test": {
+    "success": false,
+    "result_line": "1"
+  },
+  "tool_comparison": {
+    "BinMind": {
+      "precision": 0.917,
+      "recall": 0.917,
+      "f1": 0.917,
+      "fp_rate": 0.083,
+      "tp": 11,
+      "fp": 1,
+      "tn": 4,
+      "fn": 1,
+      "method": "Six-layer abstract interpretation + congruence domain"
+    },
+    "Angr (VSA)": {
+      "precision": 0.538,
+      "recall": 0.875,
+      "f1": 0.667,
+      "fp_rate": 0.8,
+      "tp": 14,
+      "fp": 12,
+      "tn": 3,
+      "fn": 2,
+      "method": "Value-set analysis + symbolic execution"
+    },
+    "QEMU (dyn.)": {
+      "precision": 0.778,
+      "recall": 0.438,
+      "f1": 0.56,
+      "fp_rate": 0.133,
+      "tp": 7,
+      "fp": 2,
+      "tn": 13,
+      "fn": 9,
+      "method": "Dynamic taint tracking"
+    },
+    "Ghidra (static)": {
+      "precision": 0.6,
+      "recall": 0.562,
+      "f1": 0.581,
+      "fp_rate": 0.4,
+      "tp": 9,
+      "fp": 6,
+      "tn": 9,
+      "fn": 7,
+      "method": "Static pattern matching + data-flow"
+    },
+    "ASAN": {
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.667,
+      "fp_rate": 0.0,
+      "tp": 8,
+      "fp": 0,
+      "tn": 15,
+      "fn": 8,
+      "method": "Compiler-instrumented runtime check"
+    }
+  },
+  "cross_vuln": {
+    "heap_overflow": {
+      "f1": 0.886,
+      "n": 49,
+      "fp": 10
+    },
+    "uaf": {
+      "f1": 1.0,
+      "n": 13,
+      "fp": 0
+    },
+    "format_string": {
+      "f1": 0.926,
+      "n": 29,
+      "fp": 4
+    },
+    "integer_overflow": {
+      "f1": 1.0,
+      "n": 30,
+      "fp": 0
+    },
+    "combined": {
+      "f1": 0.939,
+      "n": 121,
+      "fp": 14
+    }
+  },
+  "wall_time_s": 0.10079360000054294
+}

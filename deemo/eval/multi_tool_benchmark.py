@@ -1,9 +1,9 @@
 """
-多工具对比基准测试 — BinMind GAPSBV vs objdump vs nm vs 纯正则。
+多工具对比基准测试 — BinMind 仿射边界验证 vs objdump vs nm vs 纯正则。
 在全部33个堆溢出样本上运行, 生成对比指标和图表。
 
 工具:
-  BinMind-GAPSBV — 源码扫描 + 守卫推断 + 分配器语义
+  BinMind-仿射边界验证 — 源码扫描 + 守卫推断 + 分配器语义
   Objdump-Naive  — objdump反汇编 + call指令计数启发式
   Nm-Symbol      — nm符号表: 存在malloc+memcpy → 盲报
   Regex-Baseline — 纯正则匹配 (无分配器模型/守卫推断), Flawfinder类比

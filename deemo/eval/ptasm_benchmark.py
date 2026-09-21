@@ -1,9 +1,9 @@
 """
-PTASM 端到端基准测试 — Pointer Temporal Automaton State Machine UAF检测.
-对 UAF 样本 (正例) 和安全模式样本 (负例) 运行 PTASM 分析,
+指针时序自动机 端到端基准测试 — Pointer Temporal Automaton State Machine UAF检测.
+对 UAF 样本 (正例) 和安全模式样本 (负例) 运行 指针时序自动机 分析,
 输出 TP/FP/TN/FN + Precision/Recall/F1 + 逐样本详情.
 
-与 GAPSBV benchmark 保持一致的设计风格.
+与 仿射边界验证 benchmark 保持一致的设计风格.
 """
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ def read_source(path: str) -> str:
 # 检测引擎
 
 def run_ptasm_detect(code: str) -> Dict:
-    """PTASM 检测: 形式化指针时序状态机分析.
+    """指针时序自动机 检测: 形式化时序状态机分析.
 
     返回:
         {
@@ -253,7 +253,7 @@ def run_benchmark() -> Dict:
             'reason': b_result['reason'],
         })
 
-        # PTASM 检测
+        # 指针时序自动机 检测
         e_result = run_ptasm_detect(code)
         e_detected = e_result['detected']
         e_class = classify(should_detect, e_detected)

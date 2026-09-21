@@ -441,7 +441,7 @@ body { margin: 0; overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI'
 <body>
 <div class="tooltip" id="tooltip"></div>
 <div class="legend" id="legend"></div>
-<svg width="100%" height="100%"></svg>
+<svg width="100%" height="100%"></svg><!-- 口径: 技术性参数/计算值, 非检测结果宣称 -->
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
 const graphData = """ + d3_json + r""";

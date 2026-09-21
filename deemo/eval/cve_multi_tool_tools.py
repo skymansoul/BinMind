@@ -9,7 +9,7 @@ from typing import List
 # 工具1: BinMind CSA (源码分析)
 
 def run_binmind_csa(source: str, sample_name: str, binary_path: str = '') -> dict:
-    """BinMind C源码分析 — 完整管线 (source_scanner + GAPSBV + 守卫推断)."""
+    """BinMind C源码分析 — 完整管线 (source_scanner + 仿射边界验证 + 守卫推断)."""
     t0 = time.time()
     try:
         from tests.pipeline_scanner import scan_binary

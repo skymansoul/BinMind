@@ -39,16 +39,16 @@ def _micro_row(
 
 
 def run_micro_benchmarks() -> List[Dict]:
-    """微基准测试: 直接对比CJ vs CJ+Interval在约束精度上的差异.
+    """微基准测试: 直接对比约束求解 vs 约束求解+Interval在约束精度上的差异.
 
     M1: 路径条件传播, M2: 多变量联合约束, M3: 赋值传播,
     M4: CMP/JCC条件, M5: 循环边界传播.
     """
-    from core.cj_constraint_types import (
+    from core.constraint_constraint_types import (
         ConstraintType, LinearConstraint, ConstraintSystem, SolverVerdict,
     )
-    from core.cj_solver import ConstraintJoinSolver
-    from core.cj_interval_domain import interval_refine
+    from core.constraint_solver import ConstraintJoinSolver
+    from core.constraint_interval_domain import interval_refine
 
     micro = []
 

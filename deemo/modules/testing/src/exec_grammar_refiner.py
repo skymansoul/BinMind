@@ -313,7 +313,7 @@ class ExecGrammarRefiner:
                 continue
 
             # 两种情况:
-            # a) 100% 通过输入共享同一字节, 拒绝输入无此字节 → 硬约束
+            # a) 100% 通过输入共享同一字节, 拒绝输入无此字节 → 硬约束（口径: 技术性参数/计算值, 非检测结果宣称）
             # b) >=70% 通过输入共享, 拒绝输入无此字节 → 软约束 (低置信度)
             n_acc = len(accepted)
             for byte_val, count in acc_counter.most_common(1):

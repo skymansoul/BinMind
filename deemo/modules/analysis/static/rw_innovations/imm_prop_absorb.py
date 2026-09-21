@@ -133,6 +133,56 @@ def run_imm_prop_absorb(
             "verdict": verdict,
             "source": "imm_prop_absorb",
         })
+
+    # C 风格伪代码: malloc 常量容量 vs memcpy/memmove 常量长度
+    alloc_caps: Dict[str, int] = {}
+    for line in pseudocode.splitlines():
+        m_alloc = re.search(
+            r"(\w+)\s*=\s*(?:\([^)]*\)\s*)?malloc\s*\(\s*(\d+)\s*\)",
+            line,
+        )
+        if m_alloc:
+            alloc_caps[m_alloc.group(1)] = int(m_alloc.group(2))
+
+    for ln, line in enumerate(pseudocode.splitlines(), 1):
+        m_copy = re.search(
+            r"\b(?:memcpy|memmove)\s*\(\s*(\w+)\s*,\s*\w+\s*,\s*(\w+)\s*\)",
+            line,
+        )
+        if not m_copy:
+            continue
+        dst_var = m_copy.group(1)
+        len_tok = m_copy.group(2)
+        # 仅处理立即数长度, 变量长度不属立即数范畴
+        if not len_tok.isdigit():
+            continue
+        if dst_var not in alloc_caps:
+            continue
+        copy_len = int(len_tok)
+        cap = alloc_caps[dst_var]
+        if copy_len > cap:
+            findings.append({
+                "type": "heap_overflow",
+                "function": func_name or "unknown",
+                "severity": "high",
+                "cwe": "CWE-122",
+                "confidence": 0.9,
+                "description": f"line{ln} memcpy len={copy_len} exceeds malloc cap={cap}",
+                "verdict": "const_too_large",
+                "source": "imm_prop_absorb",
+            })
+        elif copy_len == cap:
+            findings.append({
+                "type": "heap_overflow",
+                "function": func_name or "unknown",
+                "severity": "low",
+                "cwe": "CWE-122",
+                "confidence": 0.85,
+                "description": f"line{ln} memcpy len={copy_len} equals malloc cap={cap}",
+                "verdict": "const_exact",
+                "source": "imm_prop_absorb",
+            })
+
     return findings
 
 

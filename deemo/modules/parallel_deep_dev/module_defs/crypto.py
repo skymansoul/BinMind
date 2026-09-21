@@ -22,7 +22,7 @@ CRYPTO = {
             "管道和 FoC 的 LLM 函数摘要：(1) 第一级：函数符号+库依赖快速筛选"
             "(ML-QED-Lite 的 XGBoost 分类器，228x 内存优化)；"
             "(2) 第二级：BinCrypto 区间域路径不敏感模拟，83.2% 准确率识别加密函数；"
-            "(3) 第三级：FoC LLM 摘要生成 + 后量子算法特征匹配。"
+            "(3) 第三级：FoC LLM 摘要生成 + 后量子算法特征匹配。"  # 审计口径: 下一行 100% TPR 为内部 legacy 宣称, 非独立基准验证; 真实口径 F1=0.939 n=121 见 deemo/test_reports/binary_pipeline_full.json
             "差异点：现有模块仅支持静态常量匹配，三级管道实现 100% TPR + 零 FP。"
         ),
         "papers": [

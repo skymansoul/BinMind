@@ -1,4 +1,4 @@
-# 符号尺寸关联分析 (DDSSC核心): 追踪分配参数与写入参数的数据流来源, 判定等价性
+# 符号尺寸关联分析 (按需符号尺寸关联核心): 追踪分配参数与写入参数的数据流来源, 判定等价性
 
 from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field

@@ -1,4 +1,4 @@
-# analysis/heap_overflow_v2 — PSVR-HLM v3.0 堆溢出检测 (自包含)
+# analysis/heap_overflow_v2 — 路径敏感值域推理-HLM v3.0 堆溢出检测 (自包含)
 # 管线: P0→P0.5(源码引导)→P1(VRA+循环感知)→P2(HLM)→P3(PFC)→P4(安全见证)
 # P0-fallback: 无导入时从源码直接提取 alloc/write 函数对 (纯源码分析)
 from __future__ import annotations

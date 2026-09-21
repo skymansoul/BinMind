@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-消融实验 — BinMind-baseline vs CJ vs CJ+Interval 精度对比.
+消融实验 — BinMind-baseline vs 约束求解 vs 约束求解+Interval 精度对比.
 
 三种配置:
-  A. Baseline: 纯pattern检测器(heap_overflow_detector), 无CJ过滤
-  B. CJ: baseline + 约束联结求解器(含FM边界推理+跨函数)
-  C. CJ+Interval: CJ + 路径敏感区间域抽象解释器
+  A. Baseline: 纯pattern检测器(heap_overflow_detector), 无约束求解过滤
+  B. 约束求解: baseline + 约束联结求解器(含FM边界推理+跨函数)
+  C. 约束求解+Interval: 约束求解 + 路径敏感区间域抽象解释器
 
 通过临时关闭interval_refine来实现配置B, 恢复则为配置C,
 不修改任何功能代码, 仅切换入口.
@@ -52,19 +52,19 @@ def run_baseline(source: str) -> int:
 
 
 def run_cj(source: str, enable_interval: bool) -> Tuple[int, Dict]:
-    """配置B/C: baseline + CJ求解器(+/-区间域).
+    """配置B/C: baseline + 约束求解器(+/-区间域).
 
     通过monkey-patch控制是否调用interval_refine.
     """
-    import core.cj_solver as cj_solver_mod
+    import core.constraint_solver as cj_solver_mod
 
     original_solve = cj_solver_mod.solve_candidate
 
     if not enable_interval:
         def _solve_no_interval(candidate, ir_lines, decompiled_text="", platform="x86_64"):
-            from core.cj_affine_bridge import try_affine_proof
-            from core.cj_constraint_collector import collect_constraints
-            from core.cj_constraint_types import ConstraintSystem
+            from core.constraint_affine_bridge import try_affine_proof
+            from core.constraint_constraint_collector import collect_constraints
+            from core.constraint_constraint_types import ConstraintSystem
 
             affine_result = try_affine_proof(candidate, ir_lines, platform)
             if affine_result is not None:
@@ -81,7 +81,7 @@ def run_cj(source: str, enable_interval: bool) -> Tuple[int, Dict]:
     try:
         from core.ir_normalizer import normalize_ir
         from core.heap_overflow_detector import detect_heap_overflow
-        from core.cj_fp_filter import filter_by_constraint_join
+        from core.constraint_fp_filter import filter_by_constraint_join
 
         ir = normalize_ir(source)
         candidates = detect_heap_overflow(ir, source)

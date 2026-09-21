@@ -1,4 +1,4 @@
-"""ACPE 堆溢出样本集 — 15 CVE 复现 + 8 良性对照.
+"""分配容量溯源堆溢出样本集 — 15 CVE 复现 + 8 良性对照.
 
 创建: 2025-03-03
 每个样本: (id, 名称, 源码, 说明)
@@ -471,7 +471,7 @@ CLEAN_SAMPLES = [
         "self_consistent_copy",
         _c("""
             /* 良性: 自一致分配拷贝 — malloc(n); memcpy(dst, src, n).
-               写入容量与分配容量溯源等价, ACPE 应滤除。 */
+               写入容量与分配容量溯源等价, 应滤除。 */
             #include <stdlib.h>
             #include <string.h>
             #include <stdio.h>
@@ -496,7 +496,7 @@ CLEAN_SAMPLES = [
         "clamp_guard_copy",
         _c("""
             /* 良性: 钳位守卫 — size 先钳到 64 再拷贝到 malloc(64).
-               守卫支配拷贝点, ACPE 守卫分析应滤除。 */
+               守卫支配拷贝点, 分配容量溯源守卫分析应滤除。 */
             #include <stdlib.h>
             #include <string.h>
             #include <stdio.h>

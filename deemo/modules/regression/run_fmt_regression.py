@@ -17,7 +17,7 @@ BASE = Path(__file__).resolve().parent.parent
 
 sys.path.insert(0, str(BASE))
 
-from hfp.hfp_fmt import detect_from_asm  # noqa: E402
+from hfp.alloc_aware_fmt import detect_from_asm  # noqa: E402
 
 FMT_SAFE = {'safe_01_static_fmt', 'safe_02_param_fmt',
             'safe_03_snprintf'}

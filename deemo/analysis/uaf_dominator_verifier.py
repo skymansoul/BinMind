@@ -12,7 +12,7 @@ UAF Dominator 验证器 — 基于支配关系的保守 UAF 判定.
 
 保守性保证 (功能只增不减):
   - 仅在可证明时返回 SAFE/CONFIRMED
-  - 不确定时返回 UNCERTAIN → fall through 到 TARPS
+  - 不确定时返回 UNCERTAIN → fall through 到 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification)
 """
 
 from __future__ import annotations

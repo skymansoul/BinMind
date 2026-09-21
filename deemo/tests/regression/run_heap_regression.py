@@ -32,7 +32,7 @@ def load_ground_truth() -> Dict:
 
 
 def run_source_level_verifier(source: str) -> List[Dict]:
-    """运行HOSV源级堆溢出验证器."""
+    """运行堆写模式验证源级堆溢出验证器."""
     from analysis.heap_overflow_src_verifier import HeapOverflowSrcVerifier
     from analysis.heap_overflow_types import HoVerdict
 
@@ -61,7 +61,7 @@ def run_source_level_verifier(source: str) -> List[Dict]:
 
 
 def run_binary_pipeline(binary_path: str, sample_dir: str) -> List[Dict]:
-    """运行二进制级GAPSBV堆溢出检测管线.
+    """运行二进制级仿射边界验证堆溢出检测管线.
 
     修复: 不再将binary_path当源码传入, 而是:
     1. 从sample_dir读取C源码

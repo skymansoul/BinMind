@@ -54,7 +54,7 @@ __all__ = [
     'SelectiveSymExec', 'SymVerdict',
     # Tier 3
     'InfeasiblePathPruner', 'PruneResult', 'GuardPatternDetector',
-    # UAF TARPS
+    # UAF 时序-别名-可达-路径验证 (Type-State Alias Reachability Verification)
     'UafTarpsVerifier', 'TarpsVerdict', 'TarpsResult', 'batch_verify_uaf',
     # 格式化字符串
     'FormatStringVerifier', 'FmtStringVerdict',
@@ -95,7 +95,7 @@ __all__ = [
     # 贝叶斯置信度融合
     'BayesianFusionEngine', 'fuse_scores', 'risk_classify',
     'probability_to_log_odds', 'log_odds_to_probability',
-    # GAPSBV (证明义务+约束收集+积分器)
+    # 仿射边界验证 (Affine Bound Verification) (证明义务+约束收集+积分器)
     'HeapProofEngine', 'ProofVerdict', 'ProofObligation',
     'SizeConstraint', 'prove_heap_safety',
     'SizeConstraintCollector', 'SizeVarSummary', 'SizeVarConstraint',
@@ -105,7 +105,7 @@ __all__ = [
     'stage1_allocator_semantics', 'stage2_guard_aware',
     'stage3_size_constraints', 'stage4_proof_obligations',
     'stage5_slack_space', 'stage6_value_range', 'stage7_non_heap',
-    # GAPSBV端到端检测管道
+    # 仿射边界验证 (Affine Bound Verification) 端到端检测管道
     'GapsbvVerdict', 'DimensionResult', 'GapsbvReport',
     'detect_heap_overflow_gapsbv', 'detect_heap_gapsbv_quick',
     '_resolve_macros',
@@ -115,12 +115,12 @@ __all__ = [
     # 循环归纳变量追踪
     'InductionKind', 'InductionVar', 'LoopInfo', 'LoopOverflowRisk',
     'LoopInductionTracker', 'integrate_loop_analysis_with_iguard',
-    # GAPSBV dimensions
+    # 仿射边界验证 (Affine Bound Verification) dimensions
     'dim1_affine_relations', 'dim2_guard_analysis',
     'dim3_strided_interval', 'dim4_allocator_semantics',
     'dim5_completeness_check',
     '_extract_size_interval', '_estimate_sizeof',
-    # MIVR 路径敏感约束传播 (GAPSBV维度6)
+    # 路径敏感约束传播 (Path-Sensitive Constraint Propagation) (仿射边界验证维度6)
     'VarConstraint', 'GuardSite', 'ConstraintEdge', 'MIVRConstraintGraph',
     'PropagatedState', 'WriteSafetyVerdict', 'MIVRPathPropagator',
     'PairProof', 'MIVRPairProver',
@@ -129,9 +129,9 @@ __all__ = [
     # 分配-写入关系提取器
     'AllocSite', 'WriteSite', 'AllocWritePair',
     'AllocWriteExtractor', 'extract_alloc_write_pairs',
-    # FSTP 格式说明符语义感知污点传播
+    # 格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation)
     'SemClass', 'FstpVerdict', 'FmtSemanticTaintPropagator',
-    # HOIG 对象身份追踪 UAF检测
+    # 对象身份图 (Object Identity Graph) 对象身份追踪 UAF检测
     'ObjState', 'ObjectID', 'ObjStateAtPoint',
     'IdentityEdge', 'FuncObjSummary', 'UafHoigVerdict',
     'HoigBuilder', 'HoigPropagator', 'HoigCrossFuncVerifier',

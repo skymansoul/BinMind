@@ -1,7 +1,7 @@
 # Use-After-Free 检测策略集合 — 静态/动态/混合三种方法
 # Undangle — 基于指针分析的悬垂指针早期检测:
 #       在 free 处分析指针别名关系, 识别可能被后续解引用的悬垂指针
-# UAFL — 类型状态引导的 UAF 模糊测试:
+# UAF 生命周期验证 — 类型状态引导的 UAF 模糊测试:
 #       将 UAF 建模为 typestate 属性 (alloc→free→use), fuzzer 定位违规
 # UFO — 预测性并发 UAF 检测:
 #       通过线程交织的预测分析, 发现非确定性调度下的潜在 UAF
@@ -129,7 +129,7 @@ def static_uaf_detect(alloc_sites: dict[int, dict],
 
 
 # Typestate 驱动的动态 UAF Fuzzing 策略
-# UAFL — 将 UAF 检测形式化为 typestate 属性的违反检测
+# UAF 生命周期验证 — 将 UAF 检测形式化为 typestate 属性的违反检测
 # Typestate: alloc → (use* | free → ⊥) (free 后禁止再 use)
 # Fuzzer 的 fitness 函数: 越接近 typestate violation 的输入得分越高
 

@@ -1,8 +1,8 @@
 """
-FSTP 管线阶段 — Phase 2-5 污点扫描/传播/清理/分类 + 格式调用发现.
+格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation) 管线阶段 — Phase 2-5 污点扫描/传播/清理/分类 + 格式调用发现.
 
 
-FSTP 语义分类 (5级):
+格式说明符语义污点传播 (Format Specifier Semantic Taint Propagation) 语义分类 (5级):
   SEM_CLEAN     (0): 常量字符串, 无格式说明符 → 绝对安全
   SEM_CONST_FMT (1): 常量但有格式说明符 → 有意图的格式化, 安全
   SEM_USER_SAFE (2): 用户输入但被清理 (%% 替换等) → 安全

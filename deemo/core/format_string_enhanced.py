@@ -1,4 +1,4 @@
-"""增强格式字符串检测 — FORMAT (恶意参数追踪的流来源解析), 五阶段管道对标 GAPSBV/TARPS.
+"""增强格式字符串检测 — FORMAT (恶意参数追踪的流来源解析), 五阶段管道对标 仿射边界验证 (Affine Bound Verification)/时序-别名-状态机 (Type-State Alias Reachability Path-Scope).
 Stage 1 调用点检测 → Stage 2 来源追踪(5跳回溯至 fgets/argv/recv/getenv) → Stage 3 安全包装过滤 → Stage 4 格式说明符分析(%n任意写/%x信息泄露/%s任意读) → Stage 5 置信度评分(综合来源+说明符→0-1分);
 参考: scut/team teso, 2001; CWE-134."""
 

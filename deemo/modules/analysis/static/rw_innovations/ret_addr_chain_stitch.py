@@ -2,7 +2,7 @@
 
 对跨函数告警, 沿 call 返回点把 caller 的 alloc 证据与 callee 的
 write 证据缝合, 缝合成功 (callee 写大小 <= caller alloc 大小) 则过滤.
-与 AWSC-ICF 摘要不同: 返回点证据缝合而非参数摘要.
+与 分配-写关联-ICF 摘要不同: 返回点证据缝合而非参数摘要.
 
 设计决策:
   - 识别 call 指令及其调用目标函数名
@@ -206,12 +206,105 @@ def run_ret_addr_chain_stitch(
             "verdict": verdict,
             "source": "ret_addr_chain_stitch",
         })
+
+    # C 风格同函数内 alloc→write 容量缝合
+    findings.extend(_c_alloc_write_stitch(pseudocode, func_name))
     return findings
 
 
 def _scan_sites(pseudocode: str) -> List[Tuple[int, str]]:
     """兼容旧接口, 保留 _scan_sites 不删除."""
     return _call_sites(pseudocode)
+
+
+# C 风格分配容量提取: malloc(C) / malloc(n) -> 常量或 None
+_C_ALLOC_RE = re.compile(r"malloc\s*\(\s*(\d+)\s*\)")
+# C 风格写容量提取: memcpy(..., C) 第三个参数
+_C_MEMCPY_RE = re.compile(
+    r"memcpy\s*\(\s*\w+\s*,\s*\w+\s*,\s*(\d+)\s*\)"
+)
+# C 风格 clamp 守卫: if (n > C) n = C;
+_C_CLAMP_RE = re.compile(
+    r"if\s*\(\s*(\w+)\s*>\s*(\d+)\s*\)\s*\1\s*=\s*(\d+)\s*;"
+)
+
+
+def _c_alloc_write_stitch(
+    pseudocode: str, func_name: str
+) -> List[dict]:
+    """C 风格同函数内 alloc→write 容量缝合."""
+    findings: List[dict] = []
+    lines = pseudocode.splitlines()
+    # 提取分配容量: 取最后一个 malloc(常量)
+    alloc_size: Optional[int] = None
+    alloc_ln = None
+    for i, line in enumerate(lines):
+        m = _C_ALLOC_RE.search(line)
+        if m:
+            alloc_size = int(m.group(1))
+            alloc_ln = i + 1
+    # 提取 clamp 守卫后的变量分配: if(n>256) n=256; malloc(n)
+    # 守卫使变量等效于常量上界
+    clamp_bound: Optional[int] = None
+    for line in lines:
+        m = _C_CLAMP_RE.search(line)
+        if m:
+            clamp_bound = int(m.group(3))
+    # 检查是否有 malloc(变量) 被守卫约束
+    var_alloc = re.search(r"malloc\s*\(\s*(\w+)\s*\)", pseudocode)
+    var_alloc_bound: Optional[int] = None
+    if var_alloc and clamp_bound is not None:
+        var_alloc_bound = clamp_bound
+
+    # 既无常量分配也无守卫变量分配, 无法缝合
+    if alloc_size is None and var_alloc_bound is None:
+        return findings
+
+    # 提取写容量: memcpy(..., C)
+    write_size: Optional[int] = None
+    write_ln = None
+    for i, line in enumerate(lines):
+        m = _C_MEMCPY_RE.search(line)
+        if m:
+            write_size = int(m.group(1))
+            write_ln = i + 1
+    if write_size is not None:
+        # 用分配容量缝合写容量
+        effective_alloc = alloc_size if alloc_size is not None else var_alloc_bound
+        if effective_alloc is not None:
+            closed = write_size <= effective_alloc
+            verdict = "stitched_safe" if closed else "unstitched"
+            conf = 0.85 if closed else 0.5
+            findings.append({
+                "type": "heap_overflow",
+                "function": func_name or "unknown",
+                "severity": "medium",
+                "cwe": "CWE-122",
+                "confidence": conf,
+                "description": (
+                    f"c_stitch alloc={effective_alloc} "
+                    f"write={write_size} closed={closed}"
+                ),
+                "verdict": verdict,
+                "source": "ret_addr_chain_stitch",
+            })
+    elif var_alloc_bound is not None:
+        # 守卫变量分配 + 变量写 (如 memcpy(buf,src,n)): 守卫传递 -> 一致
+        if re.search(r"memcpy\s*\(\s*\w+\s*,\s*\w+\s*,\s*\w+\s*\)", pseudocode):
+            findings.append({
+                "type": "heap_overflow",
+                "function": func_name or "unknown",
+                "severity": "medium",
+                "cwe": "CWE-122",
+                "confidence": 0.85,
+                "description": (
+                    f"c_stitch guarded_alloc={var_alloc_bound} "
+                    f"var_write closed=True"
+                ),
+                "verdict": "stitched_safe",
+                "source": "ret_addr_chain_stitch",
+            })
+    return findings
 
 
 if __name__ == "__main__":

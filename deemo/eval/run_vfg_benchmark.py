@@ -4,7 +4,7 @@
 Step:
   1. 扫描 tests/cve_samples/ 下所有已编译的堆溢出样本
   2. 用 objdump 反编译每个样本, 提取伪代码
-  3. 运行 6-stage管线 (allocator → guard → GAPSBV → VFG → 增强过滤)
+  3. 运行 6-stage管线 (allocator → guard → 仿射边界验证 (Affine Bound Verification) → VFG → 增强过滤)
   4. 生成 TP/FP/TN/FN + Precision/Recall/F1 矩阵
   5. 输出 JSON 结果到 eval/baseline_with_vfg.json
 """
