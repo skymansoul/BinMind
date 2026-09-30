@@ -238,5 +238,13 @@
     "status": "pending",
     "human_verdict": "",
     "timestamp": "2026-09-15T09:18:12"
+  },
+  {
+    "sample_name": "pwn",
+    "vuln_desc": "1 finding(s) pending review",
+    "evidence_addr": "./results/pwn_20260929_181445.md",
+    "status": "pending",
+    "human_verdict": "",
+    "timestamp": "2026-09-29T18:14:46"
   }
 ]

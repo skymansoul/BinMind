@@ -1,7 +1,22 @@
-# 核心依赖 — 最小可运行
-openai>=1.0.0
-pwntools>=4.10.0
-capstone>=5.0.0
+# BinMind core runtime dependencies
+
+# AI / LLM
+openai>=1.0,<4
+
+# HTTP client
+requests>=2.31,<3
+
+# Exploit development
+pwntools>=4.10,<5
+
+# Binary parsing
 pefile>=2023.2.7
-networkx>=3.0
-requests>=2.31.0
+
+# Graph processing
+networkx>=3,<4
+
+# Terminal output
+rich>=13,<16
+
+# Logging
+loguru>=0.7,<1

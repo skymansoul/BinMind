@@ -62,6 +62,45 @@ def test_fmt_pipeline():
     print(f"  FmtStr: {len(findings)} findings")
     return True
 
+def test_no_ai_function_analysis_skips_llm():
+    """--no-ai 时逐函数阶段只保留伪代码，不调用 AI 入口。"""
+    from unittest.mock import patch
+    from core.pipeline import _analyze_pseudocode
+
+    with patch('core.pipeline.ai_analyze_function') as analyze:
+        result = _analyze_pseudocode(
+            'sym.vuln', 'char buf[16]; gets(buf);',
+            {'arch': 'x86'}, ai_enabled=False)
+
+    analyze.assert_not_called()
+    assert result['pseudocode'] == 'char buf[16]; gets(buf);'
+    assert result['simulation'] is False
+    assert result['analysis_mode'] == 'rules_only'
+
+
+def test_imported_gets_becomes_auditable_finding():
+    """确定的 gets 导入必须产生候选审计项，不能静默得到 0 vulns。"""
+    from core.pipeline import _dangerous_import_findings
+
+    findings = _dangerous_import_findings({
+        'imports': {'dangerous_functions': ['gets', 'malloc']},
+    })
+
+    assert len(findings) == 1
+    assert findings[0]['type'] == 'dangerous-function-import'
+    assert findings[0]['function_name'] == 'binary_imports'
+    assert findings[0]['imported_function'] == 'gets'
+    assert findings[0]['cwe'] == 'CWE-242'
+
+
+def test_constraint_guided_mutator_initializes_chain_storage():
+    """增强层实例化 mutator 时必须能保存 prepare 阶段的 def-use 链。"""
+    from modules.fuzzing.src.defuse_mutation_guide import ConstraintGuidedMutator
+
+    mutator = ConstraintGuidedMutator()
+    assert mutator._chains == []
+
+
 def main():
     results = {}
     for name, fn in [("Heap", test_heap_pipeline), ("UAF", test_uaf_pipeline),

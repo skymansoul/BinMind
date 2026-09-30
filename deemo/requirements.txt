@@ -1,32 +1,36 @@
-# Also declared in pyproject.toml [project].dependencies
-# Core
-angr>=9.2.0
-claripy>=9.2.0
-cle>=9.2.0
-pyvex>=9.2.0
+# BinMind full runtime dependencies
 
-# Exploit dev
-pwntools>=4.10.0
+-r requirements-core.txt
 
-# AI / LLM
-openai>=1.0.0
-requests>=2.31.0
+# Binary symbolic analysis
+#
+# angr automatically installs matching versions of:
+#   archinfo==9.2.223
+#   claripy==9.2.223
+#   cle==9.2.223
+#   pyvex==9.2.223
+#
+# Do not declare those packages separately with unbounded versions.
+angr==9.2.223
 
 # Web API
-fastapi>=0.100.0
-uvicorn>=0.23.0
-python-multipart>=0.0.6
-pydantic>=2.0.0
+fastapi>=0.100,<1
+uvicorn>=0.23,<1
+python-multipart>=0.0.6,<1
+pydantic>=2,<3
 
-# Binary parsing
-pefile>=2023.2.7
+# Numerical processing
+numpy>=1.24,<3
 
-# Numerical
-numpy>=1.24.0
+# Dynamic instrumentation
+frida>=16,<18
 
-# Dynamic instrumentation (optional)
-frida>=16.0.0
+# Mach-O parsing
+macholib>=1.16,<2
 
-# Test
-pytest>=7.4.0
-pytest-cov>=4.1.0
+# Graph rendering
+graphviz>=0.20,<1
+
+# Test framework
+pytest>=7.4,<10
+pytest-cov>=4.1,<8

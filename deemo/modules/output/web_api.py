@@ -45,7 +45,7 @@ if FASTAPI_AVAILABLE:
         report_formats: List[str] = Field(default_factory=lambda: ['md', 'html'], description="报告格式")
 
         class Config:
-            schema_extra = {
+            json_schema_extra = {
                 "example": {
                     "binary_name": "vulnerable_app",
                     "binary_format": "ELF",

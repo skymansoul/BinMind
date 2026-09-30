@@ -3,7 +3,7 @@
 本项目支持在 Ubuntu 和 Kali 中安装 `binmind` 命令。安装完成后，可以直接在终端中使用：
 
 ```bash
-binmind -help
+binmind --help
 ```
 
 ## 一键安装
@@ -13,7 +13,7 @@ binmind -help
 ```bash
 chmod +x install.sh binmind
 ./install.sh --system
-binmind -help
+binmind --help
 ```
 
 `install.sh` 会自动完成以下工作：

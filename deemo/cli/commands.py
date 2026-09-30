@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # cli/commands.py - 命令行入口 (argparse 分发到 core.pipeline 与各子命令)
 
 import argparse, os, sys, time
@@ -58,10 +58,11 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument('-v', '--verbose', action='store_true',
                     help='debug logging')
     ap.add_argument('--ai-analysis', dest='ai_analysis', action='store_true',
+                    default=argparse.SUPPRESS,
                     help='enable LLM-assisted vulnerability analysis (default: on)')
     ap.add_argument('--no-ai', dest='ai_analysis', action='store_false',
+                    default=argparse.SUPPRESS,
                     help='disable LLM-assisted vulnerability analysis')
-    ap.set_defaults(ai_analysis=True)
 
     # batch
     bp = sub.add_parser('batch', help='analyze multiple binaries')

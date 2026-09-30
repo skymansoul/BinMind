@@ -253,7 +253,7 @@ class ConstraintGuidedMutator:
     两者可在变异管道中串联使用。
     """
 
-    __slots__ = ('_clusters', '_mutation_history', '_collector')
+    __slots__ = ('_clusters', '_chains', '_mutation_history', '_collector')
 
     def __init__(self):
         self._clusters: list[MutationCluster] = []

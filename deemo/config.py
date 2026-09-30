@@ -156,7 +156,7 @@ class Config:
 
     # Ollama
     OLLAMA_HOST = 'http://localhost:11434'
-    OLLAMA_MODEL = 'qwen2.5:7b'
+    OLLAMA_MODEL = 'qwen3:8b'
 
     # llama.cpp
     LLAMACPP_HOST = 'http://localhost:8080'

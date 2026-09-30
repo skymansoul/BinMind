@@ -13,7 +13,7 @@
 
 from typing import Dict, List, Optional, Tuple
 
-from analysis.gapsbv_dimensions import (
+from analysis.affine_bound_dimensions import (
     GapsbvVerdict, DimensionResult, GapsbvReport, _resolve_macros,
 )
 from analysis.path_proof_pair_prover import PairProof, MIVRPairProver

@@ -3,31 +3,15 @@ BasicBlock CFG + AffineInterval + PathCondition → malloc/memcpy 不等式检�
 处理仿射表达式(malloc(n*4+8))、嵌套malloc、别名指针循环写；复杂度O(B·V)。"""
 
 import re
-from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 from .symbolic_range import AffineInterval, PathCondition
 from .cfg_parser import split_into_blocks, BasicBlock
 from .heap_expr_parser import parse_size_expr, split_args, judge_overflow
 from .array_write_detector import detect_array_writes
-
-
-@dataclass
-class AllocSite:
-    """malloc 调用点记录, 含路径上下文。"""
-    var_name: str; size_expr: str; size_range: AffineInterval
-    path_cond: PathCondition; block_id: int; lineno: int; func_name: str = ""
-
-@dataclass
-class WriteSite:
-    """堆写入点记录, 含路径上下文。"""
-    var_name: str; write_size: AffineInterval; write_call: str
-    path_cond: PathCondition; block_id: int; lineno: int
-
-@dataclass
-class VerifiedFinding:
-    """路径敏感验证后的最终发现。"""
-    alloc_site: AllocSite; write_site: WriteSite; verdict: str
-    overflow_bytes: int; confidence: float; description: str
+from .path_sensitive_types import (
+    AllocSite, WriteSite, VerifiedFinding,
+    extract_paren_args, strip_comments,
+)
 
 
 _RE_MALLOC = re.compile(
@@ -40,24 +24,6 @@ _RE_MEMCPY = re.compile(
 _RE_ASSIGN = re.compile(r'(\w[\w.\->]*)\s*=\s*(.+?)\s*;')
 _RE_PTR_BASE = re.compile(r'^(\w[\w.\->]*)')
 _RE_CONST_ASSIGN = re.compile(r'\b(\w+)\s*=\s*(\d+)\s*;')  # 整数常量赋值传播
-_RE_COMMENTS = re.compile(r'//[^\n]*|/\*.*?\*/', re.DOTALL)
-
-
-def _strip_comments(code: str) -> str:
-    """剥离 C 风格注释, 避免注释中的 malloc/memcpy 文字被误解析为分配点。"""
-    return _RE_COMMENTS.sub('', code)
-
-
-def _extract_paren_args(text: str, start: int) -> str:
-    """从 text[start] 的 '(' 之后提取括号内参数 (处理嵌套括号)。"""
-    depth, i = 1, start
-    while i < len(text) and depth > 0:
-        if text[i] == '(': depth += 1
-        elif text[i] == ')': depth -= 1
-        i += 1
-    return text[start:i-1] if depth == 0 else text[start:]
-
-
 def path_sensitive_heap_analysis(
     code: str, func_name: str = "",
 ) -> List[VerifiedFinding]:
@@ -65,7 +31,7 @@ def path_sensitive_heap_analysis(
 
     返回: VerifiedFinding 列表。
     """
-    code = _strip_comments(code)
+    code = strip_comments(code)
     blocks = split_into_blocks(code)
     if not blocks:
         return []
@@ -210,7 +176,7 @@ def _process_block(
         for m in _RE_MALLOC.finditer(line):
             var = m.group(1)
             alloc_func = m.group(2)
-            size_expr = _extract_paren_args(line, m.end()).strip()
+            size_expr = extract_paren_args(line, m.end()).strip()
             if not size_expr:
                 continue
             # calloc(nmemb, size) → nmemb * size 乘法处理
@@ -249,7 +215,7 @@ def _process_block(
             # 跳过已由 _RE_MALLOC 处理的直接赋值形式
             if m_n.group(0).startswith('='):
                 continue
-            size_expr = _extract_paren_args(line, m_n.end()).strip()
+            size_expr = extract_paren_args(line, m_n.end()).strip()
             if not size_expr:
                 continue
             ai = parse_size_expr(size_expr, env)
@@ -265,7 +231,7 @@ def _process_block(
         # memcpy / strcpy 等写入函数 (finditer: 同行可能有多个)
         for m_w in _RE_MEMCPY.finditer(line):
             call = m_w.group(1)
-            args_str = _extract_paren_args(line, m_w.end())
+            args_str = extract_paren_args(line, m_w.end())
             if not args_str:
                 continue
             args = split_args(args_str)

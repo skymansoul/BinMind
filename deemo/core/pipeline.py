@@ -191,6 +191,58 @@ def _is_crt_noise(func_name: str) -> bool:
     return any(marker in low for marker in _CRT_NOISE_MARKERS)
 
 
+def _analyze_pseudocode(func_name: str, pseudocode: str, binary_info: Dict,
+                        ai_enabled: bool = True) -> Dict:
+    """按统一 AI 门控分析伪代码；禁用 AI 时仅保留规则检测输入。"""
+    if ai_enabled:
+        return ai_analyze_function(func_name, pseudocode, binary_info)
+    return {
+        'function': func_name,
+        'vulnerabilities': [],
+        'summary': 'AI analysis disabled; rule detectors only',
+        'pseudocode': pseudocode,
+        'simulation': False,
+        'analysis_mode': 'rules_only',
+    }
+
+
+_DANGEROUS_IMPORT_META = {
+    'gets': ('CWE-242', 'Critical', 0.95),
+    'strcpy': ('CWE-120', 'High', 0.80),
+    'strcat': ('CWE-120', 'High', 0.75),
+    'sprintf': ('CWE-134', 'High', 0.75),
+    'vsprintf': ('CWE-134', 'High', 0.75),
+}
+
+
+def _dangerous_import_findings(binary_info: Dict) -> List[Dict]:
+    """把无界危险 API 导入转成可审计候选，不宣称已验证可利用。"""
+    imports = binary_info.get('imports', {}) if isinstance(binary_info, dict) else {}
+    names = imports.get('dangerous_functions', []) if isinstance(imports, dict) else []
+    findings = []
+    for name in sorted(set(names or [])):
+        meta = _DANGEROUS_IMPORT_META.get(name)
+        if meta is None:
+            continue
+        cwe, severity, confidence = meta
+        findings.append({
+            'type': 'dangerous-function-import',
+            'rule_id': f'IMPORT-{name.upper()}',
+            'function': 'binary_imports',
+            'function_name': 'binary_imports',
+            'imported_function': name,
+            'severity': severity,
+            'cwe': cwe,
+            'confidence': confidence,
+            'verdict': 'POSSIBLE',
+            'description': (
+                f'Binary imports unsafe API {name}; call-site bounds and '
+                'reachability require review'),
+            'evidence': f'import table contains {name}',
+        })
+    return findings
+
+
 def run_pipeline(
     binary_path: str,
     crash_path: Optional[str] = None,
@@ -207,6 +259,7 @@ def run_pipeline(
     **kwargs
 ) -> Dict[str, Any]:
     start_time = time.time()
+    ai_analysis = bool(kwargs.get('ai_analysis', True))
     ensure_dirs()
     init_db()
 
@@ -269,37 +322,41 @@ def run_pipeline(
         _step_end(_sid_bp, 'failed', error_message=str(_e))
         logger.warning("Binary profile failed: %s", _e)
 
-    # LLM 可达性探测 — pipeline 启动时探测配置的 AI 后端, 显式标记降级状态
+    # LLM 可达性探测仅在 AI 启用时执行；--no-ai 不应产生任何网络访问。
     _llm_reachable = False
     _sid_llm_probe = _step_begin(run_id, 'llm_probe')
-    try:
-        import urllib.request as _urllib_req
-        _ai_provider = os.environ.get('AI_PROVIDER', 'ollama')
-        if _ai_provider == 'ollama':
-            _ollama_base = os.environ.get('OLLAMA_BASE_URL',
-                                           'http://localhost:11434/v1')
-            # 健康检查端点: 去掉 /v1 后缀, 追加 /api/tags
-            _health_url = _ollama_base.rstrip('/').replace('/v1', '') + '/api/tags'
-            try:
-                _req = _urllib_req.Request(_health_url, method='GET')
-                _resp = _urllib_req.urlopen(_req, timeout=3)
-                _llm_reachable = _resp.status == 200
-            except Exception:
-                _llm_reachable = False
-        elif _ai_provider in ('openai', 'custom', 'deepseek'):
-            _llm_reachable = bool(
-                os.environ.get('OPENAI_API_KEY') or
-                os.environ.get('CUSTOM_API_KEY'))
-        binfo['llm_reachable'] = _llm_reachable
-        binfo['ai_provider'] = _ai_provider
-        _step_end(_sid_llm_probe, 'success',
-                  output_summary=f'provider={_ai_provider} reachable={_llm_reachable}')
-        if not _llm_reachable:
-            logger.warning("LLM backend unreachable (provider=%s), "
-                           "AI analysis will degrade to simulation", _ai_provider)
-    except Exception as _e:
-        _step_end(_sid_llm_probe, 'failed', error_message=str(_e))
-        logger.debug("LLM probe failed: %s", _e)
+    if not ai_analysis:
+        binfo['llm_reachable'] = False
+        binfo['ai_provider'] = 'disabled'
+        _step_end(_sid_llm_probe, 'skipped', output_summary='AI analysis disabled')
+    else:
+        try:
+            import urllib.request as _urllib_req
+            _ai_provider = os.environ.get('AI_PROVIDER', 'ollama')
+            if _ai_provider == 'ollama':
+                _ollama_base = os.environ.get('OLLAMA_BASE_URL',
+                                               'http://localhost:11434/v1')
+                _health_url = _ollama_base.rstrip('/').replace('/v1', '') + '/api/tags'
+                try:
+                    _req = _urllib_req.Request(_health_url, method='GET')
+                    _resp = _urllib_req.urlopen(_req, timeout=3)
+                    _llm_reachable = _resp.status == 200
+                except Exception:
+                    _llm_reachable = False
+            elif _ai_provider in ('openai', 'custom', 'deepseek'):
+                _llm_reachable = bool(
+                    os.environ.get('OPENAI_API_KEY') or
+                    os.environ.get('CUSTOM_API_KEY'))
+            binfo['llm_reachable'] = _llm_reachable
+            binfo['ai_provider'] = _ai_provider
+            _step_end(_sid_llm_probe, 'success',
+                      output_summary=f'provider={_ai_provider} reachable={_llm_reachable}')
+            if not _llm_reachable:
+                logger.warning("LLM backend unreachable (provider=%s), "
+                               "AI analysis will degrade to simulation", _ai_provider)
+        except Exception as _e:
+            _step_end(_sid_llm_probe, 'failed', error_message=str(_e))
+            logger.debug("LLM probe failed: %s", _e)
 
     # unpacking
     if ENABLE_UNPACK:
@@ -382,7 +439,8 @@ def run_pipeline(
             _sid = _step_begin(run_id, 'llm_analyze',
                                input_summary=f"{func_name} {len(r['pseudocode'])} chars")
             try:
-                ai = ai_analyze_function(func_name, r['pseudocode'], binfo)
+                ai = _analyze_pseudocode(
+                    func_name, r['pseudocode'], binfo, ai_enabled=ai_analysis)
                 n_vuln = len(ai.get('vulnerabilities', []))
                 _step_end(_sid, 'success', output_summary=f"{n_vuln} vulns")
             except Exception as err:
@@ -823,6 +881,10 @@ def run_pipeline(
             rule_findings = fuse_findings(rule_findings)
         except Exception as err:
             logger.warning("Evidence fusion failed: %s", err)
+
+    # 导入表是独立于反编译质量的确定证据。仅对无界高风险 API 生成候选，
+    # 避免 malloc/memcpy 等上下文相关函数造成无差别误报。
+    rule_findings.extend(_dangerous_import_findings(binfo))
 
     # save findings
     all_vulns = []
@@ -1489,7 +1551,6 @@ if __name__ == "__main__":
 
     # LLM 研判 — 默认开启, 未配置模型时降级为 simulation
     # 移至报告生成之前, 使 LLM 发现进入报告
-    ai_analysis = kwargs.get('ai_analysis', True)
     ai_result = None
     if ai_analysis:
         _sid_ai = _step_begin(run_id, 'ai_analysis')

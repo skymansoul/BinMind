@@ -62,31 +62,42 @@ kw['python_requires'] = '>=3.8'
 # 遇到特定版本问题时，使用!=排除
 # openai升级1.0后，0.28的ChatCompletion.create全部失效
 kw['install_requires'] = [
-    'openai>=1.0.0',              # AI核心-1.0大改版，0.x不兼容
-    'fastapi>=0.100.0',           # Web API-0.100是Pydantic v2的分界线
-    'uvicorn>=0.23.0',            # ASGI server
-    'python-multipart>=0.0.6',    # 文件上传支持
-    'rich>=13.0.0',               # 终端美化-13.0加了Progress列
-    'pydantic>=2.0.0',           # 数据校验-v2 API跟v1完全不同
-    'loguru>=0.7.0',             # 日志-比标准logging更高效
+    'openai>=1.0,<4',
+    'requests>=2.31,<3',
+    'fastapi>=0.100,<1',
+    'uvicorn>=0.23,<1',
+    'python-multipart>=0.0.6,<1',
+    'rich>=13,<16',
+    'pydantic>=2,<3',
+    'loguru>=0.7,<1',
 ]
 
 # extras: 可选依赖
 # dev: CI pipeline和开发用，本地开发 pip install -e .[dev]
 # full: 全功能，包含angr/pwntools等重型依赖-首次安装编译耗时约20分钟
 kw['extras_require'] = {
-    'dev': [
-        'pytest>=7.0.0',
-        'pytest-cov>=4.0.0',
-    ],
     'full': [
-        'angr>=9.0.0',           # 符号执行-安装耗时最长，瓶颈在z3编译
-        'pwntools>=4.0.0',       # 利用开发瑞士军刀
-        'capstone>=5.0.0',       # 反汇编引擎
-        'pefile>=2023.2.7',      # PE文件解析
-        'macholib>=1.16.0',      # Mach-O文件解析
-        'graphviz>=0.20.0',      # 图可视化
-        'networkx>=3.0',         # 图算法
+        'angr==9.2.223',
+        'pwntools>=4.10,<5',
+        'pefile>=2023.2.7',
+        'numpy>=1.24,<3',
+        'frida>=16,<18',
+        'macholib>=1.16,<2',
+        'graphviz>=0.20,<1',
+        'networkx>=3,<4',
+    ],
+    'dev': [
+        'angr==9.2.223',
+        'pwntools>=4.10,<5',
+        'pefile>=2023.2.7',
+        'numpy>=1.24,<3',
+        'frida>=16,<18',
+        'macholib>=1.16,<2',
+        'graphviz>=0.20,<1',
+        'networkx>=3,<4',
+        'pytest>=7.4,<10',
+        'pytest-cov>=4.1,<8',
+        'pytest-benchmark>=4,<6',
     ],
 }
 

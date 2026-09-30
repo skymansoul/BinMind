@@ -40,26 +40,40 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "openai>=1.0.0",
-    "requests>=2.31.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.23.0",
-    "python-multipart>=0.0.6",
-    "pydantic>=2.0.0",
+    "openai>=1.0,<4",
+    "requests>=2.31,<3",
+    "fastapi>=0.100,<1",
+    "uvicorn>=0.23,<1",
+    "python-multipart>=0.0.6,<1",
+    "pydantic>=2,<3",
+    "rich>=13,<16",
+    "loguru>=0.7,<1",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-benchmark>=4.0.0",
-]
 full = [
-    "angr>=9.0.0",
-    "pwntools>=4.0.0",
+    "angr==9.2.223",
+    "pwntools>=4.10,<5",
     "pefile>=2023.2.7",
-    "frida>=16.0.0",
-    "numpy>=1.24.0",
+    "numpy>=1.24,<3",
+    "frida>=16,<18",
+    "macholib>=1.16,<2",
+    "graphviz>=0.20,<1",
+    "networkx>=3,<4",
+]
+ 
+dev = [
+    "angr==9.2.223",
+    "pwntools>=4.10,<5",
+    "pefile>=2023.2.7",
+    "numpy>=1.24,<3",
+    "frida>=16,<18",
+    "macholib>=1.16,<2",
+    "graphviz>=0.20,<1",
+    "networkx>=3,<4",
+    "pytest>=7.4,<10",
+    "pytest-cov>=4.1,<8",
+    "pytest-benchmark>=4,<6",
 ]
 
 [project.scripts]

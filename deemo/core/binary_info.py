@@ -2,6 +2,7 @@
 二进制文件检测与信息提取, 支持 ELF、PE、Mach-O。
 """
 
+import json
 import os
 import struct
 import subprocess
@@ -45,6 +46,45 @@ def _r2_info(path: str) -> Dict:
         return {}
 
 
+_DANGEROUS_IMPORTS = frozenset({
+    'gets', 'strcpy', 'strcat', 'sprintf', 'vsprintf',
+    'scanf', 'sscanf', 'fscanf', 'vscanf',
+    'system', 'execve', 'execl', 'execle', 'execlp', 'execv', 'execvp',
+    'popen', 'unlink', 'remove', 'malloc', 'free', 'realloc', 'calloc',
+    'memcpy', 'memmove', 'memset',
+})
+
+
+def _r2_imports(path: str) -> Dict:
+    """通过 radare2 iij 提取结构化导入及危险函数名。"""
+    try:
+        result = subprocess.run(
+            ['r2', '-q', '-e', 'io.color=false', '-c', 'iij', path],
+            capture_output=True, text=True, timeout=30
+        )
+        rows = json.loads(result.stdout or '[]')
+    except Exception:
+        rows = []
+
+    all_imports = {}
+    dangerous = set()
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        raw_name = str(row.get('name') or row.get('realname') or '')
+        name = raw_name.rsplit('.', 1)[-1].split('@', 1)[0]
+        if not name:
+            continue
+        library = str(row.get('libname') or row.get('library') or 'unknown')
+        all_imports.setdefault(library, []).append(name)
+        if name in _DANGEROUS_IMPORTS:
+            dangerous.add(name)
+    return {
+        'all_imports': all_imports,
+        'dangerous_functions': sorted(dangerous),
+    }
+
+
 def get_binary_info(path: str) -> Dict:
     """提取核心元数据: 架构、位宽、段、导入、字符串。"""
     global _last_path, _last_info
@@ -65,6 +105,7 @@ def get_binary_info(path: str) -> Dict:
         'arch': 'unknown',
         'bits': 64,
         'sections': [],
+        'imports': {'all_imports': {}, 'dangerous_functions': []},
     }
 
     if fmt == 'ELF':
@@ -82,6 +123,7 @@ def get_binary_info(path: str) -> Dict:
 
     r2 = _r2_info(path)
     info['r2'] = r2
+    info['imports'] = _r2_imports(path)
     if 'arch' in r2 and info['arch'] == 'unknown':
         info['arch'] = r2['arch']
     if 'bintype' in r2:
