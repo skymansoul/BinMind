@@ -54,7 +54,7 @@ def _parse_elf_headers(path: str) -> Optional[Dict[str, Any]]:
                 dyn_entry_fmt = '<II'
                 dyn_entry_size = 8
 
-            header = _read_struct(f, 0, elf_header_fmt)
+            header = _read_struct(f, 16, elf_header_fmt)
             # e_phoff/e_phentsize/e_phnum 在 32/64 位 ELF 头中的索引一致
             e_phoff = header[4]
             e_phentsize = header[8]

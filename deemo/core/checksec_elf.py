@@ -77,7 +77,7 @@ def _parse_elf_headers(path: str) -> Optional[Dict[str, Any]]:
                 dyn_entry_fmt = '<II'
                 dyn_entry_size = 8
 
-            header = _read_struct(f, 0, elf_header_fmt)
+            header = _read_struct(f, 16, elf_header_fmt)
             e_phoff = header[4]
             e_phentsize = header[8]
             e_phnum = header[9]
@@ -206,7 +206,7 @@ def detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
 
     if has_relro_segment:
         result['relro'] = 'partial'
-        if dynamic.get(DF_1_NOW, 0) & 1:
+        if dynamic.get(DT_FLAGS_1, 0) & DF_1_NOW:
             result['relro'] = 'full'
         elif dynamic.get(DT_FLAGS, 0) & DF_BIND_NOW:
             result['relro'] = 'full'

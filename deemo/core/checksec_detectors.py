@@ -11,6 +11,7 @@ from .checksec_constants import (
     DF_1_NOW,
     DF_BIND_NOW,
     DT_FLAGS,
+    DT_FLAGS_1,
     PF_R,
     PF_W,
     PF_X,
@@ -92,7 +93,7 @@ def _detect_elf_checksec(path: str, result: Dict[str, Any]) -> None:
     if has_relro_segment:
         result['relro'] = 'partial'
         # BIND_NOW 表示 Full RELRO
-        if dynamic.get(DF_1_NOW, 0) & 1:
+        if dynamic.get(DT_FLAGS_1, 0) & DF_1_NOW:
             result['relro'] = 'full'
         elif dynamic.get(DT_FLAGS, 0) & DF_BIND_NOW:
             result['relro'] = 'full'

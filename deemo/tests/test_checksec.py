@@ -13,6 +13,8 @@ checksec 模块测试 —— 验证保护机制检测的准确性和健壮性。
 """
 
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -126,6 +128,50 @@ class TestChecksecSystemBinary(unittest.TestCase):
         result = detect_checksec(self.sys_bin)
         for key in ('nx', 'pie', 'canary', 'relro', 'fortify'):
             self.assertIn(key, result)
+
+
+class TestChecksecRelro(unittest.TestCase):
+    """RELRO 类型检测回归测试。"""
+
+    @classmethod
+    def setUpClass(cls):
+        if shutil.which('gcc') is None:
+            raise unittest.SkipTest('gcc is required')
+
+        cls.tmpdir = tempfile.mkdtemp(prefix='cs_relro_')
+        cls.source = os.path.join(cls.tmpdir, 'main.c')
+        with open(cls.source, 'w', encoding='utf-8') as f:
+            f.write('#include <stdio.h>\nint main(void) { puts("hi"); return 0; }\n')
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(getattr(cls, 'tmpdir', ''), ignore_errors=True)
+
+    def _build(self, name, *ldflags):
+        output = os.path.join(self.tmpdir, name)
+        cmd = [
+            'gcc',
+            self.source,
+            '-o',
+            output,
+            '-fno-pie',
+            '-no-pie',
+            *ldflags,
+        ]
+        subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return output
+
+    def test_no_relro(self):
+        binary = self._build('no_relro', '-Wl,-z,norelro')
+        self.assertEqual(detect_checksec(binary)['relro'], 'none')
+
+    def test_partial_relro(self):
+        binary = self._build('partial_relro', '-Wl,-z,relro', '-Wl,-z,lazy')
+        self.assertEqual(detect_checksec(binary)['relro'], 'partial')
+
+    def test_full_relro(self):
+        binary = self._build('full_relro', '-Wl,-z,relro', '-Wl,-z,now')
+        self.assertEqual(detect_checksec(binary)['relro'], 'full')
 
 
 class TestChecksecSummary(unittest.TestCase):
