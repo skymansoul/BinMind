@@ -1,4 +1,4 @@
-# Python 缓存与构建产物
+﻿# Python 缓存与构建产物
 __pycache__/
 *.py[cod]
 *.pyo
@@ -60,14 +60,17 @@ test_scan.json
 **/*.o
 **/*.obj
 # cve_binaries 测试固件为 PE 样本，需纳入版本控制
-!deemo/tests/cve_binaries/*.exe
+!tests/cve_binaries/*.exe
 
 
 **/test.exe
 
-deemo/_trash/
+_trash/
 
 
 trash/
 .temp/
-deemo/.temp/
+.temp/
+data/vulnerabilities.db
+!tests/cve_binaries/*.exe
+
