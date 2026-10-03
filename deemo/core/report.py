@@ -1,4 +1,4 @@
-# core/report.py - 报告生成 (Markdown + JSON)
+﻿# core/report.py - 报告生成 (Markdown + JSON)
 # write_report: 逐函数分析 + 规则检测 + 符号执行 + 程序画像全部纳入报告
 
 import json
@@ -114,7 +114,8 @@ def _collect_vulns(findings: List[Dict], rule_findings: List[Dict],
             v['_function'] = f.get('function_name', f.get('function', '?'))
             v['severity'] = _normalize_severity(v.get('severity'))
             v['_severity_val'] = _SEV_ORDER.get(v['severity'], 5)
-            _seen.add((v['_function'], v.get('type', '?')))
+            _seen.add((v['_function'], v.get('type', '?'),
+                       v.get('rule_id') or v.get('imported_function') or v.get('location', '')))
             all_vulns.append(v)
     # 规则检测 finding: 过滤 + 去重 + 归一 severity
     for v in (rule_findings or []):
@@ -126,7 +127,8 @@ def _collect_vulns(findings: List[Dict], rule_findings: List[Dict],
         v['_function'] = v.get('function_name', v.get('function', '?'))
         v['severity'] = _normalize_severity(v.get('severity'))
         v['_severity_val'] = _SEV_ORDER.get(v['severity'], 5)
-        key = (v['_function'], v.get('type', '?'))
+        key = (v['_function'], v.get('type', '?'),
+               v.get('rule_id') or v.get('imported_function') or v.get('location', ''))
         if key in _seen:
             continue
         _seen.add(key)
@@ -192,6 +194,25 @@ def _md_binary_profile_section(profile: Dict) -> List[str]:
             lines.append(f'- `{name}`')
     else:
         lines.append('未获取到 PLT 函数信息')
+    lines.append('')
+
+    dangerous_imports = profile.get('dangerous_imports') or profile.get('exploitable_imports') or []
+    lines.append(f'### 危险函数命中 (共 {len(dangerous_imports)} 个)')
+    lines.append('')
+    if dangerous_imports:
+        lines.append('| 函数 | 风险类型 | 严重性 | CWE |')
+        lines.append('|------|----------|--------|-----|')
+        for entry in dangerous_imports:
+            if isinstance(entry, dict):
+                name = entry.get('name') or entry.get('function') or entry.get('imported_function') or '?'
+                category = entry.get('risk_category') or entry.get('category') or '?'
+                severity = entry.get('risk_severity') or entry.get('severity') or '?'
+                cwe = entry.get('cwe') or '?'
+            else:
+                name, category, severity, cwe = str(entry), '?', '?', '?'
+            lines.append(f'| `{_md_escape(str(name))}` | {_md_escape(str(category))} | {_md_escape(str(severity))} | {_md_escape(str(cwe))} |')
+    else:
+        lines.append('未命中危险导入函数')
     lines.append('')
 
     # ROP gadgets 摘要

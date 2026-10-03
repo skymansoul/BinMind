@@ -1,4 +1,4 @@
-"""
+﻿"""
 PLT/GOT 解析器: 从 ELF 提取导入表地址映射。
 解析 .rela.plt/.got.plt 构建 函数名-PLT桩-GOT条目 映射, 并与危险函数清单交叉标记可利用导入;
 剥离二进制回退到 .dynstr 偏移解析, 不依赖 angr/pyelftools 高层 API。
@@ -13,32 +13,13 @@ import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 
 from config import R2_PATH
+from core.detection_shared import DANGEROUS_FUNCTIONS, normalize_import_name
 
 _log = logging.getLogger(__name__)
 
-# 危险函数清单 - 与 core/static_analysis.py 中的 DANGEROUS_FUNCTIONS 保持同步
+# 兼容旧测试/调用方: 从统一危险函数表派生 PLT 分类。
 _EXPLOITABLE_CATEGORIES = {
-    'system':   ('command-injection', 'Critical'),
-    'popen':    ('command-injection', 'Critical'),
-    'execve':   ('command-injection', 'Critical'),
-    'execl':    ('command-injection', 'Critical'),
-    'gets':     ('buffer-overflow', 'Critical'),
-    'strcpy':   ('buffer-overflow', 'High'),
-    'strcat':   ('buffer-overflow', 'High'),
-    'sprintf':  ('buffer-overflow', 'High'),
-    'vsprintf': ('buffer-overflow', 'High'),
-    'scanf':    ('buffer-overflow', 'Medium'),
-    'memcpy':   ('buffer-overflow', 'Medium'),
-    'read':     ('buffer-overflow', 'Medium'),
-    'write':    ('info-leak', 'Medium'),
-    'puts':     ('info-leak', 'Medium'),
-    'printf':   ('format-string', 'Medium'),
-    'fprintf':  ('format-string', 'Medium'),
-    'mprotect': ('memory-manipulation', 'High'),
-    'mmap':     ('memory-manipulation', 'Medium'),
-    'malloc':   ('heap-corruption', 'Low'),
-    'free':     ('heap-corruption', 'Low'),
-    'fork':     ('race-condition', 'Low'),
+    name: (meta[0], meta[1]) for name, meta in DANGEROUS_FUNCTIONS.items()
 }
 
 
@@ -125,7 +106,8 @@ def _build_plt_entries(raw_entries: List[Dict[str, Any]]) -> List[Dict[str, Any]
     """标准化 PLT 条目并标记危险函数。"""
     entries = []
     for raw in raw_entries:
-        name = raw.get('name', '')
+        raw_name = raw.get('name', '')
+        name = normalize_import_name(raw_name)
         if not name or name.startswith('__') or name.startswith('_ITM_'):
             continue
 

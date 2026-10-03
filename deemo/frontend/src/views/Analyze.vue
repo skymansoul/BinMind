@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <el-card>
     <template #header>
       <span>二进制漏洞分析</span>
@@ -40,6 +40,41 @@
         <el-descriptions-item label="语言">{{ result.binary_info?.language }}</el-descriptions-item>
       </el-descriptions>
 
+      <h3 style="margin-top:20px">导出报告</h3>
+      <el-space wrap>
+        <el-button
+          v-if="hasReport('markdown')"
+          type="primary"
+          plain
+          @click="openReport('markdown')"
+        >
+          查看 Markdown
+        </el-button>
+        <el-button
+          v-if="hasReport('json')"
+          type="primary"
+          plain
+          @click="openReport('json')"
+        >
+          下载 JSON
+        </el-button>
+        <el-button
+          v-if="hasReport('html')"
+          type="primary"
+          plain
+          @click="openReport('html')"
+        >
+          查看 HTML
+        </el-button>
+      </el-space>
+      <el-alert
+        v-if="!hasAnyReport"
+        title="后端未返回可下载报告"
+        type="warning"
+        :closable="false"
+        style="margin-top: 12px"
+      />
+
       <h3 style="margin-top:20px">发现的漏洞 ({{ result.vulnerabilities?.length || 0 }})</h3>
       <el-table :data="result.vulnerabilities || []" border>
         <el-table-column prop="severity" label="严重性" width="100">
@@ -56,9 +91,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onUnmounted } from 'vue'
+import { computed, reactive, ref, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { analyzeBinary, getAnalysisResult } from '@/api'
+import { analyzeBinary, getAnalysisResult, getReportDownloadUrl } from '@/api'
 import type { AnalysisResult } from '@/types'
 
 const form = reactive({
@@ -203,6 +238,24 @@ const onAnalyze = async () => {
     progressMessage.value = ''
     ElMessage.error(err?.message || '提交分析任务失败')
   }
+}
+
+const reportPaths = computed(() => result.value?.report_paths || {})
+
+const hasReport = (format: 'markdown' | 'json' | 'html') => {
+  return Boolean(reportPaths.value?.[format])
+}
+
+const hasAnyReport = computed(() => {
+  return hasReport('markdown') || hasReport('json') || hasReport('html')
+})
+
+const openReport = (format: 'markdown' | 'json' | 'html') => {
+  if (!result.value?.analysis_id) {
+    ElMessage.warning('分析 ID 不存在，无法打开报告')
+    return
+  }
+  window.open(getReportDownloadUrl(result.value.analysis_id, format), '_blank')
 }
 
 const severityTag = (s: string) => {

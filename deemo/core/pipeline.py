@@ -1,4 +1,4 @@
-import glob
+﻿import glob
 import hashlib
 import json
 import logging
@@ -206,38 +206,33 @@ def _analyze_pseudocode(func_name: str, pseudocode: str, binary_info: Dict,
     }
 
 
-_DANGEROUS_IMPORT_META = {
-    'gets': ('CWE-242', 'Critical', 0.95),
-    'strcpy': ('CWE-120', 'High', 0.80),
-    'strcat': ('CWE-120', 'High', 0.75),
-    'sprintf': ('CWE-134', 'High', 0.75),
-    'vsprintf': ('CWE-134', 'High', 0.75),
-}
-
-
 def _dangerous_import_findings(binary_info: Dict) -> List[Dict]:
-    """把无界危险 API 导入转成可审计候选，不宣称已验证可利用。"""
+    """把所有识别到的危险 API 导入转成报告 finding，不宣称已验证可利用。"""
+    from core.detection_shared import get_dangerous_function_meta, normalize_import_name
+
     imports = binary_info.get('imports', {}) if isinstance(binary_info, dict) else {}
     names = imports.get('dangerous_functions', []) if isinstance(imports, dict) else []
     findings = []
-    for name in sorted(set(names or [])):
-        meta = _DANGEROUS_IMPORT_META.get(name)
+    for raw_name in sorted(set(names or [])):
+        name = normalize_import_name(raw_name)
+        meta = get_dangerous_function_meta(name)
         if meta is None:
             continue
-        cwe, severity, confidence = meta
+        vuln_type, severity, cwe, confidence = meta
         findings.append({
             'type': 'dangerous-function-import',
             'rule_id': f'IMPORT-{name.upper()}',
             'function': 'binary_imports',
             'function_name': 'binary_imports',
             'imported_function': name,
+            'risk_category': vuln_type,
             'severity': severity,
             'cwe': cwe,
             'confidence': confidence,
             'verdict': 'POSSIBLE',
             'description': (
-                f'Binary imports unsafe API {name}; call-site bounds and '
-                'reachability require review'),
+                f'Binary imports dangerous API {name} ({vuln_type}); '
+                'call-site reachability and argument safety require review'),
             'evidence': f'import table contains {name}',
         })
     return findings
@@ -901,7 +896,8 @@ def run_pipeline(
                 continue
             all_vulns.append(v)
             _seen.add((r.get('function_name', r.get('function', '?')),
-                       v.get('type', '?')))
+                       v.get('type', '?'),
+                       v.get('rule_id') or v.get('imported_function') or v.get('location', '')))
             try:
                 save_finding(
                     run_id, binary_path, binary_hash,
@@ -912,7 +908,8 @@ def run_pipeline(
             except Exception:
                 pass
     for v in rule_findings:
-        key = (v.get('function_name', '?'), v.get('type', '?'))
+        key = (v.get('function_name', '?'), v.get('type', '?'),
+               v.get('rule_id') or v.get('imported_function') or v.get('location', ''))
         if key in _seen:
             continue
         # RW 弱告警 (rw_weak=True, 来自 color_class_quad/provenance_octagon

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 import uuid
 import hashlib
@@ -538,6 +538,7 @@ if FASTAPI_AVAILABLE:
 
             media_types = {
                 'md': 'text/markdown',
+                'markdown': 'text/markdown',
                 'json': 'application/json',
                 'html': 'text/html',
                 'pdf': 'application/pdf',

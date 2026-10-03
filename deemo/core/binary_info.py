@@ -1,4 +1,4 @@
-"""
+﻿"""
 二进制文件检测与信息提取, 支持 ELF、PE、Mach-O。
 """
 
@@ -11,6 +11,7 @@ from typing import Dict, Optional
 from utils.elf import is_elf, get_elf_class, elf_arch_name, ELFCLASS64, read_elf_sections
 from utils.pe import is_pe, pe_arch_name, read_pe_sections
 from utils.macho import is_macho, macho_arch_name
+from core.detection_shared import DANGEROUS_IMPORTS, normalize_import_name
 
 
 # 缓存最近结果, 避免同一管线运行内重复读取同一二进制
@@ -46,15 +47,6 @@ def _r2_info(path: str) -> Dict:
         return {}
 
 
-_DANGEROUS_IMPORTS = frozenset({
-    'gets', 'strcpy', 'strcat', 'sprintf', 'vsprintf',
-    'scanf', 'sscanf', 'fscanf', 'vscanf',
-    'system', 'execve', 'execl', 'execle', 'execlp', 'execv', 'execvp',
-    'popen', 'unlink', 'remove', 'malloc', 'free', 'realloc', 'calloc',
-    'memcpy', 'memmove', 'memset',
-})
-
-
 def _r2_imports(path: str) -> Dict:
     """通过 radare2 iij 提取结构化导入及危险函数名。"""
     try:
@@ -72,12 +64,12 @@ def _r2_imports(path: str) -> Dict:
         if not isinstance(row, dict):
             continue
         raw_name = str(row.get('name') or row.get('realname') or '')
-        name = raw_name.rsplit('.', 1)[-1].split('@', 1)[0]
+        name = normalize_import_name(raw_name)
         if not name:
             continue
         library = str(row.get('libname') or row.get('library') or 'unknown')
         all_imports.setdefault(library, []).append(name)
-        if name in _DANGEROUS_IMPORTS:
+        if name in DANGEROUS_IMPORTS:
             dangerous.add(name)
     return {
         'all_imports': all_imports,

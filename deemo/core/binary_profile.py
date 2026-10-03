@@ -1,4 +1,4 @@
-"""
+﻿"""
 二进制程序画像: 整合 checksec 保护检测、PLT/GOT 扫描、libc 版本识别、ROP gadget 统计与静态危险函数分析,
 输出结构化安全画像字典, 并生成人类可读摘要供 LLM context 注入。
 六维度: 元数据、保护矩阵、导入表与攻击面、libc 依赖、gadget 库存、利用路径建议。
@@ -59,6 +59,25 @@ def build_binary_profile(
             exploitable = find_exploitable_functions(plt_entries)
         except ImportError:
             exploitable = []
+
+    if dangerous_imports is None:
+        dangerous_imports = []
+        try:
+            from core.detection_shared import get_dangerous_function_meta
+            for name in binfo.get('imports', {}).get('dangerous_functions', []):
+                meta = get_dangerous_function_meta(name)
+                if not meta:
+                    continue
+                vuln_type, severity, cwe, confidence = meta
+                dangerous_imports.append({
+                    'name': name,
+                    'risk_category': vuln_type,
+                    'risk_severity': severity,
+                    'cwe': cwe,
+                    'confidence': confidence,
+                })
+        except Exception:
+            dangerous_imports = []
 
     profile['plt_count'] = len(plt_entries)
     profile['plt_entries'] = plt_entries[:20]  # 截断留存供报告展示

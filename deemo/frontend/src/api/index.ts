@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from 'axios'
+﻿import axios, { AxiosInstance, AxiosError } from 'axios'
 
 const _baseURL = (import.meta as any).env.VITE_API_BASE || '/api'
 const _maxRetry = 3
@@ -166,6 +166,11 @@ export const getReports = (analysisId: string): Promise<APIResponse> => {
   return http.get('/reports/' + analysisId).then(function(r) {
     return _parseResponseData(r)
   })
+}
+
+export const getReportDownloadUrl = (analysisId: string, format: string): string => {
+  const baseURL = _baseURL.replace(/\/$/, '')
+  return baseURL + '/reports/' + encodeURIComponent(analysisId) + '/' + encodeURIComponent(format)
 }
 
 export default http

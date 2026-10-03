@@ -105,6 +105,8 @@ def build_parser() -> argparse.ArgumentParser:
     dp = sub.add_parser('debug', help='manual entry for internal capabilities')
     dp.add_argument('tool', choices=['checksec', 'plt', 'strings', 'gadgets', 'libc', 'symexec'])
     dp.add_argument('binary', help='target binary')
+    dp.add_argument('--leak', action='append', default=[], metavar='SYM=ADDR',
+                    help='libc runtime leak for debug libc; repeatable, e.g. --leak puts=0x7ffff7a5e5f0')
 
     # feedback — exploit 反馈迭代
     fp = sub.add_parser('feedback', help='run exploit feedback loop (analyze->execute->fix)')
@@ -369,8 +371,13 @@ def cmd_debug(args):
         from modules.core.compat.gadget_scan import headless_scan_gadgets
         out = headless_scan_gadgets([args.binary])
     elif args.tool == 'libc':
-        from core.libc_identifier import identify_libc
-        out = identify_libc(args.binary)
+        from core.libc_identifier import identify_libc, parse_libc_leaks
+        try:
+            leaks = parse_libc_leaks(getattr(args, 'leak', []))
+        except ValueError as exc:
+            print(f'error: {exc}', file=sys.stderr)
+            return 1
+        out = identify_libc(args.binary, leaks=leaks)
     elif args.tool == 'symexec':
         from core.symexec import run_symbolic
         out = run_symbolic(args.binary)
