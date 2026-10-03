@@ -175,6 +175,9 @@ def cmd_analyze(args):
     print(f"  Vulnerabilities    : {result.get('total_vulns', 0)}")
     print(f"  Report (md)        : {reports.get('markdown', 'n/a')}")
     print(f"  Report (json)      : {reports.get('json', 'n/a')}")
+    exploit = result.get('exploit_result') or {}
+    if exploit.get('success'):
+        print(f"  Exploit            : {exploit.get('script_path', 'n/a')}")
     print()
 
     # 人工复核入队: 有漏洞发现时写入 review_queue.json, 不阻断 analyze 流程

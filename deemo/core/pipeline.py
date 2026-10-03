@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 from config import (
     MAX_FUNCTIONS, MAX_PARALLEL,
     ENABLE_CRYPTO_SCAN, ENABLE_TAINTRACK, ENABLE_UNPACK,
-    SUBPROCESS_TIMEOUT, ensure_dirs, _is_enabled, DB_PATH,
+    SUBPROCESS_TIMEOUT, ensure_dirs, _is_enabled, DB_PATH, EXPLOITS_DIR,
 )
 from core.binary_info import get_binary_info, validate_binary
 from core.decompiler import list_functions, decompile_function, ai_analyze_function, get_callees
@@ -1333,8 +1333,11 @@ if __name__ == "__main__":
     if crash_analysis and crash_analysis.get('exploitable'):
         _sid = _step_begin(run_id, 'exploit_gen')
         try:
-            exploit_result = generate_exploit(binfo, crash_data)
-            _step_end(_sid, 'success')
+            os.makedirs(EXPLOITS_DIR, exist_ok=True)
+            exploit_result = generate_exploit(
+                binfo, crash_data, output_dir=EXPLOITS_DIR)
+            _step_end(_sid, 'success',
+                      output_summary=exploit_result.get('script_path', ''))
         except Exception as err:
             _step_end(_sid, 'failed', error_message=str(err))
             raise
@@ -1354,12 +1357,9 @@ if __name__ == "__main__":
                     'offset': _top_vuln.get('offset'),
                     'raw': _top_vuln.get('description', ''),
                 }
-                _exploit_output_dir = os.path.join(
-                    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                    'exploits')
-                os.makedirs(_exploit_output_dir, exist_ok=True)
+                os.makedirs(EXPLOITS_DIR, exist_ok=True)
                 exploit_result = generate_exploit(
-                    binfo, _auto_crash, output_dir=_exploit_output_dir)
+                    binfo, _auto_crash, output_dir=EXPLOITS_DIR)
                 _step_end(_sid_auto_exploit, 'success',
                           output_summary=f'auto-generated for {_top_vuln.get("type", "?")}')
                 logger.info("Auto exploit generated for high-severity finding: %s",

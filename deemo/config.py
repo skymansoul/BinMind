@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 import re
 from typing import Optional, Dict, Any
@@ -604,6 +604,7 @@ EXPLOIT_GEN = os.environ.get('EXPLOIT_GEN', 'false').lower() == 'true'
 
 # 报告输出目录
 RESULTS_DIR = os.environ.get('RESULTS_DIR', './reports')
+EXPLOITS_DIR = os.environ.get('EXPLOITS_DIR', Config.EXPLOITS_DIR)
 
 # 兼容性别名 — ensure_dirs 是代码中广泛使用的名称，ensure_directories 是 config.py 内定义的函数
 ensure_dirs = ensure_directories
