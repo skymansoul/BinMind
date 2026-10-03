@@ -170,6 +170,11 @@ class Config:
     VULDB_API_KEY = os.environ.get('VULDB_API_KEY', '')
     GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
 
+    # 全局输出语言，仅支持中文(zh)和英文(en)
+    LANGUAGE = os.environ.get('BINMIND_LANGUAGE', 'zh').strip().lower()
+    if LANGUAGE not in ('zh', 'en'):
+        LANGUAGE = 'zh'
+
     LOGS_DIR = './logs'
     REPORTS_DIR = './reports'
     EXPLOITS_DIR = './exploits'
@@ -605,6 +610,9 @@ EXPLOIT_GEN = os.environ.get('EXPLOIT_GEN', 'false').lower() == 'true'
 # 报告输出目录
 RESULTS_DIR = os.environ.get('RESULTS_DIR', './reports')
 EXPLOITS_DIR = os.environ.get('EXPLOITS_DIR', Config.EXPLOITS_DIR)
+LANGUAGE = os.environ.get('BINMIND_LANGUAGE', Config.LANGUAGE).strip().lower()
+if LANGUAGE not in ('zh', 'en'):
+    LANGUAGE = 'zh'
 
 # 兼容性别名 — ensure_dirs 是代码中广泛使用的名称，ensure_directories 是 config.py 内定义的函数
 ensure_dirs = ensure_directories

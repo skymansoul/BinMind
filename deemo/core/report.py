@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 from config import RESULTS_DIR
+from core.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,15 @@ def _normalize_severity(sev: str) -> str:
     if not sev:
         return 'Unknown'
     return _SEV_UP_MAP.get(str(sev).strip().upper(), 'Unknown')
+
+
+def _display_severity(sev: str) -> str:
+    key = f"severity_{str(sev or 'Unknown').strip().lower()}"
+    return tr(key)
+
+
+def _display_bool(value: bool) -> str:
+    return tr('true') if value else tr('false')
 
 
 def _should_skip_finding(v: Dict) -> bool:
@@ -147,15 +157,15 @@ def _md_symbolic_section(symbolic_result: Dict) -> List[str]:
     """符号执行结果摘要。"""
     if not symbolic_result:
         return []
-    lines = ['### Symbolic Execution', '']
+    lines = [f'### {tr("symbolic_execution")}', '']
     if symbolic_result.get('success'):
         lines.append(
-            f"- **Paths found:** {symbolic_result.get('paths_found', 0)}")
+            f"- **{tr('paths_found')}:** {symbolic_result.get('paths_found', 0)}")
         lines.append(
-            f"- **Constraints extracted:** {len(symbolic_result.get('constraints', []))}")
+            f"- **{tr('constraints_extracted')}:** {len(symbolic_result.get('constraints', []))}")
     else:
-        lines.append(f"- **Status:** failed")
-        lines.append(f"- **Error:** {symbolic_result.get('error', 'unknown')}")
+        lines.append(f"- **{tr('status')}:** {tr('failed')}")
+        lines.append(f"- **{tr('error')}:** {symbolic_result.get('error', tr('unknown'))}")
     lines.append('')
     return lines
 
@@ -164,43 +174,47 @@ def _md_binary_profile_section(profile: Dict) -> List[str]:
     """程序初步画像章节: 保护机制、PLT、ROP gadgets、关键字符串、libc 版本。各字段缺失时显式标注未获取。"""
     if not profile:
         return []
-    lines = ['## 程序初步画像', '']
+    lines = [f'## {tr("program_profile")}', '']
     cs = profile.get('checksec') or {}
 
-    # 保护机制
-    lines.append('### 保护机制')
+    lines.append(f'### {tr("protections")}')
     lines.append('')
-    lines.append('| 机制 | 状态 |')
+    lines.append(f'| {tr("mechanism")} | {tr("state")} |')
     lines.append('|------|------|')
+
+    def _state(value, name):
+        if value is None:
+            return f'{tr("not_available")} {name}'
+        return f'✓ {tr("enabled")}' if value else f'✗ {tr("disabled")}'
+
     nx_val = cs.get('nx')
-    lines.append(f'| NX | {"✓ 启用" if nx_val else "✗ 关闭" if nx_val is not None else "未获取到 NX 信息"} |')
+    lines.append(f'| NX | {_state(nx_val, "NX")} |')
     pie_val = cs.get('pie')
-    lines.append(f'| PIE | {"✓ 启用" if pie_val else "✗ 关闭" if pie_val is not None else "未获取到 PIE 信息"} |')
+    lines.append(f'| PIE | {_state(pie_val, "PIE")} |')
     relro_val = cs.get('relro')
-    lines.append(f'| RELRO | {relro_val if relro_val else "未获取到 RELRO 信息"} |')
+    lines.append(f'| RELRO | {relro_val if relro_val else tr("not_available")} |')
     canary_val = cs.get('canary')
-    lines.append(f'| Canary | {"✓ 启用" if canary_val else "✗ 关闭" if canary_val is not None else "未获取到 Canary 信息"} |')
+    lines.append(f'| Canary | {_state(canary_val, "Canary")} |')
     aslr_val = cs.get('aslr')
-    lines.append(f'| ASLR | {"✓ 启用" if aslr_val else "✗ 关闭" if aslr_val is not None else "未获取到 ASLR 信息"} |')
+    lines.append(f'| ASLR | {_state(aslr_val, "ASLR")} |')
     lines.append('')
 
-    # PLT 函数列表
     plt_entries = profile.get('plt_entries') or []
-    lines.append(f'### PLT 函数 (共 {profile.get("plt_count", 0)} 个, 展示前 20)')
+    lines.append(f'### {tr("plt_functions")} ({tr("total")} {profile.get("plt_count", 0)}, {tr("show_first_20")})')
     lines.append('')
     if plt_entries:
         for entry in plt_entries[:20]:
             name = entry.get('name', '?') if isinstance(entry, dict) else str(entry)
             lines.append(f'- `{name}`')
     else:
-        lines.append('未获取到 PLT 函数信息')
+        lines.append(tr('no_plt'))
     lines.append('')
 
     dangerous_imports = profile.get('dangerous_imports') or profile.get('exploitable_imports') or []
-    lines.append(f'### 危险函数命中 (共 {len(dangerous_imports)} 个)')
+    lines.append(f'### {tr("dangerous_functions")} ({tr("total")} {len(dangerous_imports)})')
     lines.append('')
     if dangerous_imports:
-        lines.append('| 函数 | 风险类型 | 严重性 | CWE |')
+        lines.append(f'| {tr("function")} | {tr("risk_type")} | {tr("severity")} | CWE |')
         lines.append('|------|----------|--------|-----|')
         for entry in dangerous_imports:
             if isinstance(entry, dict):
@@ -212,28 +226,26 @@ def _md_binary_profile_section(profile: Dict) -> List[str]:
                 name, category, severity, cwe = str(entry), '?', '?', '?'
             lines.append(f'| `{_md_escape(str(name))}` | {_md_escape(str(category))} | {_md_escape(str(severity))} | {_md_escape(str(cwe))} |')
     else:
-        lines.append('未命中危险导入函数')
+        lines.append(tr('no_dangerous_imports'))
     lines.append('')
 
-    # ROP gadgets 摘要
     gadget_count = profile.get('gadget_count')
     gadget_types = profile.get('gadget_types') or {}
-    lines.append('### ROP Gadgets 摘要')
+    lines.append(f'### {tr("rop_summary")}')
     lines.append('')
     if gadget_count is not None and gadget_count > 0:
-        lines.append(f'- **总数:** {gadget_count}')
+        lines.append(f'- **{tr("total")}:** {gadget_count}')
         if gadget_types:
-            lines.append('- **类型分布:**')
+            lines.append(f'- **{tr("type_distribution")}:**')
             for gtype, cnt in sorted(gadget_types.items(), key=lambda x: -x[1])[:10]:
                 lines.append(f'  - `{gtype}`: {cnt}')
     else:
-        lines.append('未获取到 ROP gadget 信息')
+        lines.append(tr('no_rop'))
     lines.append('')
 
-    # 关键字符串
     key_strings = profile.get('key_strings') or []
     suspect = profile.get('suspect_strings') or []
-    lines.append('### 关键字符串 (展示前 20)')
+    lines.append(f'### {tr("key_strings")} ({tr("show_first_20")})')
     lines.append('')
     if key_strings:
         for s in key_strings[:20]:
@@ -246,30 +258,28 @@ def _md_binary_profile_section(profile: Dict) -> List[str]:
                 s = s.get('string', str(s))
             lines.append(f'- {_md_escape(str(s))}')
     else:
-        lines.append('未获取到字符串信息')
+        lines.append(tr('no_strings'))
     lines.append('')
 
-    # libc 版本
     libc = profile.get('libc') or {}
-    lines.append('### libc 版本信息')
+    lines.append(f'### {tr("libc_info")}')
     lines.append('')
     if libc:
-        lines.append(f'- **版本:** {libc.get("version", "未知")}')
+        lines.append(f'- **{tr("version")}:** {libc.get("version", tr("unknown"))}')
         if libc.get('path'):
-            lines.append(f'- **路径:** `{libc["path"]}`')
+            lines.append(f'- **{tr("path")}:** `{libc["path"]}`')
         if libc.get('symbols'):
-            lines.append(f'- **已知符号数:** {len(libc["symbols"])}')
+            lines.append(f'- **{tr("known_symbols")}:** {len(libc["symbols"])}')
     else:
-        lines.append('未获取到 libc 版本信息')
+        lines.append(tr('no_libc'))
     lines.append('')
 
-    # 利用难度与推荐策略
     difficulty = profile.get('exploit_difficulty')
     if difficulty:
-        lines.append(f'- **利用难度评估:** **{difficulty.upper()}**')
+        lines.append(f'- **{tr("exploit_difficulty")}:** **{difficulty.upper()}**')
     approaches = profile.get('recommended_approach') or []
     if approaches:
-        lines.append('- **推荐利用策略:**')
+        lines.append(f'- **{tr("recommended_approach")}:**')
         for a in approaches:
             lines.append(f'  - {a}')
     if difficulty or approaches:
@@ -293,12 +303,12 @@ def generate_markdown(findings: List[Dict], binary_info: Dict,
     bits = binary_info.get('bits', 64)
 
     lines = [
-        f'# Binary Vulnerability Analysis Report',
+        f'# {tr("report_title")}',
         f'',
-        f'**Binary:** `{binary_name}`  ',
-        f'**Architecture:** {arch} ({bits}-bit)  ',
-        f'**Format:** {binary_info.get("format", "unknown")}  ',
-        f'**Generated:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}  ',
+        f'**{tr("binary")}:** `{binary_name}`  ',
+        f'**{tr("architecture")}:** {arch} ({bits}-bit)  ',
+        f'**{tr("format")}:** {binary_info.get("format", tr("unknown"))}  ',
+        f'**{tr("generated")}:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}  ',
         f'',
         f'---',
         f'',
@@ -314,57 +324,57 @@ def generate_markdown(findings: List[Dict], binary_info: Dict,
         lines.append('')
 
     if not all_vulns:
-        lines.append('## Summary')
+        lines.append(f'## {tr("summary")}')
         lines.append('')
-        lines.append('No vulnerabilities found in the analyzed functions.')
+        lines.append(tr('no_vulns'))
         lines.extend(_md_symbolic_section(symbolic_result))
         return '\n'.join(lines)
 
-    lines.append(f'## Summary')
+    lines.append(f'## {tr("summary")}')
     lines.append(f'')
-    lines.append(f'- **Total vulnerabilities:** {len(all_vulns)}')
+    lines.append(f'- **{tr("total_vulns")}:** {len(all_vulns)}')
     sev_counts = {}
     for v in all_vulns:
         s = v.get('severity', 'Unknown')
         sev_counts[s] = sev_counts.get(s, 0) + 1
     for s in ('Critical', 'High', 'Medium', 'Low', 'Unknown'):
         if s in sev_counts:
-            lines.append(f'- **{s}:** {sev_counts[s]}')
+            lines.append(f'- **{_display_severity(s)}:** {sev_counts[s]}')
     lines.append('')
 
     if crash_result:
-        lines.append('### Crash Information')
-        lines.append(f'- Type: `{crash_result.get("crash_type", "?")}`')
-        lines.append(f'- Severity: {crash_result.get("severity", "?")}')
-        lines.append(f'- Exploitable: {crash_result.get("exploitable", False)}')
+        lines.append(f'### {tr("crash_info")}')
+        lines.append(f'- {tr("type")}: `{crash_result.get("crash_type", "?")}`')
+        lines.append(f'- {tr("severity")}: {_display_severity(crash_result.get("severity", "Unknown"))}')
+        lines.append(f'- {tr("exploitable")}: {_display_bool(bool(crash_result.get("exploitable", False)))}')
         lines.append('')
 
     lines.extend(_md_symbolic_section(symbolic_result))
 
     lines.append('---')
     lines.append('')
-    lines.append('## Findings')
+    lines.append(f'## {tr("findings")}')
     lines.append('')
 
     for i, v in enumerate(all_vulns, 1):
-        lines.append(f'### {i}. {v.get("type", "?")} [{v.get("severity", "?")}]')
-        lines.append(f'- **Function:** `{v["_function"]}`')
+        lines.append(f'### {i}. {v.get("type", "?")} [{_display_severity(v.get("severity", "Unknown"))}]')
+        lines.append(f'- **{tr("function")}:** `{v["_function"]}`')
         if v.get('cwe'):
             lines.append(f'- **CWE:** {v["cwe"]}')
-        lines.append(f'- **Description:** {v.get("description", "no details")}')
+        lines.append(f'- **{tr("description")}:** {v.get("description") or tr("no_details")}')
         if v.get('location'):
-            lines.append(f'- **Location:** {v["location"]}')
+            lines.append(f'- **{tr("location")}:** {v["location"]}')
         if v.get('priority_score') is not None:
-            lines.append(f'- **Priority score:** {v["priority_score"]}')
+            lines.append(f'- **{tr("priority_score")}:** {v["priority_score"]}')
         if v.get('evidence'):
-            lines.append(f'- **Evidence:** {v["evidence"]}')
+            lines.append(f'- **{tr("evidence")}:** {v["evidence"]}')
         # 审核状态与分级
         review = v.get('review_status', 'pending')
         tier = v.get('tier', 'lead')
-        lines.append(f'- **Review:** {review}')
-        lines.append(f'- **Tier:** {tier}')
+        lines.append(f'- **{tr("review")}:** {review}')
+        lines.append(f'- **{tr("tier")}:** {tier}')
         if v.get('simulation'):
-            lines.append(f'- **Simulation:** true')
+            lines.append(f'- **{tr("simulation")}:** {tr("true")}')
         lines.append('')
 
     return '\n'.join(lines)

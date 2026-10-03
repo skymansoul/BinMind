@@ -4,127 +4,152 @@
 import argparse, os, sys, time
 
 from config import ensure_dirs
+from core.i18n import is_zh, tr
 from utils.logging_setup import init_logging
 
 
+class LocalizedArgumentParser(argparse.ArgumentParser):
+    def __init__(self, *args, **kwargs):
+        add_help = kwargs.pop('add_help', True)
+        super().__init__(*args, add_help=False, **kwargs)
+        if add_help:
+            self.add_argument('-h', '--help', action='help',
+                              default=argparse.SUPPRESS,
+                              help=tr('cli_help'))
+
+    def format_usage(self):
+        text = super().format_usage()
+        return text.replace('usage:', tr('cli_usage'), 1) if is_zh() else text
+
+    def format_help(self):
+        text = super().format_help()
+        if not is_zh():
+            return text
+        return (text
+                .replace('usage:', tr('cli_usage'), 1)
+                .replace('positional arguments:', f"{tr('cli_positionals')}:")
+                .replace('options:', f"{tr('cli_options')}:"))
+
+
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
+    p = LocalizedArgumentParser(
         prog='binmind',
-        description='Binary vulnerability analysis tool',
+        description=tr('cli_description'),
     )
 
     # 顶级开关 — 不需要子命令
     p.add_argument('--test', action='store_true',
-                   help='run test suite (equivalent to python -m tests.run_tests --all)')
+                   help=tr('cli_test_help'))
     p.add_argument('--ai-analysis', dest='ai_analysis', action='store_true',
-                   help='enable LLM-assisted vulnerability analysis (default: on)')
+                   help=tr('cli_ai_help'))
     p.add_argument('--no-ai', dest='ai_analysis', action='store_false',
-                   help='disable LLM-assisted vulnerability analysis')
+                   help=tr('cli_no_ai_help'))
     p.set_defaults(ai_analysis=True)
     p.add_argument('--reverse-report', dest='reverse_report', action='store_true',
-                   help='generate reverse engineering report (requires prior analysis)')
+                   help=tr('cli_reverse_report_help'))
     p.add_argument('--binary', dest='binary', default=None,
-                   help='binary path for --reverse-report')
+                   help=tr('cli_binary_reverse_help'))
 
-    sub = p.add_subparsers(dest='command', help='subcommands')
+    sub = p.add_subparsers(dest='command', help=tr('cli_subcommands_help'),
+                           parser_class=LocalizedArgumentParser)
 
     # analyze
-    ap = sub.add_parser('analyze', help='analyze a binary file')
-    ap.add_argument('binary', help='path to ELF/PE/Mach-O file')
+    ap = sub.add_parser('analyze', help=tr('cli_analyze_help'))
+    ap.add_argument('binary', help=tr('cli_binary_help'))
     ap.add_argument('-o', '--output', default='./results',
-                    help='output directory (default: ./results)')
+                    help=tr('cli_output_help'))
     ap.add_argument('-f', '--format', choices=['markdown', 'json'],
-                    default='markdown', help='report format')
+                    default='markdown', help=tr('cli_report_format_help'))
     ap.add_argument('--crash', metavar='FILE',
-                    help='crash log to analyze alongside the binary')
+                    help=tr('cli_crash_help'))
     ap.add_argument('--functions', nargs='*',
-                    help='specific function(s) to analyze')
+                    help=tr('cli_functions_help'))
     ap.add_argument('--max-funcs', type=int, default=20,
-                    help='max functions to decompile (default: 20)')
+                    help=tr('cli_max_funcs_help'))
     ap.add_argument('--include-lib', action='store_true',
-                    help='include library functions in analysis')
+                    help=tr('cli_include_lib_help'))
     ap.add_argument('--parallel', action='store_true',
-                    help='run function analysis in parallel')
+                    help=tr('cli_parallel_help'))
     ap.add_argument('--symbolic', action='store_true',
-                    help='enable symbolic execution (requires angr)')
+                    help=tr('cli_symbolic_help'))
     ap.add_argument('--fuzz', action='store_true',
-                    help='generate libFuzzer harness workspace for the target')
+                    help=tr('cli_fuzz_help'))
     ap.add_argument('--no-crypto', action='store_true',
-                    help='skip cryptographic constant scanning')
+                    help=tr('cli_no_crypto_help'))
     ap.add_argument('--decompiler', choices=['auto', 'r2', 'ghidra'],
-                    default='auto', help='decompiler backend')
+                    default='auto', help=tr('cli_decompiler_help'))
     ap.add_argument('--hooks', metavar='DIR',
-                    help='directory containing hook scripts')
+                    help=tr('cli_hooks_help'))
     ap.add_argument('-v', '--verbose', action='store_true',
-                    help='debug logging')
+                    help=tr('cli_verbose_help'))
     ap.add_argument('--ai-analysis', dest='ai_analysis', action='store_true',
                     default=argparse.SUPPRESS,
-                    help='enable LLM-assisted vulnerability analysis (default: on)')
+                    help=tr('cli_ai_help'))
     ap.add_argument('--no-ai', dest='ai_analysis', action='store_false',
                     default=argparse.SUPPRESS,
-                    help='disable LLM-assisted vulnerability analysis')
+                    help=tr('cli_no_ai_help'))
 
     # batch
-    bp = sub.add_parser('batch', help='analyze multiple binaries')
-    bp.add_argument('directory', help='directory containing binaries')
-    bp.add_argument('-o', '--output', default='./results', help='output dir')
+    bp = sub.add_parser('batch', help=tr('cli_batch_help'))
+    bp.add_argument('directory', help=tr('cli_directory_help'))
+    bp.add_argument('-o', '--output', default='./results', help=tr('cli_output_dir_help'))
     bp.add_argument('-f', '--format', choices=['markdown', 'json'],
-                    default='markdown')
+                    default='markdown', help=tr('cli_report_format_help'))
 
     # serve
-    svp = sub.add_parser('serve', help='start the Web API service')
+    svp = sub.add_parser('serve', help=tr('cli_serve_help'))
     svp.add_argument('--host', default='127.0.0.1',
-                     help='listen address (default: 127.0.0.1)')
+                     help=tr('cli_host_help'))
     svp.add_argument('--port', type=int, default=8000,
-                     help='listen port (default: 8000)')
+                     help=tr('cli_port_help'))
     svp.add_argument('--reload', action='store_true',
-                     help='enable uvicorn auto-reload (dev only)')
+                     help=tr('cli_reload_help'))
 
     # fuzz
-    fp = sub.add_parser('fuzz', help='fuzzing tools (delegates to binmind-fuzzing)')
+    fp = sub.add_parser('fuzz', help=tr('cli_fuzz_cmd_help'))
     fp.add_argument('args', nargs=argparse.REMAINDER,
-                    help='arguments forwarded to the fuzzing CLI')
+                    help=tr('cli_fuzz_args_help'))
 
     # version
-    sub.add_parser('version', help='show version info')
+    sub.add_parser('version', help=tr('cli_version_help'))
 
     # export
-    ep = sub.add_parser('export', help='export analysis reports')
-    ep.add_argument('binary', help='binary whose reports to export')
+    ep = sub.add_parser('export', help=tr('cli_export_help'))
+    ep.add_argument('binary', help=tr('cli_export_binary_help'))
     ep.add_argument('-o', '--output', default='./exported_reports',
-                    help='target directory for exported reports')
+                    help=tr('cli_export_output_help'))
 
     # status
-    sub.add_parser('status', help='show analysis run status from DB')
+    sub.add_parser('status', help=tr('cli_status_help'))
 
     # replay
-    rp = sub.add_parser('replay', help='replay recorded analysis from DB')
-    rp.add_argument('run_id', type=int, help='analysis run id to replay')
+    rp = sub.add_parser('replay', help=tr('cli_replay_help'))
+    rp.add_argument('run_id', type=int, help=tr('cli_run_id_help'))
 
     # debug
-    dp = sub.add_parser('debug', help='manual entry for internal capabilities')
+    dp = sub.add_parser('debug', help=tr('cli_debug_help'))
     dp.add_argument('tool', choices=['checksec', 'plt', 'strings', 'gadgets', 'libc', 'symexec'])
-    dp.add_argument('binary', help='target binary')
+    dp.add_argument('binary', help=tr('cli_target_binary_help'))
     dp.add_argument('--leak', action='append', default=[], metavar='SYM=ADDR',
-                    help='libc runtime leak for debug libc; repeatable, e.g. --leak puts=0x7ffff7a5e5f0')
+                    help=tr('cli_leak_help'))
 
     # feedback — exploit 反馈迭代
-    fp = sub.add_parser('feedback', help='run exploit feedback loop (analyze->execute->fix)')
-    fp.add_argument('binary', help='path to ELF/PE/Mach-O file')
-    fp.add_argument('--script', default='', help='initial exploit script; empty = use generated draft')
-    fp.add_argument('--iterations', type=int, default=3, help='max iteration rounds')
-    fp.add_argument('--timeout', type=int, default=30, help='per-execution timeout seconds')
+    fp = sub.add_parser('feedback', help=tr('cli_feedback_help'))
+    fp.add_argument('binary', help=tr('cli_binary_help'))
+    fp.add_argument('--script', default='', help=tr('cli_script_help'))
+    fp.add_argument('--iterations', type=int, default=3, help=tr('cli_iterations_help'))
+    fp.add_argument('--timeout', type=int, default=30, help=tr('cli_timeout_help'))
 
     # review — 人工复核闭环
-    rp = sub.add_parser('review', help='human review of pending findings')
+    rp = sub.add_parser('review', help=tr('cli_review_help'))
     rp.add_argument('-o', '--output', default='./results',
-                    help='output directory containing review_queue.json')
+                    help=tr('cli_review_output_help'))
     rp.add_argument('--list', action='store_true',
-                    help='list all pending review records')
+                    help=tr('cli_review_list_help'))
     rp.add_argument('--verdict', choices=['confirmed', 'false_positive', 'pending'],
-                    help='set human verdict for a record')
+                    help=tr('cli_review_verdict_help'))
     rp.add_argument('--index', type=int, default=-1,
-                    help='record index to update (0-based)')
+                    help=tr('cli_review_index_help'))
 
     return p
 
@@ -137,12 +162,12 @@ def cmd_analyze(args):
 
     binary = os.path.abspath(args.binary)
     if not os.path.isfile(binary):
-        print(f"error: not a file: {binary}", file=sys.stderr)
+        print(f"{tr('error_not_file')}: {binary}", file=sys.stderr)
         return 1
 
-    print(f"\n  BinMind — Binary Vulnerability Analysis ")
-    print(f"  target : {binary}")
-    print(f"  output : {args.output}\n")
+    print(f"\n  {tr('analysis_title')} ")
+    print(f"  {tr('target')} : {binary}")
+    print(f"  {tr('output')} : {args.output}\n")
 
     t0 = time.time()
     result = run_pipeline(
@@ -170,14 +195,14 @@ def cmd_analyze(args):
     reports = result.get('reports', {})
 
     print()
-    print(f"  Analysis complete ({elapsed:.1f}s)")
-    print(f"  Functions analyzed : {len(result.get('decomp_analysis', []))}")
-    print(f"  Vulnerabilities    : {result.get('total_vulns', 0)}")
-    print(f"  Report (md)        : {reports.get('markdown', 'n/a')}")
-    print(f"  Report (json)      : {reports.get('json', 'n/a')}")
+    print(f"  {tr('analysis_complete')} ({elapsed:.1f}s)")
+    print(f"  {tr('functions_analyzed')} : {len(result.get('decomp_analysis', []))}")
+    print(f"  {tr('vulnerabilities')}    : {result.get('total_vulns', 0)}")
+    print(f"  {tr('report_md')}        : {reports.get('markdown', 'n/a')}")
+    print(f"  {tr('report_json')}      : {reports.get('json', 'n/a')}")
     exploit = result.get('exploit_result') or {}
     if exploit.get('success'):
-        print(f"  Exploit            : {exploit.get('script_path', 'n/a')}")
+        print(f"  {tr('exploit')}            : {exploit.get('script_path', 'n/a')}")
     print()
 
     # 人工复核入队: 有漏洞发现时写入 review_queue.json, 不阻断 analyze 流程
@@ -194,7 +219,7 @@ def cmd_analyze(args):
                     evidence_addr=vuln.get('address', 'n/a'),
                     current_status='pending',
                 )
-            print(f"  Review queue  : {len(vuln_list)} record(s) pending")
+            print(f"  {tr('review_queue')}  : {len(vuln_list)} {tr('records_pending')}")
         else:
             # all_vulns 不可用时创建一条汇总记录
             add_review_record(
@@ -204,8 +229,8 @@ def cmd_analyze(args):
                 evidence_addr=reports.get('markdown', 'n/a'),
                 current_status='pending',
             )
-            print(f"  Review queue  : 1 summary record pending")
-        print(f"  Use 'python main.py review --list' to review")
+            print(f"  {tr('review_queue')}  : {tr('record_pending')}")
+        print(f"  {tr('review_hint')}")
 
     return 0
 
@@ -648,7 +673,8 @@ def cmd_reverse_report(args):
         ReportConfig, ReportData, ReverseReportGenerator
     )
 
-    cfg = ReportConfig(language='zh', output_dir='./reports')
+    from core.i18n import language
+    cfg = ReportConfig(language=language(), output_dir='./reports')
     gen = ReverseReportGenerator(cfg)
 
     # 从最近分析结果中读取数据
@@ -716,7 +742,10 @@ def cmd_reverse_report(args):
     output = gen.save_report()
 
     if output:
-        print(f"  Reverse report saved: {output}")
+        if language() == 'zh':
+            print(f"  逆向报告已保存: {output}")
+        else:
+            print(f"  Reverse report saved: {output}")
         # simulation 标记
         from modules.llm_client import is_ai_configured
         if not is_ai_configured():

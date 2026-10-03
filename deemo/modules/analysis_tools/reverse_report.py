@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 from enum import Enum
 from dataclasses import dataclass
 import logging
@@ -499,38 +499,73 @@ Direct, rigorous.
         }
         return prompts.get(section, "")
 
+    def _is_zh(self) -> bool:
+        return self.config.language == 'zh'
+
+    def _yes_no(self, value: bool) -> str:
+        if self._is_zh():
+            return '是' if value else '否'
+        return 'Yes' if value else 'No'
+
+    def _enabled_disabled(self, value: bool) -> str:
+        if self._is_zh():
+            return '启用' if value else '关闭'
+        return 'Enabled' if value else 'Disabled'
+
+    def _unknown(self) -> str:
+        return '未知' if self._is_zh() else 'Unknown'
+
+    def _na(self) -> str:
+        return '不适用' if self._is_zh() else 'N/A'
+
     def _format_binary_info(self) -> str:
         """Format binary info as structured text."""
         info = self.report_data.binary_info
         if not info:
-            return "No binary information available."
+            return "未获取到二进制文件信息。" if self._is_zh() else "No binary information available."
 
+        unknown = self._unknown()
+        na = self._na()
         lines = []
-        lines.append(f"- File Path: {info.get('binary_path', 'N/A')}")
-        lines.append(f"- Format: {info.get('format', 'N/A')}")
-        lines.append(f"- Architecture: {info.get('arch', 'N/A')} ({info.get('bits', 'N/A')}-bit)")
-        lines.append(f"- Endian: {info.get('endian', 'N/A')}")
+        if self._is_zh():
+            lines.append(f"- 文件路径: {info.get('binary_path', na)}")
+            lines.append(f"- 格式: {info.get('format', na)}")
+            lines.append(f"- 架构: {info.get('arch', na)} ({info.get('bits', na)}-bit)")
+            lines.append(f"- 字节序: {info.get('endian', na)}")
+            protection_title = "\n### 保护机制:"
+            dangerous_title = "危险函数"
+            more_template = "... 以及另外 {count} 个"
+        else:
+            lines.append(f"- File Path: {info.get('binary_path', na)}")
+            lines.append(f"- Format: {info.get('format', na)}")
+            lines.append(f"- Architecture: {info.get('arch', na)} ({info.get('bits', na)}-bit)")
+            lines.append(f"- Endian: {info.get('endian', na)}")
+            protection_title = "\n### Protection Mechanisms:"
+            dangerous_title = "Dangerous Functions"
+            more_template = "... and {count} more"
 
         checksec = info.get('checksec', {})
-        lines.append("\n### Protection Mechanisms:")
+        lines.append(protection_title)
         if info.get('format') == 'ELF':
-            lines.append(f"- NX: {'Enabled' if checksec.get('nx') else 'Disabled'}")
-            lines.append(f"- PIE: {'Enabled' if checksec.get('pie') else 'Disabled'}")
-            lines.append(f"- RELRO: {checksec.get('relro', 'N/A')}")
-            lines.append(f"- Canary: {'Enabled' if checksec.get('canary') else 'Disabled'}")
+            lines.append(f"- NX: {self._enabled_disabled(bool(checksec.get('nx')))}")
+            lines.append(f"- PIE: {self._enabled_disabled(bool(checksec.get('pie')))}")
+            lines.append(f"- RELRO: {checksec.get('relro', na)}")
+            lines.append(f"- Canary: {self._enabled_disabled(bool(checksec.get('canary')))}")
         elif info.get('format') == 'PE':
-            lines.append(f"- NX/DEP: {'Enabled' if checksec.get('nx') else 'Disabled'}")
-            lines.append(f"- ASLR: {'Enabled' if checksec.get('aslr') else 'Disabled'}")
-            lines.append(f"- SafeSEH: {'Enabled' if checksec.get('safeseh') else 'Disabled'}")
-            lines.append(f"- CFG: {'Enabled' if checksec.get('cfg') else 'Disabled'}")
+            lines.append(f"- NX/DEP: {self._enabled_disabled(bool(checksec.get('nx')))}")
+            lines.append(f"- ASLR: {self._enabled_disabled(bool(checksec.get('aslr')))}")
+            lines.append(f"- SafeSEH: {self._enabled_disabled(bool(checksec.get('safeseh')))}")
+            lines.append(f"- CFG: {self._enabled_disabled(bool(checksec.get('cfg')))}")
+        else:
+            lines.append(f"- {unknown}")
 
         imports = info.get('imports', {})
         dangerous_funcs = imports.get('dangerous_functions', [])
         if dangerous_funcs:
-            lines.append(f"\n### Dangerous Functions ({len(dangerous_funcs)}):")
+            lines.append(f"\n### {dangerous_title} ({len(dangerous_funcs)}):")
             lines.append(f"{', '.join(dangerous_funcs[:10])}")
             if len(dangerous_funcs) > 10:
-                lines.append(f"... and {len(dangerous_funcs) - 10} more")
+                lines.append(more_template.format(count=len(dangerous_funcs) - 10))
 
         return '\n'.join(lines)
 
@@ -538,32 +573,51 @@ Direct, rigorous.
         # Produce compact binary info summary.
         info = self.report_data.binary_info
         if not info:
-            return "N/A"
+            return self._na()
 
+        if self._is_zh():
+            return (
+                f"文件: {info.get('binary_path', self._na())}\n"
+                f"格式: {info.get('format', self._na())}\n"
+                f"架构: {info.get('arch', self._na())} ({info.get('bits', self._na())}-bit)\n"
+                f"NX: {self._yes_no(bool(info.get('checksec', {}).get('nx')))}\n"
+                f"PIE: {self._yes_no(bool(info.get('checksec', {}).get('pie')))}"
+            )
         return (
-            f"File: {info.get('binary_path', 'N/A')}\n"
-            f"Format: {info.get('format', 'N/A')}\n"
-            f"Arch: {info.get('arch', 'N/A')} ({info.get('bits', 'N/A')}-bit)\n"
-            f"NX: {'Yes' if info.get('checksec', {}).get('nx') else 'No'}\n"
-            f"PIE: {'Yes' if info.get('checksec', {}).get('pie') else 'No'}"
+            f"File: {info.get('binary_path', self._na())}\n"
+            f"Format: {info.get('format', self._na())}\n"
+            f"Arch: {info.get('arch', self._na())} ({info.get('bits', self._na())}-bit)\n"
+            f"NX: {self._yes_no(bool(info.get('checksec', {}).get('nx')))}\n"
+            f"PIE: {self._yes_no(bool(info.get('checksec', {}).get('pie')))}"
         )
 
     def _format_vulnerability_data(self) -> str:
         """Render vulnerability list as structured text."""
         vulns = self.report_data.vulnerability_list
         if not vulns:
-            return "No vulnerabilities found."
+            return "未发现漏洞。" if self._is_zh() else "No vulnerabilities found."
 
         lines = []
         for i, vuln in enumerate(vulns, 1):
-            lines.append(f"## Vulnerability {i}: {vuln.get('type', 'Unknown')}")
-            lines.append(f"- Severity: {vuln.get('severity', 'Unknown')}")
-            lines.append(f"- Location: {vuln.get('location', 'N/A')}")
-            lines.append(f"- Function: {vuln.get('function_name', 'N/A')}")
-            if vuln.get('description'):
-                lines.append(f"- Description: {vuln['description'][:200]}")
-            if vuln.get('code_snippet'):
-                lines.append(f"- Code Snippet:\n{vuln['code_snippet']}")
+            vuln_type = vuln.get('type', self._unknown())
+            if self._is_zh():
+                lines.append(f"## 漏洞 {i}: {vuln_type}")
+                lines.append(f"- 严重性: {vuln.get('severity', self._unknown())}")
+                lines.append(f"- 位置: {vuln.get('location', self._na())}")
+                lines.append(f"- 函数: {vuln.get('function_name', self._na())}")
+                if vuln.get('description'):
+                    lines.append(f"- 描述: {vuln['description'][:200]}")
+                if vuln.get('code_snippet'):
+                    lines.append(f"- 代码片段:\n{vuln['code_snippet']}")
+            else:
+                lines.append(f"## Vulnerability {i}: {vuln_type}")
+                lines.append(f"- Severity: {vuln.get('severity', self._unknown())}")
+                lines.append(f"- Location: {vuln.get('location', self._na())}")
+                lines.append(f"- Function: {vuln.get('function_name', self._na())}")
+                if vuln.get('description'):
+                    lines.append(f"- Description: {vuln['description'][:200]}")
+                if vuln.get('code_snippet'):
+                    lines.append(f"- Code Snippet:\n{vuln['code_snippet']}")
             lines.append("")
 
         return '\n'.join(lines)
@@ -572,7 +626,7 @@ Direct, rigorous.
         # Collate vulnerability counts by severity.
         vulns = self.report_data.vulnerability_list
         if not vulns:
-            return "No vulnerabilities found."
+            return "未发现漏洞。" if self._is_zh() else "No vulnerabilities found."
 
         counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
         for vuln in vulns:
@@ -581,11 +635,18 @@ Direct, rigorous.
                 counts[severity] += 1
 
         lines = []
-        lines.append(f"Total: {len(vulns)} vulnerabilities")
-        lines.append(f"- Critical: {counts['critical']}")
-        lines.append(f"- High: {counts['high']}")
-        lines.append(f"- Medium: {counts['medium']}")
-        lines.append(f"- Low: {counts['low']}")
+        if self._is_zh():
+            lines.append(f"总计: {len(vulns)} 个漏洞")
+            lines.append(f"- 严重: {counts['critical']}")
+            lines.append(f"- 高危: {counts['high']}")
+            lines.append(f"- 中危: {counts['medium']}")
+            lines.append(f"- 低危: {counts['low']}")
+        else:
+            lines.append(f"Total: {len(vulns)} vulnerabilities")
+            lines.append(f"- Critical: {counts['critical']}")
+            lines.append(f"- High: {counts['high']}")
+            lines.append(f"- Medium: {counts['medium']}")
+            lines.append(f"- Low: {counts['low']}")
 
         return '\n'.join(lines)
 
@@ -593,21 +654,32 @@ Direct, rigorous.
         # Render decompilation results as text.
         results = self.report_data.decompilation_results
         if not results:
-            return "No decompilation data available."
+            return "无反编译数据。" if self._is_zh() else "No decompilation data available."
 
         lines = []
         for result in results[:5]:
-            func_name = result.get('function_name', 'Unknown')
-            lines.append(f"## Function: {func_name}")
-            lines.append(f"- Address: {hex(result.get('address', 0))}")
-            lines.append(f"- Size: {result.get('size', 0)} bytes")
-            if result.get('pseudocode'):
-                pseudo = result['pseudocode'][:500]
-                lines.append(f"- Pseudocode:\n{pseudo}")
+            func_name = result.get('function_name', self._unknown())
+            if self._is_zh():
+                lines.append(f"## 函数: {func_name}")
+                lines.append(f"- 地址: {hex(result.get('address', 0))}")
+                lines.append(f"- 大小: {result.get('size', 0)} 字节")
+                if result.get('pseudocode'):
+                    pseudo = result['pseudocode'][:500]
+                    lines.append(f"- 伪代码:\n{pseudo}")
+            else:
+                lines.append(f"## Function: {func_name}")
+                lines.append(f"- Address: {hex(result.get('address', 0))}")
+                lines.append(f"- Size: {result.get('size', 0)} bytes")
+                if result.get('pseudocode'):
+                    pseudo = result['pseudocode'][:500]
+                    lines.append(f"- Pseudocode:\n{pseudo}")
             lines.append("")
 
         if len(results) > 5:
-            lines.append(f"... and {len(results) - 5} more functions")
+            if self._is_zh():
+                lines.append(f"... 以及另外 {len(results) - 5} 个函数")
+            else:
+                lines.append(f"... and {len(results) - 5} more functions")
 
         return '\n'.join(lines)
 
@@ -615,15 +687,23 @@ Direct, rigorous.
         """Render exploit generation results as text."""
         data = self.report_data.exploit_generation_results
         if not data:
-            return "No exploit generation data available."
+            return "无利用生成数据。" if self._is_zh() else "No exploit generation data available."
 
         lines = []
-        lines.append(f"- Success: {'Yes' if data.get('success') else 'No'}")
-        lines.append(f"- Iterations: {len(data.get('iterations', [])) + 1}")
-        if data.get('script_path'):
-            lines.append(f"- Script Path: {data['script_path']}")
-        if data.get('script_content'):
-            lines.append(f"- Script Preview:\n{data['script_content'][:300]}")
+        if self._is_zh():
+            lines.append(f"- 成功: {self._yes_no(bool(data.get('success')))}")
+            lines.append(f"- 迭代次数: {len(data.get('iterations', [])) + 1}")
+            if data.get('script_path'):
+                lines.append(f"- 脚本路径: {data['script_path']}")
+            if data.get('script_content'):
+                lines.append(f"- 脚本预览:\n{data['script_content'][:300]}")
+        else:
+            lines.append(f"- Success: {self._yes_no(bool(data.get('success')))}")
+            lines.append(f"- Iterations: {len(data.get('iterations', [])) + 1}")
+            if data.get('script_path'):
+                lines.append(f"- Script Path: {data['script_path']}")
+            if data.get('script_content'):
+                lines.append(f"- Script Preview:\n{data['script_content'][:300]}")
 
         return '\n'.join(lines)
 
@@ -631,16 +711,24 @@ Direct, rigorous.
         """Render crash analysis results as text."""
         data = self.report_data.crash_analysis_results
         if not data:
-            return "No crash analysis data available."
+            return "无崩溃分析数据。" if self._is_zh() else "No crash analysis data available."
 
         combined = data.get('combined', {})
         lines = []
-        lines.append(f"- Crash Type: {combined.get('crash_type', 'Unknown')}")
-        lines.append(f"- Vulnerability Type: {combined.get('vulnerability_type', 'Unknown')}")
-        lines.append(f"- Exploitability: {combined.get('exploitability', 'Unknown')}")
-        lines.append(f"- Difficulty: {combined.get('difficulty', 'Unknown')}")
-        if combined.get('analysis'):
-            lines.append(f"- Analysis: {combined['analysis'][:200]}")
+        if self._is_zh():
+            lines.append(f"- 崩溃类型: {combined.get('crash_type', self._unknown())}")
+            lines.append(f"- 漏洞类型: {combined.get('vulnerability_type', self._unknown())}")
+            lines.append(f"- 可利用性: {combined.get('exploitability', self._unknown())}")
+            lines.append(f"- 难度: {combined.get('difficulty', self._unknown())}")
+            if combined.get('analysis'):
+                lines.append(f"- 分析: {combined['analysis'][:200]}")
+        else:
+            lines.append(f"- Crash Type: {combined.get('crash_type', self._unknown())}")
+            lines.append(f"- Vulnerability Type: {combined.get('vulnerability_type', self._unknown())}")
+            lines.append(f"- Exploitability: {combined.get('exploitability', self._unknown())}")
+            lines.append(f"- Difficulty: {combined.get('difficulty', self._unknown())}")
+            if combined.get('analysis'):
+                lines.append(f"- Analysis: {combined['analysis'][:200]}")
 
         return '\n'.join(lines)
 
@@ -648,15 +736,23 @@ Direct, rigorous.
         # Render symbolic execution results as text.
         data = self.report_data.symbolic_execution_results
         if not data:
-            return "No symbolic execution data available."
+            return "无符号执行数据。" if self._is_zh() else "No symbolic execution data available."
 
         lines = []
-        lines.append(f"- Success: {'Yes' if data.get('success') else 'No'}")
-        if data.get('crash_path', {}).get('found'):
-            lines.append("- Crash path: Found")
-            lines.append(f"  - Target: {data['crash_path'].get('target_address', 'N/A')}")
-        if data.get('stack_offset'):
-            lines.append(f"- Stack Offset: {data['stack_offset'].get('offset', 'N/A')}")
+        if self._is_zh():
+            lines.append(f"- 成功: {self._yes_no(bool(data.get('success')))}")
+            if data.get('crash_path', {}).get('found'):
+                lines.append("- 崩溃路径: 已发现")
+                lines.append(f"  - 目标: {data['crash_path'].get('target_address', self._na())}")
+            if data.get('stack_offset'):
+                lines.append(f"- 栈偏移: {data['stack_offset'].get('offset', self._na())}")
+        else:
+            lines.append(f"- Success: {self._yes_no(bool(data.get('success')))}")
+            if data.get('crash_path', {}).get('found'):
+                lines.append("- Crash path: Found")
+                lines.append(f"  - Target: {data['crash_path'].get('target_address', self._na())}")
+            if data.get('stack_offset'):
+                lines.append(f"- Stack Offset: {data['stack_offset'].get('offset', self._na())}")
 
         return '\n'.join(lines)
 
@@ -664,20 +760,29 @@ Direct, rigorous.
         # Render supply chain data as text.
         data = self.report_data.supply_chain_data
         if not data:
-            return "No supply chain data available."
+            return "无供应链数据。" if self._is_zh() else "No supply chain data available."
 
         lines = []
         if data.get('dependencies'):
-            lines.append(f"- Dependencies: {len(data['dependencies'])}")
+            if self._is_zh():
+                lines.append(f"- 依赖数量: {len(data['dependencies'])}")
+            else:
+                lines.append(f"- Dependencies: {len(data['dependencies'])}")
             for dep in data['dependencies'][:5]:
-                lines.append(f"  - {dep.get('name', 'Unknown')} ({dep.get('version', 'Unknown')})")
+                lines.append(f"  - {dep.get('name', self._unknown())} ({dep.get('version', self._unknown())})")
             if len(data['dependencies']) > 5:
-                lines.append(f"  ... and {len(data['dependencies']) - 5} more")
+                if self._is_zh():
+                    lines.append(f"  ... 以及另外 {len(data['dependencies']) - 5} 个")
+                else:
+                    lines.append(f"  ... and {len(data['dependencies']) - 5} more")
         if data.get('vulnerable_components'):
-            lines.append(f"- Vulnerable Components: {len(data['vulnerable_components'])}")
+            if self._is_zh():
+                lines.append(f"- 脆弱组件: {len(data['vulnerable_components'])}")
+            else:
+                lines.append(f"- Vulnerable Components: {len(data['vulnerable_components'])}")
 
         if not lines:
-            return "Supply chain data is empty."
+            return "供应链数据为空。" if self._is_zh() else "Supply chain data is empty."
 
         return '\n'.join(lines)
 
@@ -685,24 +790,31 @@ Direct, rigorous.
         # Render threat intelligence data as text.
         data = self.report_data.threat_intelligence
         if not data:
-            return "No threat intelligence data available."
+            return "无威胁情报数据。" if self._is_zh() else "No threat intelligence data available."
 
         lines = []
         for intel in data[:3]:
-            provider = intel.get('provider', 'Unknown')
+            provider = intel.get('provider', self._unknown())
             lines.append(f"## {provider}")
-            lines.append(f"- Query Type: {intel.get('query_type', 'N/A')}")
-            lines.append(f"- Is Malicious: {'Yes' if intel.get('is_malicious') else 'No'}")
-            lines.append(f"- Confidence: {intel.get('confidence', 0) * 100:.1f}%")
-            if intel.get('malware_families'):
-                families = intel['malware_families'][:3]
-                lines.append(f"- Malware Families: {', '.join(families)}")
+            if self._is_zh():
+                lines.append(f"- 查询类型: {intel.get('query_type', self._na())}")
+                lines.append(f"- 是否恶意: {self._yes_no(bool(intel.get('is_malicious')))}")
+                lines.append(f"- 置信度: {intel.get('confidence', 0) * 100:.1f}%")
+                if intel.get('malware_families'):
+                    families = intel['malware_families'][:3]
+                    lines.append(f"- 恶意软件家族: {', '.join(families)}")
+            else:
+                lines.append(f"- Query Type: {intel.get('query_type', self._na())}")
+                lines.append(f"- Is Malicious: {self._yes_no(bool(intel.get('is_malicious')))}")
+                lines.append(f"- Confidence: {intel.get('confidence', 0) * 100:.1f}%")
+                if intel.get('malware_families'):
+                    families = intel['malware_families'][:3]
+                    lines.append(f"- Malware Families: {', '.join(families)}")
 
         if not lines:
-            return "Threat intelligence data is empty."
+            return "威胁情报数据为空。" if self._is_zh() else "Threat intelligence data is empty."
 
         return '\n'.join(lines)
-
     def _get_vulnerability_counts(self) -> Tuple[int, int, int, int]:
         # Aggregate vulnerability counts: (total, high+critical, medium, low).
         vulns = self.report_data.vulnerability_list
@@ -765,7 +877,10 @@ Direct, rigorous.
         # simulation 模式走模板输出; 非模拟则保留模板但去除 simulation 标注
         content = self._simulate_llm_response(section, params)
         if self._simulation:
-            content += "\n\n> **[simulation=true]** 本节内容由模板生成，未经 LLM 研判。"
+            if self.config.language == 'zh':
+                content += "\n\n> **[simulation=true]** 本节内容由模板生成，未经 LLM 研判。"
+            else:
+                content += "\n\n> **[simulation=true]** This section was generated from templates and was not reviewed by an LLM."
         return content
 
     def _simulate_llm_response(self, section: ReportSection, params: Dict[str, str]) -> str:
@@ -779,189 +894,193 @@ Direct, rigorous.
 
     def _simulate_llm_response_zh(self, section: ReportSection, params: Dict[str, str]) -> str:
         """Simulated Chinese LLM output."""
+        target = self.report_data.binary_info.get('binary_path', '未知')
+        nx_state = '启用' if self.report_data.binary_info.get('checksec', {}).get('nx') else '关闭'
+        pie_state = '启用' if self.report_data.binary_info.get('checksec', {}).get('pie') else '关闭'
+        risk_level = '严重' if params['high_vuln_count'] > 0 else '中等'
+        exploitability = '可利用性较高' if self.report_data.exploit_generation_results.get('success') else '利用难度中等，需要进一步验证'
         responses = {
             ReportSection.EXECUTIVE_SUMMARY: f"""
-## Executive Summary
+## 执行摘要
 
-Comprehensive reverse engineering analysis of binary `{self.report_data.binary_info.get('binary_path', 'Unknown')}`.
+对二进制文件 `{target}` 进行了逆向工程与安全分析。
 
-### Key Findings
+### 关键发现
 
-**Vulnerability count**: {params['vuln_count']} total — {params['high_vuln_count']} high, {params['medium_vuln_count']} medium, {params['low_vuln_count']} low.
+**漏洞统计**: 共 {params['vuln_count']} 个；高危 {params['high_vuln_count']} 个，中危 {params['medium_vuln_count']} 个，低危 {params['low_vuln_count']} 个。
 
-**Protection status**: NX {'enabled' if self.report_data.binary_info.get('checksec', {}).get('nx') else 'disabled'}; PIE/ASLR {'enabled' if self.report_data.binary_info.get('checksec', {}).get('pie') else 'disabled'}.
+**保护机制状态**: NX {nx_state}；PIE/ASLR {pie_state}。
 
-### Risk Assessment
+### 风险评估
 
-The binary carries {'critical' if params['high_vuln_count'] > 0 else 'moderate'} risk. Immediate remediation advised.
+该二进制当前风险等级为 **{risk_level}**。建议优先处理高危漏洞并复核关键攻击面。
 
-### Core Recommendations
+### 核心建议
 
-1. Patch high-severity vulnerabilities first
-2. Harden binary protection mechanisms
-3. Schedule recurring security audits
+1. 优先修复高危漏洞
+2. 强化二进制保护机制
+3. 对关键函数进行人工复核和回归测试
 """,
             ReportSection.BINARY_INFO: f"""
-## Binary File Information
+## 二进制文件信息
 
-### Basic Properties
+### 基本属性
 
 {params['binary_info']}
 
-### Analysis Detail
+### 分析细节
 
-Format: {self.report_data.binary_info.get('format', 'Unknown')}; Architecture: {self.report_data.binary_info.get('arch', 'Unknown')}. NX {'enabled' if self.report_data.binary_info.get('checksec', {}).get('nx') else 'disabled'}, PIE {'enabled' if self.report_data.binary_info.get('checksec', {}).get('pie') else 'disabled'}.
+格式: {self.report_data.binary_info.get('format', '未知')}；架构: {self.report_data.binary_info.get('arch', '未知')}。NX {nx_state}，PIE {pie_state}。
 
-### Dangerous Imported Functions
+### 危险导入函数
 
-Imported dangerous functions include string operations (strcpy, strcat) and memory management (malloc, free). Misuse of these may cause buffer overflows and memory corruption.
+若存在 strcpy、strcat、malloc、free 等危险函数，需要结合调用上下文确认是否存在缓冲区溢出、UAF 或内存破坏风险。
 """,
             ReportSection.REVERSE_PROCESS: f"""
-## Reverse Engineering Process
+## 逆向分析过程
 
-### Overview
+### 概览
 
-{len(self.report_data.decompilation_results)} functions processed.
+已处理 {len(self.report_data.decompilation_results)} 个函数。
 
-### Function Analysis
+### 函数分析
 
 {params['decompilation_data']}
 
-### Code Structure
+### 代码结构
 
-Key characteristics identified via decompilation:
-- Multiple unsafe string function calls
-- Probable buffer overflow points
-- Missing input validation in select paths
+通过反编译结果识别到的关键特征：
+- 可能存在不安全字符串或内存操作
+- 部分路径可能缺少输入长度校验
+- 需要继续跟踪关键数据流和控制流
 
-### Call Graph
+### 调用关系
 
-Function call relationships mapped; critical control flow and data flow paths identified.
+已整理函数调用关系，并标记需要重点复核的控制流与数据流路径。
 """,
             ReportSection.VULNERABILITY_DETAILS: f"""
-## Vulnerability Details
+## 漏洞详情
 
-### Vulnerability List
+### 漏洞列表
 
 {params['vulnerability_data']}
 
-### Classification
+### 分类统计
 
-Vulnerability type distribution:
-- Buffer overflow: {sum(1 for v in self.report_data.vulnerability_list if 'buffer' in v.get('type', '').lower())}
-- Format string: {sum(1 for v in self.report_data.vulnerability_list if 'format' in v.get('type', '').lower())}
-- Memory corruption: {sum(1 for v in self.report_data.vulnerability_list if 'memory' in v.get('type', '').lower())}
+漏洞类型分布：
+- 缓冲区溢出: {sum(1 for v in self.report_data.vulnerability_list if 'buffer' in v.get('type', '').lower())}
+- 格式化字符串: {sum(1 for v in self.report_data.vulnerability_list if 'format' in v.get('type', '').lower())}
+- 内存破坏: {sum(1 for v in self.report_data.vulnerability_list if 'memory' in v.get('type', '').lower())}
 
-### Impact Summary
+### 影响摘要
 
-Each vulnerability assessed for exploitability, attack scenarios, and affected scope.
+每个漏洞均需结合触发条件、可达性、利用难度和影响范围进行复核。
 """,
             ReportSection.EXPLOIT_ANALYSIS: f"""
-## Exploit Analysis
+## 利用分析
 
-### Exploit Generation
+### 利用生成结果
 
 {params['exploit_data']}
 
-### Crash Analysis
+### 崩溃分析
 
 {params['crash_data']}
 
-### Symbolic Execution Analysis
+### 符号执行分析
 
 {params['symbolic_data']}
 
-### Exploitability Verdict
+### 可利用性结论
 
-{'High exploitability' if self.report_data.exploit_generation_results.get('success') else 'Non-trivial exploit difficulty'}. Further exploit refinement and validation testing recommended.
+{exploitability}。建议继续补充触发样例、偏移信息和真实环境验证。
 """,
             ReportSection.IMPACT_ASSESSMENT: f"""
-## Impact Assessment
+## 影响评估
 
-### Vulnerability Scope
+### 漏洞影响范围
 
 {params['vulnerability_summary']}
 
-### Supply Chain Impact (if applicable)
+### 供应链影响（如适用）
 
 {params['supply_chain_info']}
 
-### Threat Intelligence Correlation (if applicable)
+### 威胁情报关联（如适用）
 
 {params['threat_intel_info']}
 
-### Overall Assessment
+### 综合评估
 
-This binary presents {'critical' if params['high_vuln_count'] > 0 else 'moderate'} risk. Exploitation may enable:
-- Privilege escalation
-- Sensitive data exfiltration
-- Denial of service
+该二进制当前风险等级为 **{risk_level}**。潜在影响包括：
+- 权限提升
+- 敏感数据泄露
+- 拒绝服务
 
-Immediate remediation required.
+建议尽快修复并进行回归验证。
 """,
             ReportSection.REMEDIATION_RECOMMENDATIONS: f"""
-## Remediation Recommendations
+## 修复建议
 
-### Per-Vulnerability Fixes
+### 按漏洞修复
 
-1. **Buffer overflow**: Replace unsafe functions (strcpy, strcat) with bounded variants (strncpy, snprintf). Add input length validation.
+1. **缓冲区溢出**: 使用有边界检查的函数替代 strcpy、strcat 等危险函数，并增加输入长度校验。
 
-2. **Format string**: Eliminate user-controlled format strings. Use parameterised formatting exclusively.
+2. **格式化字符串**: 禁止用户输入直接作为格式字符串，统一使用固定格式模板。
 
-3. **Memory management**: Zero pointers immediately after free. Adopt a consistent ownership model.
+3. **内存管理**: free 后立即清空指针，明确对象所有权，避免重复释放和悬垂指针。
 
-### Code Fix Reference
+### 代码修复参考
 
 ```c
-// Before
+// 修复前
 strcpy(dest, src);
 
-// After
+// 修复后
 strncpy(dest, src, sizeof(dest) - 1);
-dest[sizeof(dest) - 1] = '\\0';
+dest[sizeof(dest) - 1] = '\0';
 ```
 
-### Hardening Measures
+### 加固措施
 
-1. Compile with all available security flags
-2. Run AddressSanitizer / fuzzer in CI
-3. Conduct periodic manual code review
-4. Implement Secure Development Lifecycle (SDL)
+1. 编译时启用 NX、PIE、RELRO、Canary 等保护
+2. 在 CI 中加入 AddressSanitizer 和 fuzz 测试
+3. 对关键函数进行周期性人工审计
+4. 建立安全开发生命周期（SDL）
 """,
             ReportSection.SUPPLY_CHAIN_ANALYSIS: f"""
-## Supply Chain Analysis
+## 供应链分析
 
-### Dependencies
+### 依赖信息
 
 {params['supply_chain_data']}
 
-### Risk Assessment
+### 风险评估
 
-Third-party components carry security risk. Recommendations:
+第三方组件可能引入安全风险。建议：
 
-1. Track and update dependencies regularly
-2. Monitor security advisories for all included libraries
-3. Maintain a Software Bill of Materials (SBOM)
-4. Audit open-source license compliance
+1. 定期跟踪并更新依赖
+2. 监控所有依赖库的安全公告
+3. 维护软件物料清单（SBOM）
+4. 审核开源许可证合规性
 """,
             ReportSection.THREAT_INTELLIGENCE: f"""
-## Threat Intelligence Correlation
+## 威胁情报关联
 
-### Intelligence Results
+### 情报结果
 
 {params['threat_intel_data']}
 
-### Correlation
+### 关联分析
 
-No direct match to known malware families or APT groups detected via threat intelligence queries.
+当前未发现与已知恶意软件家族或 APT 组织的直接关联。
 
-### IOC Indicators
+### IOC 指标
 
-Threat indicators should be ingested into security monitoring for continuous surveillance.
+建议将相关威胁指标纳入安全监控与持续检测流程。
 """
         }
         return responses.get(section, "")
-
     def _simulate_llm_response_en(self, section: ReportSection, params: Dict[str, str]) -> str:
         """Simulated English LLM output."""
         responses = {
@@ -1181,10 +1300,10 @@ Threat indicators should be ingested into security monitoring for continuous sur
 
         # Header block.
         lang = self.config.language
-        report_parts.append(f"# {'Binary Reverse Engineering Report' if lang == 'zh' else 'Binary Reverse Engineering Report'}")
+        report_parts.append(f"# {'二进制逆向工程报告' if lang == 'zh' else 'Binary Reverse Engineering Report'}")
         report_parts.append("")
-        report_parts.append(f"{'Generated' if lang == 'zh' else 'Generated on'}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        report_parts.append(f"{'Target File' if lang == 'zh' else 'Target File'}: {self.report_data.binary_info.get('binary_path', 'N/A')}")
+        report_parts.append(f"{'生成时间' if lang == 'zh' else 'Generated on'}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        report_parts.append(f"{'目标文件' if lang == 'zh' else 'Target File'}: {self.report_data.binary_info.get('binary_path', 'N/A')}")
         report_parts.append("")
         report_parts.append("---")
         report_parts.append("")
@@ -1202,8 +1321,12 @@ Threat indicators should be ingested into security monitoring for continuous sur
         # Footer.
         report_parts.append("")
         # simulation 标记 — 模拟模式如实标注
-        sim_label = "[simulation=true]" if simulation else "[LLM 分析完成]"
-        report_parts.append(f"*Auto-generated by Binary Vulnerability Analysis Tool {sim_label}*")
+        if lang == 'zh':
+            sim_label = "[simulation=true]" if simulation else "[LLM 分析完成]"
+            report_parts.append(f"*由二进制漏洞分析工具自动生成 {sim_label}*")
+        else:
+            sim_label = "[simulation=true]" if simulation else "[LLM analysis completed]"
+            report_parts.append(f"*Auto-generated by Binary Vulnerability Analysis Tool {sim_label}*")
 
         return '\n'.join(report_parts)
 
@@ -1275,3 +1398,5 @@ Threat indicators should be ingested into security monitoring for continuous sur
         }
 
         return json.dumps(report_data, indent=2, ensure_ascii=False)
+
+
