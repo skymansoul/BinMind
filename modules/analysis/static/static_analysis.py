@@ -13,11 +13,14 @@ logger = logging.getLogger(__name__)
 ANGR_AVAILABLE = False
 try:
     import angr
-    from angr.analyses import ReachingDefinitions, CFGEmulated, VariableRecoveryFast
+    from angr.analyses import CFGEmulated, VariableRecoveryFast
     from angr.knowledge_plugins.functions import Function
     ANGR_AVAILABLE = True
-except ImportError:
-    logger.debug("angr 未安装，将使用 radare2 作为后备")
+
+except ModuleNotFoundError:
+    logger.warning("angr 未安装，将使用 radare2 作为后备")
+except ImportError as e:
+    logger.error(f"angr 已安装但 API 不兼容，静态分析降级到 radare2: {e}")
 
 
 @dataclass
