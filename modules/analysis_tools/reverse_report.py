@@ -113,6 +113,7 @@ class ReverseReportGenerator:
         Bind report data for generation. simulation 覆盖默认值。
         """
         self.report_data = data
+        self._deduplicate_vulnerabilities()
         if simulation is not None:
             self._simulation = simulation
 
@@ -526,9 +527,10 @@ Direct, rigorous.
 
         unknown = self._unknown()
         na = self._na()
+        binary_path = info.get('binary_path') or info.get('path') or na
         lines = []
         if self._is_zh():
-            lines.append(f"- 文件路径: {info.get('binary_path', na)}")
+            lines.append(f"- 文件路径: {binary_path}")
             lines.append(f"- 格式: {info.get('format', na)}")
             lines.append(f"- 架构: {info.get('arch', na)} ({info.get('bits', na)}-bit)")
             lines.append(f"- 字节序: {info.get('endian', na)}")
@@ -536,7 +538,7 @@ Direct, rigorous.
             dangerous_title = "危险函数"
             more_template = "... 以及另外 {count} 个"
         else:
-            lines.append(f"- File Path: {info.get('binary_path', na)}")
+            lines.append(f"- File Path: {binary_path}")
             lines.append(f"- Format: {info.get('format', na)}")
             lines.append(f"- Architecture: {info.get('arch', na)} ({info.get('bits', na)}-bit)")
             lines.append(f"- Endian: {info.get('endian', na)}")
@@ -575,16 +577,17 @@ Direct, rigorous.
         if not info:
             return self._na()
 
+        binary_path = info.get('binary_path') or info.get('path') or self._na()
         if self._is_zh():
             return (
-                f"文件: {info.get('binary_path', self._na())}\n"
+                f"文件: {binary_path}\n"
                 f"格式: {info.get('format', self._na())}\n"
                 f"架构: {info.get('arch', self._na())} ({info.get('bits', self._na())}-bit)\n"
                 f"NX: {self._yes_no(bool(info.get('checksec', {}).get('nx')))}\n"
                 f"PIE: {self._yes_no(bool(info.get('checksec', {}).get('pie')))}"
             )
         return (
-            f"File: {info.get('binary_path', self._na())}\n"
+            f"File: {binary_path}\n"
             f"Format: {info.get('format', self._na())}\n"
             f"Arch: {info.get('arch', self._na())} ({info.get('bits', self._na())}-bit)\n"
             f"NX: {self._yes_no(bool(info.get('checksec', {}).get('nx')))}\n"
@@ -650,29 +653,111 @@ Direct, rigorous.
 
         return '\n'.join(lines)
 
+    def _format_vulnerability_type_summary(self) -> str:
+        vulns = self.report_data.vulnerability_list or []
+        if not vulns:
+            return "- 无" if self._is_zh() else "- None"
+
+        counts = {
+            'buffer_overflow': 0,
+            'format_string': 0,
+            'command_injection': 0,
+            'info_leak': 0,
+            'memory_corruption': 0,
+            'other': 0,
+        }
+        for vuln in vulns:
+            text = ' '.join(str(vuln.get(k, '')) for k in ('type', 'vuln_type', 'description', 'evidence', 'cwe')).lower()
+            matched = False
+            if any(token in text for token in ('buffer', 'overflow', 'gets', 'strcpy', 'read (buffer-overflow)')):
+                counts['buffer_overflow'] += 1
+                matched = True
+            if 'format' in text:
+                counts['format_string'] += 1
+                matched = True
+            if any(token in text for token in ('system', 'command', 'cmd', 'shell')):
+                counts['command_injection'] += 1
+                matched = True
+            if any(token in text for token in ('info-leak', 'leak', 'puts')):
+                counts['info_leak'] += 1
+                matched = True
+            if any(token in text for token in ('memory', 'uaf', 'double-free', 'heap', 'stack')):
+                counts['memory_corruption'] += 1
+                matched = True
+            if not matched:
+                counts['other'] += 1
+
+        if self._is_zh():
+            labels = [
+                ('缓冲区溢出', counts['buffer_overflow']),
+                ('格式化字符串', counts['format_string']),
+                ('命令执行/命令注入', counts['command_injection']),
+                ('信息泄露', counts['info_leak']),
+                ('内存破坏', counts['memory_corruption']),
+                ('其他', counts['other']),
+            ]
+        else:
+            labels = [
+                ('Buffer overflow', counts['buffer_overflow']),
+                ('Format string', counts['format_string']),
+                ('Command execution/injection', counts['command_injection']),
+                ('Information leak', counts['info_leak']),
+                ('Memory corruption', counts['memory_corruption']),
+                ('Other', counts['other']),
+            ]
+        return '\n'.join(f"- {name}: {value}" for name, value in labels if value)
+
+    def _looks_like_r2_pseudocode(self, code: str) -> bool:
+        if not code:
+            return False
+        indicators = ('esp', 'ebp', 'eax', 'ebx', 'ecx', 'edx', 'push  (', 'pop  ()', 'goto loc_', 'loc_0x', 'sym.imp.', 're\n', 'leav')
+        hits = sum(1 for token in indicators if token in code)
+        return hits >= 3
+
+    def _select_reverse_code(self, item: Dict[str, Any]) -> Tuple[str, str, str]:
+        pseudo = (item.get('pseudocode') or item.get('code') or '').strip()
+        asm = (item.get('raw_asm') or item.get('asm') or '').strip()
+        if pseudo and not self._looks_like_r2_pseudocode(pseudo):
+            return pseudo, 'pseudocode', 'c'
+        if asm:
+            return asm, 'assembly', 'asm'
+        if pseudo:
+            return pseudo, 'assembly', 'asm'
+        return '', 'none', ''
+
     def _format_decompilation_data(self) -> str:
-        # Render decompilation results as text.
-        results = self.report_data.decompilation_results
+        # Render reverse evidence as text: pseudo-C first, assembly fallback.
+        results = self.report_data.decompilation_results or self.report_data.decompilation_evidence
         if not results:
-            return "无反编译数据。" if self._is_zh() else "No decompilation data available."
+            return "无逆向证据。" if self._is_zh() else "No reverse-engineering evidence available."
 
         lines = []
         for result in results[:5]:
-            func_name = result.get('function_name', self._unknown())
+            func_name = result.get('function_name') or result.get('name') or self._unknown()
+            code, code_kind, fence = self._select_reverse_code(result)
+            address = result.get('address', 0) or 0
+            size = result.get('size', 0) or 0
+
             if self._is_zh():
                 lines.append(f"## 函数: {func_name}")
-                lines.append(f"- 地址: {hex(result.get('address', 0))}")
-                lines.append(f"- 大小: {result.get('size', 0)} 字节")
-                if result.get('pseudocode'):
-                    pseudo = result['pseudocode'][:500]
-                    lines.append(f"- 伪代码:\n{pseudo}")
+                lines.append(f"- 地址: {hex(address)}")
+                lines.append(f"- 大小: {size} 字节")
+                if code:
+                    label = "伪 C 代码" if code_kind == 'pseudocode' else "汇编代码"
+                    lines.append(f"- 证据类型: {label}")
+                    lines.append(f"```{fence}\n{code[:1200]}\n```")
+                else:
+                    lines.append("- 证据类型: 未获取到伪 C 或汇编代码")
             else:
                 lines.append(f"## Function: {func_name}")
-                lines.append(f"- Address: {hex(result.get('address', 0))}")
-                lines.append(f"- Size: {result.get('size', 0)} bytes")
-                if result.get('pseudocode'):
-                    pseudo = result['pseudocode'][:500]
-                    lines.append(f"- Pseudocode:\n{pseudo}")
+                lines.append(f"- Address: {hex(address)}")
+                lines.append(f"- Size: {size} bytes")
+                if code:
+                    label = "Pseudo-C" if code_kind == 'pseudocode' else "Assembly"
+                    lines.append(f"- Evidence Type: {label}")
+                    lines.append(f"```{fence}\n{code[:1200]}\n```")
+                else:
+                    lines.append("- Evidence Type: no pseudo-C or assembly captured")
             lines.append("")
 
         if len(results) > 5:
@@ -815,6 +900,113 @@ Direct, rigorous.
             return "威胁情报数据为空。" if self._is_zh() else "Threat intelligence data is empty."
 
         return '\n'.join(lines)
+    def _deduplicate_vulnerabilities(self) -> None:
+        if not self.report_data:
+            return
+        unique = []
+        seen = set()
+        for vuln in self.report_data.vulnerability_list or []:
+            key = (
+                str(vuln.get('type') or vuln.get('vuln_type') or '').strip().lower(),
+                str(vuln.get('function_name') or vuln.get('function') or '').strip().lower(),
+                str(vuln.get('location') or '').strip().lower(),
+                str(vuln.get('imported_function') or '').strip().lower(),
+                str(vuln.get('description') or '').strip().lower(),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(vuln)
+        self.report_data.vulnerability_list = unique
+
+    def _decompilation_items(self) -> List[Dict[str, Any]]:
+        return self.report_data.decompilation_results or self.report_data.decompilation_evidence or []
+
+    def _decompilation_count(self) -> int:
+        return len(self._decompilation_items())
+
+    def _format_remediation_guidance(self) -> str:
+        vulns = self.report_data.vulnerability_list or []
+        imports = (self.report_data.binary_info.get('imports', {}) or {})
+        dangerous = imports.get('dangerous_functions', []) or []
+        decomp = self._decompilation_items()
+        if self._is_zh():
+            lines = ["### 按证据修复", ""]
+            if not vulns and not dangerous:
+                lines.append("当前报告没有可用于生成修复建议的漏洞证据。")
+            else:
+                for i, vuln in enumerate(vulns[:8], 1):
+                    vtype = vuln.get('type') or vuln.get('vuln_type') or self._unknown()
+                    fn = vuln.get('function_name') or vuln.get('function') or self._na()
+                    desc = vuln.get('description') or vuln.get('evidence') or ''
+                    lines.append(f"{i}. **{vtype} / {fn}**")
+                    if desc:
+                        lines.append(f"   - 证据: {desc[:220]}")
+                    lines.append(f"   - 建议: 先确认该告警在反编译代码中的调用点和参数来源；只对已确认可达的路径做代码级修复。")
+                if dangerous:
+                    lines.append("")
+                    lines.append("### 危险导入函数处置")
+                    for name in sorted(set(dangerous)):
+                        if name == 'system':
+                            lines.append("- `system`: 避免拼接命令字符串；改用固定命令白名单或 `execve` 参数数组，并过滤用户可控输入。")
+                        elif name == 'read':
+                            lines.append("- `read`: 第三个参数必须小于等于目标缓冲区容量；返回值需要检查，禁止继续处理未终止字符串。")
+                        elif name in ('gets', 'strcpy', 'strcat', 'sprintf'):
+                            lines.append(f"- `{name}`: 高风险无边界 API，替换为带长度参数的实现并补充边界检查。")
+                        elif name in ('printf', 'fprintf'):
+                            lines.append(f"- `{name}`: 格式字符串必须为常量，用户输入只能作为参数传入。")
+                        else:
+                            lines.append(f"- `{name}`: 结合反编译调用点复核参数边界和用户输入可控性。")
+            lines.append("")
+            lines.append("### 代码修复参考")
+            if decomp:
+                lines.append("以下为逆向证据摘录：优先伪 C；没有伪 C 时使用汇编。不直接伪造补丁，请基于源码或等价逻辑修复。")
+                for item in decomp[:2]:
+                    fn = item.get('function_name') or item.get('name') or self._unknown()
+                    code, code_kind, fence = self._select_reverse_code(item)
+                    label = '伪 C 代码' if code_kind == 'pseudocode' else '汇编代码'
+                    if code:
+                        lines.append(f"\n**{fn} ({label}):**")
+                        lines.append(f"```{fence}")
+                        lines.append(code[:800])
+                        lines.append("```")
+            else:
+                lines.append("未获取到伪 C 或汇编代码，因此不生成固定示例补丁，避免误导。请先安装/配置 radare2 或 Ghidra 并重新运行分析。")
+            return '\n'.join(lines)
+
+        lines = ["### Evidence-based fixes", ""]
+        if not vulns and not dangerous:
+            lines.append("No vulnerability evidence is available for remediation guidance.")
+        else:
+            for i, vuln in enumerate(vulns[:8], 1):
+                vtype = vuln.get('type') or vuln.get('vuln_type') or self._unknown()
+                fn = vuln.get('function_name') or vuln.get('function') or self._na()
+                desc = vuln.get('description') or vuln.get('evidence') or ''
+                lines.append(f"{i}. **{vtype} / {fn}**")
+                if desc:
+                    lines.append(f"   - Evidence: {desc[:220]}")
+                lines.append("   - Recommendation: confirm the reachable call site and tainted arguments before applying code-level fixes.")
+            if dangerous:
+                lines.append("")
+                lines.append("### Dangerous import handling")
+                for name in sorted(set(dangerous)):
+                    lines.append(f"- `{name}`: review call-site reachability, argument bounds, and user-control before remediation.")
+        lines.append("")
+        lines.append("### Code fix reference")
+        if decomp:
+            lines.append("Reverse evidence excerpt: pseudo-C first, assembly fallback; no synthetic patch is generated:")
+            for item in decomp[:2]:
+                fn = item.get('function_name') or item.get('name') or self._unknown()
+                code, code_kind, fence = self._select_reverse_code(item)
+                label = 'Pseudo-C' if code_kind == 'pseudocode' else 'Assembly'
+                if code:
+                    lines.append(f"\n**{fn} ({label}):**")
+                    lines.append(f"```{fence}")
+                    lines.append(code[:800])
+                    lines.append("```")
+        else:
+            lines.append("No pseudo-C or assembly evidence was captured, so no fixed example patch is emitted.")
+        return '\n'.join(lines)
     def _get_vulnerability_counts(self) -> Tuple[int, int, int, int]:
         # Aggregate vulnerability counts: (total, high+critical, medium, low).
         vulns = self.report_data.vulnerability_list
@@ -860,7 +1052,10 @@ Direct, rigorous.
             'low_vuln_count': low_count,
             'vulnerability_data': self._format_vulnerability_data(),
             'vulnerability_summary': self._format_vulnerability_summary(),
+            'vulnerability_type_summary': self._format_vulnerability_type_summary(),
             'decompilation_data': self._format_decompilation_data(),
+            'decompilation_count': self._decompilation_count(),
+            'remediation_guidance': self._format_remediation_guidance(),
             'exploit_data': self._format_exploit_data(),
             'crash_data': self._format_crash_data(),
             'symbolic_data': self._format_symbolic_data(),
@@ -868,7 +1063,7 @@ Direct, rigorous.
             'supply_chain_info': self._format_supply_chain_data(),
             'threat_intel_data': self._format_threat_intel_data(),
             'threat_intel_info': self._format_threat_intel_data(),
-            'decompilation_status': 'Completed' if self.report_data.decompilation_results else 'Not executed',
+            'decompilation_status': 'Completed' if (self.report_data.decompilation_results or self.report_data.decompilation_evidence) else 'Not executed',
             'symbolic_execution_status': 'Completed' if self.report_data.symbolic_execution_results else 'Not executed',
             'crash_analysis_status': 'Completed' if self.report_data.crash_analysis_results else 'Not executed',
             'exploit_generation_status': 'Completed' if self.report_data.exploit_generation_results else 'Not executed',
@@ -894,7 +1089,7 @@ Direct, rigorous.
 
     def _simulate_llm_response_zh(self, section: ReportSection, params: Dict[str, str]) -> str:
         """Simulated Chinese LLM output."""
-        target = self.report_data.binary_info.get('binary_path', '未知')
+        target = self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or '未知'
         nx_state = '启用' if self.report_data.binary_info.get('checksec', {}).get('nx') else '关闭'
         pie_state = '启用' if self.report_data.binary_info.get('checksec', {}).get('pie') else '关闭'
         risk_level = '严重' if params['high_vuln_count'] > 0 else '中等'
@@ -934,14 +1129,14 @@ Direct, rigorous.
 
 ### 危险导入函数
 
-若存在 strcpy、strcat、malloc、free 等危险函数，需要结合调用上下文确认是否存在缓冲区溢出、UAF 或内存破坏风险。
+以上危险导入函数只代表潜在攻击面，需要结合反编译调用点确认可达性、参数来源和边界检查情况。
 """,
             ReportSection.REVERSE_PROCESS: f"""
 ## 逆向分析过程
 
 ### 概览
 
-已处理 {len(self.report_data.decompilation_results)} 个函数。
+已处理 {params['decompilation_count']} 个函数。
 
 ### 函数分析
 
@@ -949,10 +1144,7 @@ Direct, rigorous.
 
 ### 代码结构
 
-通过反编译结果识别到的关键特征：
-- 可能存在不安全字符串或内存操作
-- 部分路径可能缺少输入长度校验
-- 需要继续跟踪关键数据流和控制流
+关键结构以函数分析中的反编译证据为准；未获取到伪代码时，不推断具体危险调用或缓冲区形态。
 
 ### 调用关系
 
@@ -968,9 +1160,7 @@ Direct, rigorous.
 ### 分类统计
 
 漏洞类型分布：
-- 缓冲区溢出: {sum(1 for v in self.report_data.vulnerability_list if 'buffer' in v.get('type', '').lower())}
-- 格式化字符串: {sum(1 for v in self.report_data.vulnerability_list if 'format' in v.get('type', '').lower())}
-- 内存破坏: {sum(1 for v in self.report_data.vulnerability_list if 'memory' in v.get('type', '').lower())}
+{params['vulnerability_type_summary']}
 
 ### 影响摘要
 
@@ -1022,24 +1212,7 @@ Direct, rigorous.
             ReportSection.REMEDIATION_RECOMMENDATIONS: f"""
 ## 修复建议
 
-### 按漏洞修复
-
-1. **缓冲区溢出**: 使用有边界检查的函数替代 strcpy、strcat 等危险函数，并增加输入长度校验。
-
-2. **格式化字符串**: 禁止用户输入直接作为格式字符串，统一使用固定格式模板。
-
-3. **内存管理**: free 后立即清空指针，明确对象所有权，避免重复释放和悬垂指针。
-
-### 代码修复参考
-
-```c
-// 修复前
-strcpy(dest, src);
-
-// 修复后
-strncpy(dest, src, sizeof(dest) - 1);
-dest[sizeof(dest) - 1] = '\0';
-```
+{params['remediation_guidance']}
 
 ### 加固措施
 
@@ -1087,7 +1260,7 @@ dest[sizeof(dest) - 1] = '\0';
             ReportSection.EXECUTIVE_SUMMARY: f"""
 ## Executive Summary
 
-Comprehensive reverse engineering analysis of binary `{self.report_data.binary_info.get('binary_path', 'unknown')}`.
+Comprehensive reverse engineering analysis of binary `{self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or 'unknown'}`.
 
 ### Key Findings
 
@@ -1118,14 +1291,14 @@ Format: {self.report_data.binary_info.get('format', 'unknown')}; Architecture: {
 
 ### Dangerous Functions
 
-Imported dangerous functions include string operations (strcpy, strcat) and memory management (malloc, free). Misuse may lead to buffer overflows and memory corruption.
+Imported dangerous functions indicate potential attack surface only; reachability, argument sources, and boundary checks must be confirmed at decompiled call sites.
 """,
             ReportSection.REVERSE_PROCESS: f"""
 ## Reverse Engineering Process
 
 ### Overview
 
-{len(self.report_data.decompilation_results)} functions processed.
+{params['decompilation_count']} functions processed.
 
 ### Function Analysis
 
@@ -1133,10 +1306,7 @@ Imported dangerous functions include string operations (strcpy, strcat) and memo
 
 ### Code Structure
 
-Key characteristics identified via decompilation:
-- Multiple unsafe string function calls
-- Probable buffer overflow points
-- Missing input validation in select paths
+Key structure is based on the decompilation evidence above; when pseudocode is unavailable, no specific dangerous call or buffer layout is inferred.
 
 ### Call Relationships
 
@@ -1152,9 +1322,7 @@ Function call relationships mapped; critical control flow and data flow patterns
 ### Classification
 
 Vulnerability type distribution:
-- Buffer Overflow: {sum(1 for v in self.report_data.vulnerability_list if 'buffer' in v.get('type', '').lower())}
-- Format String: {sum(1 for v in self.report_data.vulnerability_list if 'format' in v.get('type', '').lower())}
-- Memory Vulnerabilities: {sum(1 for v in self.report_data.vulnerability_list if 'memory' in v.get('type', '').lower())}
+{params['vulnerability_type_summary']}
 
 ### Impact Summary
 
@@ -1206,24 +1374,7 @@ Immediate remediation strongly recommended.
             ReportSection.REMEDIATION_RECOMMENDATIONS: f"""
 ## Remediation Recommendations
 
-### Vulnerability Fixes
-
-1. **Buffer Overflow**: Replace unsafe functions (strcpy, strcat) with bounded variants (strncpy, snprintf). Add boundary checks.
-
-2. **Format String**: Eliminate user-controlled format strings. Use parameterised formatting exclusively.
-
-3. **Memory Management**: Zero pointers after free. Adopt a consistent ownership model.
-
-### Code Fix Examples
-
-```c
-// Before
-strcpy(dest, src);
-
-// After
-strncpy(dest, src, sizeof(dest) - 1);
-dest[sizeof(dest) - 1] = '\\0';
-```
+{params['remediation_guidance']}
 
 ### Security Hardening
 
@@ -1303,7 +1454,8 @@ Threat indicators should be ingested into security monitoring for continuous sur
         report_parts.append(f"# {'二进制逆向工程报告' if lang == 'zh' else 'Binary Reverse Engineering Report'}")
         report_parts.append("")
         report_parts.append(f"{'生成时间' if lang == 'zh' else 'Generated on'}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        report_parts.append(f"{'目标文件' if lang == 'zh' else 'Target File'}: {self.report_data.binary_info.get('binary_path', 'N/A')}")
+        target_path = self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or 'N/A'
+        report_parts.append(f"{'目标文件' if lang == 'zh' else 'Target File'}: {target_path}")
         report_parts.append("")
         report_parts.append("---")
         report_parts.append("")
@@ -1339,7 +1491,7 @@ Threat indicators should be ingested into security monitoring for continuous sur
         if not filename:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             base_name = os.path.splitext(os.path.basename(
-                self.report_data.binary_info.get('binary_path', 'unknown')
+                (self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or 'unknown')
             ))[0]
             filename = f"reverse_report_{base_name}_{timestamp}.md"
 
@@ -1362,7 +1514,7 @@ Threat indicators should be ingested into security monitoring for continuous sur
             'metadata': {
                 'generated_at': datetime.now().isoformat(),
                 'language': self.config.language,
-                'binary_path': self.report_data.binary_info.get('binary_path')
+                'binary_path': self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path')
             },
             'binary_info': self.report_data.binary_info,
             'vulnerability_summary': {

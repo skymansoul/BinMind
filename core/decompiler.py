@@ -1,4 +1,4 @@
-# core/decompiler.py - 反编译接口 (radare2 / Ghidra 回退 + LLM 辅助审查)
+﻿# core/decompiler.py - 反编译接口 (radare2 / Ghidra 回退 + LLM 辅助审查)
 
 import json
 import logging
@@ -38,16 +38,33 @@ def _run_radare2(binary_path: str, commands: List[str], timeout: int = 300) -> s
         return ''
 
 
-def list_functions(binary_path: str) -> List[str]:
-    """返回 r2 发现的全部函数名。"""
+def list_function_infos(binary_path: str) -> List[Dict]:
+    """返回 r2 发现的函数元数据: {name, address, size}."""
     raw = _run_radare2(binary_path, ['aa', 'afl'], timeout=60)
     funcs = []
     for line in raw.splitlines():
-        # afl output: addr size name
         parts = strip_ansi(line).split()
-        if len(parts) >= 3:
-            funcs.append(parts[-1])
+        if len(parts) < 3:
+            continue
+        name = parts[-1]
+        try:
+            address = int(parts[0], 16) if parts[0].startswith('0x') else int(parts[0])
+        except ValueError:
+            address = 0
+        size = 0
+        for token in parts[1:-1]:
+            try:
+                size = int(token, 16) if token.startswith('0x') else int(token)
+                break
+            except ValueError:
+                continue
+        funcs.append({'name': name, 'address': address, 'size': size})
     return funcs
+
+
+def list_functions(binary_path: str) -> List[str]:
+    """返回 r2 发现的全部函数名。"""
+    return [f['name'] for f in list_function_infos(binary_path)]
 
 
 # r2 pdc 对 MSVC PE 的导入函数输出寄存器风格间接调用
