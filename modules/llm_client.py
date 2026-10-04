@@ -1,4 +1,4 @@
-import json
+﻿import json
 import re
 import os
 import logging
@@ -357,9 +357,9 @@ def _probe_ai_backend(provider: str) -> bool:
         except Exception:
             return False
     if provider == 'deepseek':
-        return bool(os.environ.get('CUSTOM_API_KEY') or os.environ.get('OPENAI_API_KEY'))
+        return bool(os.environ.get('API_KEY') or os.environ.get('CUSTOM_API_KEY') or os.environ.get('OPENAI_API_KEY'))
     if provider == 'openai':
-        return bool(os.environ.get('OPENAI_API_KEY') or Config.OPENAI_API_KEY)
+        return bool(os.environ.get('API_KEY') or os.environ.get('OPENAI_API_KEY') or Config.OPENAI_API_KEY)
     if provider == 'custom':
         return bool(Config.CUSTOM_BASE_URL)
     if provider == 'azure':

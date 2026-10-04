@@ -1,4 +1,4 @@
-# Config 配置类与提供商常量
+﻿# Config 配置类与提供商常量
 import os
 from typing import Dict, Any
 
@@ -16,13 +16,13 @@ logger = __import__('logging').getLogger('config')
 class Config:
     """项目配置管理类"""
 
-    # AI 服务配置-可选值: openai / azure / ollama / llamacpp / custom
-    AI_PROVIDER = AI_PROVIDER_OPENAI
+    # AI 服务配置-可选值: openai / azure / ollama / llamacpp / custom / deepseek
+    AI_PROVIDER = os.environ.get('AI_PROVIDER', AI_PROVIDER_OPENAI)
 
     # OpenAI 或 OpenAI 兼容服务
-    OPENAI_API_KEY = ''
-    OPENAI_MODEL = 'gpt-4'
-    OPENAI_BASE_URL = None
+    OPENAI_API_KEY = os.environ.get('API_KEY') or os.environ.get('OPENAI_API_KEY', '')
+    OPENAI_MODEL = os.environ.get('AI_MODEL', 'gpt-4')
+    OPENAI_BASE_URL = os.environ.get('BASE_URL') or os.environ.get('OPENAI_BASE_URL') or None
     # 本地 DeepSeek 代理端口，Cloudflare Tunnel 转发的目标
     # OPENAI_BASE_URL = 'http://localhost:8800/v1'
     OPENAI_ORGANIZATION = None
@@ -41,9 +41,9 @@ class Config:
     LLAMACPP_HOST = 'http://localhost:8080'
 
     # 自定义 OpenAI 兼容 API
-    CUSTOM_API_KEY = ''
-    CUSTOM_BASE_URL = ''
-    CUSTOM_MODEL = ''
+    CUSTOM_API_KEY = os.environ.get('API_KEY') or os.environ.get('CUSTOM_API_KEY', '')
+    CUSTOM_BASE_URL = os.environ.get('BASE_URL') or os.environ.get('CUSTOM_BASE_URL', '')
+    CUSTOM_MODEL = os.environ.get('AI_MODEL', '')
 
     LOGS_DIR = './logs'
     REPORTS_DIR = './reports'

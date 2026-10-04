@@ -191,12 +191,13 @@ source ~/.bashrc
 未配置 LLM 时，部分报告会以模板/模拟模式生成，并标注 `simulation=true`。如需启用 LLM 分析，请配置 OpenAI 兼容接口环境变量：
 
 ```bash
-export OPENAI_API_KEY="你的 API Key"
-export OPENAI_BASE_URL="https://api.openai.com/v1"
-export BINMIND_MODEL="gpt-4o-mini"
+export AI_MODEL="gpt-4o-mini"
+export AI_PROVIDER="openai"
+export API_KEY="你的 API Key"
+export BASE_URL="https://api.openai.com/v1"
 ```
 
-如果使用本地或第三方 OpenAI 兼容服务，将 `OPENAI_BASE_URL` 和 `BINMIND_MODEL` 改为对应值即可。
+如果使用本地或第三方 OpenAI 兼容服务，将 `BASE_URL`、`AI_MODEL` 和 `AI_PROVIDER` 改为对应值即可。
 
 不要把 API Key 写入仓库或提交到 Git。
 
@@ -550,7 +551,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple angr==9.2.223
 
 ### 4. 报告显示 `simulation=true`
 
-说明当前没有可用 LLM 配置，或 LLM 客户端不可用。配置 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`BINMIND_MODEL` 后重新运行。
+说明当前没有可用 LLM 配置，或 LLM 客户端不可用。配置 `API_KEY`、`BASE_URL`、`AI_MODEL`、`AI_PROVIDER` 后重新运行。
 
 ### 5. 中文路径问题
 
