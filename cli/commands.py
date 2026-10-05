@@ -681,6 +681,8 @@ def cmd_reverse_report(args):
     import sqlite3
     from config import DB_PATH, RESULTS_DIR
     binary_path = getattr(args, 'binary', None) or ''
+    if binary_path:
+        binary_path = os.path.abspath(binary_path)
 
     report_data = ReportData()
 
@@ -695,30 +697,111 @@ def cmd_reverse_report(args):
     decomp_evidence = []
     crash_log_text = None
 
-    # 尝试从 DB 读取真实漏洞列表
-    if binary_path and os.path.isfile(DB_PATH):
+    # Load latest DB results; restrict to the latest run to avoid duplicate historical findings.
+    if os.path.isfile(DB_PATH):
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT * FROM findings WHERE binary_path=? ORDER BY id DESC LIMIT 50",
-            (binary_path,)).fetchall()
-        vulns = [{k: r[k] for k in r.keys()} for r in rows]
-        for v in vulns:
-            v.setdefault('type', v.get('vuln_type', '?'))
-        report_data.vulnerability_list = vulns
-
-        # 从 DB 读取反编译结果作为证据
         try:
-            drows = conn.execute(
-                "SELECT function_name, pseudocode, address FROM decompilation "
-                "WHERE binary_path=? ORDER BY id DESC LIMIT 20",
-                (binary_path,)).fetchall()
-            decomp_evidence = [{k: r[k] for k in r.keys()} for r in drows]
+            if not binary_path:
+                run = conn.execute(
+                    "SELECT binary_path FROM analysis_runs WHERE binary_path IS NOT NULL "
+                    "ORDER BY id DESC LIMIT 1").fetchone()
+                if run:
+                    binary_path = run['binary_path']
+                    try:
+                        report_data.binary_info = get_binary_info(binary_path)
+                    except Exception:
+                        report_data.binary_info = {'binary_path': binary_path or 'unknown'}
+
+            run = None
+            if binary_path:
+                run = conn.execute(
+                    "SELECT started_at FROM analysis_runs WHERE binary_path=? "
+                    "ORDER BY id DESC LIMIT 1",
+                    (binary_path,)).fetchone()
+
+            if binary_path and run and run['started_at']:
+                rows = conn.execute(
+                    "SELECT * FROM findings WHERE binary_path=? AND run_ts >= ? "
+                    "ORDER BY id DESC LIMIT 50",
+                    (binary_path, run['started_at'])).fetchall()
+            elif binary_path:
+                rows = conn.execute(
+                    "SELECT * FROM findings WHERE binary_path=? ORDER BY id DESC LIMIT 50",
+                    (binary_path,)).fetchall()
+            else:
+                rows = []
+
+            vulns = [{k: r[k] for k in r.keys()} for r in rows]
+            for v in vulns:
+                v.setdefault('type', v.get('vuln_type', '?'))
+            report_data.vulnerability_list = vulns
+
+            try:
+                cols = [r['name'] for r in conn.execute("PRAGMA table_info(decompilation)").fetchall()]
+                select_cols = ['function_name', 'pseudocode', 'address']
+                if 'raw_asm' in cols:
+                    select_cols.append('raw_asm')
+                if 'size' in cols:
+                    select_cols.append('size')
+                drows = conn.execute(
+                    f"SELECT {', '.join(select_cols)} FROM decompilation "
+                    "WHERE binary_path=? ORDER BY id DESC LIMIT 20",
+                    (binary_path,)).fetchall()
+                decomp_evidence = [{k: r[k] for k in r.keys()} for r in drows]
+            except Exception:
+                pass
+        finally:
+            conn.close()
+
+    # Fallback/enrichment: live-decompile key functions when DB evidence is absent or lacks asm/size.
+    needs_decomp_enrichment = (
+        not decomp_evidence or
+        not any((item.get('raw_asm') or '').strip() for item in decomp_evidence) or
+        not any(item.get('size') for item in decomp_evidence)
+    )
+    if binary_path and needs_decomp_enrichment:
+        try:
+            from core.decompiler import list_function_infos, decompile_function
+            func_infos = list_function_infos(binary_path)
+            ignored = ('sym.imp.', 'entry0', 'deregister_tm', 'register_tm', '__libc_start_main', '__x86.get_pc_thunk', '__do_global')
+            candidates = [f for f in func_infos if not any(token in f.get('name', '') for token in ignored)]
+
+            def score_func(info):
+                name = info.get('name', '').lower()
+                score = 0
+                for token, weight in (('ctf', 100), ('vuln', 90), ('win', 80), ('main', 70), ('pwn', 60)):
+                    if token in name:
+                        score += weight
+                score += min(int(info.get('size', 0) or 0), 200) / 10
+                return score
+
+            priority_infos = sorted(candidates, key=score_func, reverse=True)
+            priority_infos.extend([f for f in func_infos if f not in priority_infos][:8])
+            seen = {item.get('function_name') or item.get('name') for item in decomp_evidence}
+            for info in priority_infos:
+                func = info.get('name', '')
+                if not func or func in seen:
+                    continue
+                seen.add(func)
+                dec = decompile_function(binary_path, func)
+                pseudo = dec.get('pseudocode', '') if isinstance(dec, dict) else ''
+                raw_asm = dec.get('raw_asm', '') if isinstance(dec, dict) else ''
+                evidence_text = (pseudo + '\n' + raw_asm).lower()
+                keep = len(decomp_evidence) < 2 or any(token in evidence_text for token in (' read', 'read@', 'system', 'gets', 'strcpy', 'scanf', 'ctfshow'))
+                if keep and (pseudo.strip() or raw_asm.strip()):
+                    decomp_evidence.append({
+                        'function_name': dec.get('name') or func,
+                        'pseudocode': pseudo,
+                        'raw_asm': raw_asm,
+                        'address': dec.get('address') or info.get('address', 0),
+                        'size': dec.get('size') or info.get('size', 0),
+                    })
+                if len(decomp_evidence) >= 5:
+                    break
         except Exception:
             pass
-        conn.close()
-
-    # 从结果目录读取崩溃日志原文
+    # Load crash log from results directory.
     if binary_path:
         stem = os.path.splitext(os.path.basename(binary_path))[0]
         for ext in ('.crash', '.log', '.txt'):
@@ -732,6 +815,7 @@ def cmd_reverse_report(args):
                 break
 
     report_data.decompilation_evidence = decomp_evidence
+    report_data.decompilation_results = decomp_evidence
     report_data.crash_log = crash_log_text
 
     # simulation 由 LLM 配置状态决定

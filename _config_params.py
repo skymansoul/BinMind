@@ -1,4 +1,4 @@
-# 各模块可调参数常量
+﻿# 各模块可调参数常量
 # 集中定义而非在各模块内硬编码-便于跨模块调参和基准测试
 import os
 import json as _json
@@ -17,7 +17,7 @@ _default_llm_endpoints = _json.dumps({
 LLM_ENDPOINTS = _json.loads(os.environ.get('LLM_ENDPOINTS', _default_llm_endpoints))
 
 # API 密钥 — 敏感信息，仅允许通过环境变量注入
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+OPENAI_API_KEY = os.environ.get('API_KEY') or os.environ.get('OPENAI_API_KEY', '')
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 # 功能开关 — 环境变量控制，默认关闭重型分析

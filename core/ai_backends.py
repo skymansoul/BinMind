@@ -1,4 +1,4 @@
-# core/ai_backends.py - LLM 后端抽象层
+﻿# core/ai_backends.py - LLM 后端抽象层
 # 统一接口查询 OpenAI / Anthropic / Ollama / llamacpp / custom 五通道;
 # 每次调用(含跳过事件)追加记录到 logs/llm_calls.jsonl。
 
@@ -57,7 +57,7 @@ def _provider_configured(provider: str) -> bool:
     if provider == 'anthropic':
         return bool(ANTHROPIC_API_KEY)
     if provider == 'deepseek':
-        return bool(os.environ.get('CUSTOM_API_KEY') or OPENAI_API_KEY)
+        return bool(os.environ.get('API_KEY') or os.environ.get('CUSTOM_API_KEY') or OPENAI_API_KEY)
     return bool(LLM_ENDPOINTS.get(provider))
 
 

@@ -113,6 +113,7 @@ class ReverseReportGenerator:
         Bind report data for generation. simulation 覆盖默认值。
         """
         self.report_data = data
+        self._deduplicate_vulnerabilities()
         if simulation is not None:
             self._simulation = simulation
 
@@ -526,9 +527,10 @@ Direct, rigorous.
 
         unknown = self._unknown()
         na = self._na()
+        binary_path = info.get('binary_path') or info.get('path') or na
         lines = []
         if self._is_zh():
-            lines.append(f"- 文件路径: {info.get('binary_path', na)}")
+            lines.append(f"- 文件路径: {binary_path}")
             lines.append(f"- 格式: {info.get('format', na)}")
             lines.append(f"- 架构: {info.get('arch', na)} ({info.get('bits', na)}-bit)")
             lines.append(f"- 字节序: {info.get('endian', na)}")
@@ -536,7 +538,7 @@ Direct, rigorous.
             dangerous_title = "危险函数"
             more_template = "... 以及另外 {count} 个"
         else:
-            lines.append(f"- File Path: {info.get('binary_path', na)}")
+            lines.append(f"- File Path: {binary_path}")
             lines.append(f"- Format: {info.get('format', na)}")
             lines.append(f"- Architecture: {info.get('arch', na)} ({info.get('bits', na)}-bit)")
             lines.append(f"- Endian: {info.get('endian', na)}")
@@ -575,16 +577,17 @@ Direct, rigorous.
         if not info:
             return self._na()
 
+        binary_path = info.get('binary_path') or info.get('path') or self._na()
         if self._is_zh():
             return (
-                f"文件: {info.get('binary_path', self._na())}\n"
+                f"文件: {binary_path}\n"
                 f"格式: {info.get('format', self._na())}\n"
                 f"架构: {info.get('arch', self._na())} ({info.get('bits', self._na())}-bit)\n"
                 f"NX: {self._yes_no(bool(info.get('checksec', {}).get('nx')))}\n"
                 f"PIE: {self._yes_no(bool(info.get('checksec', {}).get('pie')))}"
             )
         return (
-            f"File: {info.get('binary_path', self._na())}\n"
+            f"File: {binary_path}\n"
             f"Format: {info.get('format', self._na())}\n"
             f"Arch: {info.get('arch', self._na())} ({info.get('bits', self._na())}-bit)\n"
             f"NX: {self._yes_no(bool(info.get('checksec', {}).get('nx')))}\n"
@@ -650,29 +653,111 @@ Direct, rigorous.
 
         return '\n'.join(lines)
 
+    def _format_vulnerability_type_summary(self) -> str:
+        vulns = self.report_data.vulnerability_list or []
+        if not vulns:
+            return "- 无" if self._is_zh() else "- None"
+
+        counts = {
+            'buffer_overflow': 0,
+            'format_string': 0,
+            'command_injection': 0,
+            'info_leak': 0,
+            'memory_corruption': 0,
+            'other': 0,
+        }
+        for vuln in vulns:
+            text = ' '.join(str(vuln.get(k, '')) for k in ('type', 'vuln_type', 'description', 'evidence', 'cwe')).lower()
+            matched = False
+            if any(token in text for token in ('buffer', 'overflow', 'gets', 'strcpy', 'read (buffer-overflow)')):
+                counts['buffer_overflow'] += 1
+                matched = True
+            if 'format' in text:
+                counts['format_string'] += 1
+                matched = True
+            if any(token in text for token in ('system', 'command', 'cmd', 'shell')):
+                counts['command_injection'] += 1
+                matched = True
+            if any(token in text for token in ('info-leak', 'leak', 'puts')):
+                counts['info_leak'] += 1
+                matched = True
+            if any(token in text for token in ('memory', 'uaf', 'double-free', 'heap', 'stack')):
+                counts['memory_corruption'] += 1
+                matched = True
+            if not matched:
+                counts['other'] += 1
+
+        if self._is_zh():
+            labels = [
+                ('缓冲区溢出', counts['buffer_overflow']),
+                ('格式化字符串', counts['format_string']),
+                ('命令执行/命令注入', counts['command_injection']),
+                ('信息泄露', counts['info_leak']),
+                ('内存破坏', counts['memory_corruption']),
+                ('其他', counts['other']),
+            ]
+        else:
+            labels = [
+                ('Buffer overflow', counts['buffer_overflow']),
+                ('Format string', counts['format_string']),
+                ('Command execution/injection', counts['command_injection']),
+                ('Information leak', counts['info_leak']),
+                ('Memory corruption', counts['memory_corruption']),
+                ('Other', counts['other']),
+            ]
+        return '\n'.join(f"- {name}: {value}" for name, value in labels if value)
+
+    def _looks_like_r2_pseudocode(self, code: str) -> bool:
+        if not code:
+            return False
+        indicators = ('esp', 'ebp', 'eax', 'ebx', 'ecx', 'edx', 'push  (', 'pop  ()', 'goto loc_', 'loc_0x', 'sym.imp.', 're\n', 'leav')
+        hits = sum(1 for token in indicators if token in code)
+        return hits >= 3
+
+    def _select_reverse_code(self, item: Dict[str, Any]) -> Tuple[str, str, str]:
+        pseudo = (item.get('pseudocode') or item.get('code') or '').strip()
+        asm = (item.get('raw_asm') or item.get('asm') or '').strip()
+        if pseudo and not self._looks_like_r2_pseudocode(pseudo):
+            return pseudo, 'pseudocode', 'c'
+        if asm:
+            return asm, 'assembly', 'asm'
+        if pseudo:
+            return pseudo, 'assembly', 'asm'
+        return '', 'none', ''
+
     def _format_decompilation_data(self) -> str:
-        # Render decompilation results as text.
-        results = self.report_data.decompilation_results
+        # Render reverse evidence as text: pseudo-C first, assembly fallback.
+        results = self.report_data.decompilation_results or self.report_data.decompilation_evidence
         if not results:
-            return "无反编译数据。" if self._is_zh() else "No decompilation data available."
+            return "无逆向证据。" if self._is_zh() else "No reverse-engineering evidence available."
 
         lines = []
         for result in results[:5]:
-            func_name = result.get('function_name', self._unknown())
+            func_name = result.get('function_name') or result.get('name') or self._unknown()
+            code, code_kind, fence = self._select_reverse_code(result)
+            address = result.get('address', 0) or 0
+            size = result.get('size', 0) or 0
+
             if self._is_zh():
                 lines.append(f"## 函数: {func_name}")
-                lines.append(f"- 地址: {hex(result.get('address', 0))}")
-                lines.append(f"- 大小: {result.get('size', 0)} 字节")
-                if result.get('pseudocode'):
-                    pseudo = result['pseudocode'][:500]
-                    lines.append(f"- 伪代码:\n{pseudo}")
+                lines.append(f"- 地址: {hex(address)}")
+                lines.append(f"- 大小: {size} 字节")
+                if code:
+                    label = "伪 C 代码" if code_kind == 'pseudocode' else "汇编代码"
+                    lines.append(f"- 证据类型: {label}")
+                    lines.append(f"```{fence}\n{code[:1200]}\n```")
+                else:
+                    lines.append("- 证据类型: 未获取到伪 C 或汇编代码")
             else:
                 lines.append(f"## Function: {func_name}")
-                lines.append(f"- Address: {hex(result.get('address', 0))}")
-                lines.append(f"- Size: {result.get('size', 0)} bytes")
-                if result.get('pseudocode'):
-                    pseudo = result['pseudocode'][:500]
-                    lines.append(f"- Pseudocode:\n{pseudo}")
+                lines.append(f"- Address: {hex(address)}")
+                lines.append(f"- Size: {size} bytes")
+                if code:
+                    label = "Pseudo-C" if code_kind == 'pseudocode' else "Assembly"
+                    lines.append(f"- Evidence Type: {label}")
+                    lines.append(f"```{fence}\n{code[:1200]}\n```")
+                else:
+                    lines.append("- Evidence Type: no pseudo-C or assembly captured")
             lines.append("")
 
         if len(results) > 5:
@@ -687,7 +772,7 @@ Direct, rigorous.
         """Render exploit generation results as text."""
         data = self.report_data.exploit_generation_results
         if not data:
-            return "无利用生成数据。" if self._is_zh() else "No exploit generation data available."
+            return self._format_inferred_exploit_analysis()
 
         lines = []
         if self._is_zh():
@@ -696,15 +781,290 @@ Direct, rigorous.
             if data.get('script_path'):
                 lines.append(f"- 脚本路径: {data['script_path']}")
             if data.get('script_content'):
-                lines.append(f"- 脚本预览:\n{data['script_content'][:300]}")
+                lines.append(f"- 脚本预览:\n```python\n{data['script_content'][:900]}\n```")
+            lines.append("")
+            lines.append(self._format_inferred_exploit_analysis(prefix="### 基于证据的利用研判"))
         else:
             lines.append(f"- Success: {self._yes_no(bool(data.get('success')))}")
             lines.append(f"- Iterations: {len(data.get('iterations', [])) + 1}")
             if data.get('script_path'):
                 lines.append(f"- Script Path: {data['script_path']}")
             if data.get('script_content'):
-                lines.append(f"- Script Preview:\n{data['script_content'][:300]}")
+                lines.append(f"- Script Preview:\n```python\n{data['script_content'][:900]}\n```")
+            lines.append("")
+            lines.append(self._format_inferred_exploit_analysis(prefix="### Evidence-based exploit assessment"))
 
+        return '\n'.join(lines)
+
+    def _combined_vuln_text(self, vuln: Dict[str, Any]) -> str:
+        fields = ('type', 'vuln_type', 'description', 'evidence', 'cwe', 'imported_function', 'code_snippet', 'function_name', 'function')
+        return ' '.join(str(vuln.get(k, '')) for k in fields).lower()
+
+    def _normalize_exploit_vuln_type(self, vuln: Dict[str, Any]) -> str:
+        text = self._combined_vuln_text(vuln)
+        if any(t in text for t in ('format string', 'format_string', '格式化字符串', 'printf', 'fprintf', 'sprintf')):
+            return 'format_string'
+        if any(t in text for t in ('command injection', '命令注入', 'system', 'popen', 'execve', 'shell')):
+            return 'command_injection'
+        if any(t in text for t in ('use after free', 'use-after-free', 'uaf', 'double-free', 'double free')):
+            return 'uaf'
+        if any(t in text for t in ('heap overflow', 'heap-overflow', 'heap', 'malloc', 'free')):
+            return 'heap_overflow'
+        if any(t in text for t in ('overflow', '栈溢出', '缓冲区', 'buffer', 'gets', 'strcpy', 'strcat', 'read')):
+            return 'stack_overflow'
+        if any(t in text for t in ('leak', '泄露', 'disclosure', 'puts')):
+            return 'info_leak'
+        return 'unknown'
+
+    def _ranked_vulnerabilities(self) -> List[Dict[str, Any]]:
+        rank = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
+        return sorted(self.report_data.vulnerability_list or [], key=lambda v: rank.get(str(v.get('severity', '')).lower(), 4))
+
+    def _protection_profile(self) -> Dict[str, Any]:
+        info = self.report_data.binary_info or {}
+        checksec = info.get('checksec', {}) or {}
+        return {
+            'arch': info.get('arch', self._unknown()),
+            'bits': info.get('bits', self._na()),
+            'nx': bool(checksec.get('nx')),
+            'pie': bool(checksec.get('pie') or checksec.get('aslr')),
+            'canary': bool(checksec.get('canary')),
+            'relro': str(checksec.get('relro', self._na())),
+        }
+
+    def _find_named_target(self) -> Tuple[str, Any]:
+        names = ('win', 'ret2win', 'backdoor', 'shell', 'get_shell', 'getflag', 'get_flag', 'flag', 'success')
+        info = self.report_data.binary_info or {}
+        symbols = info.get('symbols') or {}
+        if isinstance(symbols, dict):
+            lowered = {str(k).lower(): (k, v) for k, v in symbols.items()}
+            for name in names:
+                if name in lowered:
+                    return lowered[name]
+        for item in self._decompilation_items():
+            fn = str(item.get('function_name') or item.get('name') or '')
+            low = fn.lower().replace('sym.', '')
+            if any(name == low or name in low for name in names):
+                return fn, item.get('address')
+        return '', None
+
+    def _matching_evidence_excerpt(self, vuln: Dict[str, Any]) -> str:
+        fn = str(vuln.get('function_name') or vuln.get('function') or '').lower()
+        for item in self._decompilation_items():
+            item_fn = str(item.get('function_name') or item.get('name') or '').lower()
+            if fn and fn not in item_fn:
+                continue
+            code, _, _ = self._select_reverse_code(item)
+            if code:
+                return code[:360]
+        snippet = vuln.get('code_snippet') or vuln.get('evidence') or vuln.get('description') or ''
+        return str(snippet)[:360]
+
+    def _exploit_route_for_vuln(self, vuln: Dict[str, Any]) -> Dict[str, Any]:
+        vtype = self._normalize_exploit_vuln_type(vuln)
+        prof = self._protection_profile()
+        target_name, target_addr = self._find_named_target()
+        fn = vuln.get('function_name') or vuln.get('function') or self._unknown()
+        imported = vuln.get('imported_function') or ''
+        route = []
+        missing = []
+        primitive = ''
+        confidence = 'Medium'
+
+        if vtype == 'stack_overflow':
+            primitive = '栈缓冲区溢出，可尝试覆盖返回地址' if self._is_zh() else 'Stack overflow, possible saved return address overwrite'
+            missing.append('精确 offset / cyclic 结果')
+            if target_name and not prof['pie']:
+                route.append(f"ret2text/ret2win: 覆盖返回地址到 `{target_name}` ({target_addr if target_addr is not None else 'addr unknown'})" if self._is_zh() else f"ret2text/ret2win: redirect return address to `{target_name}` ({target_addr if target_addr is not None else 'addr unknown'})")
+                confidence = 'High'
+            elif not prof['nx']:
+                route.append('NX 关闭: 可验证栈上 shellcode 路线；仍需确认栈地址或泄露。' if self._is_zh() else 'NX disabled: validate stack shellcode route; stack address/leak still required.')
+                missing.append('可控缓冲区地址')
+            else:
+                route.append('NX 启用: 优先 ROP/ret2libc；如 PIE 启用，需要先泄露基址。' if self._is_zh() else 'NX enabled: prefer ROP/ret2libc; if PIE is enabled, leak base address first.')
+                missing.append('libc/程序基址泄露' if prof['pie'] else 'system/binsh 或 ROP gadget 地址')
+            if prof['canary']:
+                route.append('Canary 启用: 需要信息泄露或格式化字符串先泄露 canary，再二阶段覆盖。' if self._is_zh() else 'Canary enabled: leak canary first, then perform second-stage overwrite.')
+                missing.append('canary 泄露')
+        elif vtype == 'format_string':
+            primitive = '格式化字符串读/写原语' if self._is_zh() else 'Format-string read/write primitive'
+            route.append('第一阶段用 `%p/%lx` 枚举参数偏移并泄露栈、libc 或 PIE 基址。' if self._is_zh() else 'Stage 1: enumerate argument offset with `%p/%lx` and leak stack/libc/PIE base.')
+            if prof['relro'].lower() != 'full':
+                route.append('RELRO 非 Full: 可评估 GOT 覆写到 system/目标函数。' if self._is_zh() else 'RELRO not Full: assess GOT overwrite to system/target function.')
+            else:
+                route.append('Full RELRO: GOT 覆写不可行，转向 ret2libc、栈返回地址写或 hook 类目标。' if self._is_zh() else 'Full RELRO: GOT overwrite is blocked; pivot to ret2libc, saved return address write, or hooks.')
+            missing += ['格式串参数偏移', '泄露值到基址的偏移']
+            confidence = 'High'
+        elif vtype == 'command_injection':
+            primitive = '用户可控字符串进入命令执行函数' if self._is_zh() else 'User-controlled string reaches command execution sink'
+            route.append(f"重点确认 `{imported or 'system/popen/exec'}` 的参数是否完全/部分可控。" if self._is_zh() else f"Confirm whether `{imported or 'system/popen/exec'}` arguments are fully or partially attacker-controlled.")
+            route.append('优先构造命令分隔符、环境变量/PATH 劫持或固定命令参数注入。' if self._is_zh() else 'Try command separators, environment/PATH hijack, or fixed-command argument injection.')
+            missing.append('实际输入入口与过滤规则')
+            confidence = 'High'
+        elif vtype in ('heap_overflow', 'uaf'):
+            primitive = '堆元数据/对象重用控制' if self._is_zh() else 'Heap metadata/object reuse control'
+            route.append('先复原菜单/协议交互，确定 malloc/free 顺序、chunk 大小和可控写长度。' if self._is_zh() else 'Recover interaction flow first: malloc/free order, chunk sizes, and controlled write length.')
+            route.append('结合 glibc 版本选择 tcache poisoning、fastbin dup、unsorted bin leak 或 vtable/function pointer 覆写。' if self._is_zh() else 'Choose tcache poisoning, fastbin dup, unsorted-bin leak, or vtable/function-pointer overwrite based on glibc version.')
+            missing += ['分配/释放序列', 'libc 版本', '堆/Libc 泄露']
+        elif vtype == 'info_leak':
+            primitive = '地址或敏感信息泄露辅助原语' if self._is_zh() else 'Address/sensitive-data leak primitive'
+            route.append('把该漏洞作为前置阶段，用来解析 PIE/libc/canary，再联动溢出或格式化字符串写。' if self._is_zh() else 'Use this as stage-0 to recover PIE/libc/canary, then chain with overwrite primitive.')
+            missing.append('泄露值对应的符号/模块偏移')
+        else:
+            primitive = '利用原语未明确' if self._is_zh() else 'Exploit primitive is unclear'
+            route.append('需先补充崩溃样例、输入入口和寄存器/栈状态，再判断可控性。' if self._is_zh() else 'Collect crash sample, input entry, and register/stack state before assessing control.')
+            missing += ['触发样例', '崩溃寄存器', '输入可控范围']
+            confidence = 'Low'
+
+        return {
+            'type': vtype,
+            'function': fn,
+            'primitive': primitive,
+            'route': route,
+            'missing': list(dict.fromkeys(missing)),
+            'confidence': confidence,
+            'evidence': self._matching_evidence_excerpt(vuln),
+            'target_name': target_name,
+            'target_addr': target_addr,
+        }
+
+    def _build_poc_skeleton(self, routes: List[Dict[str, Any]]) -> str:
+        prof = self._protection_profile()
+        binary = os.path.basename(self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or './target')
+        arch = 'amd64' if str(prof['bits']) == '64' else 'i386'
+        route_type = routes[0]['type'] if routes else 'unknown'
+        target_addr = routes[0].get('target_addr') if routes else None
+        try:
+            if isinstance(target_addr, str):
+                target_addr_literal = hex(int(target_addr, 0))
+            elif target_addr is not None:
+                target_addr_literal = hex(int(target_addr))
+            else:
+                target_addr_literal = '0x0'
+        except (TypeError, ValueError):
+            target_addr_literal = '0x0'
+        pack = 'p64' if arch == 'amd64' else 'p32'
+        lines = [
+            'from pwn import *',
+            f"context.arch = '{arch}'",
+            f"BINARY = './{binary}'",
+            'elf = ELF(BINARY)',
+            'p = process(BINARY)',
+            '',
+        ]
+        if route_type == 'format_string':
+            lines += [
+                '# 1) 先枚举格式化字符串参数偏移',
+                "p.sendline(b'%p.' * 16)",
+                'leak = p.recvline(timeout=2)',
+                'log.info(leak)',
+                '# 2) 确认 fmt_offset/base 后再生成 fmtstr_payload',
+                'fmt_offset = 0  # TODO',
+                'target = 0      # TODO',
+                'value = 0       # TODO',
+                'payload = fmtstr_payload(fmt_offset, {target: value})',
+            ]
+        elif route_type == 'command_injection':
+            lines += [
+                '# 根据实际过滤规则替换分隔符/参数',
+                "payload = b';id;#'",
+                'p.sendline(payload)',
+            ]
+        elif route_type in ('heap_overflow', 'uaf'):
+            lines += [
+                '# TODO: 按菜单/协议补全 alloc/free/edit/show 原语',
+                'def alloc(size, data): pass',
+                'def free(idx): pass',
+                'def edit(idx, data): pass',
+                '# 先构造泄露，再做 tcache/fastbin/vtable 类劫持',
+            ]
+        else:
+            lines += [
+                '# 1) cyclic 定位 offset: cyclic(512) -> corefile/cyclic_find',
+                'offset = 0  # TODO: cyclic_find(...)',
+                "payload = b'A' * offset",
+                '# 2) 按保护机制选择 ret2win/ROP/ret2libc/shellcode',
+                f'payload += {pack}({target_addr_literal})  # TODO: verify target address',
+                'p.sendline(payload)',
+            ]
+        lines += ['', 'p.interactive()']
+        return '\n'.join(lines)
+
+    def _inferred_exploitability_label(self) -> str:
+        if self.report_data.exploit_generation_results.get('success'):
+            return '可利用性较高' if self._is_zh() else 'High exploitability potential'
+        vulns = self._ranked_vulnerabilities()
+        dangerous = ((self.report_data.binary_info.get('imports', {}) or {}).get('dangerous_functions', []) or [])
+        if not vulns and not dangerous:
+            return '缺少证据，无法判断可利用性' if self._is_zh() else 'Insufficient evidence to assess exploitability'
+        synthetic_vulns = vulns or [{'type': 'dangerous_import', 'description': ', '.join(map(str, dangerous))}]
+        confidences = [self._exploit_route_for_vuln(v).get('confidence') for v in synthetic_vulns[:3]]
+        if 'High' in confidences:
+            return '静态证据显示存在高可利用性候选路线，但仍需 offset/泄露/目标地址验证' if self._is_zh() else 'Static evidence indicates a high-exploitability candidate route; offset/leak/target validation is still required'
+        if 'Medium' in confidences:
+            return '存在可行利用方向，但关键约束缺失，利用难度中等' if self._is_zh() else 'A plausible route exists, but key constraints are missing; exploit difficulty is moderate'
+        return '当前仅能确认攻击面，暂不足以形成稳定 EXP' if self._is_zh() else 'Only attack surface is confirmed; not enough for a stable exploit yet'
+
+    def _format_inferred_exploit_analysis(self, prefix: str = '') -> str:
+        vulns = self._ranked_vulnerabilities()
+        prof = self._protection_profile()
+        dangerous = ((self.report_data.binary_info.get('imports', {}) or {}).get('dangerous_functions', []) or [])
+        if not vulns and not dangerous:
+            return "无利用生成数据；当前也缺少漏洞/危险导入证据，无法可靠推断 EXP 路线。" if self._is_zh() else "No exploit generation data and no vulnerability/import evidence to infer an exploit route."
+
+        synthetic_vulns = vulns or [{'type': 'dangerous_import', 'severity': 'medium', 'description': ', '.join(map(str, dangerous)), 'function_name': self._na()}]
+        routes = [self._exploit_route_for_vuln(v) for v in synthetic_vulns[:4]]
+        if self._is_zh():
+            lines = [prefix] if prefix else []
+            lines.append("- 生成状态: 未执行真实 EXP 生成；以下为基于静态证据的推断型利用方案。")
+            lines.append(f"- 目标画像: {prof['arch']} / {prof['bits']}-bit；NX={self._enabled_disabled(prof['nx'])}；PIE/ASLR={self._enabled_disabled(prof['pie'])}；Canary={self._enabled_disabled(prof['canary'])}；RELRO={prof['relro']}")
+            if dangerous:
+                lines.append(f"- 危险导入: {', '.join(sorted(set(map(str, dangerous)))[:12])}")
+            lines.append("")
+            lines.append("#### 候选利用路线")
+            for i, route in enumerate(routes, 1):
+                lines.append(f"{i}. **{route['function']} / {route['type']}**")
+                lines.append(f"   - 原语判断: {route['primitive']}")
+                lines.append(f"   - 置信度: {route['confidence']}")
+                for step in route['route']:
+                    lines.append(f"   - 路线: {step}")
+                if route['missing']:
+                    lines.append(f"   - 缺失关键量: {', '.join(route['missing'])}")
+                if route['evidence']:
+                    lines.append("   - 证据摘录:")
+                    lines.append("```text")
+                    lines.append(route['evidence'])
+                    lines.append("```")
+            lines.append("")
+            lines.append("#### PoC 骨架")
+            lines.append("```python")
+            lines.append(self._build_poc_skeleton(routes))
+            lines.append("```")
+            lines.append("")
+            lines.append("#### 下一步验证")
+            lines.append("- 用 `cyclic`/corefile 或 GDB 确认 offset，禁止沿用固定偏移。")
+            lines.append("- 如 PIE/Canary/NX 启用，先补泄露链，再进入控制流劫持阶段。")
+            lines.append("- 用本地进程验证后再切换 remote，保留每轮崩溃寄存器和栈回溯。")
+            return '\n'.join(line for line in lines if line != '')
+
+        lines = [prefix] if prefix else []
+        lines.append("- Generation status: no real exploit generation was executed; the following is an evidence-based inferred route.")
+        lines.append(f"- Target profile: {prof['arch']} / {prof['bits']}-bit; NX={self._enabled_disabled(prof['nx'])}; PIE/ASLR={self._enabled_disabled(prof['pie'])}; Canary={self._enabled_disabled(prof['canary'])}; RELRO={prof['relro']}")
+        if dangerous:
+            lines.append(f"- Dangerous imports: {', '.join(sorted(set(map(str, dangerous)))[:12])}")
+        lines.append("\n#### Candidate exploit routes")
+        for i, route in enumerate(routes, 1):
+            lines.append(f"{i}. **{route['function']} / {route['type']}**")
+            lines.append(f"   - Primitive: {route['primitive']}")
+            lines.append(f"   - Confidence: {route['confidence']}")
+            for step in route['route']:
+                lines.append(f"   - Route: {step}")
+            if route['missing']:
+                lines.append(f"   - Missing key values: {', '.join(route['missing'])}")
+        lines.append("\n#### PoC skeleton")
+        lines.append("```python")
+        lines.append(self._build_poc_skeleton(routes))
+        lines.append("```")
         return '\n'.join(lines)
 
     def _format_crash_data(self) -> str:
@@ -815,6 +1175,113 @@ Direct, rigorous.
             return "威胁情报数据为空。" if self._is_zh() else "Threat intelligence data is empty."
 
         return '\n'.join(lines)
+    def _deduplicate_vulnerabilities(self) -> None:
+        if not self.report_data:
+            return
+        unique = []
+        seen = set()
+        for vuln in self.report_data.vulnerability_list or []:
+            key = (
+                str(vuln.get('type') or vuln.get('vuln_type') or '').strip().lower(),
+                str(vuln.get('function_name') or vuln.get('function') or '').strip().lower(),
+                str(vuln.get('location') or '').strip().lower(),
+                str(vuln.get('imported_function') or '').strip().lower(),
+                str(vuln.get('description') or '').strip().lower(),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(vuln)
+        self.report_data.vulnerability_list = unique
+
+    def _decompilation_items(self) -> List[Dict[str, Any]]:
+        return self.report_data.decompilation_results or self.report_data.decompilation_evidence or []
+
+    def _decompilation_count(self) -> int:
+        return len(self._decompilation_items())
+
+    def _format_remediation_guidance(self) -> str:
+        vulns = self.report_data.vulnerability_list or []
+        imports = (self.report_data.binary_info.get('imports', {}) or {})
+        dangerous = imports.get('dangerous_functions', []) or []
+        decomp = self._decompilation_items()
+        if self._is_zh():
+            lines = ["### 按证据修复", ""]
+            if not vulns and not dangerous:
+                lines.append("当前报告没有可用于生成修复建议的漏洞证据。")
+            else:
+                for i, vuln in enumerate(vulns[:8], 1):
+                    vtype = vuln.get('type') or vuln.get('vuln_type') or self._unknown()
+                    fn = vuln.get('function_name') or vuln.get('function') or self._na()
+                    desc = vuln.get('description') or vuln.get('evidence') or ''
+                    lines.append(f"{i}. **{vtype} / {fn}**")
+                    if desc:
+                        lines.append(f"   - 证据: {desc[:220]}")
+                    lines.append(f"   - 建议: 先确认该告警在反编译代码中的调用点和参数来源；只对已确认可达的路径做代码级修复。")
+                if dangerous:
+                    lines.append("")
+                    lines.append("### 危险导入函数处置")
+                    for name in sorted(set(dangerous)):
+                        if name == 'system':
+                            lines.append("- `system`: 避免拼接命令字符串；改用固定命令白名单或 `execve` 参数数组，并过滤用户可控输入。")
+                        elif name == 'read':
+                            lines.append("- `read`: 第三个参数必须小于等于目标缓冲区容量；返回值需要检查，禁止继续处理未终止字符串。")
+                        elif name in ('gets', 'strcpy', 'strcat', 'sprintf'):
+                            lines.append(f"- `{name}`: 高风险无边界 API，替换为带长度参数的实现并补充边界检查。")
+                        elif name in ('printf', 'fprintf'):
+                            lines.append(f"- `{name}`: 格式字符串必须为常量，用户输入只能作为参数传入。")
+                        else:
+                            lines.append(f"- `{name}`: 结合反编译调用点复核参数边界和用户输入可控性。")
+            lines.append("")
+            lines.append("### 代码修复参考")
+            if decomp:
+                lines.append("以下为逆向证据摘录：优先伪 C；没有伪 C 时使用汇编。不直接伪造补丁，请基于源码或等价逻辑修复。")
+                for item in decomp[:2]:
+                    fn = item.get('function_name') or item.get('name') or self._unknown()
+                    code, code_kind, fence = self._select_reverse_code(item)
+                    label = '伪 C 代码' if code_kind == 'pseudocode' else '汇编代码'
+                    if code:
+                        lines.append(f"\n**{fn} ({label}):**")
+                        lines.append(f"```{fence}")
+                        lines.append(code[:800])
+                        lines.append("```")
+            else:
+                lines.append("未获取到伪 C 或汇编代码，因此不生成固定示例补丁，避免误导。请先安装/配置 radare2 或 Ghidra 并重新运行分析。")
+            return '\n'.join(lines)
+
+        lines = ["### Evidence-based fixes", ""]
+        if not vulns and not dangerous:
+            lines.append("No vulnerability evidence is available for remediation guidance.")
+        else:
+            for i, vuln in enumerate(vulns[:8], 1):
+                vtype = vuln.get('type') or vuln.get('vuln_type') or self._unknown()
+                fn = vuln.get('function_name') or vuln.get('function') or self._na()
+                desc = vuln.get('description') or vuln.get('evidence') or ''
+                lines.append(f"{i}. **{vtype} / {fn}**")
+                if desc:
+                    lines.append(f"   - Evidence: {desc[:220]}")
+                lines.append("   - Recommendation: confirm the reachable call site and tainted arguments before applying code-level fixes.")
+            if dangerous:
+                lines.append("")
+                lines.append("### Dangerous import handling")
+                for name in sorted(set(dangerous)):
+                    lines.append(f"- `{name}`: review call-site reachability, argument bounds, and user-control before remediation.")
+        lines.append("")
+        lines.append("### Code fix reference")
+        if decomp:
+            lines.append("Reverse evidence excerpt: pseudo-C first, assembly fallback; no synthetic patch is generated:")
+            for item in decomp[:2]:
+                fn = item.get('function_name') or item.get('name') or self._unknown()
+                code, code_kind, fence = self._select_reverse_code(item)
+                label = 'Pseudo-C' if code_kind == 'pseudocode' else 'Assembly'
+                if code:
+                    lines.append(f"\n**{fn} ({label}):**")
+                    lines.append(f"```{fence}")
+                    lines.append(code[:800])
+                    lines.append("```")
+        else:
+            lines.append("No pseudo-C or assembly evidence was captured, so no fixed example patch is emitted.")
+        return '\n'.join(lines)
     def _get_vulnerability_counts(self) -> Tuple[int, int, int, int]:
         # Aggregate vulnerability counts: (total, high+critical, medium, low).
         vulns = self.report_data.vulnerability_list
@@ -860,7 +1327,10 @@ Direct, rigorous.
             'low_vuln_count': low_count,
             'vulnerability_data': self._format_vulnerability_data(),
             'vulnerability_summary': self._format_vulnerability_summary(),
+            'vulnerability_type_summary': self._format_vulnerability_type_summary(),
             'decompilation_data': self._format_decompilation_data(),
+            'decompilation_count': self._decompilation_count(),
+            'remediation_guidance': self._format_remediation_guidance(),
             'exploit_data': self._format_exploit_data(),
             'crash_data': self._format_crash_data(),
             'symbolic_data': self._format_symbolic_data(),
@@ -868,7 +1338,7 @@ Direct, rigorous.
             'supply_chain_info': self._format_supply_chain_data(),
             'threat_intel_data': self._format_threat_intel_data(),
             'threat_intel_info': self._format_threat_intel_data(),
-            'decompilation_status': 'Completed' if self.report_data.decompilation_results else 'Not executed',
+            'decompilation_status': 'Completed' if (self.report_data.decompilation_results or self.report_data.decompilation_evidence) else 'Not executed',
             'symbolic_execution_status': 'Completed' if self.report_data.symbolic_execution_results else 'Not executed',
             'crash_analysis_status': 'Completed' if self.report_data.crash_analysis_results else 'Not executed',
             'exploit_generation_status': 'Completed' if self.report_data.exploit_generation_results else 'Not executed',
@@ -894,11 +1364,11 @@ Direct, rigorous.
 
     def _simulate_llm_response_zh(self, section: ReportSection, params: Dict[str, str]) -> str:
         """Simulated Chinese LLM output."""
-        target = self.report_data.binary_info.get('binary_path', '未知')
+        target = self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or '未知'
         nx_state = '启用' if self.report_data.binary_info.get('checksec', {}).get('nx') else '关闭'
         pie_state = '启用' if self.report_data.binary_info.get('checksec', {}).get('pie') else '关闭'
         risk_level = '严重' if params['high_vuln_count'] > 0 else '中等'
-        exploitability = '可利用性较高' if self.report_data.exploit_generation_results.get('success') else '利用难度中等，需要进一步验证'
+        exploitability = self._inferred_exploitability_label()
         responses = {
             ReportSection.EXECUTIVE_SUMMARY: f"""
 ## 执行摘要
@@ -934,14 +1404,14 @@ Direct, rigorous.
 
 ### 危险导入函数
 
-若存在 strcpy、strcat、malloc、free 等危险函数，需要结合调用上下文确认是否存在缓冲区溢出、UAF 或内存破坏风险。
+以上危险导入函数只代表潜在攻击面，需要结合反编译调用点确认可达性、参数来源和边界检查情况。
 """,
             ReportSection.REVERSE_PROCESS: f"""
 ## 逆向分析过程
 
 ### 概览
 
-已处理 {len(self.report_data.decompilation_results)} 个函数。
+已处理 {params['decompilation_count']} 个函数。
 
 ### 函数分析
 
@@ -949,10 +1419,7 @@ Direct, rigorous.
 
 ### 代码结构
 
-通过反编译结果识别到的关键特征：
-- 可能存在不安全字符串或内存操作
-- 部分路径可能缺少输入长度校验
-- 需要继续跟踪关键数据流和控制流
+关键结构以函数分析中的反编译证据为准；未获取到伪代码时，不推断具体危险调用或缓冲区形态。
 
 ### 调用关系
 
@@ -968,9 +1435,7 @@ Direct, rigorous.
 ### 分类统计
 
 漏洞类型分布：
-- 缓冲区溢出: {sum(1 for v in self.report_data.vulnerability_list if 'buffer' in v.get('type', '').lower())}
-- 格式化字符串: {sum(1 for v in self.report_data.vulnerability_list if 'format' in v.get('type', '').lower())}
-- 内存破坏: {sum(1 for v in self.report_data.vulnerability_list if 'memory' in v.get('type', '').lower())}
+{params['vulnerability_type_summary']}
 
 ### 影响摘要
 
@@ -1022,24 +1487,7 @@ Direct, rigorous.
             ReportSection.REMEDIATION_RECOMMENDATIONS: f"""
 ## 修复建议
 
-### 按漏洞修复
-
-1. **缓冲区溢出**: 使用有边界检查的函数替代 strcpy、strcat 等危险函数，并增加输入长度校验。
-
-2. **格式化字符串**: 禁止用户输入直接作为格式字符串，统一使用固定格式模板。
-
-3. **内存管理**: free 后立即清空指针，明确对象所有权，避免重复释放和悬垂指针。
-
-### 代码修复参考
-
-```c
-// 修复前
-strcpy(dest, src);
-
-// 修复后
-strncpy(dest, src, sizeof(dest) - 1);
-dest[sizeof(dest) - 1] = '\0';
-```
+{params['remediation_guidance']}
 
 ### 加固措施
 
@@ -1087,7 +1535,7 @@ dest[sizeof(dest) - 1] = '\0';
             ReportSection.EXECUTIVE_SUMMARY: f"""
 ## Executive Summary
 
-Comprehensive reverse engineering analysis of binary `{self.report_data.binary_info.get('binary_path', 'unknown')}`.
+Comprehensive reverse engineering analysis of binary `{self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or 'unknown'}`.
 
 ### Key Findings
 
@@ -1118,14 +1566,14 @@ Format: {self.report_data.binary_info.get('format', 'unknown')}; Architecture: {
 
 ### Dangerous Functions
 
-Imported dangerous functions include string operations (strcpy, strcat) and memory management (malloc, free). Misuse may lead to buffer overflows and memory corruption.
+Imported dangerous functions indicate potential attack surface only; reachability, argument sources, and boundary checks must be confirmed at decompiled call sites.
 """,
             ReportSection.REVERSE_PROCESS: f"""
 ## Reverse Engineering Process
 
 ### Overview
 
-{len(self.report_data.decompilation_results)} functions processed.
+{params['decompilation_count']} functions processed.
 
 ### Function Analysis
 
@@ -1133,10 +1581,7 @@ Imported dangerous functions include string operations (strcpy, strcat) and memo
 
 ### Code Structure
 
-Key characteristics identified via decompilation:
-- Multiple unsafe string function calls
-- Probable buffer overflow points
-- Missing input validation in select paths
+Key structure is based on the decompilation evidence above; when pseudocode is unavailable, no specific dangerous call or buffer layout is inferred.
 
 ### Call Relationships
 
@@ -1152,9 +1597,7 @@ Function call relationships mapped; critical control flow and data flow patterns
 ### Classification
 
 Vulnerability type distribution:
-- Buffer Overflow: {sum(1 for v in self.report_data.vulnerability_list if 'buffer' in v.get('type', '').lower())}
-- Format String: {sum(1 for v in self.report_data.vulnerability_list if 'format' in v.get('type', '').lower())}
-- Memory Vulnerabilities: {sum(1 for v in self.report_data.vulnerability_list if 'memory' in v.get('type', '').lower())}
+{params['vulnerability_type_summary']}
 
 ### Impact Summary
 
@@ -1177,7 +1620,7 @@ Each vulnerability assessed for exploitability, attack scenarios, and affected s
 
 ### Exploitability Assessment
 
-{'High exploitability potential' if self.report_data.exploit_generation_results.get('success') else 'Moderate exploit difficulty'}. Further exploit development and validation testing recommended.
+{self._inferred_exploitability_label()}. Further exploit development and validation testing recommended.
 """,
             ReportSection.IMPACT_ASSESSMENT: f"""
 ## Impact Assessment
@@ -1206,24 +1649,7 @@ Immediate remediation strongly recommended.
             ReportSection.REMEDIATION_RECOMMENDATIONS: f"""
 ## Remediation Recommendations
 
-### Vulnerability Fixes
-
-1. **Buffer Overflow**: Replace unsafe functions (strcpy, strcat) with bounded variants (strncpy, snprintf). Add boundary checks.
-
-2. **Format String**: Eliminate user-controlled format strings. Use parameterised formatting exclusively.
-
-3. **Memory Management**: Zero pointers after free. Adopt a consistent ownership model.
-
-### Code Fix Examples
-
-```c
-// Before
-strcpy(dest, src);
-
-// After
-strncpy(dest, src, sizeof(dest) - 1);
-dest[sizeof(dest) - 1] = '\\0';
-```
+{params['remediation_guidance']}
 
 ### Security Hardening
 
@@ -1303,7 +1729,8 @@ Threat indicators should be ingested into security monitoring for continuous sur
         report_parts.append(f"# {'二进制逆向工程报告' if lang == 'zh' else 'Binary Reverse Engineering Report'}")
         report_parts.append("")
         report_parts.append(f"{'生成时间' if lang == 'zh' else 'Generated on'}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        report_parts.append(f"{'目标文件' if lang == 'zh' else 'Target File'}: {self.report_data.binary_info.get('binary_path', 'N/A')}")
+        target_path = self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or 'N/A'
+        report_parts.append(f"{'目标文件' if lang == 'zh' else 'Target File'}: {target_path}")
         report_parts.append("")
         report_parts.append("---")
         report_parts.append("")
@@ -1339,7 +1766,7 @@ Threat indicators should be ingested into security monitoring for continuous sur
         if not filename:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             base_name = os.path.splitext(os.path.basename(
-                self.report_data.binary_info.get('binary_path', 'unknown')
+                (self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path') or 'unknown')
             ))[0]
             filename = f"reverse_report_{base_name}_{timestamp}.md"
 
@@ -1362,7 +1789,7 @@ Threat indicators should be ingested into security monitoring for continuous sur
             'metadata': {
                 'generated_at': datetime.now().isoformat(),
                 'language': self.config.language,
-                'binary_path': self.report_data.binary_info.get('binary_path')
+                'binary_path': self.report_data.binary_info.get('binary_path') or self.report_data.binary_info.get('path')
             },
             'binary_info': self.report_data.binary_info,
             'vulnerability_summary': {

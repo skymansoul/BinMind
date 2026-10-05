@@ -141,9 +141,9 @@ class Config:
     OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://localhost:11434/v1')
 
     # AI 凭据优先从环境变量注入, 亦可直接填写于此; 空值时降级为启发式模式
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+    OPENAI_API_KEY = os.environ.get('API_KEY') or os.environ.get('OPENAI_API_KEY', '')
     OPENAI_MODEL = 'gpt-4'
-    OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL') or None
+    OPENAI_BASE_URL = os.environ.get('BASE_URL') or os.environ.get('OPENAI_BASE_URL') or None
     # 本地 DeepSeek 代理端口，Cloudflare Tunnel 转发的目标
     # OPENAI_BASE_URL = 'http://localhost:8800/v1'
     OPENAI_ORGANIZATION = None
@@ -162,9 +162,9 @@ class Config:
     LLAMACPP_HOST = 'http://localhost:8080'
 
     # 自定义 OpenAI 兼容 API
-    CUSTOM_API_KEY = ''
-    CUSTOM_BASE_URL = ''
-    CUSTOM_MODEL = ''
+    CUSTOM_API_KEY = os.environ.get('API_KEY') or os.environ.get('CUSTOM_API_KEY', '')
+    CUSTOM_BASE_URL = os.environ.get('BASE_URL') or os.environ.get('CUSTOM_BASE_URL', '')
+    CUSTOM_MODEL = os.environ.get('AI_MODEL', '')
 
     # 外部威胁情报 API
     VULDB_API_KEY = os.environ.get('VULDB_API_KEY', '')
@@ -368,12 +368,12 @@ def _create_custom_client():
 def _create_deepseek_client():
     from openai import OpenAI
 
-    api_key = os.environ.get('CUSTOM_API_KEY', '') or os.environ.get('OPENAI_API_KEY', '')
+    api_key = os.environ.get('API_KEY', '') or os.environ.get('CUSTOM_API_KEY', '') or os.environ.get('OPENAI_API_KEY', '')
     if not api_key:
-        logger.warning("DeepSeek 模式需要 CUSTOM_API_KEY 或 OPENAI_API_KEY")
+        logger.warning("DeepSeek 模式需要 API_KEY、CUSTOM_API_KEY 或 OPENAI_API_KEY")
         return None
 
-    base_url = os.environ.get('CUSTOM_BASE_URL', '') or Config.CUSTOM_BASE_URL or 'https://api.deepseek.com/v1'
+    base_url = os.environ.get('BASE_URL', '') or os.environ.get('CUSTOM_BASE_URL', '') or Config.CUSTOM_BASE_URL or 'https://api.deepseek.com/v1'
 
     client = OpenAI(api_key=api_key, base_url=base_url)
     masked_key = mask_api_key(api_key)
@@ -593,7 +593,7 @@ _default_llm_endpoints = _json.dumps({
 LLM_ENDPOINTS = _json.loads(os.environ.get('LLM_ENDPOINTS', _default_llm_endpoints))
 
 # API 密钥 — 敏感信息，仅允许通过环境变量注入
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+OPENAI_API_KEY = os.environ.get('API_KEY') or os.environ.get('OPENAI_API_KEY', '')
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 # 功能开关 — 环境变量控制，默认关闭重型分析

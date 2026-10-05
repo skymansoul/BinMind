@@ -1,4 +1,4 @@
-# 多提供商集成投票 - 汇总OpenAI/Ollama/本地启发式判定.
+﻿# 多提供商集成投票 - 汇总OpenAI/Ollama/本地启发式判定.
 # 提供商置信度离散度 (CV) 纳入最终置信度调节, 分歧越大置信度越低。
 # 跨模态对比置信度校准（CLAP范式）- 将异源provider视为不同模态，利用 pairwise 一致性矩阵反推信息冗余度，惩罚高度相关provider间的一致性虚高。
 # EMA时间衰减精度追踪 - 替换简单滑动平均，增强对模型概念漂移的响应速度。
@@ -79,7 +79,7 @@ class BaseProvider:
 class OpenAIProvider(BaseProvider):
     def __init__(self, model="gpt-4o-mini", api_key=None, base_url=None, weight=1.0):
         super().__init__("openai", model, weight)
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY"); self.base_url = base_url
+        self.api_key = api_key or os.environ.get("API_KEY") or os.environ.get("OPENAI_API_KEY"); self.base_url = base_url or os.environ.get("BASE_URL") or os.environ.get("OPENAI_BASE_URL")
     def analyze(self, code, context):
         if code is None: code = ""
         if context is None: context = {}
@@ -332,6 +332,6 @@ class AIEnsembleVoter:
 
 def build_default_ensemble(openai_model=None, ollama_model=None):
     providers = [LocalHeuristicProvider(weight=0.3)]
-    if openai_model and os.environ.get("OPENAI_API_KEY"): providers.append(OpenAIProvider(model=openai_model, weight=1.0))
+    if openai_model and (os.environ.get("API_KEY") or os.environ.get("OPENAI_API_KEY")): providers.append(OpenAIProvider(model=openai_model, weight=1.0))
     if ollama_model: providers.append(OllamaProvider(model=ollama_model, weight=0.8))
     return AIEnsembleVoter(providers=providers, strategy=VoteStrategy.WEIGHTED_SOFT)

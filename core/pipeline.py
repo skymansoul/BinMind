@@ -340,6 +340,7 @@ def run_pipeline(
                     _llm_reachable = False
             elif _ai_provider in ('openai', 'custom', 'deepseek'):
                 _llm_reachable = bool(
+                    os.environ.get('API_KEY') or
                     os.environ.get('OPENAI_API_KEY') or
                     os.environ.get('CUSTOM_API_KEY'))
             binfo['llm_reachable'] = _llm_reachable
