@@ -77,8 +77,67 @@ def _r2_imports(path: str) -> Dict:
     }
 
 
+def _parse_r2_addr(value) -> int:
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return 0
+        try:
+            return int(value, 16) if value.startswith('0x') else int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
+def _clean_symbol_name(name: str) -> str:
+    name = str(name or '').strip()
+    for prefix in ('sym.', 'loc.', 'fcn.', 'sub.', 'reloc.', 'obj.'):
+        if name.startswith(prefix):
+            name = name[len(prefix):]
+    if '@@' in name:
+        name = name.split('@@', 1)[0]
+    if '@' in name:
+        name = name.split('@', 1)[0]
+    return name
+
+
+def _r2_symbols(path: str) -> Dict:
+    """通过 radare2 isj 提取符号表，供 EXP 生成定位 ret2win/backdoor/main 等地址。"""
+    try:
+        result = subprocess.run(
+            ['r2', '-q', '-e', 'io.color=false', '-c', 'isj', path],
+            capture_output=True, text=True, timeout=30
+        )
+        rows = json.loads(result.stdout or '[]')
+    except Exception:
+        rows = []
+
+    symbols = {}
+    details = []
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        raw_name = row.get('name') or row.get('realname') or row.get('flagname') or ''
+        name = _clean_symbol_name(raw_name)
+        if not name or name.startswith('_') and name not in ('_start',):
+            continue
+        addr = _parse_r2_addr(row.get('vaddr') or row.get('paddr') or row.get('addr'))
+        if not addr:
+            continue
+        symbols.setdefault(name, addr)
+        details.append({
+            'name': name,
+            'address': addr,
+            'type': row.get('type') or row.get('bind') or '',
+            'size': row.get('size') or 0,
+        })
+    return {'symbols': symbols, 'symbol_details': details}
+
+
 def get_binary_info(path: str) -> Dict:
-    """提取核心元数据: 架构、位宽、段、导入、字符串。"""
+    """提取核心元数据: 架构、位宽、段、导入、字符串、保护机制和关键符号。"""
     global _last_path, _last_info
 
     path = os.path.abspath(path)
@@ -120,6 +179,22 @@ def get_binary_info(path: str) -> Dict:
         info['arch'] = r2['arch']
     if 'bintype' in r2:
         info['bintype'] = r2['bintype']
+
+    try:
+        from core.checksec_api import detect_checksec
+        info['checksec'] = detect_checksec(path)
+    except Exception:
+        info['checksec'] = {}
+
+    try:
+        from core.plt_scanner import scan_plt
+        info['plt'] = scan_plt(path)
+    except Exception:
+        info['plt'] = []
+
+    sym_info = _r2_symbols(path)
+    info['symbols'] = sym_info['symbols']
+    info['symbol_details'] = sym_info['symbol_details']
 
     _last_path = path
     _last_info = info

@@ -1343,15 +1343,27 @@ if __name__ == "__main__":
             _step_end(_sid, 'failed', error_message=str(err))
             raise
 
-    # 自动 exploit 生成 — 检测到高危漏洞时即使无 crash 数据也生成利用脚本草稿
-    # 申报书"漏洞检测→利用生成"闭环不依赖外部 --crash 参数
+    # 自动 exploit 生成 — 高危漏洞或可利用中危线索均生成利用脚本草稿
+    # 典型 ret2libc 题常只命中 Medium: read(buffer-overflow)+puts(info-leak)
     if not exploit_result and all_vulns:
-        _high_vulns = [v for v in all_vulns
-                       if v.get('severity') in ('High', 'Critical')]
-        if _high_vulns:
+        def _exploit_candidate_score(v):
+            text = ' '.join(str(v.get(k, '')) for k in ('type', 'description', 'function', 'evidence')).lower()
+            sev = v.get('severity')
+            score = 0
+            if sev in ('High', 'Critical'):
+                score += 100
+            if any(k in text for k in ('buffer-overflow', 'stack-overflow', 'overflow', 'read', 'gets', 'scanf', 'strcpy')):
+                score += 80
+            if any(k in text for k in ('info-leak', 'puts', 'printf', 'leak')):
+                score += 40
+            return score
+
+        _exploit_vulns = [v for v in all_vulns if _exploit_candidate_score(v) > 0]
+        _exploit_vulns.sort(key=_exploit_candidate_score, reverse=True)
+        if _exploit_vulns:
             _sid_auto_exploit = _step_begin(run_id, 'auto_exploit_gen')
             try:
-                _top_vuln = _high_vulns[0]
+                _top_vuln = _exploit_vulns[0]
                 _auto_crash = {
                     'crash_type': _top_vuln.get('type', 'stack-buffer-overflow'),
                     'severity': _top_vuln.get('severity', 'High'),
@@ -1363,7 +1375,7 @@ if __name__ == "__main__":
                     binfo, _auto_crash, output_dir=EXPLOITS_DIR)
                 _step_end(_sid_auto_exploit, 'success',
                           output_summary=f'auto-generated for {_top_vuln.get("type", "?")}')
-                logger.info("Auto exploit generated for high-severity finding: %s",
+                logger.info("Auto exploit generated for exploitable finding: %s",
                             _top_vuln.get('type', '?'))
             except Exception as _ae:
                 _step_end(_sid_auto_exploit, 'failed', error_message=str(_ae))
