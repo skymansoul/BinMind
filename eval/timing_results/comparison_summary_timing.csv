@@ -1,0 +1,2 @@
+tool,samples,valid_samples,detection_rate,avg_time_sec,median_time_sec,p95_time_sec,avg_pipeline_sec
+BinMind,32,40,,49.78,58.327,61.992,49.295

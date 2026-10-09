@@ -38,6 +38,69 @@ def _run_radare2(binary_path: str, commands: List[str], timeout: int = 300) -> s
         return ''
 
 
+# ---- r2 分析级别与调用图缓存 ----
+# 原实现按"每个函数各起一个 radare2 进程"反编译, 且调用图按目标函数逐个
+# 取回, 每个进程都从零跑一次全量分析(aaa)。N 个目标函数会产生约 3N+2 次
+# 全量分析, 端到端耗时主要由这里决定。本节把分析级别做成可配置, 并让
+# 调用图取回只做一次、供多个函数复用。
+
+_BATCH_MARK = 'BINMIND-PDC:'
+_BATCH_ASM_MARK = 'BINMIND-ASM:'
+_BATCH_LINE_RE = re.compile(r'^BINMIND-(PDC|ASM):(.*)$')
+
+_CALL_GRAPH_CACHE = {}
+_CALL_GRAPH_CACHE_LIMIT = 4
+
+# 伪代码进程内缓存: 主流水线已经反编译过的函数, 其它检测器(format_string_
+# detector / rule_engine / stack_overflow_* 等)还会各自再调一次
+# decompile_function 重新反编译。缓存后这些调用不再启动 radare2, 每次省下
+# 一整次全量分析(aaa)。键含 decompiler, 避免不同后端结果互相覆盖。
+_DECOMP_CACHE = {}
+_DECOMP_CACHE_LIMIT = 256
+
+
+def clear_decompile_cache() -> None:
+    """清空伪代码与调用图缓存(换样本批处理时调用, 避免内存累积)。"""
+    _DECOMP_CACHE.clear()
+    _CALL_GRAPH_CACHE.clear()
+
+
+def _decomp_cache_key(binary_path, func_name, decompiler):
+    return (binary_path, func_name, decompiler or DEFAULT_DECOMPILER)
+
+
+def _decomp_cache_put(key, result) -> None:
+    if len(_DECOMP_CACHE) >= _DECOMP_CACHE_LIMIT:
+        _DECOMP_CACHE.pop(next(iter(_DECOMP_CACHE)))
+    _DECOMP_CACHE[key] = dict(result)
+
+
+def _r2_analysis_level() -> str:
+    """radare2 分析级别。
+
+    默认 'aaa'(全量, 与历史结果口径一致)。设为 'aa' 可显著提速, 代价是
+    间接调用与引用恢复变少, 属于精度与速度的显式取舍, 需先用评测脚本
+    A/B 对比后再改。
+    """
+    return (os.environ.get('BINMIND_R2_ANALYSIS_LEVEL') or 'aaa').strip() or 'aaa'
+
+
+def _fetch_call_graph_raw(binary_path: str, timeout: int = 60) -> str:
+    """取回并缓存 r2 全局调用图(agCj)的原始输出。
+
+    调用图与"要问哪个函数"无关, 一次分析取回一次即可复用于多个函数。
+    """
+    cached = _CALL_GRAPH_CACHE.get(binary_path)
+    if cached is not None:
+        return cached
+    raw = _run_radare2(binary_path, [_r2_analysis_level(), 'agCj'],
+                       timeout=timeout)
+    if len(_CALL_GRAPH_CACHE) >= _CALL_GRAPH_CACHE_LIMIT:
+        _CALL_GRAPH_CACHE.pop(next(iter(_CALL_GRAPH_CACHE)))
+    _CALL_GRAPH_CACHE[binary_path] = raw
+    return raw
+
+
 def list_function_infos(binary_path: str) -> List[Dict]:
     """返回 r2 发现的函数元数据: {name, address, size}."""
     raw = _run_radare2(binary_path, ['aa', 'afl'], timeout=60)
@@ -269,7 +332,7 @@ def get_callees(binary_path: str, func_name: str,
     扩展 target_funcs, 覆盖漏洞代码在 main 调用的子函数中的场景。
     过滤 CRT/标准库函数, 仅保留可能的用户函数。
     """
-    raw = _run_radare2(binary_path, ['aaa', 'agCj'], timeout=60)
+    raw = _fetch_call_graph_raw(binary_path, timeout=60)
     if not raw.strip():
         return []
     func_set = set(all_funcs) if all_funcs else None
@@ -316,9 +379,110 @@ def get_callees(binary_path: str, func_name: str,
     return callees
 
 
+def get_callees_map(binary_path: str, func_names,
+                    all_funcs: List[str] = None) -> Dict[str, List[str]]:
+    """一次取回调用图, 为多个函数同时计算被调用者。
+
+    与逐个调用 get_callees 结果一致: 调用图已缓存, 这里的多次调用不会
+    再启动 radare2, 只重复内存解析。
+    """
+    return {name: get_callees(binary_path, name, all_funcs)
+            for name in (func_names or [])}
+
+
+def decompile_functions_batch(binary_path: str, func_names,
+                              decompiler: str = 'auto',
+                              include_asm: bool = False,
+                              timeout: int = 180) -> Dict[str, Dict]:
+    """在一次 radare2 进程内反编译多个函数。
+
+    返回 {func_name: {'pseudocode': str, 'raw_asm': str}}。只收录解析出
+    非空伪代码的函数; 其余不出现, 调用方应回退到 decompile_function。
+
+    include_asm=False 时不取 pdf 反汇编: 主流水线的规则检测与 AI 研判
+    只消费伪代码, 取反汇编等于把反编译开销再翻一倍。
+
+    已知边界: 若某函数名在 r2 中 seek 失败, pdc 会停留在上一个函数的
+    位置并输出与上一段逐字相同的文本; 这类重复段按不可信处理并丢弃,
+    由调用方回退单函数路径复核。
+    """
+    out: Dict[str, Dict] = {}
+    names = [n for n in (func_names or []) if n]
+    if decompiler not in ('auto', 'r2') or not names:
+        return out
+
+    cmds = [_r2_analysis_level()]
+    for name in names:
+        cmds.append('s %s' % name)
+        cmds.append('?e %s%s' % (_BATCH_MARK, name))
+        cmds.append('pdc')
+        if include_asm:
+            cmds.append('?e %s%s' % (_BATCH_ASM_MARK, name))
+            cmds.append('pdf')
+
+    raw = _run_radare2(binary_path, cmds, timeout=timeout)
+    if not raw.strip():
+        logger.warning("batch decompile produced no output")
+        return out
+
+    sections = {}
+    key = None
+    buf = []
+    for line in raw.splitlines():
+        m = _BATCH_LINE_RE.match(line.strip())
+        if m:
+            if key is not None:
+                sections[key] = '\n'.join(buf)
+            key = (m.group(1), m.group(2).strip())
+            buf = []
+        elif key is not None:
+            buf.append(line)
+    if key is not None:
+        sections[key] = '\n'.join(buf)
+
+    prev = None
+    for name in names:
+        pseudo = sections.get(('PDC', name), '')
+        if not pseudo.strip():
+            continue
+        norm = _normalize_msvc_calls(strip_ansi(pseudo))
+        if norm and norm == prev:
+            logger.debug("batch pdc duplicate section for %s, skipped", name)
+            prev = norm
+            continue
+        prev = norm
+        out[name] = {
+            'pseudocode': norm,
+            'raw_asm': strip_ansi(sections.get(('ASM', name), '')),
+        }
+        # 回填进程内缓存: 批量路径的结果对后续 decompile_function 调用可见,
+        # 使检测器不再各自重新反编译。
+        _decomp_cache_put(
+            _decomp_cache_key(binary_path, name, decompiler), out[name])
+    return out
+
+
 def decompile_function(binary_path: str, func_name: str,
                        decompiler: str = None) -> Dict:
-    """反编译单个函数, 返回 {name, pseudocode, raw_asm}。
+    """反编译单个函数(带进程内缓存), 返回 {name, pseudocode, raw_asm}。
+
+    同一 (目标, 函数, 后端) 在本进程内只真正反编译一次。主流水线已批量
+    反编译过的函数, 后续检测器再问时直接命中缓存, 不再启动 radare2 ——
+    这是消除"多检测器各自重复反编译"的关键。
+    """
+    key = _decomp_cache_key(binary_path, func_name, decompiler)
+    cached = _DECOMP_CACHE.get(key)
+    if cached is not None:
+        logger.debug("decompile cache hit: %s", func_name)
+        return dict(cached)
+    result = _decompile_function_uncached(binary_path, func_name, decompiler)
+    _decomp_cache_put(key, result)
+    return result
+
+
+def _decompile_function_uncached(binary_path: str, func_name: str,
+                                 decompiler: str = None) -> Dict:
+    """真正执行反编译的路径(无缓存), 由 decompile_function 调用。
 
     decompiler='auto' 时先试 r2, 失败回退 Ghidra。
     """

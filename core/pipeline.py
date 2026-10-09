@@ -17,6 +17,7 @@ from config import (
 )
 from core.binary_info import get_binary_info, validate_binary
 from core.decompiler import list_functions, decompile_function, ai_analyze_function, get_callees
+from core.decompiler import decompile_functions_batch, get_callees_map
 from core.symexec import run_symbolic, check_angr, find_buffer_overflow
 from core.crash_analysis import load_crash_file, analyze_crash_for_exploit
 from core.exploit_gen import generate_exploit
@@ -77,6 +78,18 @@ def _run_with_timeout(func, timeout, *args, **kwargs):
 _POC_PAYLOAD_VARIANTS = [
     b'A' * 500, b'A' * 1000, b'%p ' * 300, b'%x ' * 200, b'\x00' * 256,
 ]
+
+
+def _interactive_terminal() -> bool:
+    """当前是否处于可等待人工输入的交互式终端。
+
+    供人工复核门控判断"是否值得等"。批处理、CI 与基准脚本下为 False。
+    """
+    try:
+        return bool(sys.stdin and sys.stdin.isatty()
+                    and sys.stdout and sys.stdout.isatty())
+    except Exception:
+        return False
 
 
 def _reconfirm_with_engines(function_name: str, pseudocode: str):
@@ -402,8 +415,13 @@ def run_pipeline(
     # 覆盖漏洞代码在 main 调用的子函数中的场景(如 multi_buffers, do_work)
     if target_funcs and len(target_funcs) < max_funcs:
         existing = set(target_funcs)
+        # 调用图是全局的: 取回一次后为全部目标函数同时求解被调用者。
+        # 原实现每个函数各跑一次 aaa; agCj, N 个函数多出 N 次全量分析。
+        _callee_map = _run_with_timeout(
+            get_callees_map, 90, binary_path, list(target_funcs),
+            all_funcs) or {}
         for tf in list(target_funcs):
-            callees = _run_with_timeout(get_callees, 60, binary_path, tf, all_funcs)
+            callees = _callee_map.get(tf) or []
             if callees:
                 for c in callees:
                     if c not in existing and c in all_funcs:
@@ -424,9 +442,33 @@ def run_pipeline(
     _sid_decomp = _step_begin(run_id, 'decompile',
                               input_summary=f"{len(target_funcs)} funcs")
 
+    # 批量反编译: 一次 r2 进程内完成全部目标函数的 pdc, 全量分析只跑一遍。
+    # 该路径只产出伪代码(流水线不消费反汇编文本), 因此不再单独调用 pdf。
+    # 关闭开关或批量失败时逐函数回退原路径, 不改变结果语义。
+    _batch_pseudo = {}
+    if target_funcs and _is_enabled('ENABLE_R2_BATCH', default='true'):
+        # 批量路径把 N 个函数放进同一次 r2 调用, 病态函数(pdc 挂死)会拖满
+        # 整个窗口而不是只消耗自己那份 30s。预算按函数数给, 并用环境变量
+        # 兜住上限, 避免单个样本吃掉十分钟。
+        try:
+            _batch_budget = int(os.environ.get('BINMIND_BATCH_TIMEOUT', '120'))
+        except ValueError:
+            _batch_budget = 120
+        _batch_budget = min(300, max(60, _batch_budget))
+        _batch_pseudo = _run_with_timeout(
+            decompile_functions_batch, _batch_budget, binary_path,
+            list(target_funcs), decompiler) or {}
+        logger.info("Batch decompile: %d/%d functions in one r2 pass",
+                    len(_batch_pseudo), len(target_funcs))
+
     def _analyze_one(func_name):
-        r = _run_with_timeout(decompile_function, 30,
-                              binary_path, func_name, decompiler)
+        _batched = _batch_pseudo.get(func_name)
+        if _batched is not None:
+            r = dict(_batched)
+            r.setdefault('name', func_name)
+        else:
+            r = _run_with_timeout(decompile_function, 30,
+                                  binary_path, func_name, decompiler)
         if r is None:
             logger.warning("decompile timed out (30s), skipping %s", func_name)
             return {'function': func_name, 'vulnerabilities': [],
@@ -1387,12 +1429,22 @@ if __name__ == "__main__":
                 _fb_sandbox = 'dry-run'
                 if _is_enabled('ENABLE_FEEDBACK_LOOP_EXEC'):
                     _fb_sandbox = 'subprocess'
+                # 人工复核门控是"等人编辑门控文件"的同步等待: 交互式终端下
+                # 保留原等待窗口; 批处理/CI/基准环境没有人在看, 原实现仍固定
+                # 等满 30s 再自动跳过, 实测使每次分析白付 30.0-31.0s。
+                # 非交互时窗口设为 0, 直接走 skip 分支, 闭环语义不变。
+                try:
+                    _default_gate = '30' if _interactive_terminal() else '0'
+                    _gate_timeout = float(os.environ.get(
+                        'BINMIND_REVIEW_GATE_TIMEOUT', _default_gate))
+                except ValueError:
+                    _gate_timeout = 0.0
                 feedback_result = run_feedback_loop(
                     binary_path, _initial_script, binfo=binfo,
                     output_dir=_fb_output_dir,
                     max_iterations=3,
                     sandbox=_fb_sandbox,
-                    gate_timeout=30.0,
+                    gate_timeout=_gate_timeout,
                 )
                 _fb_status = 'succeeded' if feedback_result.get('success') else 'exhausted'
                 _step_end(_sid_fb, 'success',

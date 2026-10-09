@@ -1,0 +1,297 @@
+{
+  "caliber": "end-to-end per binary: process start -> analyze writes report and exits; includes interpreter startup, module import, parsing, decompilation, detection, reporting",
+  "environment": {
+    "generated_at": "2026-10-09T23:33:19",
+    "timezone": "CST",
+    "host": "LAPTOP-D6DJO5LA",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python": "3.14.7",
+    "cpu_count": 22,
+    "command": "eval/end_to_end_timing.py --samples samples/cve_unified/named_cve",
+    "cwd": "/mnt/f/app/BinMind/BinMind",
+    "parameters": {
+      "decompiler": "auto",
+      "ai": false,
+      "parallel": false,
+      "max_funcs": 20,
+      "repeats": 1,
+      "warmup": 0,
+      "timeout": 600
+    },
+    "tools": {
+      "radare2": "radare2 6.0.5 0 @ linux-x86-64",
+      "R2_PATH_env": "(unset)",
+      "r2_effective": "unset (falls back to 'radare2')",
+      "ghidra": "unavailable"
+    },
+    "git_commit": "b0dce9dfcc82b9392ae76d38522f25b1a19e4775"
+  },
+  "counts": {
+    "samples_collected": 32,
+    "runs_total": 44,
+    "runs_counted": 40,
+    "invalid_runs": 4,
+    "invalid_by_status": {
+      "timeout": 4
+    }
+  },
+  "wall_sec": {
+    "n": 40,
+    "mean": 49.78,
+    "median": 58.327,
+    "min": 29.241,
+    "max": 66.56,
+    "p95": 61.992
+  },
+  "pipeline_sec": {
+    "n": 40,
+    "mean": 49.295,
+    "median": 57.9,
+    "min": 28.8,
+    "max": 66.1,
+    "p95": 61.5
+  },
+  "detection_rate": null,
+  "per_sample_wall_sec": {
+    "2015_0235_ghost.exe": {
+      "n": 1,
+      "mean": 62.324,
+      "median": 62.324,
+      "min": 62.324,
+      "max": 62.324,
+      "p95": 62.324
+    },
+    "2016_10165_lcms.exe": {
+      "n": 1,
+      "mean": 58.328,
+      "median": 58.328,
+      "min": 58.328,
+      "max": 58.328,
+      "p95": 58.328
+    },
+    "2017_18017_netfilter.exe": {
+      "n": 1,
+      "mean": 59.693,
+      "median": 59.693,
+      "min": 59.693,
+      "max": 59.693,
+      "p95": 59.693
+    },
+    "2017_9431_grpc.exe": {
+      "n": 1,
+      "mean": 61.166,
+      "median": 61.166,
+      "min": 61.166,
+      "max": 61.166,
+      "p95": 61.166
+    },
+    "2018_1000001_realpath.exe": {
+      "n": 1,
+      "mean": 56.744,
+      "median": 56.744,
+      "min": 56.744,
+      "max": 56.744,
+      "p95": 56.744
+    },
+    "2019_13143_minixml.exe": {
+      "n": 1,
+      "mean": 59.406,
+      "median": 59.406,
+      "min": 59.406,
+      "max": 59.406,
+      "p95": 59.406
+    },
+    "2020_14386_afpacket.exe": {
+      "n": 1,
+      "mean": 61.051,
+      "median": 61.051,
+      "min": 61.051,
+      "max": 61.051,
+      "p95": 61.051
+    },
+    "2020_28030_wireshark.exe": {
+      "n": 1,
+      "mean": 60.561,
+      "median": 60.561,
+      "min": 60.561,
+      "max": 60.561,
+      "p95": 60.561
+    },
+    "2021_3609_canbcm.exe": {
+      "n": 1,
+      "mean": 59.703,
+      "median": 59.703,
+      "min": 59.703,
+      "max": 59.703,
+      "p95": 59.703
+    },
+    "2021_44733_uaf.exe": {
+      "n": 1,
+      "mean": 61.093,
+      "median": 61.093,
+      "min": 61.093,
+      "max": 61.093,
+      "p95": 61.093
+    },
+    "2022_0185_fscontext.exe": {
+      "n": 1,
+      "mean": 58.326,
+      "median": 58.326,
+      "min": 58.326,
+      "max": 58.326,
+      "p95": 58.326
+    },
+    "2022_1015_netfilter.exe": {
+      "n": 1,
+      "mean": 66.56,
+      "median": 66.56,
+      "min": 66.56,
+      "max": 66.56,
+      "p95": 66.56
+    },
+    "2022_25636_netfilter.exe": {
+      "n": 1,
+      "mean": 58.787,
+      "median": 58.787,
+      "min": 58.787,
+      "max": 58.787,
+      "p95": 58.787
+    },
+    "2024_21849_snapdragon.exe": {
+      "n": 1,
+      "mean": 61.992,
+      "median": 61.992,
+      "min": 61.992,
+      "max": 61.992,
+      "p95": 61.992
+    },
+    "CVE-2014-0160_heartbleed.exe": {
+      "n": 1,
+      "mean": 60.178,
+      "median": 60.178,
+      "min": 60.178,
+      "max": 60.178,
+      "p95": 60.178
+    },
+    "CVE-2021-3156_sudo_heap.exe": {
+      "n": 1,
+      "mean": 30.894,
+      "median": 30.894,
+      "min": 30.894,
+      "max": 30.894,
+      "p95": 30.894
+    },
+    "CVE-2022-23222_bpf_heap.exe": {
+      "n": 1,
+      "mean": 33.925,
+      "median": 33.925,
+      "min": 33.925,
+      "max": 33.925,
+      "p95": 33.925
+    },
+    "CVE-2023-3269_heap.exe": {
+      "n": 1,
+      "mean": 55.304,
+      "median": 55.304,
+      "min": 55.304,
+      "max": 55.304,
+      "p95": 55.304
+    },
+    "CVE-2024-21762_fortios.exe": {
+      "n": 1,
+      "mean": 61.308,
+      "median": 61.308,
+      "min": 61.308,
+      "max": 61.308,
+      "p95": 61.308
+    },
+    "cve_2015_3864_stagefright.exe": {
+      "n": 1,
+      "mean": 36.689,
+      "median": 36.689,
+      "min": 36.689,
+      "max": 36.689,
+      "p95": 36.689
+    },
+    "cve_2017_5638_struts.exe": {
+      "n": 1,
+      "mean": 60.019,
+      "median": 60.019,
+      "min": 60.019,
+      "max": 60.019,
+      "p95": 60.019
+    },
+    "cve_2018_1000001_glibc.exe": {
+      "n": 1,
+      "mean": 34.677,
+      "median": 34.677,
+      "min": 34.677,
+      "max": 34.677,
+      "p95": 34.677
+    },
+    "cve_2019_13139_docker.exe": {
+      "n": 1,
+      "mean": 34.862,
+      "median": 34.862,
+      "min": 34.862,
+      "max": 34.862,
+      "p95": 34.862
+    },
+    "cve_2020_0796_smbghost.exe": {
+      "n": 1,
+      "mean": 37.499,
+      "median": 37.499,
+      "min": 37.499,
+      "max": 37.499,
+      "p95": 37.499
+    },
+    "cve_2022_22620_webkit.exe": {
+      "n": 1,
+      "mean": 36.425,
+      "median": 36.425,
+      "min": 36.425,
+      "max": 36.425,
+      "p95": 36.425
+    },
+    "cve_2023_0669_gitlab.exe": {
+      "n": 1,
+      "mean": 34.386,
+      "median": 34.386,
+      "min": 34.386,
+      "max": 34.386,
+      "p95": 34.386
+    },
+    "lcms_overflow.exe": {
+      "n": 1,
+      "mean": 59.656,
+      "median": 59.656,
+      "min": 59.656,
+      "max": 59.656,
+      "p95": 59.656
+    },
+    "nf_overflow.exe": {
+      "n": 1,
+      "mean": 59.593,
+      "median": 59.593,
+      "min": 59.593,
+      "max": 59.593,
+      "p95": 59.593
+    },
+    "vuln.exe": {
+      "n": 7,
+      "mean": 38.698,
+      "median": 34.83,
+      "min": 33.866,
+      "max": 60.61,
+      "p95": 60.61
+    },
+    "vuln_elf.exe": {
+      "n": 5,
+      "mean": 47.834,
+      "median": 55.186,
+      "min": 29.241,
+      "max": 60.501,
+      "p95": 60.501
+    }
+  }
+}

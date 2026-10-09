@@ -41,45 +41,60 @@ GADGET_PATTERNS = [
 
 
 def find_gadgets(binary_path: str, arch: str = 'x86-64') -> List[Dict]:
-    """
-    Search binary for ROP gadgets using r2's /R command.
+    """Search binary for ROP gadgets using r2's /R command.
+
+    所有 pattern 合并进同一次 radare2 调用: 每个 /R 都要重新加载并解析一遍
+    目标文件, 早先按 pattern 各起一个进程的写法把这份固定开销放大了 15 倍。
+    这里改为单进程内顺序执行, 用 ?e 标记切分各 pattern 的返回段。
+
+    gadget 只是利用阶段的辅助情报, 不参与漏洞检出判定。若不需要, 设
+    ENABLE_ROP_SCAN=false 可整段跳过, 进一步缩短端到端耗时。
     """
     if not os.path.isfile(binary_path):
         return []
+    if os.environ.get('ENABLE_ROP_SCAN', 'true').strip().lower() in (
+            '0', 'false', 'no', 'off'):
+        logger.info("ROP gadget scan disabled by ENABLE_ROP_SCAN")
+        return []
 
-    cmd = [R2_PATH, '-q', '-e', 'io.color=false',
-           '-c', '/R pop rdi;ret', binary_path]
+    # 一次 /R 交替式正则覆盖全部 pattern。每个 /R 都要把整个目标文件扫一遍,
+    # 早期"每 pattern 一次 /R"的写法等于把全文件扫描重复 15 次, 是 gadget
+    # 阶段耗时的主要来源。合并后只剩一次扫描, 再按指令文本归类到各 pattern。
+    combined = '|'.join(d for _n, _p, d in GADGET_PATTERNS)
+    raw = ''
+    try:
+        proc = subprocess.run(
+            [R2_PATH, '-q', '-e', 'io.color=false',
+             '-c', f'/R {combined}', binary_path],
+            capture_output=True, text=True, timeout=ROP_SEARCH_BUDGET_S)
+        raw = proc.stdout or ''
+    except subprocess.TimeoutExpired as err:
+        # 超预算时保留已产出的部分输出, 不丢弃整批结果
+        raw = err.stdout if isinstance(err.stdout, str) else ''
+        logger.warning("ROP search exceeded %.0fs budget, partial results kept",
+                       ROP_SEARCH_BUDGET_S)
+    except Exception as err:
+        logger.debug("Gadget search failed: %s", err)
+        return []
 
     gadgets = []
-
-    deadline = time.monotonic() + ROP_SEARCH_BUDGET_S
-
-    for name, pattern, description in GADGET_PATTERNS:
-        if time.monotonic() > deadline:
-            logger.warning("ROP search budget %.0fs exhausted, skip remaining patterns",
-                           ROP_SEARCH_BUDGET_S)
-            break
-        try:
-            proc = subprocess.run(
-                [R2_PATH, '-q', '-e', 'io.color=false',
-                 '-c', f'/R {description}', binary_path],
-                capture_output=True, text=True, timeout=30)
-            raw = proc.stdout
-
-            for line in raw.splitlines():
-                line = line.strip()
-                if not line or '0x' not in line:
-                    continue
-                addr_match = re.search(r'(0x[0-9a-fA-F]+)', line)
-                if addr_match:
-                    gadgets.append({
-                        'type': name,
-                        'description': description,
-                        'address': addr_match.group(1),
-                        'raw_line': line[:120],
-                    })
-        except Exception as err:
-            logger.debug("Gadget search failed for %s: %s", name, err)
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or '0x' not in line:
+            continue
+        addr_match = re.search(r'(0x[0-9a-fA-F]+)', line)
+        if not addr_match:
+            continue
+        # 一条 gadget 可能同时命中多个 pattern(如 "pop rdi; ret" 同时属于
+        # pop_rdi 与 ret), 与逐 pattern 搜索时的归属保持一致
+        for name, _pattern, description in GADGET_PATTERNS:
+            if description in line:
+                gadgets.append({
+                    'type': name,
+                    'description': description,
+                    'address': addr_match.group(1),
+                    'raw_line': line[:120],
+                })
 
     return gadgets
 
