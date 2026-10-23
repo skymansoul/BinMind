@@ -31,6 +31,11 @@ macholib>=1.16,<2
 # Graph rendering
 graphviz>=0.20,<1
 
+# Rule loading (data/rules/*.yaml, data/default_rules/*.yaml)
+# 缺 PyYAML 时 core/rule_engine 走手写回退解析, 实测规则加载数 25 -> 0,
+# 且静默失败无告警, 故必须作为运行时依赖声明。
+pyyaml>=6,<7
+
 # Test framework
 pytest>=7.4,<10
 pytest-cov>=4.1,<8

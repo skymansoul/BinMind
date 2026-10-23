@@ -16,6 +16,15 @@ try:
     logger.info("yara-python loaded — YARA scanning enabled")
 except ImportError:
     logger.warning("yara-python not installed — YARA scanning unavailable. Install: pip install yara-python")
+except OSError as _yara_err:
+    # yara 包已安装但原生库 libyara 缺失/不可加载时, ctypes.cdll.LoadLibrary
+    # 抛的是 OSError 而非 ImportError (例如 .venv 里只有 python 包、没有
+    # libyara.so)。原实现只捕获 ImportError, 该异常会穿透模块导入并打断
+    # 测试收集, 使本应降级为"YARA 不可用"的情况变成收集失败。
+    logger.warning(
+        "yara-python present but native libyara unavailable (%s) — "
+        "YARA scanning unavailable. Install libyara (apt install libyara-dev) "
+        "or reinstall: pip install --force-reinstall yara-python", _yara_err)
 
 
 @dataclass
