@@ -220,8 +220,25 @@ def _analyze_pseudocode(func_name: str, pseudocode: str, binary_info: Dict,
 
 
 def _dangerous_import_findings(binary_info: Dict) -> List[Dict]:
-    """把所有识别到的危险 API 导入转成报告 finding，不宣称已验证可利用。"""
+    """把无界高风险 API 导入转成候选审计项，不宣称已验证可利用。
+
+    仅凭"导入了某函数"就产出候选是有前提的：该函数的危险性必须不依赖
+    调用点上下文。malloc/free/memcpy/printf/puts/write/VirtualProtect 这类
+    上下文相关函数几乎每个正常二进制都会导入，命中即产出会在每个样本上
+    制造固定噪声（实测 PE 样本因此恒有 9—11 条导入类"漏洞"，把真实结论
+    淹没）。故按置信度设门槛，只保留无条件可疑的无界函数（gets/strcpy/
+    strcat/sprintf/vsprintf 与 system/popen/exec* 等命令执行类）。
+
+    门槛可用 BINMIND_IMPORT_CANDIDATE_MIN_CONFIDENCE 覆盖；导入表本身仍在
+    二进制画像中完整展示，此处只收窄"候选结论"的生成。
+    """
     from core.detection_shared import get_dangerous_function_meta, normalize_import_name
+
+    try:
+        min_conf = float(os.environ.get(
+            'BINMIND_IMPORT_CANDIDATE_MIN_CONFIDENCE', '0.75'))
+    except ValueError:
+        min_conf = 0.75
 
     imports = binary_info.get('imports', {}) if isinstance(binary_info, dict) else {}
     names = imports.get('dangerous_functions', []) if isinstance(imports, dict) else []
@@ -232,6 +249,8 @@ def _dangerous_import_findings(binary_info: Dict) -> List[Dict]:
         if meta is None:
             continue
         vuln_type, severity, cwe, confidence = meta
+        if confidence < min_conf:
+            continue
         findings.append({
             'type': 'dangerous-function-import',
             'rule_id': f'IMPORT-{name.upper()}',
