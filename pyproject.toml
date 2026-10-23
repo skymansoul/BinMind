@@ -52,6 +52,7 @@ dependencies = [
 
 [project.optional-dependencies]
 full = [
+    "pycparser==3.11",
     "angr==9.2.223",
     "pwntools>=4.10,<5",
     "pefile>=2023.2.7",
@@ -63,6 +64,7 @@ full = [
 ]
  
 dev = [
+    "pycparser==3.11",
     "angr==9.2.223",
     "pwntools>=4.10,<5",
     "pefile>=2023.2.7",

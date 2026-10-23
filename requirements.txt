@@ -11,6 +11,9 @@
 #   pyvex==9.2.223
 #
 # Do not declare those packages separately with unbounded versions.
+# angr 9.2.223 patches pycparser's private token-stream API. pycparser 3.12
+# changed that API and makes `import angr` fail with "CLexer is not callable".
+pycparser==3.11
 angr==9.2.223
 
 # Web API

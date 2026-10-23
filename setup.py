@@ -77,6 +77,7 @@ kw['install_requires'] = [
 # full: 全功能，包含angr/pwntools等重型依赖-首次安装编译耗时约20分钟
 kw['extras_require'] = {
     'full': [
+        'pycparser==3.11',
         'angr==9.2.223',
         'pwntools>=4.10,<5',
         'pefile>=2023.2.7',
@@ -87,6 +88,7 @@ kw['extras_require'] = {
         'networkx>=3,<4',
     ],
     'dev': [
+        'pycparser==3.11',
         'angr==9.2.223',
         'pwntools>=4.10,<5',
         'pefile>=2023.2.7',
