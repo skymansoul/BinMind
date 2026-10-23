@@ -31,7 +31,7 @@ SemClass = _fstp_mod.SemClass
 FstpVerdict = _fstp_mod.FstpVerdict
 FmtSemanticTaintPropagator = _fstp_mod.FmtSemanticTaintPropagator
 
-from tests.test_fstp_regression_samples import (
+from tests.test_fmt_spec_type_regression_samples import (
     CONST_FMT, CONST_PURE, CONST_FORMATTED,
     USER_INPUT_SCANF, USER_INPUT_FGETS, USER_INPUT_RECV, USER_INPUT_ARGV,
     SANITIZED_STRREPLACE, SANITIZED_SANITIZE,

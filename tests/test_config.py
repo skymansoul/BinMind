@@ -31,7 +31,11 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(AI_PROVIDER_CUSTOM, 'custom')
 
     def test_check_openai_api_key_not_set(self):
-        with patch.dict(os.environ, {}, clear=True):
+        # Config.OPENAI_API_KEY 是 import 时求值的类属性, 之后改 os.environ
+        # 对它没有任何影响。原写法让用例结果取决于运行时环境: 只需环境里存在
+        # API_KEY 或 OPENAI_API_KEY, 本用例就必然失败。改为直接替换类属性,
+        # 与同文件 test_check_openai_api_key_set 的写法保持一致。
+        with patch('config.Config.OPENAI_API_KEY', ''):
             self.assertFalse(check_openai_api_key())
 
     def test_check_openai_api_key_set(self):
@@ -40,8 +44,8 @@ class TestConfig(unittest.TestCase):
             self.assertTrue(check_openai_api_key())
 
     def test_check_openai_api_key_empty(self):
-        """空字符串跟不设一样"""
-        with patch.dict(os.environ, {'OPENAI_API_KEY': ''}):
+        """纯空白跟不设一样（覆盖 .strip() 分支）"""
+        with patch('config.Config.OPENAI_API_KEY', '   '):
             self.assertFalse(check_openai_api_key())
 
     def test_ensure_directories(self):

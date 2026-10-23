@@ -18,7 +18,7 @@ sys.path.insert(0, BASE)
 # 确保真实 analysis 包被导入, 而非被空白占位覆盖
 import analysis as _analysis_pkg  # noqa: F401
 
-from tests.test_uaf_hoig_regression_samples import (
+from tests.test_uaf_obj_graph_regression_samples import (
     INTR_SIMPLE, INTR_ALIAS, INTR_REALLOC_OLD_PTR, INTR_FIELD_ALIAS,
     CROSS_CALLEE_FREES, CROSS_PARAM_PROPAGATION, CROSS_RETURN_FREED, CROSS_CALLBACK,
     EDGE_NULL_CHECK_AFTER_FREE, EDGE_NULLIFY_AFTER_FREE,
