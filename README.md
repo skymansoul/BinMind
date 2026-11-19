@@ -433,31 +433,6 @@ binmind replay 1
 
 其中 `1` 是历史运行 ID。
 
-## Web API 服务
-
-启动服务：
-
-```bash
-binmind serve --host 127.0.0.1 --port 8000
-```
-
-开发时启用自动重载：
-
-```bash
-binmind serve --host 127.0.0.1 --port 8000 --reload
-```
-
-启动后访问：
-
-```text
-http://127.0.0.1:8000
-```
-
-FastAPI 文档通常位于：
-
-```text
-http://127.0.0.1:8000/docs
-```
 
 ## Fuzz 入口
 
